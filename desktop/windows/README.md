@@ -4,7 +4,10 @@
 
 To install Chain Core Developer Edition for Windows, please visit [our downloads page](https://chain.com/docs/core/get-started/install).
 
-## Dependencies
+## Building the Windows installer
+The following instructions describe how to build the Windows installer from source:
+
+### Dependencies
 
 These instructions assume that your PATH includes the wix tools binary. My wix tools binary is located at `C:\Program Files (x86)\WiX Toolset v3.10\bin`.
 
@@ -32,17 +35,17 @@ You will want to put them into this directory like this:
 `ChainMgr.exe` and `cored.exe` can be compiled from any machine using `GOOS` and `GOARCH`:
 
 ```
-GOOS=windows GOARCH=amd64 go build chain/cmd/cored
+GOOS=windows GOARCH=amd64 go build -tags 'plain_http loopback_auth reset' chain/cmd/cored
 GOOS=windows GOARCH=amd64 go build chain/desktop/windows/ChainMgr
 ```
+
+Note that the build tags are necessary to build Developer Edition.
 
 The Postgres Installer can be downloaded from http://www.enterprisedb.com/products-services-training/pgdownload
 
 The VC++ Redistributable can be downloaded from https://www.microsoft.com/en-us/download/details.aspx?id=40784
 
 Make sure you have the 64-bit versions. Chain Core Windows does not support 32-bit. Do not actually run these installers, just provide them.
-
-## Building the Windows installer
 
 ### Using the build script
 
@@ -97,9 +100,9 @@ cd ../ChainBundle
 candle Bundle.wxs \
   -arch x64 \
   -ext WixBalExtension \
-  -dChainPackage.TargetPath='Z:\chain\installer\windows\ChainPackage\ChainCoreInstaller.msi' \
-  -dPostgresPackage.TargetPath='Z:\chain\installer\windows\Postgres\postgresql-9.5.5-1-windows-x64.exe' \
-  -dVCRPackage.TargetPath='Z:\chain\installer\windows\Postgres\vcredist_x64.exe'
+  -dChainPackage.TargetPath='Z:\chain\desktop\windows\ChainPackage\ChainCoreInstaller.msi' \
+  -dPostgresPackage.TargetPath='Z:\chain\desktop\windows\Postgres\postgresql-9.5.5-1-windows-x64.exe' \
+  -dVCRPackage.TargetPath='Z:\chain\desktop\windows\Postgres\vcredist_x64.exe'
 ```
 (but obviously sub out your path for my target paths)
 
