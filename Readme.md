@@ -62,7 +62,7 @@ requests from localhost, and the ability to reset the Chain Core.
 from the chain repository and an output directory:
 
 ```sh
-$ ./bin/build-cored-release chain-core-server-1.1.4 .
+$ ./bin/build-cored-release chain-core-server-1.2.0-rc1 .
 ```
 
 This will create two binaries in the current directory:
@@ -106,7 +106,7 @@ The default build process creates a binary with three build tags enabled for a
 friendlier experience. To build from source with build tags, use the following
 command:
 
-> NOTE: when building from source, make sure to check out a specific  
+> NOTE: when building from source, make sure to check out a specific
 tag to build. The `main` branch is __not considered__ stable, and may
 contain in progress features or an inconsistent experience.
 
