@@ -9,17 +9,19 @@ If you plan to make changes to the internals of Chain Core, you can find
 build instructions in our [GitHub readme](https://github.com/chain/chain/blob/main/Readme.md#building-from-source);
 if you want to _use_ chain core, please download one of our official releases.
 
-### Build tags
+### Developer Edition
 
-There are four build tags that change the behavior of the resulting binary:
+Chain Core Developer Edition includes some features designed for
+convenience during development and testing:
 
-  - `reset`: allows the core database to be reset through the api
-  - `loopback_auth`: allows unauthenticated requests on the loopback device (localhost)
-  - `no_mockhsm`: disables the MockHSM provided for development
-  - `plain_http`: allows plain HTTP requests
+  - `reset`: allows the Chain Core data to be reset via the API or dashboard
+  - `localhost_auth`: allows unauthenticated requests when accessing Chain Core from localhost
+  - `mockhsm`: provides a simulated HSM interface for development
+  - `plain_http`: allows unencrypted (non-TLS) HTTP requests.
 
-Chain Core Developer Edition is built with `reset`, `loopback_auth` and
-`plain_http` enabled.
+The status of these features are printed on startup, and in the `cored -version`
+output. These features are unsafe for use in production environments and are
+disabled in [Chain Core Enterprise Edition](https://chain.com/get-in-touch/).
 
 ## Flags
 
