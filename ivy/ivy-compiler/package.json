@@ -1,0 +1,23 @@
+{
+  "name": "ivy-compiler",
+  "version": "0.0.1",
+  "description": "Compiler for Ivy, Chain's smart contract language.",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "npm run clean && npm run build && ./node_modules/mocha/bin/mocha",
+    "compile-pegjs": "./node_modules/pegjs/bin/pegjs -o lib/parser.js src/parser.pegjs",
+    "compile-tsc": "./node_modules/typescript/bin/tsc",
+    "build": "npm run compile-tsc && npm run compile-pegjs",
+    "clean": "rm -rf lib"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^7.0.5",
+    "bcoin": "git://github.com/boymanjor/bcoin.git#webpack",
+    "mocha": "^3.2.0",
+    "pegjs": "^0.10.0",
+    "typescript": "^2.2.2"
+  },
+  "types": "./lib/index.d.ts"
+}
