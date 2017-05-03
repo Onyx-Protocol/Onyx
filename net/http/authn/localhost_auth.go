@@ -1,4 +1,4 @@
-//+build loopback_auth
+//+build localhost_auth
 
 package authn
 

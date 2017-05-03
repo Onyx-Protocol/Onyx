@@ -98,7 +98,7 @@ $ go test $(go list ./... | grep -v vendor)
 
 There are four build tags that change the behavior of the resulting binary:
   - `reset`: allows the core database to be reset through the api
-  - `loopback_auth`: allows unauthenticated requests on the loopback device (localhost)
+  - `localhost_auth`: allows unauthenticated requests on the loopback device (localhost)
   - `no_mockhsm`: disables the MockHSM provided for development
   - `http_ok`: allows plain HTTP requests
 
@@ -111,7 +111,7 @@ tag to build. The `main` branch is __not considered__ stable, and may
 contain in progress features or an inconsistent experience.
 
 ```sh
-$ go build -tags 'http_ok loopback_auth' chain/cmd/cored
+$ go build -tags 'http_ok localhost_auth' chain/cmd/cored
 $ go build chain/cmd/corectl
 ```
 
