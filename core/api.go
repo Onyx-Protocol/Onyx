@@ -31,6 +31,7 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
+	"chain/generated/ivy"
 	"chain/log"
 	"chain/net/http/authn"
 	"chain/net/http/authz"
@@ -327,6 +328,10 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/dashboard/", http.StripPrefix("/dashboard/", static.Handler{
 		Assets:  dashboard.Files,
+		Default: "index.html",
+	}))
+	mux.Handle("/ivy/", http.StripPrefix("/ivy/", static.Handler{
+		Assets:  ivy.Files,
 		Default: "index.html",
 	}))
 	mux.Handle("/", next)

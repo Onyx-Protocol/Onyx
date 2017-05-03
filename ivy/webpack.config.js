@@ -1,4 +1,5 @@
 const webpack = require('webpack')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
 const { CheckerPlugin } = require('awesome-typescript-loader')
 
@@ -17,9 +18,9 @@ module.exports = {
     playground: path.resolve(__dirname, 'playground/entry'),
   },
   output: {
-    path: path.resolve(__dirname, 'playground/build'),
+    path: path.resolve(__dirname, 'playground/public'),
     filename: 'playground.bundle.js',
-    publicPath: "/assets/"
+    publicPath: "/ivy"
   },
   module: {
     loaders: [
@@ -27,6 +28,8 @@ module.exports = {
       { test: /\.pegjs$/, loader: 'pegjs-loader'},
       { test: /\.json$/, loader: 'json'},
       { test: /\.tsx?$/, loaders: ['babel', 'awesome-typescript-loader']},
+      { test: /\.(png|jpg)$/, loader: 'url-loader?limit=8192' },
+      { test: /\.css$/, loader: 'style-loader!css-loader' }
     ]
   },
   devServer: {
@@ -43,6 +46,12 @@ module.exports = {
     }
   },
   plugins: [
-      new CheckerPlugin()
+    new CheckerPlugin(),
+    new HtmlWebpackPlugin({
+      template: "playground/static/index.ejs"
+    }),
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    })
   ]
 }

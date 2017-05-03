@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "NODE_ENV=production webpack",
-    "start": "webpack-dev-server --content-base ./playground/build --inline --hot",
+    "start": "webpack-dev-server --content-base ./playground/public --inline --hot",
     "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.config.js ./test/*.js"
   },
   "author": "",
@@ -24,6 +24,8 @@
     "bcoin": "git://github.com/boymanjor/bcoin.git#webpack",
     "brace": "^0.10.0",
     "chain-sdk": "^1.1.1",
+    "css-loader": "^0.28.1",
+    "html-webpack-plugin": "^2.28.0",
     "js-sha3": "^0.5.7",
     "json-loader": "^0.5.4",
     "pegjs": "^0.10.0",
@@ -42,7 +44,9 @@
     "redux-thunk": "^2.2.0",
     "reselect": "^3.0.0",
     "source-map-loader": "^0.1.6",
+    "style-loader": "^0.17.0",
     "typescript": "2.2.2",
+    "url-loader": "^0.5.8",
     "webpack": "^1.13.3",
     "webpack-dev-server": "^1.16.2"
   }

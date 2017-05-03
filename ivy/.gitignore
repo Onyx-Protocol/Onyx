@@ -50,4 +50,4 @@ jspm_packages
 .yarn-integrity
 
 # built playground
-playground/build/*.bundle.js
+playground/public
