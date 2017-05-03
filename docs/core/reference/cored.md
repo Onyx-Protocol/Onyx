@@ -17,7 +17,7 @@ convenience during development and testing:
   - `reset`: allows the Chain Core data to be reset via the API or dashboard
   - `localhost_auth`: allows unauthenticated requests when accessing Chain Core from localhost
   - `mockhsm`: provides a simulated HSM interface for development
-  - `plain_http`: allows unencrypted (non-TLS) HTTP requests.
+  - `http_ok`: allows unencrypted (non-TLS) HTTP requests.
 
 The status of these features are printed on startup, and in the `cored -version`
 output. These features are unsafe for use in production environments and are

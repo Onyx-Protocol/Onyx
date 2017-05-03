@@ -137,8 +137,8 @@ public class CoreConfig {
       /**
        * Whether non-TLS HTTP requests (http://...) are allowed.
        */
-      @SerializedName("is_plain_http")
-      public boolean isPlainHttp;
+      @SerializedName("is_http_ok")
+      public boolean isHttpOk;
     }
 
     public static class Health {
