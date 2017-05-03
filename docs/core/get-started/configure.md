@@ -22,7 +22,7 @@ This connects to an existing blockchain whose block generator is already configu
 
 * Block generator URL
 * Blockchain ID
-* Network access token (not required when connecting to localhost)
+* Access token with [cross-core authorization grant](../learn-more/authentication-and-authorization.md#authorization) (not required when connecting to localhost)
 
 Once configured, Chain Core will begin downloading blockchain data from the block generator. Once your Core is up to date with the network it will receive new blocks as they are created.
 

@@ -119,7 +119,7 @@ const configAPI = (client) => {
      *                                      pre-existing blockchain.
      * @param {String} opts.generatorUrl - A URL for the block generator. Required if
      *                                      `isGenerator` is false.
-     * @param {String} opts.generatorAccessToken - A network access token provided by administrators
+     * @param {String} opts.generatorAccessToken - An access token provided by administrators
      *                                               of the block generator. Required if `isGenerator` is false.
      * @param {String} opts.blockchainId - The unique ID of the generator's blockchain.
      *                                      Required if `isGenerator` is false.

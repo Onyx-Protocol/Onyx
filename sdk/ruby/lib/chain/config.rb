@@ -150,7 +150,7 @@ module Chain
       # @param [Hash] opts Options for configuring Chain Core.
       # @option opts [Boolean] is_generator Whether the local core will be a block generator for the blockchain; i.e., you are starting a new blockchain on the local core. `false` if you are connecting to a pre-existing blockchain.
       # @option opts [String] generator_url A URL for the block generator. Required if `isGenerator` is false.
-      # @option opts [String] generator_access_token 	A network access token provided by administrators of the block generator. Required if `isGenerator` is false.
+      # @option opts [String] generator_access_token 	An access token provided by administrators of the block generator. Required if `isGenerator` is false.
       # @option opts [String] blockchain_id The unique ID of the generator's blockchain. Required if `isGenerator` is false.
       # @return [void]
       def configure(opts)
