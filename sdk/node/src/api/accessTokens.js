@@ -5,7 +5,7 @@ const shared = require('../shared')
  * policies for accessing Chain Core features. See {@link module:AuthorizationGrantsApi the
  * access control API} for more info.
  *
- * More info: {@link https://chain.com/docs/core/learn-more/authentication}
+ * More info: {@link https://chain.com/docs/core/learn-more/authentication-and-authorization}
  * @typedef {Object} AccessToken
  * @global
  *
@@ -25,7 +25,7 @@ const shared = require('../shared')
 /**
  * API for interacting with {@link AccessToken access tokens}.
  *
- * More info: {@link https://chain.com/docs/core/learn-more/authentication}
+ * More info: {@link https://chain.com/docs/core/learn-more/authentication-and-authorization}
  * @module AccessTokensApi
  */
 const accessTokens = (client) => {

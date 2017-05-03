@@ -13,7 +13,7 @@ const util = require('../util')
  * * **crosscore-signblock**: access to the cross-core API's block singing
  *   functionality
  *
- * More info: {@link https://chain.com/docs/core/learn-more/authentication}
+ * More info: {@link https://chain.com/docs/core/learn-more/authentication-and-authorization}
  * @typedef {Object} AuthorizationGrant
  * @global
  *
@@ -43,7 +43,7 @@ const util = require('../util')
 /**
  * API for interacting with {@link AuthorizationGrant access grants}.
  *
- * More info: {@link https://chain.com/docs/core/learn-more/authentication}
+ * More info: {@link https://chain.com/docs/core/learn-more/authentication-and-authorization}
  * @module AuthorizationGrantsApi
  */
 const authorizationGrants = (client) => ({

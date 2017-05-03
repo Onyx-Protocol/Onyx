@@ -67,7 +67,7 @@ Instances of Chain Core must be configured with the correct access credentials (
 - All participants must make requests to the block generator using a credential that has access to the generator's `crosscore` policy.
 - The generator must make requests to block signers using credentials that have access to each signer's `crosscore-signblock` policy, respectively.
 
-The [Authentication and Authorization guide](authentication.md) contains more detail on how to create and configure credentials and policies.
+The [Authentication and Authorization guide](authentication-and-authorization.md) contains more detail on how to create and configure credentials and policies.
 
 ### Adding/removing blockchain operators
 
