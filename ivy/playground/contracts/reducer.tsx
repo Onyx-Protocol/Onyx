@@ -4,11 +4,12 @@ import { getParameterIdList } from '../templates/selectors'
 import { Item as Template } from '../templates/types'
 import { itemMap as initialItemMap } from '../templates/constants'
 import { Input, InputMap } from '../inputs/types'
-import { getInputMap, getContractValue} from './selectors'
+import { getInputMap } from './selectors'
 import { addParameterInput } from '../inputs/data'
 import { AppState } from '../app/types'
 import { createSelector } from 'reselect'
-import { CREATE_CONTRACT, UPDATE_CLAUSE_INPUT, UPDATE_INPUT, SET_CLAUSE_INDEX } from './actions'
+import { CREATE_CONTRACT, UPDATE_CLAUSE_INPUT, UPDATE_INPUT, 
+         SET_CLAUSE_INDEX, SHOW_ERRORS } from './actions'
 import { addDefaultInput, getPublicKeys } from '../inputs/data'
 import { Item as Contract } from './types'
 
@@ -18,7 +19,8 @@ export const INITIAL_STATE: ContractsState = {
   inputMap: generateInputMap(initialItemMap["TrivialLock"]),
   selectedTemplateId: "TrivialLock",
   spendContractId: "",
-  selectedClauseIndex: 0
+  selectedClauseIndex: 0,
+  showErrors: false
 }
 
 export default function reducer(state: ContractsState = INITIAL_STATE, action): ContractsState {
@@ -40,9 +42,10 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       return {
         ...state,
         inputMap: generateInputMap(action.template),
-        selectedTemplateId: action.templateId
+        selectedTemplateId: action.templateId,
+        showErrors: false
       }
-    case CREATE_CONTRACT:
+    case CREATE_CONTRACT: // reset keys etc. this is safe (the action already has this stuff)
       let controlProgram = action.controlProgram
       let hash = action.utxo.transactionId
       let template: Template = action.template
@@ -68,18 +71,17 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
           input.keyMap = keyMap
         }
       }
-
       let contract: Contract = {
         template: action.template,
         id: hash,
         outputId: action.utxo.id,
+        assetId: action.assetId,
+        amount: action.amount,
         inputMap: action.inputMap,
         controlProgram: controlProgram,
         clauseList: clauseNames,
         clauseMap: clauseParameterIds,
-        spendInputMap: spendInputMap,
-        assetId: action.assetId,
-        amount: action.amount
+        spendInputMap: spendInputMap
       }
       let contractId = contract.id
       return {
@@ -89,7 +91,8 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
           ...state.itemMap,
           [contractId]: contract
         },
-        inputMap: generateInputMap(action.template)
+        inputMap: generateInputMap(action.template),
+        showErrors: false
       }
     case UPDATE_CLAUSE_INPUT: {
       // gotta find a way to make this logic shorter
@@ -125,13 +128,20 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         selectedClauseIndex: action.selectedClauseIndex
       }
     }
+    case SHOW_ERRORS: {
+      return {
+        ...state,
+        showErrors: true
+      }
+    }
     case "@@router/LOCATION_CHANGE":
       let path = action.payload.pathname.split("/")
       if (path[1] === "spend") {
         return {
           ...state,
           spendContractId: path[2],
-          selectedClauseIndex: 0
+          selectedClauseIndex: 0,
+          showErrors: false
         }
       }
       return state
