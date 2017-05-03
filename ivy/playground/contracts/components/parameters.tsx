@@ -12,7 +12,7 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
          MaxtimeInput, MintimeInput, ValueInput, AccountAliasInput, AssetAliasInput, AssetAmountInput, AmountInput,
          ProgramInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
 import { getParameterIdentifier, getInputContext } from '../../inputs/data'
-import { getInputMap, getSpendInputMap, getClauseParameterIds } from '../selectors'
+import { getInputMap, getSpendInputMap, getClauseParameterIds, getShowErrors } from '../selectors'
 import { updateClauseInput } from '../actions'
 /* import { getAssetAliasesById, getAssetIds } from '../assets' */
 /* import { getAccountAliasesById, getAccountIds } from '../accounts' */
@@ -24,7 +24,7 @@ import { Item as Asset } from '../../assets/types'
 
 import { updateInput } from '../actions'
 import { getParameterIds } from '../selectors'
-import { validateInput, computeDataForInput, getChild} from '../../inputs/data'
+import { validateInput, computeDataForInput, getChild } from '../../inputs/data'
 // import { getSpendParameterIds, getSpending, getSignatureData } from '../spend'
 // import { updateClauseInput } from '../contracts'
 import app from '../../app'
@@ -53,14 +53,14 @@ function GenerateStringWidget(props: { input: GenerateStringInput, handleChange:
 
 function NumberWidget(props: { input: NumberInput,
                                handleChange: (e)=>undefined }) {
-  return <input type="number" className="form-control" style={{width: 250}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
+  return <input type="number" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
 }
 
 function PositiveNumberWidget(props: { input: BlockheightTimeInput |
                                       TimestampTimeInput | BlocksDurationInput |
                                       SecondsDurationInput | AmountInput
                                handleChange: (e)=>undefined }) {
-  return <input id={props.input.name} type="number" min={0} className="form-control" style={{width: 250}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
+  return <input id={props.input.name} type="number" min={0} className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
 }
 
 function AmountWidget(props: { input: AmountInput
@@ -312,13 +312,14 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
   }
 }
 
-function InputErrorUnconnected(props: { state, input: Input }) {
+function InputErrorUnconnected(props: { state, input: Input, showErrors: boolean }) {
   let isValid = validateInput(props.input)
-  return isValid ? <div /> : <div className="alert alert-danger">Invalid input</div>
+  return (isValid || !props.showErrors) ? <div /> : <div className="alert alert-danger">Invalid input</div>
 }
 
 function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
   let input = inputsById[id]
+  let showErrors = getShowErrors(state)
   if (input === undefined) throw "bad input ID: " + id
   if (input.type === "generatePublicKeyInput" ||
       input.type === "generateHashInput" ||
@@ -328,21 +329,23 @@ function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
       let computedValue = computeDataForInput(id, inputsById)
       return {
         input: input,
-        computedValue: computedValue
+        computedValue: computedValue,
+        showErrors: showErrors
       }
     } catch(e) {
-      // console.log(e)
-      // just return the normal input
+      console.log(e)
     }
   }
   if (input.type === "generateSignatureInput") {
     return {
       input: input,
-      computedValue: ""//getSignatureData(state, id, inputsById)
+      computedValue: "",
+      showErrors: showErrors//getSignatureData(state, id, inputsById)
     }
   }
   return {
-    input: input
+    input: input,
+    showErrors: showErrors
   }
 }
 

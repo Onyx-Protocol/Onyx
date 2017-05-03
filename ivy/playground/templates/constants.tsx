@@ -23,7 +23,12 @@ const LOCK_TO_OUTPUT =`contract LockToOutput(program: Program, locked: Value) {
   }
 }`
 
-const TRADE_OFFER = `contract TradeOffer(requested: AssetAmount, sellerControlProgram: Program, sellerKey: PublicKey, offered: Value) {
+const TRADE_OFFER = `contract TradeOffer(
+  requested: AssetAmount, 
+  sellerControlProgram: Program, 
+  sellerKey: PublicKey, 
+  offered: Value
+) {
   clause trade(payment: Value) {
     verify payment.assetAmount == requested
     output sellerControlProgram(payment)
@@ -35,12 +40,29 @@ const TRADE_OFFER = `contract TradeOffer(requested: AssetAmount, sellerControlPr
   }
 }`
 
+const ESCROWED_TRANSFER = `contract EscrowedTransfer(
+  agent: PublicKey, 
+  sender: Program, 
+  recipient: Program, 
+  value: Value
+) {
+  clause approve(sig: Signature) {
+    verify checkTxSig(agent, sig)
+    output recipient(value)
+  }
+  clause reject(sig: Signature) {
+    verify checkTxSig(agent, sig)
+    output sender(value)
+  }
+}`
+
 export const itemMap = {}
 itemMap["TrivialLock"] = mustCompileTemplate(TRIVIAL_LOCK) as Item
 itemMap["LockWithPublicKey"] = mustCompileTemplate(LOCK_WITH_PUBLIC_KEY) as Item
 itemMap["LockToOutput"] = mustCompileTemplate(LOCK_TO_OUTPUT) as Item
 itemMap["TradeOffer"] = mustCompileTemplate(TRADE_OFFER) as Item
-const idList = ["TrivialLock", "LockWithPublicKey", "LockToOutput", "TradeOffer"]
+itemMap["EscrowedTransfer"] = mustCompileTemplate(ESCROWED_TRANSFER) as Item
+const idList = ["TrivialLock", "LockWithPublicKey", "LockToOutput", "TradeOffer", "EscrowedTransfer"]
 const source = itemMap["TrivialLock"].source
 const selected = idList[0]
 export const INITIAL_STATE: State = { itemMap, idList, source, selected }

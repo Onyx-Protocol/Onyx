@@ -60,7 +60,5 @@ export const createSpendingTx = (actions: Action[]): Promise<string> => {
           break
       }
     })
-  }).catch((e) => {
-    console.log(e.body)
   })
 }

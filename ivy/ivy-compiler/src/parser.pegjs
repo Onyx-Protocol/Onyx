@@ -17,10 +17,10 @@ let isArithmeticOperator = instructions.isArithmeticOperator
 }
 
 Contract
-  = __ "contract" _ name:Identifier "(" parameters:Parameters ")" __ "{" __ clauses:Clause+ "}" __ { return { type: "rawContract", location: location(), name: name, parameters: parameters, clauses: clauses} }
+  = __ "contract" _ name:Identifier "(" __ parameters:Parameters __ ")" __ "{" __ clauses:Clause+ "}" __ { return { type: "rawContract", location: location(), name: name, parameters: parameters, clauses: clauses} }
 
 Clause
-  = "clause" _ name:Identifier "(" parameters:Parameters ")" __ "{" __ assertions:Assertion* __ outputs:Output*  __  returnStatement: Return? "}" __ { 
+  = "clause" _ name:Identifier "(" __ parameters:Parameters __ ")" __ "{" __ assertions:Assertion* __ outputs:Output*  __  returnStatement: Return? "}" __ { 
     return { 
       type: "clause", 
       location: location(), 
