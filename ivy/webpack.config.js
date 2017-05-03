@@ -8,7 +8,7 @@ module.exports = {
     extensions: ['', '.js', '.json', '.pegjs', '.jsx', '.ts', '.tsx'],
     alias: {
       "ivy-compiler": path.resolve(__dirname, 'ivy-compiler/src/index.ts'),
-      "chain-sdk": path.resolve(__dirname, '../sdk/node/src/index')
+      "chain-sdk": path.resolve(__dirname, '../sdk/node/src/index.js')
     }
   },
   resolveLoader: {
@@ -20,7 +20,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'playground/public'),
     filename: 'playground.bundle.js',
-    publicPath: "/ivy"
+    publicPath: "/ivy/"
   },
   module: {
     loaders: [
@@ -47,9 +47,6 @@ module.exports = {
   },
   plugins: [
     new CheckerPlugin(),
-    new HtmlWebpackPlugin({
-      template: "playground/static/index.ejs"
-    }),
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
     })

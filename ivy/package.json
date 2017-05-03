@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "NODE_ENV=production webpack",
-    "start": "webpack-dev-server --content-base ./playground/public --inline --hot",
+    "start": "webpack-dev-server --content-base playground/public --inline --hot",
     "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.config.js ./test/*.js"
   },
   "author": "",
@@ -23,7 +23,6 @@
     "babel-preset-react-hmre": "^1.1.1",
     "bcoin": "git://github.com/boymanjor/bcoin.git#webpack",
     "brace": "^0.10.0",
-    "chain-sdk": "^1.1.1",
     "css-loader": "^0.28.1",
     "html-webpack-plugin": "^2.28.0",
     "js-sha3": "^0.5.7",
