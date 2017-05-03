@@ -26,8 +26,8 @@ class Client {
    * in a string URL and an optional string token as the first and second parameter, respectively.
    *
    * @param {Object} opts - Plain JS object containing configuration options.
-   * @param {String} opts.baseUrl - Chain Core URL.
-   * @param {String} opts.token - Chain Core client token for API access.
+   * @param {String} opts.url - Chain Core URL.
+   * @param {String} opts.accessToken - Chain Core access token.
    * @returns {Client}
    */
   constructor(opts = {}) {
@@ -35,12 +35,12 @@ class Client {
     // support the deprecated constructor params.
     if (typeof opts === 'string') {
       opts = {
-        baseUrl: arguments[0],
-        token: arguments[1] || ''
+        url: arguments[0],
+        accessToken: arguments[1] || ''
       }
     }
-    opts.baseUrl = opts.baseUrl || 'http://localhost:1999'
-    this.connection = new Connection(opts.baseUrl, opts.token, opts.agent)
+    opts.url = opts.url || 'http://localhost:1999'
+    this.connection = new Connection(opts.url, opts.accessToken, opts.agent)
 
     /**
      * API actions for access tokens
