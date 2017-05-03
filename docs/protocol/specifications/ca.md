@@ -14,9 +14,7 @@
   * [Borromean Ring Signature](#borromean-ring-signature)
   * [OLEG-ZKP](#oleg-zkp)
 * [Keys](#keys)
-  * [2D Key](#2d-key)
-  * [Record Encryption Key](#record-encryption-key)
-  * [Intermediate Encryption Key](#intermediate-encryption-key)
+  * [Inline Data Encryption Key](#inline-data-encryption-key)
   * [Asset ID Encryption Key](#asset-id-encryption-key)
   * [Value Encryption Key](#value-encryption-key)
   * [Asset ID Blinding Factor](#asset-id-blinding-factor)
@@ -72,7 +70,7 @@ In this section we will provide a brief overview of various ways to use confiden
 ### Confidential issuance
 
 1. Issuer chooses asset ID and an amount to issue.
-2. Issuer generates issuance [REK](#record-encryption-key) unique for this issuance.
+2. Issuer generates issuance [keys](#keys) unique for this issuance.
 3. Issuer chooses a set of other asset IDs to add into the *issuance anonymity set*.
 4. Issuer sorts the union of the issuance asset ID and anonymity set lexicographically.
 5. For each asset ID, where issuance program does not check an issuance key, issuer [creates a transient issuance key](#transient-issuance-key).
@@ -86,7 +84,7 @@ In this section we will provide a brief overview of various ways to use confiden
 1. Recipient generates the following parameters and sends them privately to the sender:
     * amount and asset ID to be sent,
     * control program,
-    * [REK1](#record-encryption-key).
+    * [encryption keys](#keys).
 2. Sender composes a transaction with an unencrypted output with a given control program.
 3. Sender adds necessary amount of inputs to satisfy the output:
     1. For each unspent output, sender pulls values `(assetid,value,AC,c,f)` from its DB.
@@ -98,7 +96,7 @@ In this section we will provide a brief overview of various ways to use confiden
     1. Sender [encrypts](#encrypt-output) the first output.
     2. Sender [balances blinding factors](#balance-blinding-factors) to create an excess factor `q`.
     3. Sender adds unencrypted change output.
-    4. Sender generates a [REK2](#record-encryption-key) for the change output.
+    4. Sender generates [encryption keys](#keys) for the change output.
     5. Sender [encrypts](#encrypt-output) the change output with an additional excess factor `q`.
 5. If sender does not need a change output:
     1. Sender [balances blinding factors](#balance-blinding-factors) of the inputs to create an excess factor `q`.
@@ -106,7 +104,7 @@ In this section we will provide a brief overview of various ways to use confiden
 6. Sender stores values `(assetid,value,AC,c,f)` in its DB with its change output for later spending.
 7. Sender publishes the transaction.
 8. Recipient receives the transaction and identifies its output via its control program.
-9. Recipient uses its [REK1](#record-encryption-key) to [decrypt output](#decrypt-output).
+9. Recipient uses its [encryption keys](#keys) to [decrypt output](#decrypt-output).
 10. Recipient stores resulting `(assetid,value,H,c,f)` in its DB with its change output for later spending.
 11. Recipient separately stores decrypted plaintext payload with the rest of the reference data. It is not necessary for spending.
 
@@ -115,7 +113,7 @@ In this section we will provide a brief overview of various ways to use confiden
 
 1. All parties communicate out-of-band payment details (how much is being paid for what), but not cryptographic material or control programs.
 2. Each party:
-    1. Generates cleartext outputs: (amount, asset ID, control program, [REK](#record-encryption-key)). These include both requested payment ("I want to receive €10") and the change ("I send back to myself $142").
+    1. Generates cleartext outputs: (amount, asset ID, control program, [encryption keys](#keys)). These include both requested payment ("I want to receive €10") and the change ("I send back to myself $142").
     2. [Encrypts](#encrypt-output) each output.
     3. [Balances blinding factors](#balance-blinding-factors) to create an excess factor `q[i]`.
     4. For each output, stores values `(assetid,value,AC,c,f)` associated with that output in its DB for later spending.
@@ -650,49 +648,19 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 ## Keys
 
-### 2D key
+### Inline Data Encryption Key
 
-*Two-dimensional key* (“2D key” or “2DK”) is a pair of 32-byte secret strings:
+Inline data encryption key (IDEK or `idek`) is a symmetric key used to encrypt the payload stored in the [value range proof](#recover-payload-from-value-range-proof).
 
-    {x, y}
-
-2DK is encoded as a 64-byte concatenation of the corresponding secret strings (32 bytes each):
-
-    2dk = x || y
-
-2DKs allows “two-dimensional” key derivation by deriving from one key and leaving the other one unchanged, therefore allowing “vertical” derivation from [Record Encryption Keys](#record-encryption-key) to [Intermediate Encryption Keys](#intermediate-encryption-key), [Asset ID Encryption Keys](#asset-id-encryption-key) and [Value Encryption Keys](#value-encryption-key) and “horizontal” derivation from a root key pair associated with a user’s account to per-transaction and per-output key pairs.
-
-
-### Record Encryption Key
-
-Record encryption key (REK or `rek`) is a [2D key](#2d-key):
-
-    rek = {x, y}
-
-It is used to decrypt the payload data from the [value range proof](#value-range-proof), and derive [asset ID encryption key](#asset-id-encryption-key) and [value encryption key](#value-encryption-key).
-
-The `y` is used to derive more specific keys as described below that all share the same second key `x`.
-The `x` is used to derive the entire hierarchies of encryption keys, so that a [REK](#record-encryption-key), or [IEK](#intermediate-encryption-key) could be shared for the entire account instead of per-transaction.
-
-
-### Intermediate Encryption Key
-
-Intermediate encryption key (IEK or `iek`) is a [2D key](#2d-key) that allows decrypting the asset ID and the value in the output commitment. It is derived from the [record encryption key](#record-encryption-key) as follows:
-
-    iek = {x: rek.x, y: Hash256("IEK", rek.y)}
 
 ### Asset ID Encryption Key
 
-Asset ID encryption key (AEK or `aek`) is a [2D key](#2d-key) that allows decrypting the asset ID in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
+Asset ID encryption key (AEK or `aek`) is a symmetric key used to generate blinding factors and encrypt/decrypt the asset ID.
 
-    aek = {x: iek.x, y: Hash256("AEK", iek.y)}
 
 ### Value Encryption Key
 
-Value encryption key (VEK or `vek`) is a [2D key](#2d-key) that allows decrypting the amount in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
-
-    vek = {x: iek.x, y: Hash256("VEK", iek.y)}
-
+Value encryption key (VEK or `vek`) is a symmetric key used to generate blinding factors and encrypt/decrypt the amount.
 
 
 ### Asset ID Blinding Factor
@@ -1418,8 +1386,9 @@ The total number of elements in the [Borromean Ring Signature](#borromean-ring-s
 4. `value`: the 64-bit amount being encrypted and blinded.
 5. `{pt[i]}`: plaintext payload string consisting of `2·N - 1` 32-byte elements.
 6. `f`: the [value blinding factor](#value-blinding-factor).
-7. `rek`: the [record encryption key](#record-encryption-key).
-8. `message`: a variable-length string.
+7. `idek`: the [inline data encryption key](#inline-data-encryption-key).
+8. `vek`: the [value encryption key](#value-encryption-key).
+9. `message`: a variable-length string.
 
 Note: this version of the signing algorithm does not use decimal exponent or minimum value and sets them both to zero.
 
@@ -1441,7 +1410,7 @@ In case of failure, returns `nil` instead of the range proof.
 4. Define `exp = 0`.
 5. Define `base = 4`.
 6. Calculate the message to sign: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek" || msghash || rek || f)`.
+7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek" || msghash || idek || f)`.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
 10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash("VRP.b" || msghash || f, 64·(n-1))`.
@@ -1537,8 +1506,9 @@ In case of failure, returns `nil` instead of the range proof.
     * `{e0, s[i,j]...}`: the [borromean ring signature](#borromean-ring-signature) encoded as a sequence of `1 + 4·n` 32-byte integers.
 4. `value`: the 64-bit amount being encrypted and blinded.
 5. `f`: the [value blinding factor](#value-blinding-factor).
-6. `rek`: the [record encryption key](#record-encryption-key).
-7. `message`: a variable-length string.
+6. `idek`: the [inline data encryption key](#inline-data-encryption-key).
+7. `vek`: the [value encryption key](#value-encryption-key).
+8. `message`: a variable-length string.
 
 **Output:** `{pt[i]}`: an array of 32-bytes of plaintext data if recovery succeeded, `nil` otherwise.
 
@@ -1572,7 +1542,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G`.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
-8. Derive payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek" || rek || f || VC)`.
+8. Derive payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek" || idek || f || VC)`.
 9. [Decrypt payload](#decrypt-payload): compute an array of `2·N-1` 32-byte chunks: `{pt[i]} = DecryptPayload({ct[i]}, pek)`. If decryption fails, halt and return `nil`.
 10. Return `{pt[i]}`, a plaintext array of `2·N-1` 32-byte elements.
 
@@ -1845,7 +1815,10 @@ Asset ID commitment must be [proven to be valid](#validate-assets-flow).
 
 **Inputs:**
 
-1. `rek`: the [record encryption key](#record-encryption-key) unique to this issuance.
+1. Encryption keys:
+    1. `aek`: the [asset ID encryption key](#asset-id-encryption-key) unique to this issuance.
+    2. `vek`: the [value encryption key](#value-encryption-key) unique to this issuance.
+    3. `idek`: the [inline data encryption key](#inline-data-encryption-key) unique to this issuance.
 2. `assetID`: the output asset ID.
 3. `value`: the output amount.
 4. `N`: number of bits to encrypt (`value` must fit within `N` bits).
@@ -1867,14 +1840,12 @@ In case of failure, returns `nil` instead of the items listed above.
 
 **Algorithm:**
 
-1. [Derive asset ID encryption key](#asset-id-encryption-key) `aek` from `rek`.
-2. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
-3. Find `j` index of the `assetID` among `{assetIDs[i]}`. If not found, halt and return `nil`.
-5. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(AC,c)` from `(assetid, aek)`.
-6. [Create blinded value commitment](#create-blinded-value-commitment): compute `(VC,f)` from `(value, vek, AC)`.
-7. [Create issuance asset range proof](#create-issuance-asset-range-proof): compute `IARP` from `(AC, c, {assetIDs[i]}, {Y[i]}, message, nonce, j, y)`.
-8. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(AC, VC, N, value, f, rek)` and all-zeroes payload.
-9. Return `(AC, VC, IARP, VRP, c, f)`.
+1. Find `j` index of the `assetID` among `{assetIDs[i]}`. If not found, halt and return `nil`.
+2. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(AC,c)` from `(assetid, aek)`.
+3. [Create blinded value commitment](#create-blinded-value-commitment): compute `(VC,f)` from `(value, vek, AC)`.
+4. [Create issuance asset range proof](#create-issuance-asset-range-proof): compute `IARP` from `(AC, c, {assetIDs[i]}, {Y[i]}, message, nonce, j, y)`.
+5. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(AC, VC, N, value, f, vek, idek)` and all-zeroes payload.
+6. Return `(AC, VC, IARP, VRP, c, f)`.
 
 
 
@@ -1890,7 +1861,10 @@ ARP can be added separately using [Create Asset Range Proof](#create-asset-range
 
 **Inputs:**
 
-1. `rek`: the [record encryption key](#record-encryption-key).
+1. Encryption keys:
+    1. `aek`: the [asset ID encryption key](#asset-id-encryption-key) unique to this issuance.
+    2. `vek`: the [value encryption key](#value-encryption-key) unique to this issuance.
+    3. `idek`: the [inline data encryption key](#inline-data-encryption-key) unique to this issuance.
 2. `assetID`: the output asset ID.
 3. `value`: the output amount.
 4. `N`: number of bits to encrypt (`value` must fit within `N` bits).
@@ -1913,17 +1887,15 @@ In case of failure, returns `nil` instead of the items listed above.
 2. If the number of chunks `{pt[i]}` exceeds `2·N-1`, halt and return `nil`.
 3. If the number of chunks `{pt[i]}` is less than `2·N-1`, pad the array with all-zero 32-byte chunks.
 4. If `value ≥ 2^N`, halt and return `nil`.
-5. [Derive asset ID encryption key](#asset-id-encryption-key) `aek` from `rek`.
-6. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
-7. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(AC,c)` from `(assetID, aek)`.
-9. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, AC.H)`.
-10. If `q` is provided:
+5. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(AC,c)` from `(assetID, aek)`.
+6. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, AC.H)`.
+7. If `q` is provided:
     1. Compute `extra` scalar: `extra = q - f - value·c`.
     2. Add `extra` to the value blinding factor: `f = f + extra`.
     3. Adjust the value commitment too: `VC = VC + extra·(G,J)`.
     4. Note: as a result, the total blinding factor of the output will be equal to `q`.
-11. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(AC, VC, N, value, {pt[i]}, f, rek)`.
-12. Return `(AC, VC, VRP, c, f)`.
+8. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(AC, VC, N, value, {pt[i]}, f, vek, idek)`.
+9. Return `(AC, VC, VRP, c, f)`.
 
 
 
@@ -1933,7 +1905,10 @@ This algorithm decrypts fully encrypted amount and asset ID for a given output.
 
 **Inputs:**
 
-1. `rek`: the [record encryption key](#record-encryption-key).
+1. Encryption keys:
+    1. `aek`: the [asset ID encryption key](#asset-id-encryption-key) unique to this issuance.
+    2. `vek`: the [value encryption key](#value-encryption-key) unique to this issuance.
+    3. `idek`: the [inline data encryption key](#inline-data-encryption-key) unique to this issuance.
 2. `AC`: the [asset ID commitment](#asset-id-commitment).
 3. `VC`: the [value commitment](#value-commitment).
 4. `ARP`: the [asset range proof](#asset-range-proof).
@@ -1953,20 +1928,18 @@ In case of failure, returns `nil` instead of the items listed above.
 
 **Algorithm:**
 
-1. [Derive asset encryption key](#asset-id-encryption-key) `aek` from `rek`.
-2. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
-3. Decrypt asset ID:
+1. Decrypt asset ID:
     1. If `ARP` is [non-confidential](#non-confidential-asset-range-proof): set `assetID` to the one stored in `ARP`, set `c` to zero.
     2. If `ARP` is [confidential](#confidential-asset-range-proof), [decrypt asset ID](#decrypt-asset-id): compute `(assetID,c)` from `((ea||ec),AC,aek)`. If verification failed, halt and return `nil`.
-4. Decrypt value and recover payload:
+2. Decrypt value and recover payload:
     1. If `VRP` is [non-confidential](#non-confidential-value-range-proof):
         1. Set `value` to the one stored in `VRP`, set `f` to zero.
         2. Set `plaintext` to an empty string.
     2. If `VRP` is [confidential](#confidential-value-range-proof):
         1. [Decrypt value](#decrypt-value): compute `(value, f)` from `((ev||ef),AC,VC,vek)`. If verification failed, halt and return `nil`.
-        2. [Recover payload from the range proof](#recover-payload-from-value-range-proof): compute a list of 32-byte chunks `{pt[i]}` from `(AC,VC,VRP,value,f,rek)`. If verification failed, halt and return `nil`.
+        2. [Recover payload from the range proof](#recover-payload-from-value-range-proof): compute a list of 32-byte chunks `{pt[i]}` from `(AC,VC,VRP,value,f,vek,idek)`. If verification failed, halt and return `nil`.
         3. Flatten the array `{pt[i]}` in a binary string and decode it using [varstring31](blockchain.md#string) encoding. If decoding fails, halt and return `nil`.
-5. Return `(assetID, value, c, f, plaintext)`.
+3. Return `(assetID, value, c, f, plaintext)`.
 
 
 
