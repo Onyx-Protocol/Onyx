@@ -151,24 +151,24 @@ func mkReturn(expr interface{}) (*returnStatement, error) {
 	return &returnStatement{expr: e}, nil
 }
 
-func prependRef(first, rest interface{}) (*ref, error) {
-	f, ok := first.(string)
+func mkPropRef(expr, property interface{}) (*propRef, error) {
+	e, ok := expr.(expression)
 	if !ok {
-		return nil, fmt.Errorf("prependRef: first has type %T, want string", first)
+		return nil, fmt.Errorf("mkPropRef: expr has type %T, want expression", expr)
 	}
-	r, ok := rest.(*ref)
+	p, ok := property.(string)
 	if !ok {
-		return nil, fmt.Errorf("prependRef: rest has type %T, want *ref", rest)
+		return nil, fmt.Errorf("mkPropRef: property has type %T, want string", property)
 	}
-	return &ref{names: append([]string{f}, r.names...)}, nil
+	return &propRef{expr: e, property: p}, nil
 }
 
-func mkRef(only interface{}) (*ref, error) {
-	o, ok := only.(string)
+func mkVarRef(name interface{}) (*varRef, error) {
+	n, ok := name.(string)
 	if !ok {
-		return nil, fmt.Errorf("mkRef: only has type %T, want string", only)
+		return nil, fmt.Errorf("mkVarRef: name has type %T, want string", name)
 	}
-	return &ref{names: []string{o}}, nil
+	return &varRef{name: n}, nil
 }
 
 func mkBinaryExpr(left, op, right interface{}) (*binaryExpr, error) {
@@ -271,9 +271,9 @@ func mkUnaryExpr(op, expr interface{}) (*unaryExpr, error) {
 }
 
 func mkCall(fn, args interface{}) (*call, error) {
-	f, ok := fn.(*ref)
+	f, ok := fn.(expression)
 	if !ok {
-		return nil, fmt.Errorf("mkCall: fn has type %T, want *ref", fn)
+		return nil, fmt.Errorf("mkCall: fn has type %T, want expression", fn)
 	}
 	a, ok := args.([]expression)
 	if !ok {

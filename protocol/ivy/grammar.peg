@@ -2,7 +2,7 @@
 package ivy
 }
 
-Contract = ("contract" __ name:Identifier _ "(" _ params:Params _ ")" _ "{" _ clauses:Clauses _ "}") {
+Contract = (_ "contract" __ name:Identifier _ "(" _ params:Params _ ")" _ "{" _ clauses:Clauses _ "}") {
   return mkContract(name, params, clauses)
 }
 
@@ -68,16 +68,22 @@ Expr3 = e:(UnaryExpr / Expr4) {
   return e, nil
 }
 
-Expr4 = e:(Call / Literal / Ref) {
+Expr4 = e:(Call / Literal / Expr5) {
   return e, nil
 } / ("(" _ e:Expr _ ")") {
   return e, nil
 }
 
-Ref = (first:Identifier "." rest:Ref) {
-  return prependRef(first, rest)
-} / only:Identifier {
-  return mkRef(only)
+Expr5 = e:(PropRef / VarRef) {
+  return e, nil
+}
+
+PropRef = (v:VarRef _ "." _ property:Identifier) {
+  return mkPropRef(v, property)
+}
+
+VarRef = name:Identifier {
+  return mkVarRef(name)
 }
 
 // not associative
@@ -116,7 +122,7 @@ UnaryOperator = ("-" / "!") {
   return string(c.text), nil
 }
 
-Call = (fn:Ref _ "(" _ args:Args _ ")") {
+Call = (fn:Expr5 _ "(" _ args:Args _ ")") {
   return mkCall(fn, args)
 }
 
