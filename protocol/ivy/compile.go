@@ -35,7 +35,7 @@ func compile(contract *contract) ([]byte, error) {
 		return nil, err
 	}
 
-	stack := addParamsToStack(nil, contract.params)
+	stack := addParamsToStack(nil, contract.params, true)
 
 	if len(contract.clauses) == 1 {
 		b := newBuilder()
@@ -106,19 +106,20 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 	if err != nil {
 		return err
 	}
+	err = typeCheckClause(contract, clause)
+	if err != nil {
+		return err
+	}
 	assignIndexes(clause)
-	stack := addParamsToStack(contractStack, clause.params)
+	stack := addParamsToStack(contractStack, clause.params, false)
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *verifyStatement:
 			if stmt.associatedOutput != nil {
-				// This verify is associated with an output. Instead of
-				// compiling it, contribute its terms to the output
+				// This verify is associated with an output. It doesn't get
+				// compiled; instead it contributes its terms to the output
 				// statement's CHECKOUTPUT.
 				continue
-			}
-			if typeOf(stmt.expr) != "Boolean" {
-				return fmt.Errorf("expression in verify statement is \"%s\", must be Boolean", typeOf(stmt.expr))
 			}
 			err = compileExpr(b, stack, contract, clause, stmt.expr)
 			if err != nil {
@@ -196,19 +197,24 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 			b.addOp(vm.OP_VERIFY)
 
 		case *returnStatement:
-			if referencedParam(stmt.expr) != contract.params[len(contract.params)-1] {
-				fmt.Errorf("expression in return statement must be the contract value parameter")
+			if len(clause.statements) == 1 {
+				// This is the only statement in the clause, make sure TRUE is
+				// on the stack.
+				b.addOp(vm.OP_TRUE)
 			}
-			// xxx add an OP_TRUE if there are no other statements in the clause?
 		}
 	}
 	return nil
 }
 
 func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, expr expression) error {
+	err := typeCheckExpr(expr)
+	if err != nil {
+		return err
+	}
 	switch e := expr.(type) {
 	case *binaryExpr:
-		err := compileExpr(b, stack, contract, clause, e.left)
+		err = compileExpr(b, stack, contract, clause, e.left)
 		if err != nil {
 			return err
 		}
@@ -239,7 +245,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		}
 
 	case *unaryExpr:
-		err := compileExpr(b, stack, contract, clause, e.expr)
+		err = compileExpr(b, stack, contract, clause, e.expr)
 		if err != nil {
 			return err
 		}
@@ -258,7 +264,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
 		for _, a := range e.args {
-			err := compileExpr(b, stack, contract, clause, a)
+			err = compileExpr(b, stack, contract, clause, a)
 			if err != nil {
 				return err
 			}

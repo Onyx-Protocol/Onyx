@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"strings"
 	"testing"
+
+	"chain/protocol/vm"
 )
 
 func TestCompile(t *testing.T) {
@@ -16,7 +18,7 @@ func TestCompile(t *testing.T) {
 		{
 			"TradeOffer",
 			tradeOffer,
-			"557a6416000000000056795879515879c1632400000076aa537987690000c3c2515879c1",
+			"547a6416000000000056795879515879c1632400000076aa527987690000c3c2515779c1",
 		},
 	}
 	for _, c := range cases {
@@ -31,7 +33,8 @@ func TestCompile(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(got, want) {
-				t.Errorf("got %x, want %x", got, want)
+				dis, _ := vm.Disassemble(got)
+				t.Errorf("got %x (%s), want %x", got, dis, want)
 			}
 		})
 	}
