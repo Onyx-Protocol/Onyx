@@ -24,8 +24,8 @@ const Editor = ({ template }) => {
         <div className="panel-heading clearfix">
           <h1 className="panel-title pull-left">Template Editor</h1>
           <table className="pull-right"><tbody><tr>
+            <td style={{width: 300, paddingRight: 10}}><Load /></td>
             <td><Save /></td>
-            <td style={{width: 300, paddingLeft: 10}}><Load /></td>
           </tr></tbody></table>
         </div>
         <Ace source={template.source} />

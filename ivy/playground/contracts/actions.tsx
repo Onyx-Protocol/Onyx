@@ -11,9 +11,16 @@ import { createFundingTx, createSpendingTx } from '../transactions'
 export const SELECT_TEMPLATE = 'contracts/SELECT_TEMPLATE'
 export const SET_CLAUSE_INDEX = 'contracts/SET_CLAUSE_INDEX'
 export const SPEND = 'contracts/SPEND'
+export const SHOW_ERRORS = 'contracts/SHOW_ERRORS'
 
 import { getItemMap as getTemplateMap } from '../templates/selectors'
 import { getSpendContract } from './selectors'
+
+export const showErrors = () => {
+  return {
+    type: SHOW_ERRORS
+  }
+}
 
 export const create = () => {
   return (dispatch, getState) => {
@@ -24,7 +31,7 @@ export const create = () => {
       let controlProgram = getControlProgram(state, inputMap)
       if (controlProgram === undefined) return
       let spendFromAccount = getContractValue(state)
-      if (spendFromAccount === undefined) throw "spendFromAccount is undefined"
+      if (spendFromAccount === undefined) throw "spendFromAccount should not be undefined here"
       let assetId = spendFromAccount.assetId
       let amount = spendFromAccount.amount
       let receiver: Receiver = {
@@ -38,27 +45,25 @@ export const create = () => {
         amount
       }
       let actions: Action[] = [spendFromAccount, controlWithReceiver]
-      createFundingTx(actions).then(utxo => {
+      return createFundingTx(actions).then(utxo => {
         dispatch({
           type: CREATE_CONTRACT,
           controlProgram: controlProgram,
           template: getSelectedTemplate(state),
           inputMap: inputMap,
-          utxo: utxo,
-          assetId: assetId,
-          amount: amount
+          utxo: utxo
         })
         dispatch(push('/spend'))
-      }).catch(err => {
-        console.log(err)
       })
+    }).catch(err => {
+      console.log(err)
+      dispatch(showErrors())
     })
   }
 }
 
 export const spend = () => {
   return(dispatch, getState) => {
-    let state = getState()
     let contract = getSpendContract(getState())
     let outputId = contract.outputId
     let spendInputMap = contract.spendInputMap

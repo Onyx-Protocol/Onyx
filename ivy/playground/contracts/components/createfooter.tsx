@@ -23,7 +23,7 @@ type Props = {
 }
 
 const CreateFooter = (props: Props) => {
-  return <button className="btn btn-primary" disabled={props.disabled} onClick={props.handleClick}>Create</button>
+  return <button className="btn btn-primary btn-wide" disabled={props.disabled} onClick={props.handleClick}>Create</button>
 }
 
 export default connect(
