@@ -42,5 +42,6 @@ export type ContractsState = {
   inputMap: InputMap,
   selectedTemplateId: string,
   spendContractId: string,
-  selectedClauseIndex: number
+  selectedClauseIndex: number,
+  showErrors: boolean
 }

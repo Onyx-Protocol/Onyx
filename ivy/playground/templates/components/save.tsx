@@ -5,7 +5,7 @@ import { isError } from '../util'
 import { saveTemplate } from '../actions'
 
 function SaveUnconnected({ reset, disabled }) {
-  return <button className="btn btn-primary" onClick={reset} disabled={disabled}>Save</button>
+  return <button className="btn btn-primary" onClick={reset} disabled={disabled}><span className="glyphicon glyphicon-floppy-disk"></span> Save</button>
 }
 
 function mapStateToSaveProps(state) {

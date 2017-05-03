@@ -266,3 +266,8 @@ export function getControlProgram(state, inputsById) {
   let rawScript = instantiate(template, parameterData)
   return rawScript.toString("hex")
 }
+
+export const getShowErrors = createSelector(
+  getState,
+  (contractsState: ContractsState) => contractsState.showErrors
+)
