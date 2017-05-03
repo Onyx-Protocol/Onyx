@@ -66,4 +66,7 @@ var policyByRoute = map[string][]string{
 
 	"/dashboard":  {"public"},
 	"/dashboard/": {"public"},
+
+	"/ivy":  {"public"},
+	"/ivy/": {"public"},
 }
