@@ -30,7 +30,17 @@ module.exports = {
     ]
   },
   devServer: {
-    historyApiFallback: true
+    historyApiFallback: true,
+
+    // Proxy API requests to local core server
+    proxy: {
+      '/api': {
+        target: process.env.PROXY_API_HOST || 'http://localhost:1999/',
+        pathRewrite: {
+          '^/api': ''
+        }
+      }
+    }
   },
   plugins: [
       new CheckerPlugin()
