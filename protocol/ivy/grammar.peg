@@ -70,11 +70,11 @@ Expr3 = e:(UnaryExpr / Expr4) {
 
 Expr4 = e:(Call / Literal / Expr5) {
   return e, nil
-} / ("(" _ e:Expr _ ")") {
-  return e, nil
 }
 
 Expr5 = e:(PropRef / VarRef) {
+  return e, nil
+} / ("(" _ e:Expr _ ")") {
   return e, nil
 }
 
@@ -152,7 +152,7 @@ Identifier = [A-Za-z][A-Za-z0-9]* {
 
 Whitespace = [ \t\n\r]+
 
-Comment = "#" [^\n\r]*
+Comment = "//" [^\n\r]*
 
 _ = (Whitespace / Comment)*
 

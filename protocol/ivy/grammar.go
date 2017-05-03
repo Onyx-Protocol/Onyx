@@ -690,66 +690,26 @@ var g = &grammar{
 		{
 			name: "Expr4",
 			pos:  position{line: 71, col: 1, offset: 1499},
-			expr: &choiceExpr{
+			expr: &actionExpr{
 				pos: position{line: 71, col: 9, offset: 1507},
-				alternatives: []interface{}{
-					&actionExpr{
-						pos: position{line: 71, col: 9, offset: 1507},
-						run: (*parser).callonExpr42,
-						expr: &labeledExpr{
-							pos:   position{line: 71, col: 9, offset: 1507},
-							label: "e",
-							expr: &choiceExpr{
-								pos: position{line: 71, col: 12, offset: 1510},
-								alternatives: []interface{}{
-									&ruleRefExpr{
-										pos:  position{line: 71, col: 12, offset: 1510},
-										name: "Call",
-									},
-									&ruleRefExpr{
-										pos:  position{line: 71, col: 19, offset: 1517},
-										name: "Literal",
-									},
-									&ruleRefExpr{
-										pos:  position{line: 71, col: 29, offset: 1527},
-										name: "Expr5",
-									},
-								},
+				run: (*parser).callonExpr41,
+				expr: &labeledExpr{
+					pos:   position{line: 71, col: 9, offset: 1507},
+					label: "e",
+					expr: &choiceExpr{
+						pos: position{line: 71, col: 12, offset: 1510},
+						alternatives: []interface{}{
+							&ruleRefExpr{
+								pos:  position{line: 71, col: 12, offset: 1510},
+								name: "Call",
 							},
-						},
-					},
-					&actionExpr{
-						pos: position{line: 73, col: 5, offset: 1556},
-						run: (*parser).callonExpr48,
-						expr: &seqExpr{
-							pos: position{line: 73, col: 6, offset: 1557},
-							exprs: []interface{}{
-								&litMatcher{
-									pos:        position{line: 73, col: 6, offset: 1557},
-									val:        "(",
-									ignoreCase: false,
-								},
-								&ruleRefExpr{
-									pos:  position{line: 73, col: 10, offset: 1561},
-									name: "_",
-								},
-								&labeledExpr{
-									pos:   position{line: 73, col: 12, offset: 1563},
-									label: "e",
-									expr: &ruleRefExpr{
-										pos:  position{line: 73, col: 14, offset: 1565},
-										name: "Expr",
-									},
-								},
-								&ruleRefExpr{
-									pos:  position{line: 73, col: 19, offset: 1570},
-									name: "_",
-								},
-								&litMatcher{
-									pos:        position{line: 73, col: 21, offset: 1572},
-									val:        ")",
-									ignoreCase: false,
-								},
+							&ruleRefExpr{
+								pos:  position{line: 71, col: 19, offset: 1517},
+								name: "Literal",
+							},
+							&ruleRefExpr{
+								pos:  position{line: 71, col: 29, offset: 1527},
+								name: "Expr5",
 							},
 						},
 					},
@@ -758,23 +718,63 @@ var g = &grammar{
 		},
 		{
 			name: "Expr5",
-			pos:  position{line: 77, col: 1, offset: 1598},
-			expr: &actionExpr{
-				pos: position{line: 77, col: 9, offset: 1606},
-				run: (*parser).callonExpr51,
-				expr: &labeledExpr{
-					pos:   position{line: 77, col: 9, offset: 1606},
-					label: "e",
-					expr: &choiceExpr{
-						pos: position{line: 77, col: 12, offset: 1609},
-						alternatives: []interface{}{
-							&ruleRefExpr{
-								pos:  position{line: 77, col: 12, offset: 1609},
-								name: "PropRef",
+			pos:  position{line: 75, col: 1, offset: 1555},
+			expr: &choiceExpr{
+				pos: position{line: 75, col: 9, offset: 1563},
+				alternatives: []interface{}{
+					&actionExpr{
+						pos: position{line: 75, col: 9, offset: 1563},
+						run: (*parser).callonExpr52,
+						expr: &labeledExpr{
+							pos:   position{line: 75, col: 9, offset: 1563},
+							label: "e",
+							expr: &choiceExpr{
+								pos: position{line: 75, col: 12, offset: 1566},
+								alternatives: []interface{}{
+									&ruleRefExpr{
+										pos:  position{line: 75, col: 12, offset: 1566},
+										name: "PropRef",
+									},
+									&ruleRefExpr{
+										pos:  position{line: 75, col: 22, offset: 1576},
+										name: "VarRef",
+									},
+								},
 							},
-							&ruleRefExpr{
-								pos:  position{line: 77, col: 22, offset: 1619},
-								name: "VarRef",
+						},
+					},
+					&actionExpr{
+						pos: position{line: 77, col: 5, offset: 1606},
+						run: (*parser).callonExpr57,
+						expr: &seqExpr{
+							pos: position{line: 77, col: 6, offset: 1607},
+							exprs: []interface{}{
+								&litMatcher{
+									pos:        position{line: 77, col: 6, offset: 1607},
+									val:        "(",
+									ignoreCase: false,
+								},
+								&ruleRefExpr{
+									pos:  position{line: 77, col: 10, offset: 1611},
+									name: "_",
+								},
+								&labeledExpr{
+									pos:   position{line: 77, col: 12, offset: 1613},
+									label: "e",
+									expr: &ruleRefExpr{
+										pos:  position{line: 77, col: 14, offset: 1615},
+										name: "Expr",
+									},
+								},
+								&ruleRefExpr{
+									pos:  position{line: 77, col: 19, offset: 1620},
+									name: "_",
+								},
+								&litMatcher{
+									pos:        position{line: 77, col: 21, offset: 1622},
+									val:        ")",
+									ignoreCase: false,
+								},
 							},
 						},
 					},
@@ -1624,34 +1624,34 @@ func (p *parser) callonExpr31() (interface{}, error) {
 	return p.cur.onExpr31(stack["e"])
 }
 
-func (c *current) onExpr42(e interface{}) (interface{}, error) {
+func (c *current) onExpr41(e interface{}) (interface{}, error) {
 	return e, nil
 }
 
-func (p *parser) callonExpr42() (interface{}, error) {
+func (p *parser) callonExpr41() (interface{}, error) {
 	stack := p.vstack[len(p.vstack)-1]
 	_ = stack
-	return p.cur.onExpr42(stack["e"])
+	return p.cur.onExpr41(stack["e"])
 }
 
-func (c *current) onExpr48(e interface{}) (interface{}, error) {
+func (c *current) onExpr52(e interface{}) (interface{}, error) {
 	return e, nil
 }
 
-func (p *parser) callonExpr48() (interface{}, error) {
+func (p *parser) callonExpr52() (interface{}, error) {
 	stack := p.vstack[len(p.vstack)-1]
 	_ = stack
-	return p.cur.onExpr48(stack["e"])
+	return p.cur.onExpr52(stack["e"])
 }
 
-func (c *current) onExpr51(e interface{}) (interface{}, error) {
+func (c *current) onExpr57(e interface{}) (interface{}, error) {
 	return e, nil
 }
 
-func (p *parser) callonExpr51() (interface{}, error) {
+func (p *parser) callonExpr57() (interface{}, error) {
 	stack := p.vstack[len(p.vstack)-1]
 	_ = stack
-	return p.cur.onExpr51(stack["e"])
+	return p.cur.onExpr57(stack["e"])
 }
 
 func (c *current) onPropRef1(v, property interface{}) (interface{}, error) {
