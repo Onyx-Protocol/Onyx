@@ -872,7 +872,7 @@ describe('Promise style', () => {
               ou: 'test-ou',
             },
           },
-          policy: 'client-readwrite'
+          policy: 'client-readwrite',
         })
       ).to.be.fulfilled
       .then(g => {
@@ -886,7 +886,8 @@ describe('Promise style', () => {
               ou: ['test-ou'],
             }
           },
-          policy: 'client-readwrite'
+          policy: 'client-readwrite',
+          protected: false,
         })
       })
     )
