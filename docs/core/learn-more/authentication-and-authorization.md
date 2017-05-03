@@ -81,7 +81,7 @@ This access token can now be used to create additional tokens and authorizations
 via the Dashboard, or in the Chain SDK. To connect to a remote Chain Core
 with a token from the SDK, you can pass parameters to the client constructor:
 
-$code connect-with-token ../examples/java/AccessToken.java ../examples/ruby/access_token.rb ../examples/node/accessToken.js
+$code connect-with-token ../examples/java/AccessTokens.java ../examples/ruby/access_tokens.rb ../examples/node/accessTokens.js
 
 ### TLS Authentication
 
@@ -103,4 +103,4 @@ For example, to grant access to a new party that wants to read blockchain data,
 we can create a new access token, and give it the `client-readonly` policy
 via an authorization grant:
 
-$code create-read-only ../examples/java/AccessToken.java ../examples/ruby/access_token.rb ../examples/node/accessToken.js
+$code create-read-only ../examples/java/AccessTokens.java ../examples/ruby/access_tokens.rb ../examples/node/accessTokens.js
