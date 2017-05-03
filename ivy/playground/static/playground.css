@@ -23,6 +23,9 @@
   padding: 20px 8px;
 }
 
+.panel-heading {
+  background-image: none !important;
+}
 .panel-title {
   line-height: 34px;
 }
@@ -42,12 +45,56 @@
 }
 
 select {
+  -webkit-appearance: none;
+  -webkit-border-left-radius: 0px !important;
   min-width: 200px;
+  background: url('./images/select-arrow.png') no-repeat!important;
+  background-size: 10px !important;
+  background-position: calc(100% - 10px) center !important;
+  cursor: pointer;
+}
+
+select:hover {
+  background-color: #fafafa !important;
 }
 
 .input-group-addon {
   min-width: 100px;
   text-align: left;
+}
+
+.btn {
+  letter-spacing: .5;
+}
+
+.btn-primary {
+  background: #00BFAA;
+  border-color: #00BFAA;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+.btn-primary.btn-wide {
+  min-width: 100px;
+}
+
+.btn-primary:hover, .btn-primary:active, .btn-primary:focus{
+  background: #00BFAA !important;
+  border-color: #00BFAA !important;
+  opacity: .8;
+  outline: none !important;
+}
+
+.btn-primary:disabled, .btn-primary:disabled:hover {
+  background: #cccccc !important;
+  border-color: #cccccc !important;
+  color: #808080;
+  opacity:.65;
+}
+
+.glyphicon-floppy-disk {
+  top:3px;
+  padding-right: 2px;
 }
 
 /*Styles*/
