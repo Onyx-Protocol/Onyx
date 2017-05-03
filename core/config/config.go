@@ -57,7 +57,7 @@ var (
 	}{
 		LoopbackAuth: false,
 		MockHSM:      true,
-		Reset:        false,
+		Reset:        true,
 		HTTPOk:       false,
 	}
 )
