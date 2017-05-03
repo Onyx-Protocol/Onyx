@@ -27,7 +27,7 @@ coverage
 .lock-wscript
 
 # Compiled binary addons (http://nodejs.org/api/addons.html)
-build/Release
+playground/build/Release
 
 # Dependency directories
 node_modules
@@ -49,5 +49,5 @@ jspm_packages
 # Yarn Integrity file
 .yarn-integrity
 
-# built app and compiler
-build/*.bundle.js
+# built playground
+playground/build/*.bundle.js
