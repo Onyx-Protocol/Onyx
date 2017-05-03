@@ -8,6 +8,7 @@
 * [Actions](#actions)
 * [Encryption](#encryption)
 * [Compatibility](#compatibility)
+* [Alternatives considered](#alternatives-considered)
 
 ## Introduction
 
@@ -88,10 +89,9 @@ Output 1 is using one-time program described in Bob's receiver, and payload and 
 
 Output 2 uses one-time program for Alice's change address and the amount is encrypted with the keys derived for the Alice's account.
 
-When transaction is built, it must be finalized, signed and submitted. 
-Flag `finalize` is true by default, so it can be omitted.
+When transaction is built, it must be signed and submitted. 
 
-    tx = client.transactions.sign(tx, finalize: true)
+    tx = client.transactions.sign(tx)
     client.transactions.submit(tx)
 
 Core verifies the fully-signed transaction and publishes it if it's valid.
@@ -120,11 +120,11 @@ Alice sends `tx1` to Bob to add additional steps. Bob sets `base_transaction` to
 
 Bob can in turn leave `tx2` unbalanced and forward it to Carl, etc.
 
-When no one else is adding to the transaction, it must be finalized and signed:
+When no one else is adding to the transaction, it must be signed:
 
-    tx3 = client.transactions.sign(tx2, finalize: true)
+    tx3 = client.transactions.sign(tx2)
 
-Each party has to finalize the transaction, so it becomes fully signed.
+Each party has to sign the transaction, so it becomes fully signed.
 
 When it is fully signed, it can be submitted.
 
@@ -179,7 +179,7 @@ Transaction template contains transaction entries and additional data that helps
 
     {
         version: 2,  // version of the transaction template format
-        finalized: false, // set to true after `sign(tx, finalize:true)`
+        finalized: false, // set to true after first `client.transactions.sign()` call
         balanced:  false, // set when no placeholder inputs/outputs left
         signed:    false, // set when all signatures and proofs are provided
         transaction: [
@@ -188,7 +188,7 @@ Transaction template contains transaction entries and additional data that helps
                 version:  2,  // core protocol version
                 mintime:  X,
                 maxtime:  Y,
-                txid:     "0fa8127a9fe8d89b12..." // only added after `sign(tx,finalize:true)`
+                txid:     "0fa8127a9fe8d89b12..." // only added after the first `client.transactions.sign()` call
             },
             {
                 type: "mux2",
@@ -303,6 +303,31 @@ This does not include other possible witnesses.
     }
 
 
+### Disclosure
+
+#### Encrypted Disclosure
+
+    {
+        version: 1,                          # version of the encrypted disclosure
+        import_key: "fe9af9bc3923...",       # IK pubkey
+        selector:   "589af9b1a730...",       # blinding selector
+        payload:    "cc9e012f7a8f99ea9b...", # encrypted disclosure blob
+    }
+
+#### Unencrypted Disclosure
+
+    {
+        version: 1,                          # version of the plaintext disclosure
+        items: [
+            {
+                scope: "output"/"tx"/"account",  # 
+                fields: 
+            },
+        ]
+        
+    }
+
+
 ## Actions
 
 ### Build
@@ -339,34 +364,32 @@ This does not include other possible witnesses.
 
 ### Sign
 
-1. If `sign(tx, finalize:false)`, does the following checks, but signs not TXSIGHASH, but CHECKOUTPUT-based predicate composed out of the encrypted partial transaction.
-2. If `finalize:true` (which is default), then:
-    1. Send transaction template to Core to decrypt and verify signing instructions:
-        1. If `excess` factor in the MUX entry is non-zero:
-            1. If the transaction ID is not fixed yet and the current party has at least one output in it:
-                * `excess` is added to the value commitment and value range proof is re-created. 
-            2. Otherwise, `excess` is transformed into an "excess commitment" with signature and added to the MUX entry in the transaction.
-            3. `excess` value is zeroed from the transaction template.
-        2. Transaction ID is computed from the given transaction template.
-        3. For each encrypted payload:
-            1. Derive encryption key from Chain Core's master key: `EK = SHA3(master || SHA3(payload-id))`.
-            2. If the key successfully decrypts and authenticates the payload:
-                1. If `txheader` entry is present:
-                    1. If `entry.version` is set, verify that it is equal to `tx.txheader.version`.
-                    2. If `entry.mintime` is set, verify that `txheader.mintime` is greater or equal to the `entry.mintime`.
-                    3. If `entry.maxtime` is set, verify that `txheader.maxtime` is less or equal to the `entry.maxtime`.
-                2. For each `input/issuance` entry:
-                    1. Verify that it's present in the transaction.
-                2. For each `output/retirement` entry:
-                    1. Verify that there's an entry with such asset/value commitment, program, data and exthash.
-                    2. If `asset_range_proof_instructions` has `input_id/input_factor`, create a corresponding ARP and add to the corresponding output entry.
-            3. If the payload is not authenticated by the key `EK`, ignore it.
-        4. If verification succeeded:
-            1. Remove the processed payload
-            2. Send signing instructions for inputs/issuances to the client.
-    2. Client receives signing instructions and sends them to the HSM signer:
-        1. HSM signer signs using the signing instructions.
-        2. Client places the signature over TXSIGHASH in the entry inside the transaction.
+1. Send transaction template to Core to decrypt and verify signing instructions:
+    1. If `excess` factor in the MUX entry is non-zero:
+        1. If the transaction ID is not fixed yet and the current party has at least one output in it:
+            * `excess` is added to the value commitment and value range proof is re-created. 
+        2. Otherwise, `excess` is transformed into an "excess commitment" with signature and added to the MUX entry in the transaction.
+        3. `excess` value is zeroed from the transaction template.
+    2. Transaction ID is computed from the given transaction template.
+    3. For each encrypted payload:
+        1. Derive encryption key from Chain Core's master key: `EK = SHA3(master || SHA3(payload-id))`.
+        2. If the key successfully decrypts and authenticates the payload:
+            1. If `txheader` entry is present:
+                1. If `entry.version` is set, verify that it is equal to `tx.txheader.version`.
+                2. If `entry.mintime` is set, verify that `txheader.mintime` is greater or equal to the `entry.mintime`.
+                3. If `entry.maxtime` is set, verify that `txheader.maxtime` is less or equal to the `entry.maxtime`.
+            2. For each `input/issuance` entry:
+                1. Verify that it's present in the transaction.
+            2. For each `output/retirement` entry:
+                1. Verify that there's an entry with such asset/value commitment, program, data and exthash.
+                2. If `asset_range_proof_instructions` has `input_id/input_factor`, create a corresponding ARP and add to the corresponding output entry.
+        3. If the payload is not authenticated by the key `EK`, ignore it.
+    4. If verification succeeded:
+        1. Remove the processed payload
+        2. Send signing instructions for inputs/issuances to the client.
+2. Client receives signing instructions and sends them to the HSM signer:
+    1. HSM signer signs using the signing instructions.
+    2. Client places the signature over TXSIGHASH in the entry inside the transaction.
 
 
 ### Create Disclosure Import Key
@@ -502,15 +525,38 @@ TBD: Encrypt the remainder and supply it separately from range proof.
 
 Current SDK uses `signer.sign()` method to sign a partial transaction. We can keep this behavior and introduce an additional API:
 
-    HSMSigner.sign()             - existing behavior as is
-    Client.sign(finalize: false) - verifies payload and signs CHECKPREDICATE-based predicate via Client.signer.sign() 
-    Client.sign(finalize: true)  - verifies payload and signs TXSIGHASH-based predicate via Client.signer.sign()
+    HSMSigner.sign() - existing behavior as is
+    Client.sign()    - verifies payload and signs TXSIGHASH-based predicate via Client.signer.sign(txhash instead of checkpredicate)
 
 When users upgrade to a new Chain Core, the tx template is changed, but the behavior of the application remains the same. Then, they can smoothly transition to a new API usage:
 
 1. Configure Client.signer instead of a standalone HSMSigner instance.
 2. Introduce a second round of tx template exchange to do `Client.sign` after other parties have participated.
 3. If using confidential amounts, new signing mechanism is required.
+
+
+
+
+## Alternatives considered
+
+### 1. Encryption of the exported disclosure
+
+Possible options:
+
+1. Encrypting to a Core-generated "Import Key" (as in this spec).
+2. Not encrypting and relying on security of the transmission channels.
+
+Arguments for encryption:
+
+1. Encrypting disclosure ensures that data cannot be intercepted between two Cores without assuming that Cores connect directly to each other.
+2. Encryption allows concrete auditability of data access and policies: import keys can be signed by long-term keys to provide a delegation chain. This is more important for manual handling of disclosures where a user of one Core exports and transmits it to other people who import it to the target Core.
+
+Arguments against encryption:
+
+1. Recipient must generate a receiving key first, before the exporter can create a disclosure. 
+2. We may figure a more generalized way for encryption of arbitrary data between Cores, and that would be a custom use of it.
+
+### 2. 
 
 
 
