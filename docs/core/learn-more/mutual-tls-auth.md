@@ -36,7 +36,7 @@ Note: `$CHAIN_CORE_HOME` can be set as an environment variable. It defaults to `
 
 Set [`ROOT_CA_CERTS`](../reference/cored.md#extended-functionality) to the file path of the root CA certificate that issued the client's certificate.
 
-Setting the root CA certificate allows Chain Core to validate and authenticate requests that use client certificates, but a client certificate will have no access to API resources by default. To provide access, you should create **authorization grants** in Chain Core that apply security policies to those certificates. See the [Authentication and Authorization guide](authentication.md#authorization) for more.
+Setting the root CA certificate allows Chain Core to validate and authenticate requests that use client certificates, but a client certificate will have no access to API resources by default. To provide access, you should create **authorization grants** in Chain Core that apply security policies to those certificates. See the [Authentication and Authorization guide](authentication-and-authorization.md#authorization) for more.
 
 ## Java SDK
 

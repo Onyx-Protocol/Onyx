@@ -63,14 +63,14 @@ You can now use X.509 client certificates instead of access tokens to provide au
 $ ROOT_CA_CERTS=/path/to/certs.pem cored
 ```
 
-To authenticate your applications using client certificates, see the [Authentication and Authorization guide](../learn-more/authentication.md#tls-authentication).
+To authenticate your applications using client certificates, see the [Authentication and Authorization guide](../learn-more/authentication-and-authorization.md#tls-authentication).
 
 <a name="1.2.0-authorization-grants"></a>
 #### Authorization grants
 
 Authorization grants allow your applications to use credentials that have limited access to the Chain Core API. For example, you may wish to grant read-only access to a particular client application, or monitoring-only access for uptime reporting.
 
-To learn more, see the [Authentication and Authorization guide](../learn-more/authentication.md#granting-access).
+To learn more, see the [Authentication and Authorization guide](../learn-more/authentication-and-authorization.md#granting-access).
 
 #### Tag updating
 

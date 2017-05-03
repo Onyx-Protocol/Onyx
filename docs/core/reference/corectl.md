@@ -154,7 +154,7 @@ corectl grant [policy] [guard]
 Arguments:
 
  * **policy**: the policy to grant access to.
-See [Authentication and Authorization](../learn-more/authentication)
+See [Authentication and Authorization](../learn-more/authentication-and-authorization)
 for a list of policies and their meaning.
  * **guard**: indicates what authentication credentials to require.
 It must take one of three forms:
@@ -186,9 +186,9 @@ It must take one of three forms:
 
 ### `allow-address`
 
-Adds an address to the allowed members list and creates a grant with policy `internal` for this host. 
+Adds an address to the allowed members list and creates a grant with policy `internal` for this host.
 
-`allow-address` should only be used for multiserver Chain Cores. 
+`allow-address` should only be used for multiserver Chain Cores.
 
 ```
 corectl allow-address [address]
@@ -196,7 +196,7 @@ corectl allow-address [address]
 
 Argument:
 
-* **address**: The listen address, in `host:port` format, to be added to the allowed members list. 
+* **address**: The listen address, in `host:port` format, to be added to the allowed members list.
 
 ### `wait`
 

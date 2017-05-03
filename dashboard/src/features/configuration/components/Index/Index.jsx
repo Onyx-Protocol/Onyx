@@ -161,7 +161,7 @@ class Index extends React.Component {
               <TextField
                 title={[
                   'Network Access Token',
-                  <a href='http://www.chain.com/docs/core/learn-more/authentication' target='_blank'>
+                  <a href='http://www.chain.com/docs/core/learn-more/authentication-and-authorization' target='_blank'>
                     <small className={styles.infoLink}>
                       <span className='glyphicon glyphicon-info-sign'></span>
                     </small>
