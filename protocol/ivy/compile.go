@@ -117,6 +117,9 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 				// statement's CHECKOUTPUT.
 				continue
 			}
+			if typeOf(stmt.expr) != "Boolean" {
+				return fmt.Errorf("expression in verify statement is \"%s\", must be Boolean", typeOf(stmt.expr))
+			}
 			err = compileExpr(b, stack, contract, clause, stmt.expr)
 			if err != nil {
 				return err
