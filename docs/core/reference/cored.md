@@ -32,20 +32,65 @@ go build -tags 'loopback_auth plain_http reset' chain/cmd/cored
 
 ## Environment Variables
 
-* **LISTEN_ADDR**: Address the Chain Core server will listen on, defaults to `:1999`
-* **DATABASE_URL**: URL of the Postgres database, defaults to `postgres:///core?sslmode=disable`
-* **CHAIN_CORE_HOME**: Path to Chain Core data directory on local file system, defaults to `$HOME/.chaincore`
-* **ROOT_CA_CERTS**
-* **SPLUNKADDR**
-* **LOGFILE**
-* **LOGSIZE**
-* **LOGCOUNT**
-* **LOG_QUERIES**
-* **MAXDBCONNS**
-* **RATELIMIT_TOKEN**
-* **RATELIMIT_REMOTE_ADDR**
-* **INDEX_TRANSACTIONS**
-* **BOOTURL**
+Many functions of Chain Core can be controlled by the presence of environment
+variables.
+
+### Basic Functions
+
+The following variables control the location of Chain Core's data stores,
+and its routable address.
+
+* **CHAIN_CORE_HOME**: Path to Chain Core data directory on local file system,
+defaults to `$HOME/.chaincore`.
+
+* **DATABASE_URL**: URL of the Postgres database, defaults
+to `postgres:///core?sslmode=disable`.
+
+* **LISTEN_ADDR**: Address the Chain Core server will listen on, defaults
+to `:1999`. In a multi process configuration, this must be a
+reachable, routable address.
+
+### Extended Functionality
+
+The following variables allow for more fine-grained operation control of
+Chain Core, such as log rotation, rate limits, and clustering.
+
+* **ROOT_CA_CERTS**: Path to file containing a set of pem-encoded concatenated
+root CA certificates to trust. If unset, `cored` trust no CA certs. See the
+[client TLS guide](../learn-more/mutual-tls-auth#client-authn) for more info.
+
+* **LOGFILE**: Path to location of base file for for Chain Core log output. Log
+file can be rotated automatically based on `LOGSIZE` and `LOGCOUNT` variables.
+ If unset, logs will be printed to `stdout`.
+
+* **LOGSIZE**: Size limit of the base log file in bytes, defaults to 5MB.
+
+* **LOGCOUNT**: Number of rotated log files to keep, defaults to 9.
+
+* **MAXDBCONNS**: Maximum number of simultaneous connections to Postgres from
+Chain Core, defaults to 10.
+
+* **RATELIMIT_TOKEN**: Maximum number of requests-per-second
+allowed with an individual access token. Requests made beyond
+the limit will receive a `4xx` response.
+
+    Can be stacked with **RATELIMIT_REMOTE_ADDR**.
+
+* **RATELIMIT_REMOTE_ADDR**: Maximum number of requests-per-second
+allowed fro a remote IP address. Requests made beyond
+the limit will receive a `4xx` response.
+
+    Can be stacked with **RATELIMIT_TOKEN**.
+
+* **BOOTURL**: Setting value causes the `cored` process to join an existing
+Chain Core cluster if it's not already a member. If it is already a member
+of a cluster, this has no effect.
+
+    This should be the url of any `cored` process already in the cluster,
+    or a load balancer that forwards requests to any node.
+
+
+
 
 ## Mutual TLS
 
