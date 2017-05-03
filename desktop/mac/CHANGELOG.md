@@ -1,5 +1,9 @@
 # Chain Core for Mac changelog
 
+## 1.2.0 RC1 (May 3, 2017)
+
+* Update to Chain Core [1.2.0 RC1](https://github.com/chain/chain/blob/1.2-stable/docs/core/reference/changelog.md#1.2.0-rc1)
+
 ## 1.1.1 (March 8, 2017)
 
 * Updated to Chain Core [1.1.3](https://github.com/chain/chain/blob/1.1-stable/CHANGELOG.md#1.1.3)
