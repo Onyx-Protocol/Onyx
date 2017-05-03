@@ -1,6 +1,6 @@
 package ivy
 
-import "strings"
+import "fmt"
 
 type contract struct {
 	name    string
@@ -77,24 +77,35 @@ type unaryExpr struct {
 func (unaryExpr) iamaExpression() {}
 
 type call struct {
-	fn   *ref
+	fn   expression
 	args []expression
 }
 
 func (call) iamaExpression() {}
 
-type ref struct {
-	names []string
+type propRef struct {
+	expr     expression
+	property string
+}
 
-	// Each ref is decorated with the param or the builtin it refers to.
+func (propRef) iamaExpression() {}
+
+func (p propRef) String() string {
+	return fmt.Sprintf("%s.%s", p.expr, p.property)
+}
+
+type varRef struct {
+	name string
+
+	// decorations
 	param   *param
 	builtin *builtin
 }
 
-func (ref) iamaExpression() {}
+func (varRef) iamaExpression() {}
 
-func (r ref) String() string {
-	return strings.Join(r.names, ".")
+func (v varRef) String() string {
+	return v.name
 }
 
 type integerLiteral int64
@@ -104,3 +115,44 @@ func (integerLiteral) iamaExpression() {}
 type booleanLiteral bool
 
 func (booleanLiteral) iamaExpression() {}
+
+func typeOf(expr expression) string {
+	switch e := expr.(type) {
+	case *binaryExpr:
+		return binaryOps[e.op].result
+
+	case *unaryExpr:
+		return unaryOps[e.op].result
+
+	case *call:
+		b := referencedBuiltin(e.fn)
+		if b != nil {
+			return b.signature.result
+		}
+		return ""
+
+	case *propRef:
+		t := typeOf(e.expr)
+		m := properties[t]
+		if m != nil {
+			return m[e.property]
+		}
+		return ""
+
+	case *varRef:
+		if e.param != nil {
+			return e.param.typ
+		}
+		if e.builtin != nil {
+			// xxx
+		}
+		return ""
+
+	case integerLiteral:
+		return "Integer"
+
+	case booleanLiteral:
+		return "Boolean"
+	}
+	return ""
+}

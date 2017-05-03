@@ -10,7 +10,7 @@ import (
 // Compile parses an Ivy contract from the supplied input source and
 // produces the compiled bytecode.
 func Compile(r io.Reader) ([]byte, error) {
-	c, err := ParseReader("input", r)
+	c, err := ParseReader("input", r, Debug(false))
 	if err != nil {
 		return nil, err
 	}
@@ -94,15 +94,15 @@ func compile(contract *contract) ([]byte, error) {
 }
 
 func compileClause(b *builder, contractStack []stackEntry, contract *contract, clause *clause) error {
-	err := requireAllValuesDisposedOnce(contract, clause)
-	if err != nil {
-		return err
-	}
-	err = decorateRefs(contract, clause)
+	err := decorateRefs(contract, clause)
 	if err != nil {
 		return err
 	}
 	err = decorateOutputs(contract, clause)
+	if err != nil {
+		return err
+	}
+	err = requireAllValuesDisposedOnce(contract, clause)
 	if err != nil {
 		return err
 	}
@@ -143,18 +143,36 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 				stack = append(stack, stackEntry{})
 			} else {
 				// amount
-				err := compileExpr(b, stack, contract, clause, &ref{
-					names: []string{stmt.param.name, "amount"},
-				})
+				// TODO(bobg): this is a bit of a hack; need a cleaner way to
+				// introduce new stack references
+				r := &propRef{
+					expr: &varRef{
+						name: stmt.param.name,
+					},
+					property: "amount",
+				}
+				err := decorateRefsInExpr(contract, clause, r)
+				if err != nil {
+					return err
+				}
+				err = compileExpr(b, stack, contract, clause, r)
 				if err != nil {
 					return err
 				}
 				stack = append(stack, stackEntry{})
 
 				// asset
-				err = compileExpr(b, stack, contract, clause, &ref{
-					names: []string{stmt.param.name, "asset"},
-				})
+				r = &propRef{
+					expr: &varRef{
+						name: stmt.param.name,
+					},
+					property: "asset",
+				}
+				err = decorateRefsInExpr(contract, clause, r)
+				if err != nil {
+					return err
+				}
+				err = compileExpr(b, stack, contract, clause, r)
 				if err != nil {
 					return err
 				}
@@ -175,7 +193,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 			b.addOp(vm.OP_VERIFY)
 
 		case *returnStatement:
-			if !exprReferencesParam(stmt.expr, contract.params[len(contract.params)-1]) {
+			if referencedParam(stmt.expr) != contract.params[len(contract.params)-1] {
 				fmt.Errorf("expression in return statement must be the contract value parameter")
 			}
 			// xxx add an OP_TRUE if there are no other statements in the clause?
@@ -214,8 +232,9 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		case "-":
 			b.addOp(vm.OP_SUB)
 		default:
-			return fmt.Errorf("unknown operator %s", e.op)
+			return fmt.Errorf("unknown operator \"%s\"", e.op)
 		}
+
 	case *unaryExpr:
 		err := compileExpr(b, stack, contract, clause, e.expr)
 		if err != nil {
@@ -227,15 +246,14 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		case "!":
 			b.addOp(vm.OP_NOT)
 		default:
-			return fmt.Errorf("unknown operator %s", e.op)
+			return fmt.Errorf("unknown operator \"%s\"", e.op)
 		}
 
 	case *call:
-		if e.fn.builtin == nil {
-			return fmt.Errorf("unknown function %s", e.fn)
+		bi := referencedBuiltin(e.fn)
+		if bi == nil {
+			return fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
-		// xxx typechecking
-		// xxx check len(args) == arity of function
 		for _, a := range e.args {
 			err := compileExpr(b, stack, contract, clause, a)
 			if err != nil {
@@ -243,29 +261,17 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			}
 			stack = append(stack, stackEntry{})
 		}
-		b.addRawBytes(e.fn.builtin.ops)
-	case *ref:
-		found := false
-		for i := len(stack) - 1; i >= 0; i-- {
-			if stack[i].matches(e) {
-				found = true
-				depth := int64(len(stack) - 1 - i)
-				switch depth {
-				case 0:
-					b.addOp(vm.OP_DUP)
-				case 1:
-					b.addOp(vm.OP_OVER)
-				default:
-					b.addInt64(depth)
-					b.addOp(vm.OP_PICK)
-				}
-			}
-		}
-		if !found {
-			return fmt.Errorf("undefined reference %s", e.names[0])
-		}
+		b.addRawBytes(bi.ops)
+
+	case *varRef:
+		return compileRef(b, stack, e)
+
+	case *propRef:
+		return compileRef(b, stack, e)
+
 	case integerLiteral:
 		b.addInt64(int64(e))
+
 	case booleanLiteral:
 		if e {
 			b.addOp(vm.OP_TRUE)
@@ -274,4 +280,23 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		}
 	}
 	return nil
+}
+
+func compileRef(b *builder, stack []stackEntry, ref expression) error {
+	for i := len(stack) - 1; i >= 0; i-- {
+		if stack[i].matches(ref) {
+			depth := int64(len(stack) - 1 - i)
+			switch depth {
+			case 0:
+				b.addOp(vm.OP_DUP)
+			case 1:
+				b.addOp(vm.OP_OVER)
+			default:
+				b.addInt64(depth)
+				b.addOp(vm.OP_PICK)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("undefined reference \"%s\"", ref)
 }
