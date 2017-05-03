@@ -18,6 +18,7 @@ import templates from './templates'
 import Create from './contracts/components/create'
 import Contracts from './contracts/components/contracts'
 import Spend from './contracts/components/spend'
+import { prefixRoute } from './util'
 
 require('./static/playground.css')
 
@@ -34,18 +35,15 @@ const store = createStore(
 
 store.dispatch(reset)
 
-/* store.dispatch(accounts.actions.fetch()) */
-/* store.dispatch(assets.actions.fetch()) */
-
 render(
   <Provider store={store}>
     <DocumentTitle title='Ivy Playground'>
     <ConnectedRouter history={history}>
       <app.components.Root>
-       <Route exact={true} path="/" component={templates.components.Editor} />
-       <Route path="/create" component={Create} />
-       <Route exact path="/spend"  component={Contracts} />
-       <Route path="/spend/:contractId" component={Spend} />
+       <Route exact={true} path={prefixRoute('/')} component={templates.components.Editor} />
+       <Route path={prefixRoute('/create')} component={Create} />
+       <Route exact path={prefixRoute('/spend')}  component={Contracts} />
+       <Route path={prefixRoute('/spend/:contractId')} component={Spend} />
       </app.components.Root>
     </ConnectedRouter>
     </DocumentTitle>
