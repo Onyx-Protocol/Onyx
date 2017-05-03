@@ -363,7 +363,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
                     asset_id: "...",             # Hex-encoded plaintext asset ID
                     aek: "...",                  # Asset Encryption Key for this entry
                 },
-                asset_id: {
+                amount: {
                     amount: ...,                 # Hex-encoded plaintext asset ID
                     vek: "...",                  # Value Encryption Key for this entry
                 }
@@ -379,17 +379,40 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
                 asset_id: {
                     aek: "...",                  # Asset Encryption Key for this account
                 },
-                asset_id: {
+                amount: {
                     vek: "...",                  # Value Encryption Key for this account
                 }
             },
         ]
     }
 
+#### Disclosure Description
 
+Disclosure description is a summary of pieces disclosed, without any cryptographic information:
 
-
-
+    {
+        items: [
+            {
+                scope: "output",
+                entry_id: "...",
+                transaction_id: "...",
+                fields: {
+                    data: true,
+                    asset_id: true,
+                    amount: true
+                }
+            },
+            {
+                scope: "account",
+                account_id: "...",
+                fields: {
+                    data: true,
+                    asset_id: true,
+                    amount: true
+                }
+            },
+        ]
+    }
 
 
 
@@ -421,31 +444,31 @@ This is because spends inherit confidentiality from the previous outputs and rec
 
 Procedure:
 
-1. Prepares a partial transaction with data from the `base_transaction`:
-    1. Reserves unspent outputs.
-    2. Adds necessary inputs spending reserved unspent outputs.
-    3. Adds necessary issuances.
-    4. Prepares `signing_instructions` for each input and issuance.
-    5. Creates and encrypts new outputs, adds VRPs (but not ARPs).
-    6. Computes the `excess` blinding factor.
-    7. Sets mintime to current time: `mintime = currentTime`.
-    8. Sets maxtime to expiration time: `maxtime = expirationTime`.
-    9. Prepares ARP instructions for each output: `asset_range_proof_instructions: {asset_id:..., factor:..., [input_id:..., input_factor:...]}`.
+1. Prepare a partial transaction with data from the `base_transaction`:
+    1. Reserve unspent outputs.
+    2. Add necessary inputs spending reserved unspent outputs.
+    3. Add necessary issuances.
+    4. Prepare `signing_instructions` for each input and issuance.
+    5. Create and encrypts new outputs, adds VRPs (but not ARPs).
+    6. Compute the `excess` blinding factor.
+    7. Set mintime to current time: `mintime = currentTime`.
+    8. Set maxtime to expiration time: `maxtime = expirationTime`.
+    9. Prepare ARP instructions for each output: `asset_range_proof_instructions: {asset_id:..., factor:..., [input_id:..., input_factor:...]}`.
         * Input ID and input's blinding factor are included if such input is known.
     10. For each output in `base_transaction` where `asset_range_proof_instructions` are specified and partial tx has an input with the matching asset ID:
         1. Copy that output to the partial transaction.
         2. Add `input_id/input_factor` to `asset_range_proof_instructions` for that copy.
         3. Strip `asset_range_proof_instructions` from that output in `base_transaction`.
-    11. Encrypts the partial transaction:
-        1. Generates unique uniform `payload-id`.
-        2. Derives encryption key from Chain Core's master key: `EK = SHA3(master || SHA3(payload-id))`.
-        3. Encrypts the partial transaction and wraps it with `{payload_id:, blob:}` structure.
-2. Merges the data from partial transaction with the existing template (`base_transaction`):
-    1. Merges tx.mintime with partial's mintime: `mintime = MAX(basetx.mintime, partialtx.mintime)`.
-    2. Merges tx.maxtime with partial's maxtime: `maxtime = MIN(basetx.maxtime, partialtx.maxtime)`.
-    3. Adds outputs, stripping `asset_range_proof_instructions` from those outputs where `input_id/input_factor` is specified.
-    4. Adds `{payload_id:, blob:}` to the list of payloads in the `base_transaction`.
-    5. Adds `excess` from the partial transaction to the `excess` value in the MUX entry in the `base_transaction`.
+    11. Encrypt the partial transaction:
+        1. Generate unique uniform `payload-id`.
+        2. Derive [payload encryption key](#key-derivation) from Chain Core's master key: `PK`.
+        3. Encrypt the partial transaction and wraps it with `{payload_id:, blob:}` structure.
+2. Merge the data from partial transaction with the existing template (`base_transaction`):
+    1. Merge tx.mintime with partial's mintime: `mintime = MAX(basetx.mintime, partialtx.mintime)`.
+    2. Merge tx.maxtime with partial's maxtime: `maxtime = MIN(basetx.maxtime, partialtx.maxtime)`.
+    3. Add outputs, stripping `asset_range_proof_instructions` from those outputs where `input_id/input_factor` is specified.
+    4. Add `{payload_id:, blob:}` to the list of payloads in the `base_transaction`.
+    5. Add `excess` from the partial transaction to the `excess` value in the MUX entry in the `base_transaction`.
     6. Replaces `placeholder:true` outputs with re-computed placeholder outputs based on additional inputs/outputs.
 3. Shuffles entries:
     * hashes each entry with a unique per-tx key (derived from `EK`, derived from `payload_id`)
@@ -461,7 +484,7 @@ Procedure:
         3. `excess` value is zeroed from the transaction template.
     2. Transaction ID is computed from the given transaction template.
     3. For each encrypted payload:
-        1. Derive encryption key from Chain Core's master key: `EK = SHA3(master || SHA3(payload-id))`.
+        1. Derive [payload encryption key](#key-derivation) from Chain Core's master key: `PK`.
         2. If the key successfully decrypts and authenticates the payload:
             1. If `txheader` entry is present:
                 1. If `entry.version` is set, verify that it is equal to `tx.txheader.version`.
@@ -495,7 +518,7 @@ that the document is encrypted in-transit (without assuming direct secure connec
 Bob receives `import_key` from Alice and uses it to build a disclosure object:
 
     disclosure = client.disclosures.build(import_key: import_key) do |d|
-      d.disclose_output(output_id: "fa0e8fb0ad...",          fields: {asset_id: true, amount: true, data: true})
+      d.disclose_entry(entry_id: "fa0e8fb0ad...",            fields: {asset_id: true, amount: true, data: true})
       d.disclose_transaction(transaction_id: "57ad0fea9...", fields: {asset_id: true, amount: true, data: true})
       d.disclose_account(account_alias: "bob",               fields: {asset_id: true, amount: true, data: true})
     end
@@ -504,7 +527,7 @@ Bob receives `import_key` from Alice and uses it to build a disclosure object:
 The resulting object is encrypted to an `import_key`, contains minimal metadata needed for decryption 
 and can be safely transmitted to the receiving Core for import.
 
-* `disclose_output` — adds proofs and decryption keys for a single output.
+* `disclose_entry` — adds proofs and decryption keys for a single output/retirement/issuance.
 * `disclose_transaction` — adds proofs and decryption keys for each output in the transaction (omits outputs not decrypted by this Core).
 * `disclose_account` — adds account xpubs, derivation path and root decryption keys for tracking all outputs for a given account.
 
@@ -518,7 +541,7 @@ Alice receives `disclosure` object from Bob and attempts to import in the Core:
 Alice can decrypt and inspect the disclosure parameters without importing:
 
     disclosure_description = client.disclosures.decrypt(disclosure)
-    disclosure_description.fields.asset_id # => true/false
+    disclosure_description.items[0].fields.asset_id # => true/false
     disclosure_description.scope           # => 'output'/'transaction_id'/'account'
 
 TBD: Should we support querying all stored disclosures too?
