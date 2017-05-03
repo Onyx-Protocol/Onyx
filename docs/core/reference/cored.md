@@ -47,7 +47,7 @@ go build -tags 'loopback_auth plain_http reset' chain/cmd/cored
 * **INDEX_TRANSACTIONS**
 * **BOOTURL**
 
-## Server TLS
+## Mutual TLS
 
 Chain Core 1.2 introduces support for mutual TLS authentication. This means both Chain Core and the client SDKs can authenticate each other using X.509 certificates and the TLS protocol. Previously, client authentication was facilitated through the use of access tokens and HTTP Basic Auth. While still supported, client access tokens are now deprecated.
 
