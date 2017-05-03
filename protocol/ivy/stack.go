@@ -15,9 +15,15 @@ func (s stackEntry) matches(expr expression) bool {
 	return s.property == ""
 }
 
-func addParamsToStack(stack []stackEntry, params []*param) []stackEntry {
+func addParamsToStack(stack []stackEntry, params []*param, isContract bool) []stackEntry {
 	for _, p := range params {
-		if p.typ == "AssetAmount" {
+		switch p.typ {
+		case "Value":
+			if isContract {
+				continue
+			}
+			fallthrough
+		case "AssetAmount":
 			stack = append(stack, stackEntry{
 				param:    p,
 				property: "asset",
@@ -26,7 +32,7 @@ func addParamsToStack(stack []stackEntry, params []*param) []stackEntry {
 				param:    p,
 				property: "amount",
 			})
-		} else {
+		default:
 			stack = append(stack, stackEntry{
 				param: p,
 			})
