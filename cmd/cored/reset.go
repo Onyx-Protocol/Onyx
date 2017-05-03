@@ -1,4 +1,4 @@
-//+build reset
+//+build !no_reset
 
 package main
 

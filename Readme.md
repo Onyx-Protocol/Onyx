@@ -111,7 +111,7 @@ tag to build. The `main` branch is __not considered__ stable, and may
 contain in progress features or an inconsistent experience.
 
 ```sh
-$ go build -tags 'http_ok loopback_auth reset' chain/cmd/cored
+$ go build -tags 'http_ok loopback_auth' chain/cmd/cored
 $ go build chain/cmd/corectl
 ```
 

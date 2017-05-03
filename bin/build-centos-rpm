@@ -32,7 +32,7 @@ cleanup() {
 trap "cleanup" EXIT
 
 GOOS=linux GOARCH=amd64 go build\
-  -tags 'http_ok loopback_auth reset'\
+  -tags 'http_ok loopback_auth'\
   -ldflags "$ldflags"\
   -o $CHAIN/docker/centos-rpm/cored\
   chain/cmd/cored
