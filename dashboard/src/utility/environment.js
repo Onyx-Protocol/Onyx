@@ -16,14 +16,11 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 export const chainClient = () => new chainSdk.Client({
-  baseUrl: apiHost,
-  token: store.getState().core.clientToken
+  url: apiHost,
+  accessToken: store.getState().core.clientToken
 })
 
-export const chainSigner = () => new chainSdk.HsmSigner(
-  apiHost,
-  store.getState().core.clientToken
-)
+export const chainSigner = () => new chainSdk.HsmSigner()
 
 // react-router history object
 export const history = useRouterHistory(createHistory)({
