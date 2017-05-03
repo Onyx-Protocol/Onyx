@@ -6,7 +6,6 @@ const ISSUE_KEY = 'issue'
 const SPEND_ACCOUNT_KEY = 'spend_account'
 const SPEND_UNSPENT_KEY = 'spend_account_unspent_output'
 const CONTROL_ACCOUNT_KEY = 'control_account'
-const CONTROL_PROGRAM_KEY = 'control_program'
 const CONTROL_RECEIVER_KEY = 'control_receiver'
 const RETIRE_ASSET_KEY = 'retire'
 const TRANSACTION_REFERENCE_DATA = 'set_transaction_reference_data'
@@ -16,7 +15,6 @@ const actionLabels = {
   [SPEND_ACCOUNT_KEY]: 'Spend from account',
   [SPEND_UNSPENT_KEY]: 'Spend unspent output',
   [CONTROL_ACCOUNT_KEY]: 'Control with account',
-  [CONTROL_PROGRAM_KEY]: 'Control with program (deprecated)',
   [CONTROL_RECEIVER_KEY]: 'Control with receiver',
   [RETIRE_ASSET_KEY]: 'Retire',
   [TRANSACTION_REFERENCE_DATA]: 'Set transaction reference data',
@@ -27,7 +25,6 @@ const visibleFields = {
   [SPEND_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
   [SPEND_UNSPENT_KEY]: {outputId: true},
   [CONTROL_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
-  [CONTROL_PROGRAM_KEY]: {asset: true, controlProgram: true, amount: true},
   [CONTROL_RECEIVER_KEY]: {asset: true, receiver: true, amount: true},
   [RETIRE_ASSET_KEY]: {asset: true, amount: true},
   [TRANSACTION_REFERENCE_DATA]: {},
@@ -59,7 +56,6 @@ export default class ActionItem extends React.Component {
       type,
       accountId,
       accountAlias,
-      controlProgram,
       receiver,
       assetId,
       assetAlias,
@@ -95,9 +91,6 @@ export default class ActionItem extends React.Component {
               alias: accountAlias
             }}
           />}
-
-        {visible.controlProgram &&
-          <TextField title='Control Program' fieldProps={controlProgram} />}
 
         {visible.receiver &&
           <JsonField title='Receiver' fieldProps={receiver} />}
