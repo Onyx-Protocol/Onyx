@@ -1,4 +1,5 @@
 #!/bin/sh
+rm -rf $CHAIN/dashboard/node_modules/chain-sdk
 npm --prefix $CHAIN/dashboard install
 npm --prefix $CHAIN/dashboard run build
 go install chain/cmd/gobundle
