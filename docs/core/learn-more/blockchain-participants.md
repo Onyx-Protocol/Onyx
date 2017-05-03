@@ -36,7 +36,7 @@ When initializing a Chain Core, a participant can connect to an existing blockch
 
 * Block generator URL
 * Blockchain ID
-* Network access token (not required when connecting to localhost)
+* Access token with [cross-core authorization grant](authentication-and-authorization.md#authorization) (not required when connecting to localhost)
 
 Chain Core will begin downloading blockchain data from the block generator. Once the Core is up to date with the network it will receive new blocks as they are created.
 

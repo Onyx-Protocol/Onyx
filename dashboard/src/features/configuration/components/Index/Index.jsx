@@ -160,7 +160,7 @@ class Index extends React.Component {
                 fieldProps={blockchainId} />
               <TextField
                 title={[
-                  'Network Access Token',
+                  'Cross-core Access Token',
                   <a href='http://www.chain.com/docs/core/learn-more/authentication-and-authorization' target='_blank'>
                     <small className={styles.infoLink}>
                       <span className='glyphicon glyphicon-info-sign'></span>
