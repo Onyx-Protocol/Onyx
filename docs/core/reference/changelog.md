@@ -10,8 +10,8 @@ For updates to subpackages, see below:
 - [Node.js SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/node/CHANGELOG.md)
 - [Ruby SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/ruby/CHANGELOG.md)
 
-<a name="1.2.0"></a>
-## 1.2.0 (May 2, 2017)
+<a name="1.2.0-rc1"></a>
+## 1.2.0 RC1 (May 3, 2017)
 
 ### Breaking changes
 
