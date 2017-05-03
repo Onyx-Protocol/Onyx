@@ -56,7 +56,7 @@ Chain Core, such as log rotation, rate limits, and clustering.
 
 * **ROOT_CA_CERTS**: Path to file containing a set of PEM-encoded concatenated
 root CA certificates to trust. If unset, `cored` will trust no CA certs. See the
-[client TLS guide](../learn-more/mutual-tls-auth#client-authn) for more info.
+[client TLS guide](../learn-more/mutual-tls-auth#client-authentication) for more info.
 
 * **LOGFILE**: Path to location of base file for for Chain Core log output. Log
 file can be rotated automatically based on `LOGSIZE` and `LOGCOUNT` variables.
