@@ -46,7 +46,7 @@ defaults to `$HOME/.chaincore`.
 * **DATABASE_URL**: URL of the Postgres database, defaults
 to `postgres:///core?sslmode=disable`.
 
-* **LISTEN_ADDR**: Address the Chain Core server will listen on, defaults
+* **LISTEN**: Address the Chain Core server will listen on, defaults
 to `:1999`. In a multi process configuration, this must be a
 reachable, routable address.
 
@@ -55,8 +55,8 @@ reachable, routable address.
 The following variables allow for more fine-grained operation control of
 Chain Core, such as log rotation, rate limits, and clustering.
 
-* **ROOT_CA_CERTS**: Path to file containing a set of pem-encoded concatenated
-root CA certificates to trust. If unset, `cored` trust no CA certs. See the
+* **ROOT_CA_CERTS**: Path to file containing a set of PEM-encoded concatenated
+root CA certificates to trust. If unset, `cored` will trust no CA certs. See the
 [client TLS guide](../learn-more/mutual-tls-auth#client-authn) for more info.
 
 * **LOGFILE**: Path to location of base file for for Chain Core log output. Log
@@ -72,25 +72,22 @@ Chain Core, defaults to 10.
 
 * **RATELIMIT_TOKEN**: Maximum number of requests-per-second
 allowed with an individual access token. Requests made beyond
-the limit will receive a `4xx` response.
+the limit will receive an HTTP 429 response.
 
     Can be stacked with **RATELIMIT_REMOTE_ADDR**.
 
 * **RATELIMIT_REMOTE_ADDR**: Maximum number of requests-per-second
 allowed fro a remote IP address. Requests made beyond
-the limit will receive a `4xx` response.
+the limit will receive an HTTP 429 response.
 
     Can be stacked with **RATELIMIT_TOKEN**.
 
-* **BOOTURL**: Setting value causes the `cored` process to join an existing
-Chain Core cluster if it's not already a member. If it is already a member
-of a cluster, this has no effect.
+* **BOOTURL**: Setting this value causes the `cored` process to join an
+existing Chain Core cluster if it's not already a member. If it is already
+a member of a cluster, this has no effect.
 
-    This should be the url of any `cored` process already in the cluster,
+    This should be the URL of any `cored` process already in the cluster,
     or a load balancer that forwards requests to any node.
-
-
-
 
 ## Mutual TLS
 
