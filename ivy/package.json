@@ -4,8 +4,9 @@
   "description": "Compiler for Ivy, Chain's smart contract language.",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.config.js ./test/*.js",
-    "start": "webpack-dev-server --content-base ./playground/build --inline --hot"
+    "build": "NODE_ENV=production webpack",
+    "start": "webpack-dev-server --content-base ./playground/build --inline --hot",
+    "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.config.js ./test/*.js"
   },
   "author": "",
   "license": "Apache-2.0",
