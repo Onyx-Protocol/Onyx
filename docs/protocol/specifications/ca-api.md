@@ -30,7 +30,6 @@ New design for transaction builder that focuses on privacy.
 4. Future extensibility to custom signing schemes.
 5. Privacy of metadata (such as signing instructions, account IDs etc) for shared tx templates.
 
-
 ## Overview
 
 1. Building transaction:
@@ -308,16 +307,16 @@ This does not include other possible witnesses.
 #### Encrypted Disclosure
 
     {
-        version: 1,                          # version of the encrypted disclosure
+        type: "encdisclosure1",              # version of the encrypted disclosure
         import_key: "fe9af9bc3923...",       # IK pubkey
         selector:   "589af9b1a730...",       # blinding selector
-        payload:    "cc9e012f7a8f99ea9b...", # encrypted disclosure blob
+        ciphertext: "cc9e012f7a8f99ea9b...", # encrypted disclosure blob
     }
 
 #### Unencrypted Disclosure
 
     {
-        version: 1,                          # version of the plaintext disclosure
+        type: "disclosure1",                 # version of the plaintext disclosure
         items: [
             {
                 scope: "output"/"tx"/"account",  # 
@@ -400,11 +399,6 @@ that the document is encrypted in-transit (without assuming direct secure connec
    import_key = client.disclosures.create_import_key()
    import_key_serialized = import_key.to_json
 
-1. Core loads the `Root Import Key` — a ChainKD xpub.
-2. Core generates a unique blinding selector `b` (256 bits of entropy).
-3. Core derives one-time import pubkey: `IK = HD(RIKxpub, b)`.
-4. Core returns a pair of the import key and a blinding selector `IK,b` (total 64 bytes).
-
 
 ### Export Disclosure
 
@@ -461,45 +455,152 @@ For accounts and outputs Core creates **root confidentiality key** `RCK`:
 
     RCK = SHAKE128("RCK" || RK , 32)
 
+To encrypt fields, `RCK` is expanded to a vector key containing 3 32-byte keys:
+
+    RDEK, RAEK, RVEK = SHAKE128("RDEK" || RCK, 3·32)
+
+    RDEK — Root Data Encryption Key
+    RAEK — Root Asset ID Encryption Key
+    RVEK — Root Value Encryption Key
+
+For each account a deterministic account selector is made that's used to generate per-account keys:
+    
+    accsel = m,n,xpub1,xpub2,xpub3
+
+    {ADEK,AAEK,AVEK} = SHAKE128("A" || {RDEK,RAEK,RVEK} || accsel, 32)
+    
+For each output, a key is derived using control program as a selector:
+
+    {ODEK,OAEK,OVEK} = SHAKE128("O" || {ADEK,AAEK,AVEK} || control_program, 32)
+
+For the retirement entry, a key is derived using the serialized `value_source` as selector and root keys:
+
+    {TDEK,TAEK,TVEK} = SHAKE128("T" || {RDEK,RAEK,RVEK} || value_source, 32)
+
+Asset ID-specific vector key:
+    
+    {SDEK,SAEK,SVEK} = SHAKE128("A" || {RDEK,RAEK,RVEK} || assetid, 32)
+
+For each issuance, a key is derived using the anchor ID as selector and asset ID-specific keys:
+
+    {YDEK,YAEK,YVEK} = SHAKE128("T" || {SDEK,SAEK,SVEK} || anchorID, 32)
+
 For each access token there is a separate **access key** `AK`:
 
     AK = SHAKE128(RK || access_token, 32)
 
-For each field, there's a separate root key:
 
-    RDEK = SHAKE128("RDEK" || RCK, 32)   # Root Data Encryption Key
-    RAEK = SHAKE128("RAEK" || RCK, 32)   # Root Asset ID Encryption Key
-    RVEK = SHAKE128("RVEK" || RCK, 32)   # Root Value Encryption Key
+### Import key
 
-For each account a deterministic account selector is made that's used to generate per-account keys:
+Import key is created and used to encrypt/decrypt disclosure within Chain Core.
+
+Applications are exposed to an opaque object that encapsulates a versioned import public key.
+
+#### Generate Import Key
+
+1. Load the `Root Import Key`, a ChainKD xpub.
+2. Generate a unique selector used for blinding the root key:
+
+        b = random 32 bytes
+
+3. Derives one-time import pubkey (only the public key part):
     
-    account_selector = m,n,xpub1,xpub2,...
+        IKpub = ChainKD-NormalDerivation(RIKxpub, b).pubkey
 
-    ADEK = SHAKE128("ADEK" || RDEK || accselector, 32)   # Account Data Encryption Key
-    AAEK = SHAKE128("AAEK" || RAEK || accselector, 32)   # Account Asset ID Encryption Key
-    AVEK = SHAKE128("AVEK" || RVEK || accselector, 32)   # Account Value Encryption Key
+4. Return a pair of the import key and a blinding selector `IK,b`:
 
-For each output, a key is derived using control program as a selector:
+        {
+            type: "importkey1",
+            key: IKpub,
+            selector: b
+        }
 
-    ODEK = SHAKE128("ADEK" || ADEK || ctrlprog, 32)   # Output Data Encryption Key
-    OAEK = SHAKE128("AAEK" || AAEK || ctrlprog, 32)   # Output Asset ID Encryption Key
-    OVEK = SHAKE128("AVEK" || AVEK || ctrlprog, 32)   # Output Value Encryption Key
+#### Encrypt Disclosure
 
+1. Verify that import key’s `type` equals `importkey1`.
+2. Serialize plaintext disclosure as `data`.
+3. Generate a sender private key using Core's root key `RK` as a seed:
 
-TBD: figure how to encrypt with unique key a retirement entry.
-TBD: tweak the scheme to allow 2D derivation.
+        r = ScalarHash("DH" || RK || IKpub || b || data)
+
+4. Compute public sender key:
+
+        R = r·G
+
+5. Compute Diffie-Hellman secret to be used as encryption key: 
+
+        S = r·IKpub
+
+6. Encode `S` as a public key and compute encryption key as:
+
+        K = SHAKE128(S, 32)
+
+7. Encrypt `data` using [Packet Encryption](#encrypt-packet) algorithm with key `K`:
+
+        ciphertext = EncryptPacket(data, K)
+
+8. Return encrypted disclosure:
+
+        {
+            type: "encdisclosure1", # version of the encrypted disclosure
+            sender_key: R,
+            selector:   b,
+            ciphertext: <ciphertext>
+        }
+
+#### Decrypt Disclosure
+
+1. Verify that encrypted disclosure's `type` equals `encdisclosure1`.
+2. Derive import private key using the selector `b`:
+
+        IKprv = ChainKD-NormalDerivation(RIKxprv, b).scalar
+
+3. Compute Diffie-Hellman secret to be used as encryption key: 
+
+        S = IKprv·R
+
+4. Encode `S` as a public key and compute encryption key as:
+
+        K = SHAKE128(S, 32)
+
+5. Decrypt `ciphertext` using [Packet Encryption](#decrypt-packet) algorithm with key `K`:
+
+        data = DecryptPacket(ciphertext, K)
+
+6. If decryption succeeded, return deserialized disclosure:
+
+        deserialize(data)
 
 
 ### Reference data encryption
 
-TBD: split data in 2 parts: for the value range proof and the remainder. 
+Reference data is encrypted/decrypted using [Packet Encryption](#packet-encryption) algorithm with one of the entry-specific keys:
 
-TBD: Encrypt the remainder and supply it separately from range proof.
+    ODEK - Data Encryption Key for an output entry
+    TDEK - Data Encryption Key for an retirement entry
+    YDEK — Data Encryption Key for an issuance entry
 
 
-### Payload encryption
+### Packet Encryption
 
-#### Encrypt template payload
+#### Encrypt Packet
+
+1. Compute keystream of the same length as plaintext: `keystream = SHAKE128(EK, len(payload))`
+2. Encrypt the payload with the keystream: `ct = payload XOR keystream`.
+3. Compute MAC on the ciphertext `ct`: `mac = SHAKE128(ct || EK, 32)`.
+4. Append MAC to the ciphertext: `ct’ = ct || mac`.
+
+#### Decrypt Packet
+
+1. Split ciphertext into raw ciphertext and MAC (last 32 bytes): `ct, mac`.
+2. Compute MAC on the ciphertext `ct`: `mac’ = SHAKE128(ct || EK, 32)`.
+3. Compare in constant time `mac’ == mac`. If not equal, return nil.
+4. Compute keystream of the same length as ciphertext: `keystream = SHAKE128(EK, len(ciphertext))`
+5. Decrypt the payload by XORing keystream with the ciphertext: `payload = ct XOR keystream`.
+6. Return `payload`.
+
+
+#### Encrypt template payload OBSOLETE
 
 1. Core creates a master key `MK` upon initialization (shared by all transactions).
 2. For each transaction payload, encryption key is derived: `EK = SHA3(MK || SHA3(payload-id))`
@@ -510,7 +611,7 @@ TBD: Encrypt the remainder and supply it separately from range proof.
     3. Compute MAC on the ciphertext `ct`: `mac = SHAKE128(ct || EK, 32)`.
     4. Append MAC to the ciphertext: `ct’ = ct || mac`.
 
-#### Decrypt template payload
+#### Decrypt template payload OBSOLETE
 
 1. For each transaction payload, encryption key is derived: `EK = SHA3(MK || SHA3(payload-id))`
 2. Split ciphertext into raw ciphertext and MAC (last 32 bytes): `ct, mac`.
@@ -556,7 +657,21 @@ Arguments against encryption:
 1. Recipient must generate a receiving key first, before the exporter can create a disclosure. 
 2. We may figure a more generalized way for encryption of arbitrary data between Cores, and that would be a custom use of it.
 
-### 2. 
+### 2. Inline data VS out of band data
+
+Possible options:
+
+1. Automatically split data for inline (INL) and out of band (OOB) pieces.
+2. Keep these explicitly separate. 
+
+We choose to keep these fields separate since the inline data has special features and considerations:
+
+* Inline data does not require out-of-band transmission. Therefore, nodes can receive the data from raw blockchain data w/o setting up additional channels.
+* Inline data has limited size: around 3-4 Kb.
+* Inline data requires reveal of the numeric amount, so these two fields cannot be indepdently disclosed.
+
+In the present specification we omit support for inline data entirely for simplicity of the interface and 
+intend to introduce it as an additional feature that allows applications to optimize bandwidth usage.
 
 
 
