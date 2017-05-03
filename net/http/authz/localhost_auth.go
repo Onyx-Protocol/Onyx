@@ -1,5 +1,4 @@
-//+build loopback_auth
-// TODO: for consistent language, rename this tag to localhost_auth
+//+build localhost_auth
 
 package authz
 

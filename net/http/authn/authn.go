@@ -17,7 +17,7 @@ import (
 const tokenExpiry = time.Minute * 5
 
 // TODO(kr): This a hack. Please revisit this soon.
-// When compiled without loopback_auth, we want to avoid
+// When compiled without localhost_auth, we want to avoid
 // running the loopback authenticator at all, except for
 // requests to /dashboard/, where we *do* want to run it.
 var loopbackOn = false

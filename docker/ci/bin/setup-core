@@ -20,7 +20,7 @@ waitForLeader() {(
 )}
 
 PATH=$(go env GOPATH)/bin:$PATH:$CHAIN/bin
-go install -tags 'http_ok loopback_auth' chain/cmd/{cored,corectl}
+go install -tags 'http_ok localhost_auth' chain/cmd/{cored,corectl}
 initlog=`mktemp`
 cored 2>&1 | tee $initlog &
 waitForLeader
