@@ -35,9 +35,11 @@ You will want to put them into this directory like this:
 `ChainMgr.exe` and `cored.exe` can be compiled from any machine using `GOOS` and `GOARCH`:
 
 ```
-GOOS=windows GOARCH=amd64 go build chain/cmd/cored
+GOOS=windows GOARCH=amd64 go build -tags 'plain_http loopback_auth reset' chain/cmd/cored
 GOOS=windows GOARCH=amd64 go build chain/desktop/windows/ChainMgr
 ```
+
+Note that the build tags are necessary to build Developer Edition.
 
 The Postgres Installer can be downloaded from http://www.enterprisedb.com/products-services-training/pgdownload
 
