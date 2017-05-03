@@ -1,0 +1,115 @@
+/*Boostrap Overrides*/
+
+.navbar {
+  background: #20252D;
+  border: 0;
+}
+
+.navbar-brand {
+  padding: 10px 0 0 15px;
+}
+
+.container {
+  max-width: 1200px
+}
+
+.table {
+  font-size: 14px;
+  margin-bottom: 0;
+}
+
+.table>tbody>tr>td {
+  line-height: 34px;
+  padding: 20px 8px;
+}
+
+.panel-title {
+  line-height: 34px;
+}
+
+.radio {
+  margin-top: 5px;
+}
+
+.form-inline input {
+  margin-right: 10px;
+}
+
+.input-group select.with-addon {
+  -webkit-appearance: none;
+  -webkit-border-left-radius: 0px !important;
+
+}
+
+select {
+  min-width: 200px;
+}
+
+.input-group-addon {
+  min-width: 100px;
+  text-align: left;
+}
+
+/*Styles*/
+
+
+.navbar-brand img {
+  height: 30px;
+}
+
+.codeblock {
+  font-family: "Nitti", monospace;
+  font-size: 16px;
+}
+
+section h4 {
+  margin-top: 40px;
+  margin-bottom: 20px;
+  padding-top: 35px;
+  border-top: 1px solid #f2f2f2;
+}
+
+.form-wrapper {
+  margin: 0 20px 20px;
+}
+
+.form-wrapper section:first-of-type h4 {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: none;
+}
+.argument {
+  margin-top: 40px;
+}
+
+.argument:first-of-type {
+  margin-top: 0;
+}
+
+.argument .form-group {
+  max-width: 250px;
+}
+
+.nested {
+  margin: 10px 0 10px 20px
+}
+
+.nested .description {
+  font-style: italic;
+  position: relative;
+  color: #929292;
+  margin-bottom: 10px;
+}
+
+.nested .description::before {
+  content: "↳";
+  position: absolute;
+  left:-16px;
+  top:2px;
+  font-style: normal;
+  font-size: 90%;
+}
+
+.type-label {
+  font-style: italic;
+}
