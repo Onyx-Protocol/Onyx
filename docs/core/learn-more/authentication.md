@@ -83,6 +83,12 @@ with a token from the SDK, you can pass parameters to the client constructor:
 
 $code connect-with-token ../examples/java/AccessToken.java ../examples/ruby/access_token.rb ../examples/node/accessToken.js
 
+### TLS Authentication
+
+To make use of X.509 certificates for authentication, Chain Core must be
+configured to trust certificates sent by the client application. See the
+[mutual TLS guide](mutual-tls-auth.md) for more details.
+
 ## Granting Access
 
 Authorization grants map credentials to access policies. An authorization grant
