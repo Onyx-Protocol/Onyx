@@ -23,10 +23,10 @@ module Chain
         # Whether the core reset API call is enabled.
         attrib :is_reset
 
-        # @!attribute [r] is_plain_http
+        # @!attribute [r] is_http_ok
         # @return [Boolean]
         # Whether non-TLS HTTP requests (http://...) are allowed.
-        attrib :is_plain_http
+        attrib :is_http_ok
       end
 
       class Snapshot < ResponseObject
