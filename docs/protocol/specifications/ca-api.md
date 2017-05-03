@@ -1,9 +1,6 @@
 # Confidential Assets API
 
 * [Introduction](#introduction)
-* [Goals](#goals)
-* [Addressed problems](#addressed-problems)
-* [Overview](#overview)
 * [Data structures](#data-structures)
 * [Actions](#actions)
 * [Encryption](#encryption)
@@ -14,7 +11,7 @@
 
 New design for transaction builder that focuses on privacy.
 
-## Goals
+### Goals
 
 1. Native support for transaction entries.
 2. Privacy-preserving transaction signing
@@ -22,7 +19,7 @@ New design for transaction builder that focuses on privacy.
 4. Support for constructing witnesses for custom control and issuance programs.
 5. Built-in support for encrypting payload inside and outside the range proof.
 
-## Addressed problems
+### Addressed problems
 
 1. Linkability of inputs and outputs in multi-party transfers.
 2. Asset range proofs for outputs with asset ID that’s missing among inputs.
@@ -30,7 +27,7 @@ New design for transaction builder that focuses on privacy.
 4. Future extensibility to custom signing schemes.
 5. Privacy of metadata (such as signing instructions, account IDs etc) for shared tx templates.
 
-## Overview
+### Functional overview
 
 1. Building transaction:
     1. Single-party transaction (with one-shot signing)
@@ -159,6 +156,13 @@ Alice wants to have read access to Bob's transactions.
 9. If the disclosure is at account level, Core begins watching the blockchain for that account and indexing past (?) and future transactions.
 
 
+
+
+
+
+
+
+
 ## Data structures
 
 ### Receiver
@@ -168,7 +172,9 @@ the output.
 
     {
         control_program: "fa90e031...",   // control program
-        rek: "fae0fab..."                 // record-encryption key, from which blinding factors are derived
+        dek: "de01836..."                 // data-encryption key
+        aek: "ae819f7..."                 // asset ID-encryption key
+        vek: "fe791c0..."                 // amount-encryption key
     }
 
 
@@ -301,6 +307,29 @@ This does not include other possible witnesses.
         ]
     }
 
+### Entry data
+
+The raw data string associated with an output/retirement/issuance entry is composed of the following encrypted strings:
+
+    <encrypted-asset-id><encrypted-amount><encrypted-refdata>
+
+If the asset ID is not confidential, its ciphertext is omitted from the data attachment.
+Likewise, if the amount is not confidential, its ciphertext is omitted from the data attachment.
+
+#### Encode data
+
+1. If the asset ID is confidential, [encrypt it](ca.md#encrypt-asset-id) and set `ea` to a 64-byte ciphertext. Otherwise, set `ea` to an empty string.
+2. If the amount is confidential, [encrypt it](ca.md#encrypt-value) and set `ev` to a 40-byte ciphertext. Otherwise, set `ea` to an empty string.
+3. If the data is confidential, [encrypt it](#reference-data-encryption) and set `ed` to the ciphertext. Otherwise, set `ed` to the plaintext data.
+4. Concatenate `d = ea || ev || ed`.
+5. Attach `d` to the transaction entry (output, retirement or issuance).
+
+#### Decode data
+
+1. If the asset ID is confidential, extract first 64 bytes of the data attachment and [decrypt them](ca.md#decrypt-asset-id).
+2. If the amount is confidential, extract next 40 bytes of the data attachment and [decrypt them](ca.md#decrypt-value).
+3. If the data is confidential, [decrypt](#reference-data-encryption) the remaining bytes of the data. Otherwise, set the plaintext to the remaining bytes without modification.
+
 
 ### Disclosure
 
@@ -316,20 +345,81 @@ This does not include other possible witnesses.
 #### Unencrypted Disclosure
 
     {
-        type: "disclosure1",                 # version of the plaintext disclosure
+        type: "disclosure1",                     # version of the plaintext disclosure
         items: [
             {
-                scope: "output"/"tx"/"account",  # 
-                fields: 
+                scope: "output"/"retirement"/"issuance"/"account",  # type of the scope
+                ...
+            },
+            {
+                scope: "output",                 # disclosure for a single output/retirement/issuance
+                entry_id: "...",                 # ID of the output (hex-encoded)
+                transaction_id: "...",           # ID of the transaction (hex-encoded)
+                data: {
+                    plaintext: "...",            # Hex-encoded decrypted reference data
+                    dek: "...",                  # Data Encryption Key for this entry
+                },
+                asset_id: {
+                    asset_id: "...",             # Hex-encoded plaintext asset ID
+                    aek: "...",                  # Asset Encryption Key for this entry
+                },
+                asset_id: {
+                    amount: ...,                 # Hex-encoded plaintext asset ID
+                    vek: "...",                  # Value Encryption Key for this entry
+                }
+            },
+            {
+                scope: "account",                # disclosure for an account
+                account_id: "...",               # ID of the output (hex-encoded)
+                account_xpubs: [...],            # List of xpubs forming an account
+                account_quorum: 1,               # Number of keys required for signing in the account 
+                data: {
+                    dek: "...",                  # Data Encryption Key for this account
+                },
+                asset_id: {
+                    aek: "...",                  # Asset Encryption Key for this account
+                },
+                asset_id: {
+                    vek: "...",                  # Value Encryption Key for this account
+                }
             },
         ]
-        
     }
+
+
+
+
+
+
+
+
+
 
 
 ## Actions
 
 ### Build
+
+The API to build a transaction makes transfers confidential by default without explicit handling of encryption keys.
+
+If the transfer is made to an account, it is encrypted with the keys associated with this account.
+
+If the transfer is made to a receiver, the output or retirement is encrypted with keys specified by the receiver. If some keys are omitted,
+then no encryption takes place.
+
+To control confidentiality of specific entries, `confidential` key is used (defaults are `true` for all fields). 
+
+    chain.transactions.build do |b|
+        b.base_transaction tx  # (optional)
+        b.issue                ..., confidential: {data: true, asset_id: true, amount: true}
+        b.control_with_account ..., confidential: {data: true, asset_id: true, amount: true}
+        b.retire               ..., confidential: {data: true, asset_id: true, amount: true}
+    end
+
+It is an error to use `confidential` key with actions `spend_*` or `control_with_receiver`.
+This is because spends inherit confidentiality from the previous outputs and receivers fully control confidentiality options.
+
+Procedure:
 
 1. Prepares a partial transaction with data from the `base_transaction`:
     1. Reserves unspent outputs.
@@ -431,7 +521,20 @@ Alice can decrypt and inspect the disclosure parameters without importing:
     disclosure_description.fields.asset_id # => true/false
     disclosure_description.scope           # => 'output'/'transaction_id'/'account'
 
-TBD: querying all stored disclosures too?
+TBD: Should we support querying all stored disclosures too?
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Encryption
@@ -485,9 +588,14 @@ For each issuance, a key is derived using the anchor ID as selector and asset ID
 
     {YDEK,YAEK,YVEK} = SHAKE128("T" || {SDEK,SAEK,SVEK} || anchorID, 32)
 
-For each access token there is a separate **access key** `AK`:
+For each access token there is a separate _access key_ `AK`:
 
     AK = SHAKE128(RK || access_token, 32)
+
+For encryption of a transaction template payload, a unique key is derived from the _access key_ and _payload ID_:
+
+    PK = SHAKE128(AK || payloadID, 32)
+
 
 
 ### Import key
@@ -600,26 +708,12 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
 6. Return `payload`.
 
 
-#### Encrypt template payload OBSOLETE
 
-1. Core creates a master key `MK` upon initialization (shared by all transactions).
-2. For each transaction payload, encryption key is derived: `EK = SHA3(MK || SHA3(payload-id))`
-3. Encode the `payload` as a JSON document.
-4. Encrypt-then-MAC:
-    1. Compute keystream of the same length as plaintext: `keystream = SHAKE128(EK, len(payload))`
-    2. Encrypt the payload with the keystream: `ct = payload XOR keystream`.
-    3. Compute MAC on the ciphertext `ct`: `mac = SHAKE128(ct || EK, 32)`.
-    4. Append MAC to the ciphertext: `ct’ = ct || mac`.
 
-#### Decrypt template payload OBSOLETE
 
-1. For each transaction payload, encryption key is derived: `EK = SHA3(MK || SHA3(payload-id))`
-2. Split ciphertext into raw ciphertext and MAC (last 32 bytes): `ct, mac`.
-3. Compute MAC on the ciphertext `ct`: `mac’ = SHAKE128(ct || EK, 32)`.
-4. Compare in constant time `mac’ == mac`. If not equal, return nil.
-5. Compute keystream of the same length as ciphertext: `keystream = SHAKE128(EK, len(ciphertext))`
-6. Decrypt the payload by XORing keystream with the ciphertext: `payload = ct XOR keystream`.
-7. Return `payload`.
+
+
+
 
 
 ## Compatibility
@@ -634,6 +728,15 @@ When users upgrade to a new Chain Core, the tx template is changed, but the beha
 1. Configure Client.signer instead of a standalone HSMSigner instance.
 2. Introduce a second round of tx template exchange to do `Client.sign` after other parties have participated.
 3. If using confidential amounts, new signing mechanism is required.
+
+
+
+
+
+
+
+
+
 
 
 
