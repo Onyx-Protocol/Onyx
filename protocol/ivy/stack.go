@@ -5,20 +5,14 @@ type stackEntry struct {
 	property string
 }
 
-func (e stackEntry) matches(r *ref) bool {
-	if e.param == nil {
+func (s stackEntry) matches(expr expression) bool {
+	if s.param != referencedParam(expr) {
 		return false
 	}
-	if e.param.name != r.names[0] {
-		return false
+	if p, ok := expr.(*propRef); ok {
+		return s.property == p.property
 	}
-	if e.property == "" {
-		return len(r.names) == 1
-	}
-	if len(r.names) != 2 {
-		return false
-	}
-	return e.property == r.names[1]
+	return s.property == ""
 }
 
 func addParamsToStack(stack []stackEntry, params []*param) []stackEntry {

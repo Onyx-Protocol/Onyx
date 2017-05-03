@@ -7,7 +7,7 @@ func prohibitDuplicateClauseNames(contract *contract) error {
 	for i, c := range contract.clauses {
 		for j := i + 1; j < len(contract.clauses); j++ {
 			if c.name == contract.clauses[j].name {
-				return fmt.Errorf("clause name %s is duplicated", c.name)
+				return fmt.Errorf("clause name \"%s\" is duplicated", c.name)
 			}
 		}
 	}
@@ -18,15 +18,21 @@ func prohibitDuplicateVars(contract *contract) error {
 	for i, p := range contract.params {
 		for j := i + 1; j < len(contract.params); j++ {
 			if p.name == contract.params[j].name {
-				return fmt.Errorf("contract parameter %s is duplicated", p.name)
+				return fmt.Errorf("contract parameter \"%s\" is duplicated", p.name)
 			}
 		}
 	}
 	for _, clause := range contract.clauses {
-		for _, clauseParam := range clause.params {
+		for i := 0; i < len(clause.params); i++ {
+			clauseParam := clause.params[i]
 			for _, contractParam := range contract.params {
 				if clauseParam.name == contractParam.name {
-					return fmt.Errorf("parameter %s in clause %s shadows contract parameter", clauseParam.name, clause.name)
+					return fmt.Errorf("parameter \"%s\" in clause \"%s\" shadows contract parameter", clauseParam.name, clause.name)
+				}
+			}
+			for j := i + 1; j < len(clause.params); j++ {
+				if clauseParam.name == clause.params[j].name {
+					return fmt.Errorf("parameter \"%s\" is duplicated in clause \"%s\"", clauseParam.name, clause.name)
 				}
 			}
 		}
@@ -39,7 +45,7 @@ func requireValueParam(contract *contract) error {
 		return fmt.Errorf("must have at least one contract parameter")
 	}
 	if contract.params[len(contract.params)-1].typ != "Value" {
-		return fmt.Errorf("final contract parameter has type %s but should be Value", contract.params[len(contract.params)-1].typ)
+		return fmt.Errorf("final contract parameter has type \"%s\" but should be Value", contract.params[len(contract.params)-1].typ)
 	}
 	for i := 0; i < len(contract.params)-1; i++ {
 		if contract.params[i].typ == "Value" {
@@ -71,30 +77,50 @@ func paramDisposedOnce(p *param, clause *clause) error {
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *returnStatement:
-			if exprReferencesParam(stmt.expr, p) {
+			if referencedParam(stmt.expr) == p {
 				count++
 			}
 		case *outputStatement:
-			if len(stmt.call.args) == 1 && exprReferencesParam(stmt.call.args[0], p) {
+			if len(stmt.call.args) == 1 && referencedParam(stmt.call.args[0]) == p {
 				count++
 			}
 		}
 	}
 	switch count {
 	case 0:
-		return fmt.Errorf("value parameter %s not disposed in clause %s", p.name, clause.name)
+		return fmt.Errorf("value parameter \"%s\" not disposed in clause \"%s\"", p.name, clause.name)
 	case 1:
 		return nil
 	default:
-		return fmt.Errorf("value parameter %s disposed multiple times in clause %s", p.name, clause.name)
+		return fmt.Errorf("value parameter \"%s\" disposed multiple times in clause \"%s\"", p.name, clause.name)
 	}
 }
 
-func exprReferencesParam(e expression, p *param) bool {
-	if r, ok := e.(*ref); ok {
-		return len(r.names) == 1 && r.names[0] == p.name
+func referencedParam(expr expression) *param {
+	switch e := expr.(type) {
+	case *varRef:
+		return e.param
+	case *propRef:
+		return referencedParam(e.expr)
 	}
-	return false
+	return nil
+}
+
+func referencedBuiltin(expr expression) *builtin {
+	switch e := expr.(type) {
+	case *varRef:
+		return e.builtin
+
+	case *propRef:
+		t := typeOf(e)
+		m := properties[t]
+		if m != nil {
+			if m[e.property] == "Function" {
+				// xxx find the builtin
+			}
+		}
+	}
+	return nil
 }
 
 func decorateRefs(contract *contract, clause *clause) error {
@@ -147,32 +173,35 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 			}
 		}
 
-	case *ref:
-		refStr := e.String()
+	case *varRef:
 		for _, b := range builtins {
-			if refStr == b.name {
+			if e.name == b.name {
 				e.builtin = b
 				return nil
 			}
 		}
 		for _, p := range contract.params {
-			if e.names[0] == p.name {
+			if e.name == p.name {
 				e.param = p
 				return nil
 			}
 		}
 		for _, p := range clause.params {
-			if e.names[0] == p.name {
+			if e.name == p.name {
 				e.param = p
 				return nil
 			}
 		}
-		return fmt.Errorf("undefined variable %s", e.names[0])
+		return fmt.Errorf("undefined variable \"%s\"", e.name)
+
+	case *propRef:
+		return decorateRefsInExpr(contract, clause, e.expr)
 	}
 	return nil
 }
 
 func decorateOutputs(contract *contract, clause *clause) error {
+	contractValueParam := contract.params[len(contract.params)-1]
 	for _, s := range clause.statements {
 		stmt, ok := s.(*outputStatement)
 		if !ok {
@@ -181,22 +210,18 @@ func decorateOutputs(contract *contract, clause *clause) error {
 		if len(stmt.call.args) != 1 {
 			return fmt.Errorf("multiple arguments in output function calls not yet supported")
 		}
-		r, ok := stmt.call.args[0].(*ref)
-		if !ok {
+		if typeOf(stmt.call.args[0]) != "Value" {
 			return fmt.Errorf("passing anything other than a value parameter to an output function call not yet supported")
 		}
-		if r.param == nil || r.param.typ != "Value" {
-			return fmt.Errorf("%s is not a value parameter", r)
-		}
-
-		if r.param.name == contract.params[len(contract.params)-1].name {
+		p := referencedParam(stmt.call.args[0])
+		if p == contractValueParam {
 			// It's the contract value param and doesn't have to be matched
 			// against an AssetAmount parameter.
 			continue
 		}
 
-		// Look for a verify statement matching this ref to an assetamount
-		// parameter.
+		// Look for a verify statement matching stmt.call.args[0] to an
+		// assetamount.
 		found := false
 		for _, s2 := range clause.statements {
 			v, ok := s2.(*verifyStatement)
@@ -220,8 +245,8 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			// assetamount param, or vice versa.
 			var other expression
 			check := func(e expression) bool {
-				if r2, ok := e.(*ref); ok {
-					return len(r2.names) == 2 && r2.names[0] == r.param.name && r2.names[1] == "assetAmount"
+				if prop, ok := e.(*propRef); ok {
+					return referencedParam(prop.expr) == p && prop.property == "assetAmount"
 				}
 				return false
 			}
@@ -233,20 +258,19 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			} else {
 				continue
 			}
-			otherRef, ok := other.(*ref)
-			if !ok {
-				continue
-			}
-			if otherRef.param == nil || otherRef.param.typ != "AssetAmount" {
+			if typeOf(other) != "AssetAmount" {
 				continue
 			}
 			v.associatedOutput = stmt
-			stmt.param = otherRef.param
+			stmt.param = referencedParam(other)
+			if stmt.param == nil {
+				return fmt.Errorf("cannot statically determine the AssetAmount to check \"%s\" against", p.name)
+			}
 			found = true
 			break
 		}
 		if !found {
-			return fmt.Errorf("value param %s is in an output statement but not checked in a verify statement", r)
+			return fmt.Errorf("value param \"%s\" is in an output statement but not checked in a verify statement", p.name)
 		}
 	}
 	return nil
