@@ -11,7 +11,7 @@ To install, add the `chain-sdk` NPM module to your `package.json`, using a tilde
 ```
 {
   "dependencies": {
-    "chain-sdk": "~1.1.0"
+    "chain-sdk": "~1.2.0-rc1"
   }
 }
 ```
