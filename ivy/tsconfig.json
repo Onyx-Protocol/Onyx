@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "alwaysStrict": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "jsx": "react",
+    "target": "es6",
+    "moduleResolution": "node",
+    "outDir": "lib",
+    "baseUrl": ".",
+    "paths": {
+      "ivy-compiler": [ "./ivy-compiler/src/index.ts" ]
+    }
+  },
+  "include": ["./playground"],
+  "exclude": ["build/*", "node_modules"],
+  "awesomeTypescriptLoaderOptions": {
+    "useBabel": true
+  }
+}
