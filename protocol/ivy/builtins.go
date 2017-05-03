@@ -23,3 +23,36 @@ var builtins = []*builtin{
 		ops: []byte{byte(vm.OP_SHA3)},
 	},
 }
+
+var binaryOps = map[string]signature{
+	"==": signature{
+		args:   []string{"", ""},
+		result: "Boolean",
+	},
+	"!=": signature{
+		args:   []string{"", ""},
+		result: "Boolean",
+	},
+}
+
+var unaryOps = map[string]signature{
+	"!": signature{
+		args:   []string{""},
+		result: "Boolean",
+	},
+	"-": signature{
+		args:   []string{"Integer"},
+		result: "Integer",
+	},
+}
+
+// properties[type] is a map from property names to their types
+var properties = map[string]map[string]string{
+	"Value": map[string]string{
+		"assetAmount": "AssetAmount",
+	},
+	"Transaction": map[string]string{
+		"after":  "Function",
+		"before": "Function",
+	},
+}
