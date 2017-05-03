@@ -19,7 +19,7 @@ There are two APIs in Chain Core: the **client API** and the **cross-core API**.
 The client API is used by the SDKs and the dashboard to communicate with Chain
 Core. The cross-core API allows instances of Chain Core to communicate with each other.
 
-There are four policies available to grant an individual credential
+There are several policies available to grant an individual credential
 access to one or both APIs:
 
 * **client-readwrite**: Full access to the Client API.
