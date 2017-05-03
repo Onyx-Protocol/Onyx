@@ -32,9 +32,10 @@ go build -tags 'loopback_auth plain_http reset' chain/cmd/cored
 
 ## Environment Variables
 
-* **ROOT_CA_CERTS**:
-* **LISTEN_ADDR**
-* **DATABASE_URL**
+* **LISTEN_ADDR**: Address the Chain Core server will listen on, defaults to `:1999`
+* **DATABASE_URL**: URL of the Postgres database, defaults to `postgres:///core?sslmode=disable`
+* **CHAIN_CORE_HOME**: Path to Chain Core data directory on local file system, defaults to `$HOME/.chaincore`
+* **ROOT_CA_CERTS**
 * **SPLUNKADDR**
 * **LOGFILE**
 * **LOGSIZE**
@@ -43,11 +44,8 @@ go build -tags 'loopback_auth plain_http reset' chain/cmd/cored
 * **MAXDBCONNS**
 * **RATELIMIT_TOKEN**
 * **RATELIMIT_REMOTE_ADDR**
-* **LOGSIZE**
-* **LOGSIZE**
 * **INDEX_TRANSACTIONS**
-* **INDEX_TRANSACTIONS**
-* **CHAIN_CORE_HOME**
+* **BOOTURL**
 
 ## Server TLS
 
