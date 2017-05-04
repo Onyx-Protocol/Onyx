@@ -48,7 +48,7 @@ func (s *Store) deleteSpent(ctx context.Context, b *legacy.Block) error {
 		DELETE FROM utxos
 		WHERE output_id IN (SELECT unnest($1::bytea[]))
 	`
-	_, err := s.DB.Exec(ctx, delQ, outputIDs)
+	_, err := s.DB.Exec(ctx, delQ, pq.ByteaArray(outputIDs))
 	return errors.Wrap(err, "deleting spent account utxos")
 }
 
