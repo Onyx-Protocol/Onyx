@@ -12,8 +12,10 @@ import (
 	"chain/core/pin"
 	"chain/core/txbuilder"
 	"chain/database/pg/pgtest"
+	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
+	"chain/protocol/vm"
 	"chain/testutil"
 )
 
@@ -44,9 +46,9 @@ func TestSpendUTXO(t *testing.T) {
 	}
 	// Make a block so that account UTXOs are available to spend.
 	go utxoStore.ProcessBlocks(ctx)
-	txs := g.PendingTxs()
-	prottest.MakeBlock(t, c, txs)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(PinName, c.Height())
+	<-pinStore.PinWaiter(DeletePinName, c.Height())
 
 	source := &spendUTXOAction{
 		store:    utxoStore,
@@ -67,4 +69,63 @@ func TestSpendUTXO(t *testing.T) {
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
+}
+
+func TestDeleteSpent(t *testing.T) {
+	var (
+		_, db     = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx       = context.Background()
+		c         = prottest.NewChain(t)
+		g         = generator.New(c, nil, db)
+		pinStore  = pin.NewStore(db)
+		utxoStore = &Store{DB: db, Chain: c, PinStore: pinStore}
+	)
+
+	coretest.CreatePins(ctx, t, pinStore)
+	err := pinStore.CreatePin(ctx, PinName, 0)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	err = pinStore.CreatePin(ctx, DeletePinName, 0)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	txin := legacy.NewIssuanceInput(make([]byte, 8), 100, nil, c.InitialBlockHash, []byte{byte(vm.OP_TRUE)}, nil, nil)
+
+	tx := legacy.NewTx(legacy.TxData{
+		Version: 1,
+		MinTime: bc.Millis(time.Now().Add(-5 * time.Minute)),
+		MaxTime: bc.Millis(time.Now().Add(5 * time.Minute)),
+		Inputs:  []*legacy.TxInput{txin},
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(txin.AssetID(), 100, []byte{byte(vm.OP_TRUE)}, nil),
+		},
+	})
+
+	g.Submit(ctx, tx)
+	go utxoStore.ProcessBlocks(ctx)
+	prottest.MakeBlock(t, c, g.PendingTxs())
+	<-pinStore.PinWaiter(PinName, c.Height())
+	<-pinStore.PinWaiter(DeletePinName, c.Height())
+
+	resOut := tx.Entries[*tx.ResultIds[0]].(*bc.Output)
+	out := tx.Outputs[0]
+
+	txin2 := legacy.NewSpendInput(nil, *resOut.Source.Ref, *out.GetAssetId(), out.GetAmount(), resOut.Source.Position, []byte{byte(vm.OP_TRUE)}, *resOut.Data, nil)
+
+	tx2 := legacy.NewTx(legacy.TxData{
+		Version: 1,
+		MinTime: bc.Millis(time.Now().Add(-5 * time.Minute)),
+		MaxTime: bc.Millis(time.Now().Add(5 * time.Minute)),
+		Inputs:  []*legacy.TxInput{txin2},
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(txin.AssetID(), 100, []byte{byte(vm.OP_TRUE)}, nil),
+		},
+	})
+
+	g.Submit(ctx, tx2)
+	prottest.MakeBlock(t, c, g.PendingTxs())
+	<-pinStore.PinWaiter(PinName, c.Height())
+	<-pinStore.PinWaiter(DeletePinName, c.Height())
 }
