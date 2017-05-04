@@ -2,7 +2,7 @@ import React from 'react'
 import { chainClient } from 'utility/environment'
 import { actions as appActions } from 'features/app'
 import { push } from 'react-router-redux'
-import { subjectFieldOptions } from './constants'
+import { policyOptions, subjectFieldOptions } from './constants'
 import { hasProtectedGrant } from './selectors'
 import TokenCreateModal from './components/TokenCreateModal'
 
@@ -12,19 +12,24 @@ import TokenCreateModal from './components/TokenCreateModal'
 const setPolicies = (body, policies) => {
   const promises = []
 
-  for (let key in policies) {
-    if (hasProtectedGrant(body.grants || [], key)) continue
+  for (let policy in policies) {
+    if (policyOptions.find(opt => opt.value == policy).hidden) continue
+    if (hasProtectedGrant(body.grants || [], policy)) continue
 
     const grant = {
       guardData: body.guardData,
       guardType: body.guardType,
-      policy: key
+      policy
     }
 
-    promises.push(policies[key] ?
-      chainClient().authorizationGrants.create(grant) :
-      chainClient().authorizationGrants.delete(grant)
-    )
+    try {
+      promises.push(policies[policy] ?
+        chainClient().authorizationGrants.create(grant) :
+        chainClient().authorizationGrants.delete(grant)
+      )
+    } catch (err) {
+      promises.push(Promise.reject(err))
+    }
   }
 
   return Promise.all(promises)
@@ -92,7 +97,7 @@ export default {
     for (let index in data.subject) {
       const field = data.subject[index]
 
-      if (fieldInfo[field.key].array) {
+      if (field.key && fieldInfo[field.key].array) {
         const values = body.guardData[field.key] || []
         values.push(field.value)
         body.guardData.subject[field.key] = values

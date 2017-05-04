@@ -15,7 +15,7 @@ class GrantListItem extends React.Component {
       const subject = item.guardData.subject
       desc = <div>
         {Object.keys(subject).map(field =>
-          <div key={field}>
+          <div key={`${item.id}-${field}`}>
             {field.toUpperCase()}:
             {' '}
             {isArray(subject[field])
@@ -30,7 +30,7 @@ class GrantListItem extends React.Component {
         <td>{desc}</td>
         {!item.isEditing && <td>
           {getPolicyNames(item).map(name =>
-            <span key={name}>{name}<br /></span>
+            <span key={`${item.id}-${name}`}>{name}<br /></span>
           )}
         </td>}
         {!item.isEditing && <td>
