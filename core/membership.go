@@ -26,25 +26,28 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		return errors.Wrap(err)
 	}
 
-	data := map[string]interface{}{
-		"subject": map[string]string{
-			"CN": hostname,
-		},
-	}
+	if a.useTLS {
+		data := map[string]interface{}{
+			"subject": map[string]string{
+				"CN": hostname,
+			},
+		}
 
-	guardData, err := json.Marshal(data)
-	if err != nil {
+		guardData, err := json.Marshal(data)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+
+		grant := authz.Grant{
+			Policy:    "internal",
+			GuardType: "x509",
+			GuardData: guardData,
+			CreatedAt: time.Now().UTC().Format(time.RFC3339),
+			Protected: true,
+		}
+
+		_, err = authz.StoreGrant(ctx, a.raftDB, grant, grantPrefix)
 		return errors.Wrap(err)
 	}
-
-	grant := authz.Grant{
-		Policy:    "internal",
-		GuardType: "x509",
-		GuardData: guardData,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
-		Protected: true,
-	}
-
-	_, err = authz.StoreGrant(ctx, a.raftDB, grant, grantPrefix)
-	return errors.Wrap(err)
+	return nil
 }

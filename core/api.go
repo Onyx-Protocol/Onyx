@@ -79,6 +79,7 @@ type API struct {
 	remoteGenerator *rpc.Client
 	indexTxs        bool
 	forwardUsingTLS bool
+	useTLS          bool
 	internalSubj    pkix.Name
 	httpClient      *http.Client
 
@@ -255,7 +256,6 @@ func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accessto
 
 	rootCAs := x509.NewCertPool()
 	if tlsConfig != nil {
-		log.Printf(context.Background(), "%+v", tlsConfig)
 		x509Cert, err := x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
 		if err != nil {
 			log.Fatalkv(context.Background(), log.KeyError, err)
@@ -263,8 +263,6 @@ func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accessto
 
 		authorizer.GrantInternal(x509Cert.Subject)
 		rootCAs = tlsConfig.ClientCAs
-	} else {
-		log.Printf(context.Background(), "nope")
 	}
 
 	authenticator := authn.NewAPI(accessTokens, crosscoreRPCPrefix, rootCAs)

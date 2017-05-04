@@ -43,6 +43,7 @@ type RunOption func(*API)
 func UseTLS(c *tls.Config) RunOption {
 	return func(a *API) {
 		a.forwardUsingTLS = c != nil
+		a.useTLS = c != nil
 		a.httpClient = new(http.Client)
 		a.httpClient.Transport = &http.Transport{
 			DialContext: (&net.Dialer{
