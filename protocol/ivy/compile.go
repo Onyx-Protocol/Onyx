@@ -283,6 +283,10 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	}
 	switch e := expr.(type) {
 	case *binaryExpr:
+		info, ok := binaryOps[e.op]
+		if !ok {
+			return fmt.Errorf("unknown operator \"%s\"", e.op)
+		}
 		err = compileExpr(b, stack, contract, clause, e.left)
 		if err != nil {
 			return err
@@ -291,27 +295,11 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if err != nil {
 			return err
 		}
-		switch e.op {
-		case "==":
-			b.addOp(vm.OP_EQUAL)
-		case "!=":
-			b.addOp(vm.OP_EQUAL)
-			b.addOp(vm.OP_NOT)
-		case "<=":
-			b.addOp(vm.OP_LESSTHANOREQUAL)
-		case ">=":
-			b.addOp(vm.OP_GREATERTHANOREQUAL)
-		case "<":
-			b.addOp(vm.OP_LESSTHAN)
-		case ">":
-			b.addOp(vm.OP_GREATERTHAN)
-		case "+":
-			b.addOp(vm.OP_ADD)
-		case "-":
-			b.addOp(vm.OP_SUB)
-		default:
-			return fmt.Errorf("unknown operator \"%s\"", e.op)
+		ops, err := vm.Assemble(info.opcodes)
+		if err != nil {
+			return err
 		}
+		b.addRawBytes(ops)
 
 	case *unaryExpr:
 		err = compileExpr(b, stack, contract, clause, e.expr)
@@ -339,7 +327,11 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			}
 			stack = append(stack, stackEntry{})
 		}
-		b.addRawBytes(bi.ops)
+		ops, err := vm.Assemble(bi.opcodes)
+		if err != nil {
+			return err
+		}
+		b.addRawBytes(ops)
 
 	case *varRef:
 		return compileRef(b, stack, e)
