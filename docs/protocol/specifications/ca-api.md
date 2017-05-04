@@ -753,7 +753,7 @@ Scheme overview:
 2. Bob generates a receiver with a sequence number N.
 3. Bob deterministically derives a random nonce to be used as a ChainKD selector:
 
-        nonce = SHA256(xpub || uint64le(N)[0,16]
+        nonce = SHA3(xpub || uint64le(N)[0,16]
         
 4. Bob derives a one-time key using that nonce:
 
