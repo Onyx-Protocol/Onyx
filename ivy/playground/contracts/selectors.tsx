@@ -198,33 +198,13 @@ export const getClauseWitnessComponents = createSelector(
   }
 )
 
-/* export const getClauseWitnessComponents = createSelector( */
-/*   getSpendInputMap, */
-/*   getClauseParameterIds, */
-/*   (spendInputMap: InputMap, clauseIds: string[]): WitnessComponent[] => { */
-/*     const witness: WitnessComponent[] = [] */
-/*     for (const id in spendInputMap) { */
-/*       const input = spendInputMap[id] */
-/*       switch (input.type) { */
-/*         case "choosePublicKeyInput": */
-/*           const pubkey = input.value */
-/*           if (input.keyMap === undefined) { */
-/*             throw 'undefined keymap for input type ' + input.type */
-/*           } */
-/*           const keymap = input.keyMap[pubkey] */
-/*           witness.push({ */
-/*             type: "signature", */
-/*             quorum: 1, */
-/*             keys: [{ */
-/*               xpub: keymap.rootXpub, */
-/*               derivationPath: keymap.pubkeyDerivationPath */
-/*             } as KeyId], */
-/*             signatures: [] */
-/*           } as SignatureWitness) */
-/*       } */
-/*     } */
-/*   } */
-/* ) */
+export const getClauseOutputs = createSelector(
+  getSpendContract,
+  getSpendContractSelectedClauseIndex,
+  (spendContract, clauseIndex) => {
+    return spendContract.template.clauses[clauseIndex].outputs
+  }
+)
 
 export const getClauseDataParameterIds = createSelector(
   getSpendContract,
