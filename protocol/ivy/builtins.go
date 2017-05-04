@@ -14,7 +14,7 @@ var builtins = []builtin{
 	{"abs", "ABS", []string{"Integer"}, "Integer"},
 	{"min", "MIN", []string{"Integer", "Integer"}, "Integer"},
 	{"max", "MAX", []string{"Integer", "Integer"}, "Integer"},
-	{"checkTxSig", "TXSIGHASH ROT CHECKSIG", []string{"PublicKey", "Signature"}, "Boolean"},
+	{"checkTxSig", "TXSIGHASH SWAP CHECKSIG", []string{"PublicKey", "Signature"}, "Boolean"},
 }
 
 var binaryOps = map[string]struct {
