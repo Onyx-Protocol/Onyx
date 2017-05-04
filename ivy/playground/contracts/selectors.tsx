@@ -11,7 +11,8 @@ import {
 
 import {
   Input,
-  InputMap
+  InputMap,
+  ProgramInput
 } from '../inputs/types'
 
 import {
@@ -24,12 +25,14 @@ import {
 } from 'ivy-compiler'
 
 import {
-  KeyId,
-  SignatureWitness,
+  ControlWithReceiver,
   DataWitness,
+  KeyId,
+  Receiver,
+  SignatureWitness,
   SpendFromAccount,
   WitnessComponent
-} from '../transactions/types'
+} from '../transactions/types';
 
 import {
   getItemMap as getTemplateMap
@@ -308,6 +311,40 @@ export function getControlProgram(state, inputsById) {
   let rawScript = instantiate(template, parameterData)
   return rawScript.toString("hex")
 }
+
+export const getClauseOutputActions = createSelector(
+  getSpendContract,
+  getClauseOutputs,
+  (contract, clauseOutputs) => {
+    console.log("clauseOutputs", clauseOutputs)
+    let inputMap = contract.inputMap
+    return clauseOutputs.map(clauseOutput => {
+      let assetAmountParam = clauseOutput.assetAmountParam
+      if (assetAmountParam === undefined) throw "assetAmountParam of clauseOutput should not be undefined"
+      let amountInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.amountInput"]
+      let assetAliasInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.assetAliasInput"]
+      if (amountInput === undefined) throw "amount input for " + assetAmountParam + " surprisingly undefined"
+      if (assetAliasInput === undefined) throw "asset input for " + assetAmountParam + " surprisingly undefined"
+      let amount = parseInt(amountInput.value, 10)
+      let programIdentifier = clauseOutput.contract.program.identifier
+      let programInput = inputMap["contractParameters." + programIdentifier + ".programInput"] as ProgramInput
+      if (programInput === undefined) throw "programInput unexpectedly undefined"
+      if (programInput.computedData === undefined) throw "programInput.computedData unexpectedly undefined"
+      let controlProgram = programInput.computedData
+      let receiver: Receiver = {
+        controlProgram: controlProgram,
+        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
+      }
+      let action: ControlWithReceiver = {
+        type: "controlWithReceiver",
+        assetId: assetAliasInput.value,
+        amount: amount,
+        receiver: receiver
+      }
+      return action
+    })
+  }
+)
 
 export const getShowErrors = createSelector(
   getState,
