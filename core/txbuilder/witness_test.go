@@ -59,6 +59,14 @@ func TestWitnessJSON(t *testing.T) {
 				}},
 				Sigs: []chainjson.HexBytes{{8, 9, 10}},
 			},
+			&RawTxSigWitness{
+				Quorum: 20,
+				Keys: []keyID{{
+					XPub:           testutil.TestXPub,
+					DerivationPath: []chainjson.HexBytes{{21, 22}},
+				}},
+				Sigs: []chainjson.HexBytes{{23, 24, 25}},
+			},
 		},
 	}
 
