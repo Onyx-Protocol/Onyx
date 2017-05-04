@@ -822,6 +822,10 @@ intend to introduce it as an additional feature that allows applications to opti
           - control_program
           - expires_at
         properties:
+          output_version:
+            type: integer
+            description: The version of the accepted output. Default is 1,
+              which means a non-confidential (pre-CA) output is expected.
           control_program:
             type: string
             description: The raw hex of the control program.
