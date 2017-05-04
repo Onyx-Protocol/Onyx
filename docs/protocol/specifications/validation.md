@@ -162,7 +162,7 @@ A new node starts here when joining a running network (with height > 1). In that
 2. Let `S` be the input blockchain state.
 3. For each visited [nonce entry](blockchain.md#nonce) in the transaction:
     1. If [nonce ID](blockchain.md#entry-id) is already stored in the nonce set of the blockchain state, halt and return the input blockchain state unchanged.
-    2. Add ([nonce ID](blockchain.md#entry-id), transaction maxtime) to the nonce set in `S`, yielding a new state `S′`.
+    2. Add ([nonce ID](blockchain.md#entry-id), nonce maxtime) to the nonce set in `S`, yielding a new state `S′`.
     3. Replace `S` with `S′`.
 4. For each visited [spend version 1](blockchain.md#spend-1) in the transaction:
     1. Test that the spent output ID is stored in the set of unspent outputs in `S`. If not, halt and return the input blockchain state unchanged.
