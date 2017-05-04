@@ -20,7 +20,7 @@ Params1Type = (first:Identifier _ "," _ rest:Params1Type) {
   return mkParam(only, typ)
 }
 
-Type = ("String" / "Integer" / "Hash" / "AssetAmount" / "Program" / "Value") {
+Type = ("String" / "Integer" / "Hash" / "AssetAmount" / "Program" / "Value" / "PublicKey" / "Signature") {
   return string(c.text), nil
 }
 
@@ -110,7 +110,8 @@ PartialBinaryExpr = (expr:Expr3 _ op:BinaryOperator) {
   return mkPartialBinaryExpr(expr, op)
 }
 
-BinaryOperator = ("+" / "-") {
+// TODO(bobg): operator precedence
+BinaryOperator = ("+" / "-" / "*" / "/" / "<<" / ">>" / "||" / "&&" / "&" / "&^" / "^" / "|") {
   return string(c.text), nil
 }
 
@@ -118,7 +119,7 @@ UnaryExpr = (op:UnaryOperator expr:Expr4) {
   return mkUnaryExpr(op, expr)
 }
 
-UnaryOperator = ("-" / "!") {
+UnaryOperator = ("-" / "!" / "^") {
   return string(c.text), nil
 }
 

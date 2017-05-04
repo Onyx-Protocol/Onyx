@@ -127,7 +127,7 @@ func typeOf(expr expression) string {
 	case *call:
 		b := referencedBuiltin(e.fn)
 		if b != nil {
-			return b.signature.result
+			return b.result
 		}
 		return ""
 
