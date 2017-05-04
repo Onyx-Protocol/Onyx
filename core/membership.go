@@ -26,6 +26,11 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		return errors.Wrap(err)
 	}
 
+	// only create a grant if we're using TLS
+	if !a.useTLS {
+		return nil
+	}
+
 	data := map[string]interface{}{
 		"subject": map[string]string{
 			"CN": hostname,

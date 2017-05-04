@@ -52,9 +52,9 @@ func TestForwardToLeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	api := &API{
-		config:          &config.Config{},
-		leader:          alwaysFollower{leaderAddress: u.Host},
-		forwardUsingTLS: true,
+		config: &config.Config{},
+		leader: alwaysFollower{leaderAddress: u.Host},
+		useTLS: true,
 		httpClient: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
