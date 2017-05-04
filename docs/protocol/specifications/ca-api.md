@@ -171,10 +171,11 @@ Receiver is shared with a sending party with minimum information necessary to co
 the output.
 
     {
-        control_program: "fa90e031...",   // control program
-        dek: "de01836..."                 // data-encryption key
-        aek: "ae819f7..."                 // asset ID-encryption key
-        vek: "fe791c0..."                 // amount-encryption key
+        control_program: "fa90e031...",           // control program
+        expires_at: "2017-10-02T10:00:00-05:00",  // expiration date
+        dek: "de01836...",                        // data-encryption key
+        aek: "ae819f7...",                        // asset ID-encryption key
+        vek: "fe791c0..."                         // amount-encryption key
     }
 
 
