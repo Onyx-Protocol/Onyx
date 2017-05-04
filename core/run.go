@@ -42,7 +42,6 @@ type RunOption func(*API)
 // If c is nil, TLS is disabled.
 func UseTLS(c *tls.Config) RunOption {
 	return func(a *API) {
-		a.forwardUsingTLS = c != nil
 		a.useTLS = c != nil
 		a.httpClient = new(http.Client)
 		a.httpClient.Transport = &http.Transport{

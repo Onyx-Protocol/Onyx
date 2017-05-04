@@ -78,7 +78,6 @@ type API struct {
 	generator       *generator.Generator
 	remoteGenerator *rpc.Client
 	indexTxs        bool
-	forwardUsingTLS bool
 	useTLS          bool
 	internalSubj    pkix.Name
 	httpClient      *http.Client
@@ -367,7 +366,7 @@ func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}
 		BaseURL: "http://" + addr,
 		Client:  a.httpClient,
 	}
-	if a.forwardUsingTLS {
+	if a.useTLS {
 		l.BaseURL = "https://" + addr
 	}
 
