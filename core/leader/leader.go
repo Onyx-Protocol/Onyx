@@ -58,7 +58,7 @@ type Leader struct {
 // Core leader.
 func (l *Leader) Address(ctx context.Context) (string, error) {
 	var addr string
-	err := l.db.QueryRow(ctx, `SELECT address FROM leader`).Scan(&addr)
+	err := l.db.QueryRowContext(ctx, `SELECT address FROM leader`).Scan(&addr)
 	if err == sql.ErrNoRows {
 		return "", ErrNoLeader
 	} else if err != nil {
@@ -180,7 +180,7 @@ func tryForLeadership(ctx context.Context, l *Leader) bool {
 	// On success, this process's leadership expires in 1 second
 	// unless it's renewed in the UPDATE query in maintainLeadership.
 	// That extends it for another 1 second.
-	res, err := l.db.Exec(ctx, insertQ, l.key, l.address)
+	res, err := l.db.ExecContext(ctx, insertQ, l.key, l.address)
 	if err != nil {
 		log.Error(ctx, err)
 		return false
@@ -199,7 +199,7 @@ func maintainLeadership(ctx context.Context, l *Leader) bool {
 		WHERE leader_key = $1
 	`
 
-	res, err := l.db.Exec(ctx, updateQ, l.key)
+	res, err := l.db.ExecContext(ctx, updateQ, l.key)
 	if err != nil {
 		log.Error(ctx, err)
 		return false

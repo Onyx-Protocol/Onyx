@@ -48,6 +48,6 @@ func ListenBlocks(ctx context.Context, dbURL string) (<-chan uint64, error) {
 func (s *Store) GetRawBlock(ctx context.Context, height uint64) ([]byte, error) {
 	const q = `SELECT data FROM blocks WHERE height = $1`
 	var block []byte
-	err := s.db.QueryRow(ctx, q, height).Scan(&block)
+	err := s.db.QueryRowContext(ctx, q, height).Scan(&block)
 	return block, errors.Wrap(err, "querying blocks from the db")
 }

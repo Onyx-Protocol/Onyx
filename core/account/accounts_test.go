@@ -29,7 +29,7 @@ func TestCreateAccount(t *testing.T) {
 	// Verify that the account was defined.
 	var id string
 	var checkQ = `SELECT id FROM signers`
-	err = m.db.QueryRow(ctx, checkQ).Scan(&id)
+	err = m.db.QueryRowContext(ctx, checkQ).Scan(&id)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -141,7 +141,7 @@ func (m *Manager) createTestUTXO(ctx context.Context, t testing.TB, accountID st
 		output_id, source_id, source_pos, ref_data_hash, change)
 		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false)
 	`
-	_, err := m.db.Exec(ctx, q, randHash(), 100, accountID,
+	_, err := m.db.ExecContext(ctx, q, randHash(), 100, accountID,
 		cp.keyIndex, cp.controlProgram, 10, outputID, randHash(), 0, randHash())
 	if err != nil {
 		testutil.FatalErr(t, err)

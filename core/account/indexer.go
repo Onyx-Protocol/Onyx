@@ -117,7 +117,7 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 func (m *Manager) expireControlPrograms(ctx context.Context, b *legacy.Block) error {
 	// Delete expired account control programs.
 	const deleteQ = `DELETE FROM account_control_programs WHERE expires_at IS NOT NULL AND expires_at < $1`
-	_, err := m.db.Exec(ctx, deleteQ, b.Time())
+	_, err := m.db.ExecContext(ctx, deleteQ, b.Time())
 	return err
 }
 
@@ -128,7 +128,7 @@ func (m *Manager) deleteSpentOutputs(ctx context.Context, b *legacy.Block) error
 		DELETE FROM account_utxos
 		WHERE output_id IN (SELECT unnest($1::bytea[]))
 	`
-	_, err := m.db.Exec(ctx, delQ, delOutputIDs)
+	_, err := m.db.ExecContext(ctx, delQ, delOutputIDs)
 	return errors.Wrap(err, "deleting spent account utxos")
 }
 
@@ -254,7 +254,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 			   unnest($8::bytea[]), unnest($9::bigint[]), unnest($10::bytea[]), unnest($11::boolean[])
 		ON CONFLICT (output_id) DO NOTHING
 	`
-	_, err := m.db.Exec(ctx, q,
+	_, err := m.db.ExecContext(ctx, q,
 		outputID,
 		assetID,
 		amount,

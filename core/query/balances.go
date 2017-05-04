@@ -29,7 +29,7 @@ func (ind *Indexer) Balances(ctx context.Context, filt string, vals []interface{
 	if err != nil {
 		return nil, err
 	}
-	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
+	rows, err := ind.db.QueryContext(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, err
 	}

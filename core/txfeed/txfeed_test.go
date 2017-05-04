@@ -31,7 +31,7 @@ func TestInsertTxFeed(t *testing.T) {
 	// Verify that the txfeed was created.
 	var resultAlias string
 	var checkQ = `SELECT alias FROM txfeeds`
-	err = db.QueryRow(ctx, checkQ).Scan(&resultAlias)
+	err = db.QueryRowContext(ctx, checkQ).Scan(&resultAlias)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}

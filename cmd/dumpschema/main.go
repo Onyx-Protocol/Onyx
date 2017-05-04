@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,7 +12,6 @@ import (
 
 	"chain/core/migrate"
 	"chain/database/pg"
-	"chain/database/sql"
 )
 
 const temporaryDatabase = `tmp_db_for_dump_schema`

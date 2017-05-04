@@ -60,7 +60,7 @@ func (ind *Indexer) Outputs(ctx context.Context, filt string, vals []interface{}
 		return nil, nil, err
 	}
 	queryStr, queryArgs := constructOutputsQuery(expr, vals, timestampMS, after, limit)
-	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
+	rows, err := ind.db.QueryContext(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, nil, err
 	}

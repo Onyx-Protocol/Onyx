@@ -63,7 +63,7 @@ func (ind *Indexer) LookupTxAfter(ctx context.Context, begin, end uint64) (TxAft
 	`
 
 	var from, stop uint64
-	err := ind.db.QueryRow(ctx, q, begin, end).Scan(&from, &stop)
+	err := ind.db.QueryRowContext(ctx, q, begin, end).Scan(&from, &stop)
 	if err != nil {
 		return TxAfter{}, errors.Wrap(err, "querying `query_blocks`")
 	}
@@ -133,7 +133,7 @@ func constructTransactionsQuery(expr string, vals []interface{}, after TxAfter, 
 }
 
 func (ind *Indexer) fetchTransactions(ctx context.Context, queryStr string, queryArgs []interface{}, after TxAfter, limit int) ([]*AnnotatedTx, *TxAfter, error) {
-	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
+	rows, err := ind.db.QueryContext(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "executing txn query")
 	}

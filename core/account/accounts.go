@@ -110,7 +110,7 @@ func (m *Manager) Create(ctx context.Context, xpubs []chainkd.XPub, quorum int, 
 		INSERT INTO accounts (account_id, alias, tags) VALUES ($1, $2, $3)
 		ON CONFLICT (account_id) DO UPDATE SET alias = $2, tags = $3
 	`
-	_, err = m.db.Exec(ctx, q, signer.ID, aliasSQL, tagsParam)
+	_, err = m.db.ExecContext(ctx, q, signer.ID, aliasSQL, tagsParam)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(ErrDuplicateAlias, "an account with the provided alias already exists")
 	} else if err != nil {
@@ -159,7 +159,7 @@ func (m *Manager) UpdateTags(ctx context.Context, id, alias *string, tags map[st
 		// we'll satisfy its contract and provide an alias.
 		const q = `SELECT alias FROM accounts WHERE account_id = $1`
 		var a stdsql.NullString
-		err := m.db.QueryRow(ctx, q, *id).Scan(&a)
+		err := m.db.QueryRowContext(ctx, q, *id).Scan(&a)
 		if err != nil {
 			return errors.Wrap(err, "alias lookup")
 		}
@@ -179,7 +179,7 @@ func (m *Manager) UpdateTags(ctx context.Context, id, alias *string, tags map[st
 		SET tags = $1
 		WHERE account_id = $2
 	`
-	_, err = m.db.Exec(ctx, q, tagsParam, signer.ID)
+	_, err = m.db.ExecContext(ctx, q, tagsParam, signer.ID)
 	if err != nil {
 		return errors.Wrap(err, "update entry in accounts table")
 	}
@@ -202,7 +202,7 @@ func (m *Manager) FindByAlias(ctx context.Context, alias string) (*signers.Signe
 		accountID = cachedID.(string)
 	} else {
 		const q = `SELECT account_id FROM accounts WHERE alias=$1`
-		err := m.db.QueryRow(ctx, q, alias).Scan(&accountID)
+		err := m.db.QueryRowContext(ctx, q, alias).Scan(&accountID)
 		if err == stdsql.ErrNoRows {
 			return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "alias: %s", alias)
 		}
@@ -307,7 +307,7 @@ func (m *Manager) insertAccountControlProgram(ctx context.Context, progs ...*con
 		})
 	}
 
-	_, err := m.db.Exec(ctx, q, accountIDs, keyIndexes, controlProgs, change, pq.Array(expirations))
+	_, err := m.db.ExecContext(ctx, q, accountIDs, keyIndexes, controlProgs, change, pq.Array(expirations))
 	return errors.Wrap(err)
 }
 
@@ -319,7 +319,7 @@ func (m *Manager) nextIndex(ctx context.Context) (uint64, error) {
 		var cap uint64
 		const incrby = 10000 // account_control_program_seq increments by 10,000
 		const q = `SELECT nextval('account_control_program_seq')`
-		err := m.db.QueryRow(ctx, q).Scan(&cap)
+		err := m.db.QueryRowContext(ctx, q).Scan(&cap)
 		if err != nil {
 			return 0, errors.Wrap(err, "scan")
 		}

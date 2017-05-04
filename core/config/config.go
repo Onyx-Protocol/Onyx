@@ -8,7 +8,7 @@ package config
 import (
 	"context"
 	"crypto/rand"
-	libsql "database/sql"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
@@ -23,7 +23,6 @@ import (
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/raft"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/authz"
@@ -129,7 +128,7 @@ func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 		blockPubHex     string
 		configuredAt    time.Time
 	)
-	err := db.QueryRow(ctx, q).Scan(
+	err := db.QueryRowContext(ctx, q).Scan(
 		&c.Id,
 		&c.IsSigner,
 		&c.IsGenerator,
@@ -170,7 +169,7 @@ func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 func deleteFromPG(ctx context.Context, db pg.DB) error {
 	// deletes every row
 	const q = `DELETE from config`
-	_, err := db.Exec(ctx, q)
+	_, err := db.ExecContext(ctx, q)
 	return errors.Wrap(err, "deleting config stored in postgres")
 }
 
@@ -301,7 +300,7 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string, ht
 func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	const q = `SELECT id, type, created FROM access_tokens`
 	var tokens []*accesstoken.Token
-	err := pg.ForQueryRows(ctx, db, q, func(id string, maybeType libsql.NullString, created time.Time) {
+	err := pg.ForQueryRows(ctx, db, q, func(id string, maybeType sql.NullString, created time.Time) {
 		t := &accesstoken.Token{
 			ID:      id,
 			Created: created,

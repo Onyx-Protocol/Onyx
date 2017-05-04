@@ -423,7 +423,7 @@ func findSpecificUTXO(ctx context.Context, db pg.DB, out bc.Hash) (*utxo, error)
 	`
 	u := new(utxo)
 	// TODO(oleg): maybe we need to scan txid:index too from here...
-	err := db.QueryRow(ctx, q, out).Scan(
+	err := db.QueryRowContext(ctx, q, out).Scan(
 		&u.AccountID,
 		&u.AssetID,
 		&u.Amount,

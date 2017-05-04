@@ -58,7 +58,7 @@ func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	}
 
 	const q = `TRUNCATE %s RESTART IDENTITY;`
-	_, err = db.Exec(ctx, fmt.Sprintf(q, strings.Join(tables, ", ")))
+	_, err = db.ExecContext(ctx, fmt.Sprintf(q, strings.Join(tables, ", ")))
 	return errors.Wrap(err)
 }
 
@@ -86,6 +86,6 @@ func ResetEverything(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	// TODO(tessr): remove allowed members list, once raft storage supports directory-style operations
 
 	const q = `TRUNCATE %s RESTART IDENTITY;`
-	_, err = db.Exec(ctx, fmt.Sprintf(q, strings.Join(persistBlockchainReset, ", ")))
+	_, err = db.ExecContext(ctx, fmt.Sprintf(q, strings.Join(persistBlockchainReset, ", ")))
 	return errors.Wrap(err)
 }

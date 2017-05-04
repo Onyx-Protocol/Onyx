@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"database/sql"
 	"expvar"
 	"flag"
 	"fmt"
@@ -32,7 +33,7 @@ import (
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/raft"
-	"chain/database/sql"
+	"chain/database/sqlutil"
 	"chain/encoding/json"
 	"chain/env"
 	"chain/errors"
@@ -168,8 +169,12 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
-	sql.EnableQueryLogging(*logQueries)
-	db, err := sql.Open("hapg", *dbURL)
+	driver := pg.NewDriver()
+	if *logQueries {
+		driver = sqlutil.LogDriver(driver)
+	}
+	sql.Register("coredpg", driver)
+	db, err := sql.Open("coredpg", *dbURL)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}

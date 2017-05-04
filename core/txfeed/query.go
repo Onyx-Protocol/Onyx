@@ -14,7 +14,7 @@ func (t *Tracker) Query(ctx context.Context, after string, limit int) ([]*TxFeed
 		SELECT id, alias, filter, after FROM txfeeds
 		WHERE ($1='' OR id < $1) ORDER BY id DESC LIMIT %d
 	`
-	rows, err := t.DB.Query(ctx, fmt.Sprintf(baseQ, limit), after)
+	rows, err := t.DB.QueryContext(ctx, fmt.Sprintf(baseQ, limit), after)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "executing txfeeds query")
 	}
