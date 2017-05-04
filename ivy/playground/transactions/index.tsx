@@ -4,7 +4,8 @@ import {
 } from '../util'
 
 import {
-  Action
+  Action,
+  WitnessComponent
 } from './types'
 
 export function createFundingTx(actions: Action[]): Promise<Object> {
@@ -39,8 +40,8 @@ export function createFundingTx(actions: Action[]): Promise<Object> {
   })
 }
 
-export const createSpendingTx = (actions: Action[]): Promise<Object> => {
-  console.log("actions", actions)
+export const createSpendingTx = (actions: Action[], witness: WitnessComponent[]): Promise<Object> => {
+  console.log("witness", witness)
   return client.transactions.build(builder => {
     actions.forEach(action => {
       switch (action.type) {
@@ -61,7 +62,11 @@ export const createSpendingTx = (actions: Action[]): Promise<Object> => {
       }
     })
   }).then((tpl) => {
+    // there should only be one
+    tpl.signingInstructions[0].witnessComponents = witness
     console.log(tpl)
-    return Promise.resolve({})
+    return signer.sign(tpl)
+  }).then((tpl) => {
+    return client.transactions.submit(tpl)
   })
 }
