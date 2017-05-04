@@ -32,9 +32,9 @@ func TestCompile(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(got, want) {
-				dis, _ := vm.Disassemble(got)
-				t.Errorf("got %x (%s), want %x", got, dis, want)
+			if !bytes.Equal(got.Program, want) {
+				dis, _ := vm.Disassemble(got.Program)
+				t.Errorf("got %x (%s), want %x", got.Program, dis, want)
 			}
 		})
 	}
