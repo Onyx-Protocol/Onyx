@@ -1,3 +1,27 @@
+export type DataWitness = {
+  type: "data",
+  value: string
+}
+
+export type KeyId = {
+  xpub: string,
+  derivationPath: string[]
+}
+
+export type SignatureWitness = {
+  type: "signature",
+  quorum: 1,
+  keys: KeyId[],
+  signatures: string[]
+}
+
+export type WitnessComponent = DataWitness | SignatureWitness
+
+export type SigningInstruction = {
+  position: number,
+  witnessComponents: WitnessComponent[]
+}
+
 export type SpendFromAccount = {
   type: "spendFromAccount",
   accountId: string,
