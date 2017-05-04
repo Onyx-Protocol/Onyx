@@ -81,8 +81,9 @@ func ResetEverything(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 		if err != nil {
 			return errors.Wrapf(err, "could not delete grants for policy %s from RaftDB", p)
 		}
-
 	}
+
+	// TODO(tessr): remove this core from the allowed members list in raft, too, potentially
 
 	const q = `TRUNCATE %s RESTART IDENTITY;`
 	_, err = db.Exec(ctx, fmt.Sprintf(q, strings.Join(persistBlockchainReset, ", ")))
