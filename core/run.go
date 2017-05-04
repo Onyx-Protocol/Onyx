@@ -22,6 +22,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/core/txfeed"
+	"chain/core/utxos"
 	"chain/database/pg"
 	"chain/database/raft"
 	"chain/log"
@@ -171,10 +172,13 @@ func Run(
 	go pinStore.Listen(ctx, account.ExpirePinName, dbURL)
 	go pinStore.Listen(ctx, account.DeleteSpentsPinName, dbURL)
 	go pinStore.Listen(ctx, asset.PinName, dbURL)
+	go pinStore.Listen(ctx, utxos.PinName, dbURL)
+	go pinStore.Listen(ctx, utxos.DeletePinName, dbURL)
 
 	assets := asset.NewRegistry(db, c, pinStore)
 	accounts := account.NewManager(db, c, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
+	utxoStore := &utxos.Store{DB: db, Chain: c, PinStore: pinStore}
 
 	a := &API{
 		chain:        c,
@@ -184,6 +188,7 @@ func Run(
 		accounts:     accounts,
 		txFeeds:      &txfeed.Tracker{DB: db},
 		indexer:      indexer,
+		utxoStore:    utxoStore,
 		accessTokens: &accesstoken.CredentialStore{DB: db},
 		config:       conf,
 		db:           db,
@@ -259,7 +264,15 @@ func (a *API) lead(ctx context.Context) {
 	if pinHeight > 0 {
 		pinHeight = pinHeight - 1
 	}
-	pins := []string{account.PinName, account.ExpirePinName, account.DeleteSpentsPinName, asset.PinName, query.TxPinName}
+	pins := []string{
+		account.PinName,
+		account.ExpirePinName,
+		account.DeleteSpentsPinName,
+		asset.PinName,
+		query.TxPinName,
+		utxos.PinName,
+		utxos.DeletePinName,
+	}
 	for _, p := range pins {
 		err = a.pinStore.CreatePin(ctx, p, pinHeight)
 		if err != nil {
@@ -283,4 +296,5 @@ func (a *API) lead(ctx context.Context) {
 	if a.indexTxs {
 		go a.indexer.ProcessBlocks(ctx)
 	}
+	go a.utxoStore.ProcessBlocks(ctx)
 }

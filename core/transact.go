@@ -38,6 +38,8 @@ func (a *API) actionDecoder(action string) (func([]byte) (txbuilder.Action, erro
 		decoder = a.accounts.DecodeSpendAction
 	case "spend_account_unspent_output":
 		decoder = a.accounts.DecodeSpendUTXOAction
+	case "spend_unspent_output":
+		decoder = a.utxoStore.DecodeSpendUTXOAction
 	case "set_transaction_reference_data":
 		decoder = txbuilder.DecodeSetTxRefDataAction
 	default:

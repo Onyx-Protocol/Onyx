@@ -67,4 +67,15 @@ var migrations = []migration{
 		ALTER TABLE generator_pending_block
 			ADD COLUMN height bigint;
 	`},
+	{Name: `2017-05-03.0.utxos.add-utxos-table.sql`, SQL: `
+		CREATE TABLE utxos (
+			output_id bytea NOT NULL PRIMARY KEY,
+			asset_id bytea NOT NULL,
+			amount bigint NOT NULL,
+			control_program bytea NOT NULL,
+			source_id bytea NOT NULL,
+			source_pos bigint NOT NULL,
+			ref_data_hash bytea NOT NULL
+		);
+	`},
 }
