@@ -5,6 +5,7 @@
 * [Actions](#actions)
 * [Encryption](#encryption)
 * [Compatibility](#compatibility)
+* [Trackable addresses](#trackable-addresses)
 * [Alternatives considered](#alternatives-considered)
 * [Swagger specification](#swagger-specification)
 
@@ -172,6 +173,7 @@ Receiver is shared with a sending party with minimum information necessary to co
 the output.
 
     {
+        output_version: 2,                        // version of the output (default is 1)
         control_program: "fa90e031...",           // control program
         expires_at: "2017-10-02T10:00:00-05:00",  // expiration date
         dek: "de01836...",                        // data-encryption key
@@ -345,13 +347,13 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
         type: "encdisclosure1",              # version of the encrypted disclosure
         import_key: "fe9af9bc3923...",       # IK pubkey
         selector:   "589af9b1a730...",       # blinding selector
-        ciphertext: "cc9e012f7a8f99ea9b...", # encrypted disclosure blob
+        ciphertext: "cc9e012f7a8f99ea9b...", # encrypted hex of the Cleartext Disclosure object
     }
 
-#### Unencrypted Disclosure
+#### Cleartext Disclosure
 
     {
-        type: "disclosure1",                     # version of the plaintext disclosure
+        type: "disclosure1",                     # version of the cleartext disclosure
         items: [
             {
                 scope: "output"/"retirement"/"issuance"/"account",  # type of the scope
@@ -392,33 +394,6 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
         ]
     }
 
-#### Disclosure Description
-
-Disclosure description is a summary of pieces disclosed, without any cryptographic information:
-
-    {
-        items: [
-            {
-                scope: "output",
-                entry_id: "...",
-                transaction_id: "...",
-                fields: {
-                    data: true,
-                    asset_id: true,
-                    amount: true
-                }
-            },
-            {
-                scope: "account",
-                account_id: "...",
-                fields: {
-                    data: true,
-                    asset_id: true,
-                    amount: true
-                }
-            },
-        ]
-    }
 
 
 
@@ -457,8 +432,8 @@ Procedure:
     4. Prepare `signing_instructions` for each input and issuance.
     5. Create and encrypts new outputs, adds VRPs (but not ARPs).
     6. Compute the `excess` blinding factor.
-    7. Set mintime to current time: `mintime = currentTime`.
-    8. Set maxtime to expiration time: `maxtime = expirationTime`.
+    7. Set mintime to current time: `mintime = currentTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
+    8. Set maxtime to expiration time: `maxtime = expirationTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
     9. Prepare ARP instructions for each output: `asset_range_proof_instructions: {asset_id:..., factor:..., [input_id:..., input_factor:...]}`.
         * Input ID and input's blinding factor are included if such input is known.
     10. For each output in `base_transaction` where `asset_range_proof_instructions` are specified and partial tx has an input with the matching asset ID:
@@ -523,12 +498,12 @@ that the document is encrypted in-transit (without assuming direct secure connec
 
 Bob receives `import_key` from Alice and uses it to build a disclosure object:
 
-    disclosure = client.disclosures.build(import_key: import_key) do |d|
+    encrypted_disclosure = client.disclosures.build(import_key: import_key) do |d|
       d.disclose_entry(entry_id: "fa0e8fb0ad...",            fields: {asset_id: true, amount: true, data: true})
       d.disclose_transaction(transaction_id: "57ad0fea9...", fields: {asset_id: true, amount: true, data: true})
       d.disclose_account(account_alias: "bob",               fields: {asset_id: true, amount: true, data: true})
     end
-    disclosure_serialized = disclosure.to_json
+    disclosure_serialized = encrypted_disclosure.to_json
 
 The resulting object is encrypted to an `import_key`, contains minimal metadata needed for decryption
 and can be safely transmitted to the receiving Core for import.
@@ -542,17 +517,15 @@ and can be safely transmitted to the receiving Core for import.
 
 Alice receives `disclosure` object from Bob and attempts to import in the Core:
 
-    disclosure_description = client.disclosures.import(disclosure)
+    cleartext_disclosure = client.disclosures.import(disclosure)
 
-Alice can decrypt and inspect the disclosure parameters without importing:
+Alice can decrypt and inspect the disclosure without importing:
 
-    disclosure_description = client.disclosures.decrypt(disclosure)
-    disclosure_description.items[0].fields.asset_id # => true/false
-    disclosure_description.scope           # => 'output'/'transaction_id'/'account'
+    cleartext_disclosure = client.disclosures.decrypt(disclosure)
+    cleartext_disclosure.scope                       # => 'output'/'transaction_id'/'account'
+    cleartext_disclosure.items[0].asset_id.asset_id  # => "fae9f0af..."
 
 TBD: Should we support querying all stored disclosures too?
-
-
 
 
 
@@ -764,6 +737,44 @@ When users upgrade to a new Chain Core, the tx template is changed, but the beha
 
 
 
+## Trackable addresses
+
+(This is similar to Stealth Addresses proposal, but compatible with usage by the recipient.)
+
+To make accounts to be trackable without exchanging receivers it is possible 
+to embed a random selector within the control program.
+
+To make it compatible with sequential key derivation, the random selector is
+deterministically produced from the index and an xpub.
+
+Scheme overview:
+
+1. Alice is an auditor, Bob is an account holder.
+2. Bob generates a receiver with a sequence number N.
+3. Bob deterministically derives a random nonce to be used as a ChainKD selector:
+
+        nonce = SHA256(xpub || uint64le(N)[0,16]
+        
+4. Bob derives a one-time key using that nonce:
+
+        pubkey = ChainKD-ND(xpub, nonce)
+
+5. Bob creates a control program where pubkey is annotated with the nonce:
+
+        <pubkey> <nonce> DROP CHECKSIG
+
+    Note: this easily extends to multisig programs: each individual pubkey
+    is annotated with `<nonce> DROP` opcode.
+
+6. Bob sends receiver to a sender Sandy.
+7. Sandy makes payment to that address.
+8. Alice scans all outputs on blockchain, trying to check if any given public 
+   key is derived from the xpub using an associated nonce.
+9. Network cannot link two outputs to the same xpub because nonces are random and
+   no one except Alice and Bob has xpub that contains "derivation key" entropy used
+   to produce child keys.
+
+Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit ones at a slightly higher risk of collisions (still, negligible in practice). Nonce collisions link two outputs to the same account and may make accounting slightly more complicated by requiring linking through reference data (which could be a requirement anyway).
 
 
 
