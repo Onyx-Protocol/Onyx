@@ -259,6 +259,16 @@ class TransactionBuilder {
   }
 
   /**
+   * Add an action that spends an arbitrary unspent output not linked to an account.
+   *
+   * @param {Object} params - Action parameters.
+   * @param {String} params.outputId - ID of the transaction output to be spent.
+   */
+  spendAnyUnspentOutput(params) {
+    this.actions.push(Object.assign({}, params, {type: 'spend_unspent_output'}))
+  }
+
+  /**
    * Add an action that retires units of an asset.
    *
    * @param {Object} params - Action parameters.

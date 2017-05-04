@@ -39,7 +39,7 @@ export function createFundingTx(actions: Action[]): Promise<Object> {
   })
 }
 
-export const createSpendingTx = (actions: Action[]): Promise<string> => {
+export const createSpendingTx = (actions: Action[]): Promise<Object> => {
   console.log("actions", actions)
   return client.transactions.build(builder => {
     actions.forEach(action => {
@@ -54,11 +54,14 @@ export const createSpendingTx = (actions: Action[]): Promise<string> => {
           builder.controlWithAccount(action)
           break
         case "spendUnspentOutput":
-          builder.spendUnspentOutput(action)
+          builder.spendAnyUnspentOutput(action)
           break
         default:
           break
       }
     })
+  }).then((tpl) => {
+    console.log(tpl)
+    return Promise.resolve({})
   })
 }
