@@ -14,7 +14,7 @@ import {
   getSpendContractId,
   getClauseWitnessComponents,
   getSpendContractSelectedClauseIndex,
-  getClauseOutputs
+  getClauseOutputActions
 } from './selectors';
 
 import { getPromisedInputMap } from '../inputs/data'
@@ -95,10 +95,12 @@ export const spend = () => {
     let clauseIndex = getSpendContractSelectedClauseIndex(state)
     let outputId = contract.outputId
     let spendInputMap = contract.spendInputMap
-    let actions: Action[] = [{
+    let spendContractAction: SpendUnspentOutput = {
       type: "spendUnspentOutput",
       outputId
-    } as SpendUnspentOutput]
+    }
+    let clauseOutputActions: Action[] = getClauseOutputActions(state)
+    let actions: Action[] = [spendContractAction, ...clauseOutputActions]
     let returnInput = spendInputMap["transactionDetails.accountAliasInput"]
     if (returnInput !== undefined) {
       actions.push({
@@ -110,35 +112,6 @@ export const spend = () => {
     }
     let clauseParams = getClauseParameterIds(state)
     let clauseDataParams = getClauseDataParameterIds(state)
-    let clauseOutputs = getClauseOutputs(state)
-    console.log("clauseParams", clauseParams)
-    console.log("clauseDataParams", clauseDataParams)
-    console.log("clauseOutputs", clauseOutputs)
-    let inputMap = contract.inputMap
-    for (const clauseOutput of clauseOutputs) {
-      let assetAmountParam = clauseOutput.assetAmountParam
-      if (assetAmountParam === undefined) throw "assetAmountParam of clauseOutput should not be undefined"
-      let amountInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.amountInput"]
-      let assetAliasInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.assetAliasInput"]
-      if (amountInput === undefined) throw "amount input for " + assetAmountParam + " surprisingly undefined"
-      if (assetAliasInput === undefined) throw "asset input for " + assetAmountParam + " surprisingly undefined"
-      let amount = parseInt(amountInput.value, 10)
-      let programIdentifier = clauseOutput.contract.program.identifier
-      let programInput = inputMap["contractParameters." + programIdentifier + ".programInput"] as ProgramInput
-      if (programInput === undefined) throw "programInput unexpectedly undefined"
-      if (programInput.computedData === undefined) throw "programInput.computedData unexpectedly undefined"
-      let controlProgram = programInput.computedData
-      let receiver: Receiver = {
-        controlProgram: controlProgram,
-        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
-      }
-      actions.push({
-        type: "controlWithReceiver",
-        assetId: assetAliasInput.value,
-        amount: amount,
-        receiver: receiver
-      })
-    }
     console.log("actions", actions)
     const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
     createSpendingTx(actions, witness).then((result) => {
