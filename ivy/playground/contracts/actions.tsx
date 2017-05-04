@@ -1,3 +1,4 @@
+import { AssetAliasInput, ProgramInput } from '../inputs/types';
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
 export const CREATE_CONTRACT = 'contracts/CREATE_CONTRACT'
@@ -11,8 +12,10 @@ import {
   getContractValue,
   getSelectedTemplate,
   getSpendContractId,
-  getClauseWitnessComponents
-} from './selectors'
+  getClauseWitnessComponents,
+  getSpendContractSelectedClauseIndex,
+  getClauseOutputs
+} from './selectors';
 
 import { getPromisedInputMap } from '../inputs/data'
 
@@ -28,6 +31,7 @@ import {
   Action
 } from '../transactions/types'
 import { createFundingTx, createSpendingTx } from '../transactions'
+import { prefixRoute } from '../util'
 
 export const SELECT_TEMPLATE = 'contracts/SELECT_TEMPLATE'
 export const SET_CLAUSE_INDEX = 'contracts/SET_CLAUSE_INDEX'
@@ -59,7 +63,7 @@ export const create = () => {
       let amount = spendFromAccount.amount
       let receiver: Receiver = {
         controlProgram: controlProgram,
-        expiresAt: "2017-05-25T00:00:00.000Z" // TODO
+        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
       }
       let controlWithReceiver: ControlWithReceiver = {
         type: "controlWithReceiver",
@@ -76,7 +80,7 @@ export const create = () => {
           inputMap: inputMap,
           utxo: utxo
         })
-        dispatch(push('/spend'))
+        dispatch(push(prefixRoute('/spend')))
       })
     }).catch(err => {
       dispatch(showErrors())
@@ -86,7 +90,9 @@ export const create = () => {
 
 export const spend = () => {
   return(dispatch, getState) => {
-    let contract = getSpendContract(getState())
+    let state = getState()
+    let contract = getSpendContract(state)
+    let clauseIndex = getSpendContractSelectedClauseIndex(state)
     let outputId = contract.outputId
     let spendInputMap = contract.spendInputMap
     let actions: Action[] = [{
@@ -102,7 +108,38 @@ export const spend = () => {
         amount: contract.amount
       } as ControlWithAccount)
     }
-
+    let clauseParams = getClauseParameterIds(state)
+    let clauseDataParams = getClauseDataParameterIds(state)
+    let clauseOutputs = getClauseOutputs(state)
+    console.log("clauseParams", clauseParams)
+    console.log("clauseDataParams", clauseDataParams)
+    console.log("clauseOutputs", clauseOutputs)
+    let inputMap = contract.inputMap
+    for (const clauseOutput of clauseOutputs) {
+      let assetAmountParam = clauseOutput.assetAmountParam
+      if (assetAmountParam === undefined) throw "assetAmountParam of clauseOutput should not be undefined"
+      let amountInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.amountInput"]
+      let assetAliasInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.assetAliasInput"]
+      if (amountInput === undefined) throw "amount input for " + assetAmountParam + " surprisingly undefined"
+      if (assetAliasInput === undefined) throw "asset input for " + assetAmountParam + " surprisingly undefined"
+      let amount = parseInt(amountInput.value, 10)
+      let programIdentifier = clauseOutput.contract.program.identifier
+      let programInput = inputMap["contractParameters." + programIdentifier + ".programInput"] as ProgramInput
+      if (programInput === undefined) throw "programInput unexpectedly undefined"
+      if (programInput.computedData === undefined) throw "programInput.computedData unexpectedly undefined"
+      let controlProgram = programInput.computedData
+      let receiver: Receiver = {
+        controlProgram: controlProgram,
+        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
+      }
+      actions.push({
+        type: "controlWithReceiver",
+        assetId: assetAliasInput.value,
+        amount: amount,
+        receiver: receiver
+      })
+    }
+    console.log("actions", actions)
     const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
     createSpendingTx(actions, witness).then((result) => {
       console.log("result", result)
