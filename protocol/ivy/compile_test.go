@@ -1,24 +1,22 @@
 package ivy
 
 import (
-	"bytes"
-	"encoding/hex"
+	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
-
-	"chain/protocol/vm"
 )
 
 func TestCompile(t *testing.T) {
 	cases := []struct {
 		name     string
 		contract string
-		wantHex  string
+		wantJSON string
 	}{
 		{
 			"TradeOffer",
 			tradeOffer,
-			"547a6416000000000054795679515679c1632400000076aa527987690000c3c2515779c1",
+			`{"program":"547a6416000000000054795679515679c1632400000076aa527987690000c3c2515779c1","clause_info":[{"name":"Trade","value_info":[{"name":"payment","program":"seller","asset_amount":"requested"},{"name":"offered"}]},{"name":"Cancel","args":[{"name":"cancelSecret","type":"String"}],"value_info":[{"name":"offered","program":"seller"}]}]}`,
 		},
 	}
 	for _, c := range cases {
@@ -28,13 +26,14 @@ func TestCompile(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want, err := hex.DecodeString(c.wantHex)
+			var want CompileResult
+			err = json.Unmarshal([]byte(c.wantJSON), &want)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(got.Program, want) {
-				dis, _ := vm.Disassemble(got.Program)
-				t.Errorf("got %x (%s), want %x", got.Program, dis, want)
+			if !reflect.DeepEqual(got, want) {
+				gotJSON, _ := json.Marshal(got)
+				t.Errorf("got %s, want %s", string(gotJSON), c.wantJSON)
 			}
 		})
 	}

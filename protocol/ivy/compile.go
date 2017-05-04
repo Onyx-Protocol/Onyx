@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"io"
 
+	chainjson "chain/encoding/json"
 	"chain/protocol/vm"
 )
 
 type (
 	CompileResult struct {
-		Program []byte       `json:"program"`
-		Clauses []ClauseInfo `json:"clause_info"`
+		Program chainjson.HexBytes `json:"program"`
+		Clauses []ClauseInfo       `json:"clause_info"`
 	}
 
 	ClauseInfo struct {
 		Name   string      `json:"name"`
-		Args   []ClauseArg `json:"args"`
+		Args   []ClauseArg `json:"args,omitempty"`
 		Values []ValueInfo `json:"value_info"`
 	}
 
@@ -26,8 +27,8 @@ type (
 
 	ValueInfo struct {
 		Name        string `json:"name"`
-		Program     string `json:"program"`
-		AssetAmount string `json:"asset_amount"`
+		Program     string `json:"program,omitempty"`
+		AssetAmount string `json:"asset_amount,omitempty"`
 	}
 )
 
