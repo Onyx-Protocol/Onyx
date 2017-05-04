@@ -5,6 +5,8 @@ import { create } from '../actions'
 
 import { isValid, getContractValue } from '../selectors'
 
+import ReactTooltip from 'react-tooltip'
+
 const mapStateToProps = (state) => {
   return {
     disabled: (isValid(state) === undefined) || (getContractValue(state) === undefined)
@@ -23,7 +25,11 @@ type Props = {
 }
 
 const CreateFooter = (props: Props) => {
-  return <button className="btn btn-primary btn-wide" disabled={props.disabled} onClick={props.handleClick}>Create</button>
+  let td = props.disabled ? 
+    <td data-tip="One or more inputs is invalid."><ReactTooltip type="error" effect="solid"/><button className="btn btn-primary btn-wide" disabled={true}>Create</button></td>
+  :
+    <td><button className="btn btn-primary btn-wide" onClick={props.handleClick}>Create</button></td>  
+  return <table><tr>{td}</tr></table>
 }
 
 export default connect(

@@ -11,6 +11,8 @@ import Instructions from './instructions'
 import { getTemplate } from '../selectors'
 import { isError } from '../util'
 
+import ReactTooltip from 'react-tooltip'
+
 const mapStateToProps = (state) => {
   return {
     template: getTemplate(state)
@@ -20,6 +22,7 @@ const mapStateToProps = (state) => {
 const Editor = ({ template }) => {
   return (
     <div>
+      <ReactTooltip place="bottom" type="error" effect="solid"/>
       <div className="panel panel-default">
         <div className="panel-heading clearfix">
           <h1 className="panel-title pull-left">Template Editor</h1>
