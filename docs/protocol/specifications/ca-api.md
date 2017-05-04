@@ -802,3 +802,36 @@ intend to introduce it as an additional feature that allows applications to opti
 
 
 
+
+
+## Swagger specification
+
+    ---
+    swagger: '2.0'
+    
+    [...]
+
+    definitions:
+    
+      Receiver:
+        type: object
+        required:
+          - control_program
+          - expires_at
+        properties:
+          control_program:
+            type: string
+            description: The raw hex of the control program.
+          expires_at:
+            type: string
+            description: An RFC3339 timestamp indicating when the receiver expires.
+          dek:
+            type: string
+            description: The raw hex of the data encryption key
+          aek:
+            type: string
+            description: The raw hex of the asset ID encryption key
+          vek:
+            type: string
+            description: The raw hex of the value encryption key
+    
