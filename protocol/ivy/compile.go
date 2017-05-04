@@ -3,6 +3,7 @@ package ivy
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	chainjson "chain/encoding/json"
 	"chain/protocol/vm"
@@ -32,16 +33,16 @@ type (
 	}
 )
 
-// Compile parses an Ivy contract from the supplied input source and
-// produces the compiled bytecode.
+// Compile parses an Ivy contract from the supplied reader and
+// produces the compiled bytecode and other analysis.
 func Compile(r io.Reader) (CompileResult, error) {
-	parsed, err := ParseReader("input", r, Debug(false))
+	inp, err := ioutil.ReadAll(r)
 	if err != nil {
 		return CompileResult{}, err
 	}
-	c, ok := parsed.(*contract)
-	if !ok {
-		return CompileResult{}, fmt.Errorf("parse result has type %T, must be *contract", parsed)
+	c, err := parse(inp)
+	if err != nil {
+		return CompileResult{}, err
 	}
 	prog, err := compileContract(c)
 	if err != nil {
