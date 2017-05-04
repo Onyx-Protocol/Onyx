@@ -6,6 +6,7 @@
 * [Encryption](#encryption)
 * [Compatibility](#compatibility)
 * [Alternatives considered](#alternatives-considered)
+* [Swagger specification](#swagger-specification)
 
 ## Introduction
 
@@ -76,7 +77,7 @@ First party (Alice) uses `client.transactions` API to build a transaction to sen
       b.control_with_receiver receiver: bob_rcvr,     asset_id: 'USD',  amount: 140, data: "Hello, world!"
     end
 
-Suppose Alice has 1000 USD on the inputs. Transaction builder creates two outputs: 
+Suppose Alice has 1000 USD on the inputs. Transaction builder creates two outputs:
 
 * Output 1: 140 USD to Bob's account
 * Output 2: 860 USD to Alice's account
@@ -85,7 +86,7 @@ Output 1 is using one-time program described in Bob's receiver, and payload and 
 
 Output 2 uses one-time program for Alice's change address and the amount is encrypted with the keys derived for the Alice's account.
 
-When transaction is built, it must be signed and submitted. 
+When transaction is built, it must be signed and submitted.
 
     tx = client.transactions.sign(tx)
     client.transactions.submit(tx)
@@ -138,7 +139,7 @@ Alice wants to have read access to Bob's transactions.
 1. Alice generates an `Import Key` in her Chain Core — one-time pubkey used for encrypting and authenticating a "disclosure" document.
 2. Alice sends `Import Key` to Bob who generates a "Disclosure" in his Core that will be encrypted to that Import Key.
 3. Bob configures a new disclosure:
-    1. Disclosure scope: 
+    1. Disclosure scope:
         * Output(s)
         * Transaction(s)
         * Account(s)
@@ -188,7 +189,7 @@ Transaction template contains transaction entries and additional data that helps
         finalized: false, // set to true after first `client.transactions.sign()` call
         balanced:  false, // set when no placeholder inputs/outputs left
         signed:    false, // set when all signatures and proofs are provided
-        transaction: [
+        entries: [
             {
                 type:    "txheader",
                 version:  2,  // core protocol version
@@ -212,17 +213,21 @@ Transaction template contains transaction entries and additional data that helps
                 program:            "...",
                 data:               "da1a00fa9e628...",
                 exthash:            "e40fa89202...",
-                
+
                 asset_range_proof_instructions: {
-                    asset_id: "...", 
+                    asset_id: "...",
                     factor:   "..."
                 },
             },
             {
-                type: "output2",
+                type: "input-placeholder",
+                asset_id: "AAPL",
+                amount:   1,
+            },
+            {
+                type: "output-placeholder",
                 asset_id: "USD",
                 amount:   140,
-                placeholder: true,
             },
         ],
         payloads: [
@@ -231,7 +236,7 @@ Transaction template contains transaction entries and additional data that helps
                 id: <payload-id>,
                 private: ENCRYPTED{
                     version: 2, // version of the transaction template
-                    transaction: [
+                    entries: [
                         {
                             type:    "txheader",
                             version:  2,  // core protocol version
@@ -257,7 +262,7 @@ Transaction template contains transaction entries and additional data that helps
                             data:             "da1a00fa9e628...",
                             exthash:          "e40fa89202...",
                             asset_range_proof_instructions: {   // private instructions for this party
-                                asset_id: "...", 
+                                asset_id: "...",
                                 factor:   "..."
                             },
                         },
@@ -286,11 +291,11 @@ This does not include other possible witnesses.
         arguments: [                      // stack of arguments for the program
             {
                 type: "clause",           // which clause to trigger in a program
-                clause: "unlock",         // name of a clause - the 
+                clause: "unlock",         // name of a clause - the
             },
             {
                 type: "data",             // raw piece of data
-                datatype: "string",       // 
+                datatype: "string",       //
                 hex: "8e92af820..."
             },
             {
@@ -373,7 +378,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
                 scope: "account",                # disclosure for an account
                 account_id: "...",               # ID of the output (hex-encoded)
                 account_xpubs: [...],            # List of xpubs forming an account
-                account_quorum: 1,               # Number of keys required for signing in the account 
+                account_quorum: 1,               # Number of keys required for signing in the account
                 data: {
                     dek: "...",                  # Data Encryption Key for this account
                 },
@@ -431,7 +436,7 @@ If the transfer is made to an account, it is encrypted with the keys associated 
 If the transfer is made to a receiver, the output or retirement is encrypted with keys specified by the receiver. If some keys are omitted,
 then no encryption takes place.
 
-To control confidentiality of specific entries, `confidential` key is used (defaults are `true` for all fields). 
+To control confidentiality of specific entries, `confidential` key is used (defaults are `true` for all fields).
 
     chain.transactions.build do |b|
         b.base_transaction tx  # (optional)
@@ -480,7 +485,7 @@ Procedure:
 1. Send transaction template to Core to decrypt and verify signing instructions:
     1. If `excess` factor in the MUX entry is non-zero:
         1. If the transaction ID is not fixed yet and the current party has at least one output in it:
-            * `excess` is added to the value commitment and value range proof is re-created. 
+            * `excess` is added to the value commitment and value range proof is re-created.
         2. Otherwise, `excess` is transformed into an "excess commitment" with signature and added to the MUX entry in the transaction.
         3. `excess` value is zeroed from the transaction template.
     2. Transaction ID is computed from the given transaction template.
@@ -507,7 +512,7 @@ Procedure:
 
 ### Create Disclosure Import Key
 
-The Core that needs to import a disclosure must first generate a recipient key to ensure 
+The Core that needs to import a disclosure must first generate a recipient key to ensure
 that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
 
    import_key = client.disclosures.create_import_key()
@@ -525,7 +530,7 @@ Bob receives `import_key` from Alice and uses it to build a disclosure object:
     end
     disclosure_serialized = disclosure.to_json
 
-The resulting object is encrypted to an `import_key`, contains minimal metadata needed for decryption 
+The resulting object is encrypted to an `import_key`, contains minimal metadata needed for decryption
 and can be safely transmitted to the receiving Core for import.
 
 * `disclose_entry` — adds proofs and decryption keys for a single output/retirement/issuance.
@@ -591,11 +596,11 @@ To encrypt fields, `RCK` is expanded to a vector key containing 3 32-byte keys:
     RVEK — Root Value Encryption Key
 
 For each account a deterministic account selector is made that's used to generate per-account keys:
-    
+
     accsel = m,n,xpub1,xpub2,xpub3
 
     {ADEK,AAEK,AVEK} = SHAKE128("A" || {RDEK,RAEK,RVEK} || accsel, 32)
-    
+
 For each output, a key is derived using control program as a selector:
 
     {ODEK,OAEK,OVEK} = SHAKE128("O" || {ADEK,AAEK,AVEK} || control_program, 32)
@@ -605,7 +610,7 @@ For the retirement entry, a key is derived using the serialized `value_source` a
     {TDEK,TAEK,TVEK} = SHAKE128("T" || {RDEK,RAEK,RVEK} || value_source, 32)
 
 Asset ID-specific vector key:
-    
+
     {SDEK,SAEK,SVEK} = SHAKE128("A" || {RDEK,RAEK,RVEK} || assetid, 32)
 
 For each issuance, a key is derived using the anchor ID as selector and asset ID-specific keys:
@@ -636,7 +641,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
         b = random 32 bytes
 
 3. Derives one-time import pubkey (only the public key part):
-    
+
         IKpub = ChainKD-NormalDerivation(RIKxpub, b).pubkey
 
 4. Return a pair of the import key and a blinding selector `IK,b`:
@@ -659,7 +664,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
 
         R = r·G
 
-5. Compute Diffie-Hellman secret to be used as encryption key: 
+5. Compute Diffie-Hellman secret to be used as encryption key:
 
         S = r·IKpub
 
@@ -687,7 +692,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
 
         IKprv = ChainKD-NormalDerivation(RIKxprv, b).scalar
 
-3. Compute Diffie-Hellman secret to be used as encryption key: 
+3. Compute Diffie-Hellman secret to be used as encryption key:
 
         S = IKprv·R
 
@@ -781,7 +786,7 @@ Arguments for encryption:
 
 Arguments against encryption:
 
-1. Recipient must generate a receiving key first, before the exporter can create a disclosure. 
+1. Recipient must generate a receiving key first, before the exporter can create a disclosure.
 2. We may figure a more generalized way for encryption of arbitrary data between Cores, and that would be a custom use of it.
 
 ### 2. Inline data VS out of band data
@@ -789,7 +794,7 @@ Arguments against encryption:
 Possible options:
 
 1. Automatically split data for inline (INL) and out of band (OOB) pieces.
-2. Keep these explicitly separate. 
+2. Keep these explicitly separate.
 
 We choose to keep these fields separate since the inline data has special features and considerations:
 
@@ -797,10 +802,8 @@ We choose to keep these fields separate since the inline data has special featur
 * Inline data has limited size: around 3-4 Kb.
 * Inline data requires reveal of the numeric amount, so these two fields cannot be indepdently disclosed.
 
-In the present specification we omit support for inline data entirely for simplicity of the interface and 
+In the present specification we omit support for inline data entirely for simplicity of the interface and
 intend to introduce it as an additional feature that allows applications to optimize bandwidth usage.
-
-
 
 
 
@@ -808,11 +811,11 @@ intend to introduce it as an additional feature that allows applications to opti
 
     ---
     swagger: '2.0'
-    
+
     [...]
 
     definitions:
-    
+
       Receiver:
         type: object
         required:
@@ -834,4 +837,97 @@ intend to introduce it as an additional feature that allows applications to opti
           vek:
             type: string
             description: The raw hex of the value encryption key
-    
+
+      TransactionTemplate:
+        type: object
+        required:
+          - version
+          - finalized
+          - balanced
+          - signed
+          - entries
+          - payloads
+        properties:
+          version:
+            type: integer
+            description: Version of the transaction template format. Current version is 2.
+          finalized:
+            type: boolean
+            description: Whether the transacton ID is fixed; that is,
+              at least one signature covers the entire transaction.
+          balanced:
+            type: boolean
+            description: Whether no placeholder values left and transaction
+              is ready to be signed.
+          signed:
+            type: boolean
+            description: Whether the transaction is fully signed and can be published.
+          entries:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionTemplateEntry'
+          payloads:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionTemplatePayload'
+
+      TransactionTemplateEntry:
+        type: object
+        description: There are several types of actions for building transactions. Since Swagger 2.0
+          does not allow for polymorphic types, the individual properties are not listed here.
+          Please refer to the definitions of:
+          TxHeaderTemplate,
+          Mux1Template,
+          Issuance1Template,
+          Input1Template,
+          Output1Template,
+          Retirement1Template,
+          Mux2Template,
+          Issuance2Template,
+          Input2Template,
+          Output2Template,
+          Retirement2Template,
+          InputPlaceholder,
+          OutputPlaceholder.
+
+      
+
+      TransactionTemplatePayload:
+        type: object
+        required:
+          - version
+          - id
+          - ciphertext
+        properties:
+          version:
+            type: integer
+            description: Version of the payload encryption format. Current version is 1.
+          id:
+            type: string
+            description: Unique hex identifier of the payload.
+          ciphertext:
+            type: string
+            description: Hex-encoded encrypted payload. See TransactionTemplatePayloadContent
+
+      TransactionTemplatePayloadContent:
+        description: Payload encapsulates subset of transaction with private signing instructions.
+          When transaction is being fully signed, owner of a payload verifies the resulting transaction
+          against this subset and uses private signing instruction to generate necessary witness data.
+        type: object
+        required:
+          - version
+          - entries
+        properties:
+          version:
+            type: integer
+            description: Version of the transaction template format. Current version is 2.
+          entries:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionTemplateEntry'
+
+
+
+
+
+
