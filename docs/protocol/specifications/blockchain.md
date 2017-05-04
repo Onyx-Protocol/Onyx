@@ -411,10 +411,10 @@ Assets Merkle Root       | PatriciaRoot<Output1>   | Root hash of the [merkle pa
 Next Consensus Program Bytecode | String | Authentication predicate for adding a new block after this one.
 ExtHash                  | [ExtStruct](#extension-struct) | See below. If `Version` is 1, this must be 32 zero-bytes. Otherwise, this must be the hash of the extension struct defined below.
 
-Extension Struct 1 | Type                                    | Description
--------------------|-----------------------------------------|-------------------------
-Assets Merkle Root | PatriciaRoot\<Output1\>                 | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs version 2 after applying the block. See [Assets Merkle Root 2](#assets-merkle-root-2) for details.
-ExtHash2           | [ExtStruct](#extension-struct)          | Hash of next extension struct. (See [ExtStruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
+Extension Struct 1   | Type                                    | Description
+---------------------|-----------------------------------------|-------------------------
+Assets Merkle Root 2 | PatriciaRoot\<Output2\>                 | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs version 2 after applying the block. See [Assets Merkle Root 2](#assets-merkle-root-2) for details.
+ExtHash2             | [ExtStruct](#extension-struct)          | Hash of next extension struct. (See [ExtStruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
 
 
 Witness field            | Type              | Description
