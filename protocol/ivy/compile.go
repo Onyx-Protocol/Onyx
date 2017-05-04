@@ -16,12 +16,18 @@ type (
 	ClauseInfo struct {
 		Name   string      `json:"name"`
 		Args   []ClauseArg `json:"args"`
-		Values []string    `json:"values"`
+		Values []ValueInfo `json:"value_info"`
 	}
 
 	ClauseArg struct {
 		Name string `json:"name"`
 		Typ  string `json:"type"`
+	}
+
+	ValueInfo struct {
+		Name        string `json:"name"`
+		Program     string `json:"program"`
+		AssetAmount string `json:"asset_amount"`
 	}
 )
 
@@ -56,9 +62,22 @@ func Compile(r io.Reader) (CompileResult, error) {
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {
 			case *outputStatement:
-				info.Values = append(info.Values, s.call.args[0].(*varRef).name)
+				valueInfo := ValueInfo{
+					Name: s.call.args[0].(*varRef).name,
+				}
+				if s.param != nil {
+					valueInfo.AssetAmount = s.param.name
+				}
+				switch f := s.call.fn.(type) {
+				case *varRef:
+					valueInfo.Program = f.String()
+				case *propRef:
+					valueInfo.Program = f.String()
+				}
+				info.Values = append(info.Values, valueInfo)
 			case *returnStatement:
-				info.Values = append(info.Values, c.params[len(c.params)-1].name)
+				valueInfo := ValueInfo{Name: c.params[len(c.params)-1].name}
+				info.Values = append(info.Values, valueInfo)
 			}
 		}
 		result.Clauses = append(result.Clauses, info)
