@@ -450,6 +450,18 @@ CREATE TABLE txfeeds (
 
 
 
+CREATE TABLE utxos (
+    output_id bytea NOT NULL,
+    asset_id bytea NOT NULL,
+    amount bigint NOT NULL,
+    control_program bytea NOT NULL,
+    source_id bytea NOT NULL,
+    source_pos bigint NOT NULL,
+    ref_data_hash bytea NOT NULL
+);
+
+
+
 ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key_index_seq'::regclass);
 
 
@@ -619,6 +631,11 @@ ALTER TABLE ONLY txfeeds
 
 
 
+ALTER TABLE ONLY utxos
+    ADD CONSTRAINT utxos_pkey PRIMARY KEY (output_id);
+
+
+
 CREATE INDEX account_utxos_asset_id_account_id_confirmed_in_idx ON account_utxos USING btree (asset_id, account_id, confirmed_in);
 
 
@@ -653,4 +670,5 @@ insert into migrations (filename, hash) values ('2017-03-09.0.core.account-utxos
 insert into migrations (filename, hash) values ('2017-04-13.0.query.block-transactions-count.sql', '7cb17e05596dbfdf75e347e43ccab110e393f41ea86f70697e59cf0c32c3a564');
 insert into migrations (filename, hash) values ('2017-04-17.0.core.null-token-type.sql', '185942cec464c12a2573f19ae386153389328f8e282af071024706e105e37eeb');
 insert into migrations (filename, hash) values ('2017-04-27.0.generator.pending-block-height.sql', 'bfe4fe5eec143e4367a91fd952cb5e3879f1c311f649ec13bfe95b202e94d4ec');
+insert into migrations (filename, hash) values ('2017-05-03.0.utxos.add-utxos-table.sql', '4442288c9a0bf750cab2aeb5bdae4351bf4be136a898d96c6c2ef879c4797627');
 insert into migrations (filename, hash) values ('2017-05-08.0.core.drop-redundant-indexes.sql', '5140e53b287b058c57ddf361d61cff3d3d1cbc3259a9de413b11574a71d09bec');
