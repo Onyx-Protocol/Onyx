@@ -34,7 +34,7 @@ import (
 
 const (
 	autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
-	grantPrefix       = "/core/grant/" // this is also hardcoded in core/authz.go. meh.
+	GrantPrefix       = "/core/grant/" // this is also hardcoded in core/authz.go. meh.
 )
 
 var (
@@ -330,7 +330,7 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error
 		case "network":
 			grant.Policy = "crosscore"
 		}
-		_, err = authz.StoreGrant(ctx, rDB, grant, grantPrefix)
+		_, err = authz.StoreGrant(ctx, rDB, grant, GrantPrefix)
 		if err != nil {
 			return errors.Wrap(err)
 		}

@@ -251,7 +251,7 @@ type page struct {
 }
 
 func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
-	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
+	authorizer := authz.NewAuthorizer(rDB, GrantPrefix, policyByRoute)
 
 	rootCAs := x509.NewCertPool()
 	if tlsConfig != nil {
