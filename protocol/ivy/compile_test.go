@@ -16,7 +16,7 @@ func TestCompile(t *testing.T) {
 		{
 			"TradeOffer",
 			tradeOffer,
-			`{"program":"547a6416000000000054795679515679c163240000007878ae7bac690000c3c2515779c1","clause_info":[{"name":"trade","value_info":[{"name":"payment","program":"sellerControlProgram","asset_amount":"requested"},{"name":"offered"}]},{"name":"cancel","args":[{"name":"sellerSig","type":"Signature"}],"value_info":[{"name":"offered","program":"sellerControlProgram"}]}]}`,
+			`{"program":"547a6416000000000054795679515679c163240000007878ae7cac690000c3c2515779c1","clause_info":[{"name":"trade","value_info":[{"name":"payment","program":"sellerControlProgram","asset_amount":"requested"},{"name":"offered"}]},{"name":"cancel","args":[{"name":"sellerSig","type":"Signature"}],"value_info":[{"name":"offered","program":"sellerControlProgram"}]}]}`,
 		},
 	}
 	for _, c := range cases {
