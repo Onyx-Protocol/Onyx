@@ -16,7 +16,7 @@ func TestCompile(t *testing.T) {
 		{
 			"TradeOffer",
 			tradeOffer,
-			`{"program":"547a6416000000000054795679515679c1632400000076aa527987690000c3c2515779c1","clause_info":[{"name":"Trade","value_info":[{"name":"payment","program":"seller","asset_amount":"requested"},{"name":"offered"}]},{"name":"Cancel","args":[{"name":"cancelSecret","type":"String"}],"value_info":[{"name":"offered","program":"seller"}]}]}`,
+			`{"program":"547a6416000000000054795679515679c163240000007878ae7bac690000c3c2515779c1","clause_info":[{"name":"trade","value_info":[{"name":"payment","program":"sellerControlProgram","asset_amount":"requested"},{"name":"offered"}]},{"name":"cancel","args":[{"name":"sellerSig","type":"Signature"}],"value_info":[{"name":"offered","program":"sellerControlProgram"}]}]}`,
 		},
 	}
 	for _, c := range cases {
@@ -40,15 +40,15 @@ func TestCompile(t *testing.T) {
 }
 
 const tradeOffer = `
-contract TradeOffer(requested: AssetAmount, seller: Program, cancelHash: Hash, offered: Value) {
-  clause Trade(payment: Value) {
+contract TradeOffer(requested: AssetAmount, sellerControlProgram: Program, sellerKey: PublicKey, offered: Value) {
+  clause trade(payment: Value) {
     verify payment.assetAmount == requested
-    output seller(payment)
+    output sellerControlProgram(payment)
     return offered
   }
-  clause Cancel(cancelSecret: String) {
-    verify sha3(cancelSecret) == cancelHash
-    output seller(offered)
+  clause cancel(sellerSig: Signature) {
+    verify checkTxSig(sellerKey, sellerSig)
+    output sellerControlProgram(offered)
   }
 }
 `
