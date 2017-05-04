@@ -25,7 +25,7 @@ const Editor = ({ template }) => {
           <h1 className="panel-title pull-left">Template Editor</h1>
           <table className="pull-right"><tbody><tr>
             <td style={{width: 300, paddingRight: 10}}><Load /></td>
-            <td><Save /></td>
+            <Save />{/* Save returns a <td> element */}
           </tr></tbody></table>
         </div>
         <Ace source={template.source} />
