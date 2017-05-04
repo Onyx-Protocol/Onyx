@@ -2,7 +2,6 @@ package utxos
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/lib/pq"
 
@@ -50,7 +49,6 @@ func (s *Store) deleteSpent(ctx context.Context, b *legacy.Block) error {
 		WHERE output_id IN (SELECT unnest($1::bytea[]))
 	`
 	_, err := s.DB.Exec(ctx, delQ, outputIDs)
-	fmt.Println(err)
 	return errors.Wrap(err, "deleting spent account utxos")
 }
 
@@ -97,6 +95,5 @@ func (s *Store) index(ctx context.Context, b *legacy.Block) error {
 		sourcePos,
 		refData,
 	)
-	fmt.Println(err)
 	return errors.Wrap(err)
 }
