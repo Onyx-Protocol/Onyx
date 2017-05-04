@@ -176,7 +176,7 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 	case *varRef:
 		for _, b := range builtins {
 			if e.name == b.name {
-				e.builtin = b
+				e.builtin = &b
 				return nil
 			}
 		}
@@ -324,24 +324,24 @@ func typeCheckClause(contract *contract, clause *clause) error {
 func typeCheckExpr(expr expression) error {
 	switch e := expr.(type) {
 	case *binaryExpr:
-		sig, ok := binaryOps[e.op]
+		info, ok := binaryOps[e.op]
 		if !ok {
 			return fmt.Errorf("unknown operator \"%s\"", e.op)
 		}
-		if sig.args[0] != "" && typeOf(e.left) != sig.args[0] {
-			return fmt.Errorf("left operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.left), sig.args[0])
+		if info.left != "" && typeOf(e.left) != info.left {
+			return fmt.Errorf("left operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.left), info.left)
 		}
-		if sig.args[1] != "" && typeOf(e.right) != sig.args[1] {
-			return fmt.Errorf("right operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.right), sig.args[1])
+		if info.right != "" && typeOf(e.right) != info.right {
+			return fmt.Errorf("right operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.right), info.right)
 		}
 
 	case *unaryExpr:
-		sig, ok := unaryOps[e.op]
+		info, ok := unaryOps[e.op]
 		if !ok {
 			return fmt.Errorf("unknown operator \"%s\"", e.op)
 		}
-		if sig.args[0] != "" && typeOf(e.expr) != sig.args[0] {
-			return fmt.Errorf("operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.expr), sig.args[0])
+		if info.operand != "" && typeOf(e.expr) != info.operand {
+			return fmt.Errorf("operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.expr), info.operand)
 		}
 
 	case *call:
@@ -349,12 +349,12 @@ func typeCheckExpr(expr expression) error {
 		if b == nil {
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
-		if len(e.args) != len(b.signature.args) {
-			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", b.name, len(e.args), len(b.signature.args))
+		if len(e.args) != len(b.args) {
+			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", b.name, len(e.args), len(b.args))
 		}
 		for i, actual := range e.args {
-			if b.signature.args[i] != "" && typeOf(actual) != b.signature.args[i] {
-				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, b.name, typeOf(actual), b.signature.args[i])
+			if b.args[i] != "" && typeOf(actual) != b.args[i] {
+				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, b.name, typeOf(actual), b.args[i])
 			}
 		}
 	}
