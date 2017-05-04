@@ -1,6 +1,6 @@
 {
   "name": "chain-sdk",
-  "version": "1.2.0-rc1",
+  "version": "1.2.0-rc.2",
   "description": "The Official Node.js SDK for Chain Core",
   "homepage": "https://github.com/chain/chain/tree/main/sdk/node",
   "main": "dist/index.js",
