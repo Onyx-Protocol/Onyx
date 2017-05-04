@@ -83,7 +83,7 @@ func ResetEverything(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 		}
 	}
 
-	// TODO(tessr): remove this core from the allowed members list in raft, too, potentially
+	// TODO(tessr): remove allowed members list, once raft storage supports directory-style operations
 
 	const q = `TRUNCATE %s RESTART IDENTITY;`
 	_, err = db.Exec(ctx, fmt.Sprintf(q, strings.Join(persistBlockchainReset, ", ")))
