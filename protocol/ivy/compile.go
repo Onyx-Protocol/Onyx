@@ -20,7 +20,7 @@ type (
 
 	ClauseArg struct {
 		Name string `json:"name"`
-		Typ  string `json:"typ"`
+		Typ  string `json:"type"`
 	}
 )
 
