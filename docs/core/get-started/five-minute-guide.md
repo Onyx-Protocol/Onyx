@@ -5,7 +5,7 @@
 This guide will walk you through the basic functions of Chain Core:
 
 * [Initialize the SDK](#initialize-the-sdk)
-* [Create keys](#create-keys) (in the Chain Core Mock HSM)
+* [Create keys](#create-keys) (in the Chain Core MockHSM)
 * [Initialize the HSM Signer](#initialize-the-hsm-signer)
 * [Create an asset](#create-an-asset)
 * [Create an account](#create-an-account)
@@ -29,13 +29,13 @@ $code create-client ../examples/java/FiveMinuteGuide.java ../examples/ruby/five_
 
 ## Create Keys
 
-Create a new key in the Mock HSM.
+Create a new key in the MockHSM.
 
 $code create-key ../examples/java/FiveMinuteGuide.java ../examples/ruby/five_minute_guide.rb ../examples/node/fiveMinuteGuide.js
 
 ## Initialize the HSM Signer
 
-To be able to sign transactions, load the key into the HSM Signer, which will communicate with the Mock HSM.
+To be able to sign transactions, load the key into the HSM Signer, which will communicate with the MockHSM.
 
 $code signer-add-key ../examples/java/FiveMinuteGuide.java ../examples/ruby/five_minute_guide.rb ../examples/node/fiveMinuteGuide.js
 

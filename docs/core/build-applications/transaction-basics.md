@@ -81,7 +81,7 @@ In order for a transaction to be accepted into the blockchain, its inputs must c
 
 Transaction signing provides the blockchain with its security. Strong cryptography prevents everyone--even the operators of the blockchain network--from producing valid transaction signatures without the relevant private keys.
 
-The Chain Core SDK assumes that private keys are held within an HSM controlled by the user. The SDK includes an `HsmSigner` interface that communicates with HSMs to sign transactions. For development, each Chain Core provides a Mock HSM that can generate public/private keypairs and sign transactions. It is important to note that the Mock HSM does not provide the security of a real HSM and, in a production setting, the Chain Core does not hold private keys and never signs transactions.
+The Chain Core SDK assumes that private keys are held within an HSM controlled by the user. The SDK includes an `HsmSigner` interface that communicates with HSMs to sign transactions. For development, each Chain Core provides a MockHSM that can generate public/private keypairs and sign transactions. It is important to note that the MockHSM does not provide the security of a real HSM and, in a production setting, the Chain Core does not hold private keys and never signs transactions.
 
 ### Submit transaction
 

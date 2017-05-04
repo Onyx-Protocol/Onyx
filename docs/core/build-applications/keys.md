@@ -8,15 +8,15 @@ In simple cases, an asset or an account will define a single key required for is
 
 In a production environment, private keys are generated within an HSM (hardware security module) and never leave it. Their corresponding public keys are exported for use within Chain Core. In order to issue or transfer asset units on a blockchain, a transaction is created in Chain Core and sent to the HSM for signing. The HSM signs the transaction without ever revealing the private key. Once signed, the transaction can be submitted to the blockchain successfully.
 
-For development environments, Chain Core provides a convenient Mock HSM. The Mock HSM API is identical to the HSM API in [Chain Core Enterprise Edition](https://chain.com/enterprise), providing a seamless transition from development to production. It is important to note that the Mock HSM does not provide the security of a real HSM.
+For development environments, Chain Core provides a convenient MockHSM. The MockHSM API is identical to the HSM API in [Chain Core Enterprise Edition](https://chain.com/enterprise), providing a seamless transition from development to production. It is important to note that the MockHSM does not provide the security of a real HSM.
 
 ## Overview
 
 This guide will walk you through the basic key operations:
 
-* [Create key](#create-key) (in the Mock HSM)
+* [Create key](#create-key) (in the MockHSM)
 * [Load key](#load-key) (into the HSM Signer)
-* [Sign transaction](#sign-transaction) (with the Mock HSM)
+* [Sign transaction](#sign-transaction) (with the MockHSM)
 
 ### Sample Code
 
@@ -28,13 +28,13 @@ All code samples in this guide can be viewed in a single, runnable script. Avail
 
 ## Create key
 
-Create a new key in the Mock HSM. (Requires a context to have been created with `new Context()`.)
+Create a new key in the MockHSM. (Requires a context to have been created with `new Context()`.)
 
 $code create-key ../examples/java/Keys.java ../examples/ruby/keys.rb ../examples/node/keys.js
 
 ## Load key
 
-To be able to sign transactions, load the key into the HSM Signer, which will communicate with the Mock HSM.
+To be able to sign transactions, load the key into the HSM Signer, which will communicate with the MockHSM.
 
 $code signer-add-key ../examples/java/Keys.java ../examples/ruby/keys.rb ../examples/node/keys.js
 
