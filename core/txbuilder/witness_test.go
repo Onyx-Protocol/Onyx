@@ -49,8 +49,9 @@ func TestInferConstraints(t *testing.T) {
 func TestWitnessJSON(t *testing.T) {
 	si := &SigningInstruction{
 		Position: 17,
-		SignatureWitnesses: []*signatureWitness{
-			&signatureWitness{
+		WitnessComponents: []witnessComponent{
+			dataWitness{1, 2, 3},
+			&SignatureWitness{
 				Quorum: 4,
 				Keys: []keyID{{
 					XPub:           testutil.TestXPub,
@@ -69,7 +70,7 @@ func TestWitnessJSON(t *testing.T) {
 	var got SigningInstruction
 	err = json.Unmarshal(b, &got)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("error on input %s: %s", b, err)
 	}
 
 	if !testutil.DeepEqual(si, &got) {
