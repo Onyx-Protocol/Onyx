@@ -81,6 +81,14 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 			}
 			si.WitnessComponents = append(si.WitnessComponents, &s)
 
+		case "raw_tx_signature":
+			var s RawTxSigWitness
+			err = json.Unmarshal(wc, &s)
+			if err != nil {
+				return errors.Wrapf(err, "unmarshaling error on witness component %d, type raw_signature, input %s", i, wc)
+			}
+			si.WitnessComponents = append(si.WitnessComponents, &s)
+
 		default:
 			return errors.WithDetailf(ErrBadWitnessComponent, "witness component %d has unknown type '%s'", i, t.Type)
 		}
