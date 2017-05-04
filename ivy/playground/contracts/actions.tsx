@@ -3,9 +3,19 @@ import { getItem } from '../accounts/selectors';
 export const CREATE_CONTRACT = 'contracts/CREATE_CONTRACT'
 export const UPDATE_INPUT = 'contracts/UPDATE_INPUT'
 import { push } from 'react-router-redux'
-import { getInputMap, getControlProgram, getContractValue, getSelectedTemplate, getSpendContractId } from './selectors'
+import { getClauseParameterIds, getClauseDataParameterIds, getInputMap, getControlProgram, getContractValue, getSelectedTemplate, getSpendContractId } from './selectors'
 import { getPromisedInputMap } from '../inputs/data'
-import { SpendUnspentOutput, Receiver, ControlWithAccount, ControlWithReceiver, Action } from '../transactions/types'
+import {
+  WitnessComponent,
+  KeyId,
+  DataWitness,
+  SignatureWitness,
+  Receiver,
+  SpendUnspentOutput,
+  ControlWithAccount,
+  ControlWithReceiver,
+  Action
+} from '../transactions/types'
 import { createFundingTx, createSpendingTx } from '../transactions'
 
 export const SELECT_TEMPLATE = 'contracts/SELECT_TEMPLATE'
@@ -56,7 +66,6 @@ export const create = () => {
         dispatch(push('/spend'))
       })
     }).catch(err => {
-      console.log(err)
       dispatch(showErrors())
     })
   }
@@ -80,6 +89,32 @@ export const spend = () => {
         amount: contract.amount
       } as ControlWithAccount)
     }
+
+    let clauseParams = getClauseParameterIds(getState())
+    let clauseDataParams = getClauseDataParameterIds(getState())
+    console.log("clauseParams", clauseParams)
+    console.log("clauseDataParams", clauseDataParams)
+    const witness: WitnessComponent[] = []
+    for (const id in spendInputMap) {
+      const input = spendInputMap[id]
+      switch (input.type) {
+        case "choosePublicKeyInput":
+          const pubkey = input.value
+          if (input.keyMap === undefined) {
+            throw 'undefined keymap for input type ' + input.type
+          }
+          const keymap = input.keyMap[pubkey]
+          witness.push({
+            type: "signature",
+            quorum: 1,
+            keys: [{
+              xpub: keymap.rootXpub,
+              derivationPath: keymap.pubkeyDerivationPath
+            } as KeyId],
+            signatures: []
+          } as SignatureWitness)
+      }
+    }
     createSpendingTx(actions).then((result) => {
       console.log("result", result)
     })
@@ -98,10 +133,7 @@ export const setClauseIndex = (selectedClauseIndex: number) => {
 
 export const selectTemplate = (templateId: string) => {
   return(dispatch, getState) => {
-    console.log("got state", getState())
     let templateMap = getTemplateMap(getState())
-    console.log(templateMap)
-    console.log(templateId)
     dispatch({
       type: SELECT_TEMPLATE,
       template: templateMap[templateId],
