@@ -3,8 +3,19 @@ import { getItem } from '../accounts/selectors';
 export const CREATE_CONTRACT = 'contracts/CREATE_CONTRACT'
 export const UPDATE_INPUT = 'contracts/UPDATE_INPUT'
 import { push } from 'react-router-redux'
-import { getClauseParameterIds, getClauseDataParameterIds, getInputMap, getControlProgram, getContractValue, getSelectedTemplate, getSpendContractId } from './selectors'
+import {
+  getClauseParameterIds,
+  getClauseDataParameterIds,
+  getInputMap,
+  getControlProgram,
+  getContractValue,
+  getSelectedTemplate,
+  getSpendContractId,
+  getClauseWitnessComponents
+} from './selectors'
+
 import { getPromisedInputMap } from '../inputs/data'
+
 import {
   WitnessComponent,
   KeyId,
@@ -25,6 +36,8 @@ export const SHOW_ERRORS = 'contracts/SHOW_ERRORS'
 
 import { getItemMap as getTemplateMap } from '../templates/selectors'
 import { getSpendContract } from './selectors'
+
+import { InputMap } from '../inputs/types'
 
 export const showErrors = () => {
   return {
@@ -90,32 +103,8 @@ export const spend = () => {
       } as ControlWithAccount)
     }
 
-    let clauseParams = getClauseParameterIds(getState())
-    let clauseDataParams = getClauseDataParameterIds(getState())
-    console.log("clauseParams", clauseParams)
-    console.log("clauseDataParams", clauseDataParams)
-    const witness: WitnessComponent[] = []
-    for (const id in spendInputMap) {
-      const input = spendInputMap[id]
-      switch (input.type) {
-        case "choosePublicKeyInput":
-          const pubkey = input.value
-          if (input.keyMap === undefined) {
-            throw 'undefined keymap for input type ' + input.type
-          }
-          const keymap = input.keyMap[pubkey]
-          witness.push({
-            type: "signature",
-            quorum: 1,
-            keys: [{
-              xpub: keymap.rootXpub,
-              derivationPath: keymap.pubkeyDerivationPath
-            } as KeyId],
-            signatures: []
-          } as SignatureWitness)
-      }
-    }
-    createSpendingTx(actions).then((result) => {
+    const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
+    createSpendingTx(actions, witness).then((result) => {
       console.log("result", result)
     })
     // dispatch({

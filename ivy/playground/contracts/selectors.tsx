@@ -24,7 +24,11 @@ import {
 } from 'ivy-compiler'
 
 import {
-  SpendFromAccount
+  KeyId,
+  SignatureWitness,
+  DataWitness,
+  SpendFromAccount,
+  WitnessComponent
 } from '../transactions/types'
 
 import {
@@ -46,8 +50,6 @@ export const getSelectedTemplate = createSelector(
   getSelectedTemplateId,
   getTemplateMap,
   (templateId: string, templateMap) => {
-    console.log("id", templateId)
-    console.log("map", templateMap)
     return templateMap[templateId]
   }
 )
@@ -124,7 +126,6 @@ export const getSpendInputSelector = (id: string) => {
     getSpendInputMap,
     (spendInputMap: InputMap) => {
      let spendInput = spendInputMap[id]
-     console.log(spendInputMap)
      if (spendInput === undefined) {
        throw "bad spend input ID: " + id
      } else {
@@ -161,6 +162,70 @@ export const getClauseParameterIds = createSelector(
   }
 )
 
+export const getClauseWitnessComponents = createSelector(
+  getSpendInputMap,
+  getClauseParameterIds,
+  (spendInputMap: InputMap, clauseIds: string[]): WitnessComponent[] => {
+    const witness: WitnessComponent[] = []
+    clauseIds.forEach(clauseId => {
+      for (const inputId in spendInputMap) {
+        const input = spendInputMap[inputId]
+        if (input.name.includes(clauseId)) {
+          switch(input.type) {
+            case "choosePublicKeyInput":
+              const pubkey = input.value
+              if (input.keyMap === undefined) {
+                throw 'undefined keymap for input type ' + input.type
+              }
+              const keymap = input.keyMap[pubkey]
+              witness.push({
+                type: "signature",
+                quorum: 1,
+                keys: [{
+                  xpub: keymap.rootXpub,
+                  derivationPath: keymap.pubkeyDerivationPath
+                } as KeyId],
+                signatures: []
+              } as SignatureWitness)
+              break
+            default:
+              break
+          }
+        }
+      }
+    })
+    return witness
+  }
+)
+
+/* export const getClauseWitnessComponents = createSelector( */
+/*   getSpendInputMap, */
+/*   getClauseParameterIds, */
+/*   (spendInputMap: InputMap, clauseIds: string[]): WitnessComponent[] => { */
+/*     const witness: WitnessComponent[] = [] */
+/*     for (const id in spendInputMap) { */
+/*       const input = spendInputMap[id] */
+/*       switch (input.type) { */
+/*         case "choosePublicKeyInput": */
+/*           const pubkey = input.value */
+/*           if (input.keyMap === undefined) { */
+/*             throw 'undefined keymap for input type ' + input.type */
+/*           } */
+/*           const keymap = input.keyMap[pubkey] */
+/*           witness.push({ */
+/*             type: "signature", */
+/*             quorum: 1, */
+/*             keys: [{ */
+/*               xpub: keymap.rootXpub, */
+/*               derivationPath: keymap.pubkeyDerivationPath */
+/*             } as KeyId], */
+/*             signatures: [] */
+/*           } as SignatureWitness) */
+/*       } */
+/*     } */
+/*   } */
+/* ) */
+
 export const getClauseDataParameterIds = createSelector(
   getSpendContract,
   getSpendContractSelectedClauseIndex,
@@ -194,7 +259,6 @@ export const getContractValue = createSelector(
         } as SpendFromAccount)
       }
     })
-    console.log(sources)
     if (sources.length !== 1) return undefined
     return sources[0]
   }
@@ -213,8 +277,6 @@ export const isValid = createSelector(
   getParameterIds,
   (inputMap, paramIdList) => {
     const invalid = paramIdList.filter(id => {
-      console.log("id", id)
-      console.log("inputMap", inputMap)
       !isValidInput(id, inputMap)
     })
     return invalid.length === 0
