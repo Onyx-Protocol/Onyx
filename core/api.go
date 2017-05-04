@@ -26,6 +26,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/core/txfeed"
+	"chain/core/utxos"
 	"chain/database/pg"
 	"chain/database/raft"
 	"chain/encoding/json"
@@ -64,6 +65,7 @@ type API struct {
 	assets          *asset.Registry
 	accounts        *account.Manager
 	indexer         *query.Indexer
+	utxoStore       *utxos.Store
 	txFeeds         *txfeed.Tracker
 	accessTokens    *accesstoken.CredentialStore
 	config          *config.Config
