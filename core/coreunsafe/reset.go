@@ -12,6 +12,7 @@ import (
 
 	"github.com/lib/pq"
 
+	"chain/core"
 	"chain/core/config"
 	"chain/database/pg"
 	"chain/database/raft"
@@ -73,6 +74,16 @@ func ResetEverything(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	if err != nil {
 		return errors.Wrap(err)
 	}
+
+	// Delete all grants in raft storage
+	for _, p := range core.Policies {
+		err = rDB.Delete(ctx, core.GrantPrefix+p)
+		if err != nil {
+			return errors.Wrapf(err, "could not delete grants for policy %s from RaftDB", p)
+		}
+	}
+
+	// TODO(tessr): remove allowed members list, once raft storage supports directory-style operations
 
 	const q = `TRUNCATE %s RESTART IDENTITY;`
 	_, err = db.Exec(ctx, fmt.Sprintf(q, strings.Join(persistBlockchainReset, ", ")))

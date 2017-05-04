@@ -1,8 +1,8 @@
 package core
 
-const grantPrefix = "/core/grant/"
+const GrantPrefix = "/core/grant/"
 
-var policies = []string{
+var Policies = []string{
 	"client-readwrite",
 	"client-readonly",
 	"crosscore",

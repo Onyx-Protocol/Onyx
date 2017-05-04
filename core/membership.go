@@ -50,6 +50,6 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		Protected: true,
 	}
 
-	_, err = authz.StoreGrant(ctx, a.raftDB, grant, grantPrefix)
+	_, err = authz.StoreGrant(ctx, a.raftDB, grant, GrantPrefix)
 	return errors.Wrap(err)
 }

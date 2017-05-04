@@ -39,7 +39,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 	}
 
 	var found bool
-	for _, p := range policies {
+	for _, p := range Policies {
 		if p == x.Policy {
 			found = true
 			break
@@ -87,7 +87,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		Policy:    x.Policy,
 		Protected: false, // grants created through the createGrant RPC cannot be protected
 	}
-	g, err := authz.StoreGrant(ctx, a.raftDB, params, grantPrefix)
+	g, err := authz.StoreGrant(ctx, a.raftDB, params, GrantPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -111,10 +111,10 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 
 func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 	var grants []apiGrant
-	for _, p := range policies {
+	for _, p := range Policies {
 		// perhaps could denormalize the data in storage to speed this up,
 		// but for now assume a small number of grants
-		data, err := a.raftDB.Get(ctx, grantPrefix+p)
+		data, err := a.raftDB.Get(ctx, GrantPrefix+p)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
@@ -159,7 +159,7 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 		return errors.Wrap(err)
 	}
 
-	data, err := a.raftDB.Get(ctx, grantPrefix+x.Policy)
+	data, err := a.raftDB.Get(ctx, GrantPrefix+x.Policy)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -197,7 +197,7 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
+	err = a.raftDB.Set(ctx, GrantPrefix+x.Policy, val)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -209,8 +209,8 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 // related grants need to be deleted. It will delete a grant even if that grant is
 // protected.
 func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error {
-	for _, p := range policies {
-		data, err := a.raftDB.Get(ctx, grantPrefix+p)
+	for _, p := range Policies {
+		data, err := a.raftDB.Get(ctx, GrantPrefix+p)
 		if err != nil {
 			return errors.Wrap(err)
 		}
@@ -248,7 +248,7 @@ func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error
 		if err != nil {
 			return errors.Wrap(err)
 		}
-		err = a.raftDB.Set(ctx, grantPrefix+p, val)
+		err = a.raftDB.Set(ctx, GrantPrefix+p, val)
 		if err != nil {
 			return errors.Wrap(err)
 		}
