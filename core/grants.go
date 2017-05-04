@@ -225,6 +225,7 @@ func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error
 		for _, g := range grantList.Grants {
 			if g.GuardType != "access_token" {
 				keep = append(keep, g)
+				continue
 			}
 			var data map[string]interface{}
 			err = json.Unmarshal(g.GuardData, &data)
