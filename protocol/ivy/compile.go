@@ -7,17 +7,55 @@ import (
 	"chain/protocol/vm"
 )
 
+type (
+	CompileResult struct {
+		Program []byte       `json:"program"`
+		Clauses []ClauseInfo `json:"clause_info"`
+	}
+
+	ClauseInfo struct {
+		Name string      `json:"name"`
+		Args []ClauseArg `json:"args"`
+	}
+
+	ClauseArg struct {
+		Name string `json:"name"`
+		Typ  string `json:"typ"`
+	}
+)
+
 // Compile parses an Ivy contract from the supplied input source and
 // produces the compiled bytecode.
-func Compile(r io.Reader) ([]byte, error) {
-	c, err := ParseReader("input", r, Debug(false))
+func Compile(r io.Reader) (CompileResult, error) {
+	parsed, err := ParseReader("input", r, Debug(false))
 	if err != nil {
-		return nil, err
+		return CompileResult{}, err
 	}
-	return compile(c.(*contract))
+	c, ok := parsed.(*contract)
+	if !ok {
+		return CompileResult{}, fmt.Errorf("parse result has type %T, must be *contract", parsed)
+	}
+	prog, err := compileContract(c)
+	if err != nil {
+		return CompileResult{}, err
+	}
+	result := CompileResult{Program: prog}
+	for _, clause := range c.clauses {
+		info := ClauseInfo{Name: clause.name}
+		for _, p := range clause.params {
+			switch p.typ {
+			case "Value", "AssetAmount":
+				info.Args = append(info.Args, ClauseArg{Name: p.name + ".asset", Typ: p.typ}, ClauseArg{Name: p.name + ".amount", Typ: p.typ})
+			default:
+				info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: p.typ})
+			}
+		}
+		result.Clauses = append(result.Clauses, info)
+	}
+	return result, nil
 }
 
-func compile(contract *contract) ([]byte, error) {
+func compileContract(contract *contract) ([]byte, error) {
 	if len(contract.clauses) == 0 {
 		return nil, fmt.Errorf("empty contract")
 	}
