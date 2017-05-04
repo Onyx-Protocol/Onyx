@@ -201,7 +201,6 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 }
 
 func decorateOutputs(contract *contract, clause *clause) error {
-	contractValueParam := contract.params[len(contract.params)-1]
 	for _, s := range clause.statements {
 		stmt, ok := s.(*outputStatement)
 		if !ok {
@@ -217,9 +216,9 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			return fmt.Errorf("passing anything other than a value parameter to an output function call not yet supported")
 		}
 		p := referencedParam(stmt.call.args[0])
-		if p == contractValueParam {
-			// It's the contract value param and doesn't have to be matched
-			// against an AssetAmount parameter.
+		if p == contract.params[len(contract.params)-1] {
+			// The contract value param doesn't have to be matched against
+			// an AssetAmount parameter.
 			continue
 		}
 

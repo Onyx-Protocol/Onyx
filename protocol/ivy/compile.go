@@ -44,7 +44,9 @@ func Compile(r io.Reader) (CompileResult, error) {
 		info := ClauseInfo{Name: clause.name}
 		for _, p := range clause.params {
 			switch p.typ {
-			case "Value", "AssetAmount":
+			case "Value":
+				continue
+			case "AssetAmount":
 				info.Args = append(info.Args, ClauseArg{Name: p.name + ".asset", Typ: p.typ}, ClauseArg{Name: p.name + ".amount", Typ: p.typ})
 			default:
 				info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: p.typ})
@@ -73,7 +75,7 @@ func compileContract(contract *contract) ([]byte, error) {
 		return nil, err
 	}
 
-	stack := addParamsToStack(nil, contract.params, true)
+	stack := addParamsToStack(nil, contract.params)
 
 	if len(contract.clauses) == 1 {
 		b := newBuilder()
@@ -149,7 +151,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 		return err
 	}
 	assignIndexes(clause)
-	stack := addParamsToStack(contractStack, clause.params, false)
+	stack := addParamsToStack(contractStack, clause.params)
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *verifyStatement:
