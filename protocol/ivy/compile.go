@@ -204,7 +204,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 			}
 			err = compileExpr(b, stack, contract, clause, stmt.expr)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "in verify statement in clause \"%s\"", clause.name)
 			}
 			b.addOp(vm.OP_VERIFY)
 
@@ -238,11 +238,11 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 				}
 				err := decorateRefsInExpr(contract, clause, r)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
 				err = compileExpr(b, stack, contract, clause, r)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
 				stack = append(stack, stackEntry{})
 
@@ -255,11 +255,11 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 				}
 				err = decorateRefsInExpr(contract, clause, r)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
 				err = compileExpr(b, stack, contract, clause, r)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
 				stack = append(stack, stackEntry{})
 			}
@@ -271,7 +271,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 			// prog
 			err = compileExpr(b, stack, contract, clause, stmt.call.fn)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 			}
 
 			b.addOp(vm.OP_CHECKOUTPUT)
@@ -297,26 +297,26 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	case *binaryExpr:
 		err = compileExpr(b, stack, contract, clause, e.left)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
 		}
 		err = compileExpr(b, append(stack, stackEntry{}), contract, clause, e.right)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
 		}
 		ops, err := vm.Assemble(e.op.opcodes)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "assembling bytecode in \"%s\" expression", e.op.op)
 		}
 		b.addRawBytes(ops)
 
 	case *unaryExpr:
 		err = compileExpr(b, stack, contract, clause, e.expr)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "in \"%s\" expression", e.op.op)
 		}
 		ops, err := vm.Assemble(e.op.opcodes)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "assembling bytecode in \"%s\" expression", e.op.op)
 		}
 		b.addRawBytes(ops)
 
@@ -325,16 +325,16 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if bi == nil {
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
-		for _, a := range e.args {
+		for i, a := range e.args {
 			err = compileExpr(b, stack, contract, clause, a)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "compiling argument %d in call expression", i)
 			}
 			stack = append(stack, stackEntry{})
 		}
 		ops, err := vm.Assemble(bi.opcodes)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "assembling bytecode in call expression")
 		}
 		b.addRawBytes(ops)
 
