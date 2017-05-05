@@ -1049,6 +1049,12 @@ Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit
           spent_output:
             type: object
             description: Minimal information about the contents of the output necessary for constructing a transaction witness.
+            required:
+              - asset_id
+              - amount
+              - program
+              - data
+              - exthash
             properties:
               asset_id:
                 type: string
@@ -1070,7 +1076,48 @@ Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit
 
       Input2Template:
         type: object
-        description: TBD
+        required:
+          - type
+          - spent_output_id
+          - spent_output
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `input1`).
+            enum:
+              - input1
+          spent_output_id:
+            type: string
+            description: Hex ID of the spent output.
+          data:
+            $ref: '#/definitions/DataTemplate'
+          spent_output:
+            type: object
+            description: Minimal information about the contents of the output necessary for constructing a transaction witness.
+            required:
+              - asset_commitment
+              - value_commitment
+              - program
+              - data
+              - exthash
+            properties:
+              asset_commitment:
+                type: string
+                description: Hex-encoded asset commitment (64 bytes).
+              value_commitment:
+                type: string
+                description: Hex-encoded value commitment (64 bytes).
+              program:
+                $ref: '#/definitions/Program'
+              data:
+                type: string
+                description: Raw hex-encoded 32-byte data.
+              exthash:
+                type: string
+                description: Extension hash
+          signing_instructions:
+            type: object
+            description: An opaque object describing signing instructions for the input.
 
       Output1Template:
         type: object
