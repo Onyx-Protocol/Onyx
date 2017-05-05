@@ -188,9 +188,13 @@ For now we'll only support either non-confidential issuance, or same-issuer asse
 
 ### Upgrading to confidential assets
 
-All assets are being encrypted by default. Existing unspent outputs are spent first and upgraded to confidential assets automatically using a combination of `Retirement` and `Upgrade` entries inserted by Chain Core automatically.
+All assets are being encrypted by default. Existing unspent outputs are spent first and upgraded to confidential assets automatically using a combination of `Retirement` and `Upgrade` entries inserted by Chain Core automatically in case spending is done to the outputs with version 2 (confidential).
 
-TBD: discuss what to do when asked to create a legacy output by a legacy receiver.
+Legacy receivers are detected by using `output_version` which defaults to 1.
+
+If the receiver specifies `output_version=1` (or that field is missing), existing unspent output with version 1 is not upgraded: the change is set to another output 1 (non-confidential). This is done intentionally in order to preserve compatibility with not-yet-upgraded counterparty nodes. As soon as the nodes are upgraded and issue receivers with `output_version=2`, non-confidential unspent output start being upgraded in the following payments.
+
+If there is no version 1 unspent outputs, the payment cannot succeed. The recipient needs to upgrade, or the current Core needs to swap the version 2 unspent with the issuer or any other node that holds corresponding asset on a version 1 output.
 
 
 
