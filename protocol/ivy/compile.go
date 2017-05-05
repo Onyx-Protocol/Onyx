@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 
 	chainjson "chain/encoding/json"
+	"chain/errors"
 	"chain/protocol/vm"
 )
 
@@ -42,7 +43,7 @@ func Compile(r io.Reader) (CompileResult, error) {
 	}
 	c, err := parse(inp)
 	if err != nil {
-		return CompileResult{}, err
+		return CompileResult{}, errors.Wrap(err, "parse error")
 	}
 	prog, err := compileContract(c)
 	if err != nil {
