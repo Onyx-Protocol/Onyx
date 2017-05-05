@@ -39,7 +39,7 @@ Output
   = "output" _ contract:ContractExpression __ { return { type: "output", location: location(), contract: contract } }
 
 ContractExpression
-  = program:VariableExpression "(" value:VariableExpression ")" { return { type: "contractExpression", location: location(), program: program, value: value } }
+  = address:VariableExpression "(" value:VariableExpression ")" { return { type: "contractExpression", location: location(), address: address, value: value } }
 
 Return
   = "return" _ value:VariableExpression __ { return { type: "returnStatement", location: location(), value: value } }

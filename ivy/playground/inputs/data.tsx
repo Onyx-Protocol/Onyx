@@ -17,7 +17,7 @@ import {
   PrimaryInputType,
   InputContext,
   HashInput,
-  ProgramInput,
+  AddressInput,
   PublicKeyInput,
   GenerateStringInput,
   GenerateHashInput,
@@ -65,7 +65,7 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
     case "signatureInput":
     case "durationInput":
       return getData(getChild(input), inputsById)
-    case "programInput":
+    case "addressInput":
     case "publicKeyInput": {
       if (input.computedData === undefined) throw "input.computedData unexpectedly undefined"
       return Buffer.from(input.computedData, 'hex')
@@ -159,7 +159,7 @@ export const isPrimaryInputType = (str: string): str is PrimaryInputType => {
     case "timeInput":
     case "signatureInput":
     case "valueInput":
-    case "programInput":
+    case "addressInput":
     case "assetAmountInput":
       return true
     default:
@@ -182,7 +182,7 @@ export const isComplexType = (inputType: InputType) => {
     case "addressInput":
     case "mintimeInput":
     case "maxtimeInput":
-    case "programInput":
+    case "addressInput":
       return true
     default:
       return false
@@ -203,7 +203,7 @@ export const getInputType = (type: ClauseParameterType): PrimaryInputType => {
     case "Time": return "timeInput"
     case "Signature": return "signatureInput"
     case "Value": return "valueInput"
-    case "Program": return "programInput"
+    case "Address": return "addressInput"
     case "AssetAmount": return "assetAmountInput"
     default:
       throw "can't yet get input type for " + type
@@ -223,7 +223,7 @@ export const isValidInput = (id: string, inputMap: InputMap): boolean => {
     case "timeInput":
     case "signatureInput":
     case "durationInput":
-    case "programInput":
+    case "addressInput":
     case "timeInput":
     case "signatureInput":
       return isValidInput(getChild(input), inputMap)
@@ -249,9 +249,6 @@ export const validateInput = (input: Input): boolean => {
     case "parameterInput":
     case "generateHashInput":
       return isPrimaryInputType(input.value)
-    // case "addressInput":
-    //   return (input.value === "generateAddressInput" ||
-    //           input.value === "provideAddressInput")
     case "stringInput":
       return (input.value === "generateStringInput" ||
               input.value === "provideStringInput")
@@ -269,14 +266,11 @@ export const validateInput = (input: Input): boolean => {
     case "timeInput":
       return (input.value === "timestampTimeInput")
     case "generatePublicKeyInput":
-    case "generateAddressInput":
-      return (input.value === "generatePrivateKeyInput" ||
-              input.value === "providePrivateKeyInput")
     case "signatureInput":
       return input.value === "choosePublicKeyInput"
     case "generateSignatureInput":
       return (input.value === "providePrivateKeyInput")
-    case "programInput":
+    case "addressInput":
       return (input.value === "accountAliasInput")
     case "provideStringInput":
       return validateHex(input.value)
@@ -289,39 +283,6 @@ export const validateInput = (input: Input): boolean => {
         default:
           throw 'unsupported hash function: ' + input.hashFunction
       }
-  //  case "generatePrivateKeyInput":
-  //  case "providePrivateKeyInput":
-  //    try {
-  //      let kr = keyring.fromSecret(input.value)
-  //      return true
-  //    } catch(e) {
-  //      return false
-  //    }
-  //  case "provideAddressInput":
-  //    try {
-  //      let address = Address.fromBase58(input.value)
-  //      return true
-  //    } catch(e) {
-  //      return false
-  //    }
-  //  case "providePublicKeyInput":
-  //    try {
-  //      let buf = Buffer.from(input.value, "hex")
-  //      let kr = keyring.fromPublic(buf)
-  //      return true
-  //    } catch(e) {
-  //      return false
-  //    }
-  //  case "provideSignatureInput": {
-  //    if (!validateHex(input.value)) return false
-  //    let buf = Buffer.from(input.value.slice(0, -2), "hex")
-  //    try {
-  //      let sig = ec.fromDER(buf)
-  //      return true
-  //    } catch(e) {
-  //      return false
-  //    }
-  //  }
     case "generateStringInput": {
       let length = parseInt(input.value, 10)
       if (isNaN(length) || length < 0 || length > 520) return false
@@ -432,9 +393,6 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
     case "generateHashInput":
     case "mintimeInput":
     case "maxtimeInput":
-    case "addressInput":
-    case "generateAddressInput":
-    case "provideAddressInput":
       throw "getDefaultContractParameterValue should not be called on " + inputType
     case "booleanInput": 
       return "false"
@@ -466,7 +424,7 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
       // return "generateSignatureInput"
     case "generateSignatureInput":
       return "providePrivateKeyInput"
-    case "programInput":
+    case "addressInput":
       return "accountAliasInput"    
     case "booleanInput":
       return "false"
@@ -493,12 +451,8 @@ export function getDefaultTransactionDetailValue(inputType: InputType): string {
     case "mintimeInput":
     case "maxtimeInput":
       return "timeInput"
-    case "provideAddressInput":
-      return ""
     case "addressInput":
       return "generateAddressInput"
-    case "generateAddressInput":
-      return "generatePrivateKeyInput"
     default: // fall back for now
       return getDefaultContractParameterValue(inputType)
   }
@@ -508,9 +462,6 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
   switch (inputType) {
     case "parameterInput":
     case "generateHashInput":
-    case "addressInput":
-    case "generateAddressInput":
-    case "provideAddressInput":
     case "mintimeInput":
     case "maxtimeInput":
       throw "getDefaultClauseParameterValue should not be called on " + inputType
@@ -549,7 +500,7 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
       return "blocksDurationInput"
     case "timeInput":
       return "blockheightTimeInput"
-    case "programInput":
+    case "addressInput":
       return "accountAliasInput"
     case "accountAliasInput":
     case "assetAliasInput":
@@ -568,7 +519,7 @@ export function getPromisedInputMap(inputsById: {[s: string]: Input}): Promise<{
   let newInputsById = {}
   for (let id in inputsById) {
     let input = inputsById[id]
-    if (input.type === "publicKeyInput" || input.type === "programInput") {
+    if (input.type === "publicKeyInput" || input.type === "addressInput") {
       newInputsById[id] = getPromiseData(id, inputsById)
     } else {
       newInputsById[id] = input
@@ -580,15 +531,15 @@ export function getPromisedInputMap(inputsById: {[s: string]: Input}): Promise<{
 export function getPromiseData(inputId: string, inputsById: {[s: string]: Input}): Promise<Input> {
   let input = inputsById[inputId]
   switch (input.type) {
-    case "programInput": {
+    case "addressInput": {
       console.log("input", input)
       let accountId = inputsById[input.name + ".accountAliasInput"].value
       return client.accounts.createReceiver({ accountId }).then((receiver) => {
-        let programInput: ProgramInput = {
-          ...input as ProgramInput,
+        let addressInput: AddressInput = {
+          ...input as AddressInput,
           computedData: receiver.controlProgram
         }
-        return programInput
+        return addressInput
       })
     }
     case "publicKeyInput": {
@@ -650,8 +601,7 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
       // addDefaultInput(inputs, "providePublicKeyInput", name)
       return
     }
-    case "generatePublicKeyInput": 
-    case "generateAddressInput": {
+    case "generatePublicKeyInput": {
       addDefaultInput(inputs, "generatePrivateKeyInput", name)
       addDefaultInput(inputs, "providePrivateKeyInput", name)
     }
@@ -674,11 +624,6 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
       addDefaultInput(inputs, "providePrivateKeyInput", name)
       return
     }
-    case "addressInput": {
-      addDefaultInput(inputs, "generateAddressInput", name)
-      addDefaultInput(inputs, "provideAddressInput", name)
-      return
-    }
     case "mintimeInput":
     case "maxtimeInput": {
       addDefaultInput(inputs, "timeInput", name)
@@ -692,7 +637,7 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
       addDefaultInput(inputs, "assetAliasInput", name)
       addDefaultInput(inputs, "amountInput", name)
     }
-    case "programInput": {
+    case "addressInput": {
       addDefaultInput(inputs, "accountAliasInput", name)
     }
     default:
