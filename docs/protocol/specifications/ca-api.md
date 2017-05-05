@@ -1,10 +1,16 @@
 # Confidential Assets API
 
 * [Introduction](#introduction)
+* [Overview](#overview)
+  * [Single-party transaction](#single-party-transaction)
+  * [Multi-party transaction](#multi-party-transaction)
+  * [Confidential issuance](#confidential-issuance)
+  * [Upgrading to confidential assets](#upgrading-to-confidential-assets)
+  * [Creating disclosure](#creating-disclosure)
+  * [Trackable addresses](#trackable-addresses)
 * [Data structures](#data-structures)
 * [Actions](#actions)
 * [Encryption](#encryption)
-* [Trackable addresses](#trackable-addresses)
 * [API specification](#api-specification)
 * [Discussion](#discussion)
 
@@ -12,7 +18,7 @@
 
 New design for transaction builder that focuses on privacy.
 
-### Goals
+Goals:
 
 1. Native support for transaction entries.
 2. Privacy-preserving transaction signing
@@ -20,7 +26,7 @@ New design for transaction builder that focuses on privacy.
 4. Support for constructing witnesses for custom control and issuance programs.
 5. Built-in support for encrypting payload inside and outside the range proof.
 
-### Addressed problems
+Addressed problems:
 
 1. Linkability of inputs and outputs in multi-party transfers.
 2. Asset range proofs for outputs with asset ID that’s missing among inputs.
@@ -28,11 +34,12 @@ New design for transaction builder that focuses on privacy.
 4. Future extensibility to custom signing schemes.
 5. Privacy of metadata (such as signing instructions, account IDs etc) for shared tx templates.
 
-### Functional overview
+## Overview
 
 1. Building transaction:
     1. Single-party transaction (with one-shot signing)
     2. Multi-party transaction (with second round of signing)
+    3. Confidential issuance
     3. Encrypting outputs by default
     4. Encrypting outputs with receiver details (externally provided key material)
 2. Selective disclosure:
@@ -179,6 +186,13 @@ TBD: to create `confidential_issuance_spec` we need to generate an issuance key,
 For now we'll only support either non-confidential issuance, or same-issuer assets with transient issuance keys (generated randomly per-issuance).
 
 
+### Upgrading to confidential assets
+
+All assets are being encrypted by default. Existing unspent outputs are spent first and upgraded to confidential assets automatically using a combination of `Retirement` and `Upgrade` entries inserted by Chain Core automatically.
+
+TBD: discuss what to do when asked to create a legacy output by a legacy receiver.
+
+
 
 ### Creating disclosure
 
@@ -204,6 +218,56 @@ Alice wants to have read access to Bob's transactions.
 8. Core derives the decryption key from its root key, verifies the proofs and imports the keys.
 9. If the disclosure is at account level, Core begins watching the blockchain for that account and indexing past (?) and future transactions.
 
+
+
+### Trackable addresses
+
+(This is similar to Stealth Addresses proposal, but compatible with usage by the recipient.)
+
+To make accounts to be trackable without exchanging receivers it is possible
+to embed a random selector within the control program.
+
+To make it compatible with sequential key derivation, the random selector is
+deterministically produced from the index and an xpub.
+
+Scheme overview:
+
+1. Alice is an auditor, Bob is an account holder.
+2. Bob generates a receiver with a sequence number N.
+3. Bob deterministically derives a random selector to be used with ChainKD:
+
+        selector = SHA3(xpub || uint64le(N)[0,16]
+
+4. Bob derives a one-time key using that selector:
+
+        pubkey = ChainKD-ND(xpub, selector)
+
+5. Bob creates a control program where pubkey is annotated with the selector:
+
+        <pubkey> <selector> DROP CHECKSIG
+
+    This easily extends to multisig programs: each individual pubkey
+    is annotated with `<selector> DROP` opcode in case of multi-party signing:
+
+        <pk1> <sel1> DROP 
+        <pk2> <sel2> DROP 
+        <pk3> <sel3> DROP
+        2 3 CHECKMULTISIG
+
+    In case all keys are derived by one party, a shared selector may be used for all keys:
+
+        <pk1> <pk2> <pk3> <selector> DROP
+        2 3 CHECKMULTISIG
+
+6. Bob sends receiver to a sender Sandy.
+7. Sandy makes payment to that address.
+8. Alice scans all outputs on blockchain, trying to check if any given public
+   key is derived from the xpub using an associated nonce.
+9. Network cannot link two outputs to the same xpub because nonces are random and
+   no one except Alice and Bob has xpub that contains "derivation key" entropy used
+   to produce child keys.
+
+Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit ones at a slightly higher risk of collisions (still, negligible in practice). Nonce collisions link two outputs to the same account and may make accounting slightly more complicated by requiring linking through reference data (which could be a requirement anyway).
 
 
 
@@ -299,7 +363,7 @@ Transaction template contains transaction entries and additional data that helps
                         {
                             type: "input2",
                             spent_output_id: "...",
-                            program_witness: {
+                            signing_instructions: {
                                 ...
                             }
                         },
@@ -321,9 +385,9 @@ Transaction template contains transaction entries and additional data that helps
         ]
     }
 
-### Program Witness Template
+### Signing instructions
 
-**Program Witness Template** represent context data, concrete witness data, AST paths and signature templates for satisfying a control/issuance program.
+**Program signing instructions** represent context data, concrete witness data, AST paths and signature templates for satisfying a control/issuance program.
 
 This does not include other possible witnesses.
 
@@ -526,7 +590,7 @@ Procedure:
         3. If the payload is not authenticated by the key `EK`, ignore it.
     4. If verification succeeded:
         1. Remove the processed payload
-        2. Send signing instructions for inputs/issuances to the client.
+        2. Send `signing_instructions` for inputs/issuances to the client.
 2. Client receives signing instructions and sends them to the HSM signer:
     1. HSM signer signs using the signing instructions.
     2. Client places the signature over TXSIGHASH in the entry inside the transaction.
@@ -573,11 +637,6 @@ Alice can decrypt and inspect the disclosure without importing:
     cleartext_disclosure.items[0].asset_id.asset_id  # => "fae9f0af..."
 
 TBD: Should we support querying all stored disclosures too?
-
-
-
-
-
 
 
 
@@ -760,59 +819,6 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
 
 
 
-
-
-
-
-
-## Trackable addresses
-
-(This is similar to Stealth Addresses proposal, but compatible with usage by the recipient.)
-
-To make accounts to be trackable without exchanging receivers it is possible
-to embed a random selector within the control program.
-
-To make it compatible with sequential key derivation, the random selector is
-deterministically produced from the index and an xpub.
-
-Scheme overview:
-
-1. Alice is an auditor, Bob is an account holder.
-2. Bob generates a receiver with a sequence number N.
-3. Bob deterministically derives a random selector to be used with ChainKD:
-
-        selector = SHA3(xpub || uint64le(N)[0,16]
-
-4. Bob derives a one-time key using that selector:
-
-        pubkey = ChainKD-ND(xpub, selector)
-
-5. Bob creates a control program where pubkey is annotated with the selector:
-
-        <pubkey> <selector> DROP CHECKSIG
-
-    This easily extends to multisig programs: each individual pubkey
-    is annotated with `<selector> DROP` opcode in case of multi-party signing:
-
-        <pk1> <sel1> DROP 
-        <pk2> <sel2> DROP 
-        <pk3> <sel3> DROP
-        2 3 CHECKMULTISIG
-
-    In case all keys are derived by one party, a shared selector may be used for all keys:
-
-        <pk1> <pk2> <pk3> <selector> DROP
-        2 3 CHECKMULTISIG
-
-6. Bob sends receiver to a sender Sandy.
-7. Sandy makes payment to that address.
-8. Alice scans all outputs on blockchain, trying to check if any given public
-   key is derived from the xpub using an associated nonce.
-9. Network cannot link two outputs to the same xpub because nonces are random and
-   no one except Alice and Bob has xpub that contains "derivation key" entropy used
-   to produce child keys.
-
-Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit ones at a slightly higher risk of collisions (still, negligible in practice). Nonce collisions link two outputs to the same account and may make accounting slightly more complicated by requiring linking through reference data (which could be a requirement anyway).
 
 
 
