@@ -28,11 +28,12 @@ type (
 	}
 
 	compileResp struct {
-		Source  string             `json:"source"`
-		Program chainjson.HexBytes `json:"program"`
-		Clauses []ivy.ClauseInfo   `json:"clause_info"`
-		Opcodes string             `json:"opcodes"`
-		Error   string             `json:"error"`
+		Source  string              `json:"source"`
+		Program chainjson.HexBytes  `json:"program"`
+		Params  []ivy.ContractParam `json:"params"`
+		Clauses []ivy.ClauseInfo    `json:"clause_info"`
+		Opcodes string              `json:"opcodes"`
+		Error   string              `json:"error"`
 	}
 )
 
@@ -57,6 +58,7 @@ func compileIvy(req compileReq) (compileResp, error) {
 			}
 		}
 		resp.Source = req.Contract
+		resp.Params = compiled.Params
 		resp.Program, _ = b.Build() // error is impossible
 		resp.Program = append(resp.Program, compiled.Program...)
 		resp.Clauses = compiled.Clauses
