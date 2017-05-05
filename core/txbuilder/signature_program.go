@@ -35,16 +35,14 @@ import (
 //   <txsighash> TXSIGHASH EQUAL
 // which commits to the transaction as-is.
 
-func buildSigProgram(tpl *Template, index uint32) []byte {
+func buildSigProgram(tpl *Template, index uint32) ([]byte, error) {
 	if !tpl.AllowAdditional {
 		h := tpl.Hash(index)
 		builder := vmutil.NewBuilder()
 		builder.AddData(h.Bytes())
 		builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 
-		// TODO(boyamnjor): handle this error
-		program, _ := builder.Build()
-		return program
+		return builder.Build()
 	}
 	constraints := make([]constraint, 0, 3+len(tpl.Transaction.Outputs))
 	constraints = append(constraints, &timeConstraint{
@@ -87,5 +85,5 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 			program = append(program, byte(vm.OP_VERIFY))
 		}
 	}
-	return program
+	return program, nil
 }
