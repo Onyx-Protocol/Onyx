@@ -28,6 +28,7 @@ type (
 	}
 
 	compileResp struct {
+		Source  string             `json:"source"`
 		Program chainjson.HexBytes `json:"program"`
 		Clauses []ivy.ClauseInfo   `json:"clause_info"`
 		Opcodes string             `json:"opcodes"`
@@ -55,6 +56,7 @@ func compileIvy(req compileReq) (compileResp, error) {
 				b.AddData(*a.s)
 			}
 		}
+		resp.Source = req.Contract
 		resp.Program, _ = b.Build() // error is impossible
 		resp.Program = append(resp.Program, compiled.Program...)
 		resp.Clauses = compiled.Clauses
