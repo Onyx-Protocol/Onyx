@@ -2,7 +2,9 @@ package ivy
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
+	"strconv"
 	"unicode"
 )
 
@@ -27,7 +29,7 @@ func (p *parser) errorf(format string, args ...interface{}) {
 }
 
 // parse is the main entry point to the parser
-func parse(buf []byte) (contract *contract, err error) {
+func parse(buf []byte) (c *contract, err error) {
 	defer func() {
 		if val := recover(); val != nil {
 			if e, ok := val.(parserErr); ok {
@@ -38,7 +40,7 @@ func parse(buf []byte) (contract *contract, err error) {
 		}
 	}()
 	p := &parser{buf: buf}
-	c := parseContract(p)
+	c = parseContract(p)
 	return
 }
 
@@ -90,6 +92,7 @@ func parseParamsType(p *parser) []*param {
 		name := consumeIdentifier(p)
 		params = append(params, &param{name: name})
 	}
+	consumeTok(p, ":")
 	typ := consumeIdentifier(p)
 	for _, p := range params {
 		p.typ = typ
@@ -174,8 +177,8 @@ func parseUnaryExpr(p *parser) expression {
 
 func parseExprCont(p *parser, lhs expression, minPrecedence int) (expression, int) {
 	for {
-		opInfo, pos := scanBinaryOp(p.buf, p.pos)
-		if pos < 0 || opInfo.precedence < minPrecedence {
+		op, pos := scanBinaryOp(p.buf, p.pos)
+		if pos < 0 || op.precedence < minPrecedence {
 			break
 		}
 		p.pos = pos
@@ -183,16 +186,16 @@ func parseExprCont(p *parser, lhs expression, minPrecedence int) (expression, in
 		rhs := parseUnaryExpr(p)
 
 		for {
-			opInfo2, pos2 := scanBinaryOp(p.buf, p.pos)
-			if pos2 < 0 || opInfo2.precedence <= opInfo.precedence {
+			op2, pos2 := scanBinaryOp(p.buf, p.pos)
+			if pos2 < 0 || op2.precedence <= op.precedence {
 				break
 			}
-			rhs, p.pos = parseExprCont(p, rhs, opInfo2.precedence)
+			rhs, p.pos = parseExprCont(p, rhs, op2.precedence)
 			if p.pos < 0 {
 				return nil, -1 // or is this an error?
 			}
 		}
-		lhs = &binaryExpr{left: lhs, right: rhs, op: opInfo.op}
+		lhs = &binaryExpr{left: lhs, right: rhs, op: op}
 	}
 	return lhs, p.pos
 }
@@ -288,7 +291,7 @@ func scanUnaryOp(buf []byte, offset int) (*unaryOp, int) {
 	for _, op := range unaryOps {
 		newOffset := scanTok(buf, offset, op.op)
 		if newOffset >= 0 {
-			return op, newOffset
+			return &op, newOffset
 		}
 	}
 	return nil, -1
@@ -304,7 +307,7 @@ func scanBinaryOp(buf []byte, offset int) (*binaryOp, int) {
 		offset2 := scanTok(buf, offset, op.op)
 		if offset2 >= 0 {
 			if found == nil || len(op.op) > len(found.op) {
-				found = op
+				found = &op
 				newOffset = offset2
 			}
 		}
@@ -312,7 +315,8 @@ func scanBinaryOp(buf []byte, offset int) (*binaryOp, int) {
 	return found, newOffset
 }
 
-func scanLiteralExpr(buf []byte, offset int) (*literal, int) {
+// TODO(bobg): boolean literals?
+func scanLiteralExpr(buf []byte, offset int) (expression, int) {
 	offset = skipWsAndComments(buf, offset)
 	intliteral, newOffset := scanIntLiteral(buf, offset)
 	if newOffset >= 0 {
@@ -360,7 +364,7 @@ func scanKeyword(buf []byte, offset int, keyword string) int {
 	return newOffset
 }
 
-func scanIntLiteral(buf []byte, offset int) (*literal, int) {
+func scanIntLiteral(buf []byte, offset int) (integerLiteral, int) {
 	offset = skipWsAndComments(buf, offset)
 	start := offset
 	if offset < len(buf) && buf[offset] == '-' {
@@ -370,19 +374,23 @@ func scanIntLiteral(buf []byte, offset int) (*literal, int) {
 	for ; i < len(buf) && unicode.IsDigit(rune(buf[i])); i++ {
 	}
 	if i > offset {
-		return newLiteral(buf[start:i], numType), i
+		n, err := strconv.ParseInt(string(buf[start:i]), 10, 64)
+		if err != nil {
+			return 0, -1
+		}
+		return integerLiteral(n), i
 	}
-	return nil, -1
+	return 0, -1
 }
 
-func scanStrLiteral(buf []byte, offset int) (*literal, int) {
+func scanStrLiteral(buf []byte, offset int) (bytesLiteral, int) {
 	offset = skipWsAndComments(buf, offset)
 	if offset >= len(buf) || buf[offset] != '\'' {
-		return nil, -1
+		return bytesLiteral{}, -1
 	}
 	for i := offset + 1; i < len(buf); i++ {
 		if buf[i] == '\'' {
-			return newLiteral(buf[offset:i+1], bytesType), i + 1
+			return bytesLiteral(buf[offset : i+1]), i + 1
 		}
 		if buf[i] == '\\' {
 			i++
@@ -391,7 +399,7 @@ func scanStrLiteral(buf []byte, offset int) (*literal, int) {
 	panic(parseErr(buf, offset, "unterminated string literal"))
 }
 
-func scanBytesLiteral(buf []byte, offset int) (*literal, int) {
+func scanBytesLiteral(buf []byte, offset int) (bytesLiteral, int) {
 	offset = skipWsAndComments(buf, offset)
 	if offset+4 >= len(buf) {
 		return nil, -1
@@ -414,7 +422,12 @@ func scanBytesLiteral(buf []byte, offset int) (*literal, int) {
 			panic(parseErr(buf, offset, "odd number of digits in hex literal"))
 		}
 	}
-	return newLiteral(buf[offset:i], bytesType), i
+	decoded := make([]byte, hex.DecodedLen(i-(offset+2)))
+	_, err := hex.Decode(decoded, buf[offset+2:i])
+	if err != nil {
+		return bytesLiteral{}, -1
+	}
+	return bytesLiteral(decoded), i
 }
 
 func skipWsAndComments(buf []byte, offset int) int {
