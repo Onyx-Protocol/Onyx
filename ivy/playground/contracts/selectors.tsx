@@ -247,6 +247,33 @@ export const getContractValue = createSelector(
   }
 )
 
+export const getClauseValues = createSelector(
+  getSpendTemplateClause,
+  getSpendInputMap,
+  (clause, spendInputMap) => {
+    console.log("spend input map", spendInputMap)
+    return clause.parameters
+      .filter(param => param.valueType === "Value")
+      .map(param => {
+        let clauseParameterPrefix = "clauseParameters." + clause.name + "." + param.identifier
+        let accountInput = spendInputMap[clauseParameterPrefix + ".valueInput.accountAliasInput"]
+        let assetInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetAliasInput"]
+        let amountInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetAliasInput"]
+        if (accountInput === undefined) throw "accountInput for clause Value parameter surprisingly undefined"
+        if (assetInput === undefined) throw "assetInput for clause Value parameter surprisingly undefined"
+        if (assetInput === undefined) throw "assetInput for clause Value parameter surprisingly undefined"
+        let amount = parseInt(amountInput.value, 10)
+        let spendFromAccount: SpendFromAccount = {
+          type: "spendFromAccount",
+          accountId: accountInput.value,
+          assetId: assetInput.value,
+          amount: amount
+        }
+        return spendFromAccount
+    })
+  }
+)
+
 export const getParameterIds = createSelector(
   getSelectedTemplate,
   (template: Template) => {
