@@ -15,6 +15,8 @@ var builtins = []builtin{
 	{"min", "MIN", []string{"Integer", "Integer"}, "Integer"},
 	{"max", "MAX", []string{"Integer", "Integer"}, "Integer"},
 	{"checkTxSig", "TXSIGHASH SWAP CHECKSIG", []string{"PublicKey", "Signature"}, "Boolean"},
+	{"concat", "CAT", []string{"", ""}, "String"},
+	{"concatpush", "CATPUSHDATA", []string{"", ""}, "String"},
 }
 
 type binaryOp struct {
@@ -66,7 +68,7 @@ type unaryOp struct {
 var unaryOps = []unaryOp{
 	{"-", "NEGATE", "Integer", "Integer"},
 	{"!", "NOT", "Boolean", "Boolean"},
-	{"^", "INVERT", "", ""},
+	{"~", "INVERT", "", ""},
 }
 
 // properties[type] is a map from property names to their types
