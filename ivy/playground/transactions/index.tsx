@@ -5,6 +5,7 @@ import {
 
 import {
   Action,
+  DataWitness,
   WitnessComponent
 } from './types'
 
@@ -64,9 +65,20 @@ export const createSpendingTx = (actions: Action[], witness: WitnessComponent[])
   }).then((tpl) => {
     // there should only be one
     tpl.signingInstructions[0].witnessComponents = witness
-    console.log(tpl)
     return signer.sign(tpl)
   }).then((tpl) => {
+    tpl.signingInstructions[0].witnessComponents = tpl.signingInstructions[0].witnessComponents.map(component => {
+      console.log("component", component)
+      switch(component.type) {
+        case "signature":
+          return {
+            type: "data",
+            value: component.signatures[0]
+          } as DataWitness
+        default:
+          return component
+      }
+    })
     return client.transactions.submit(tpl)
   })
 }

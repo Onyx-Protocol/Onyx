@@ -91,6 +91,9 @@ func checkTxSighashCommitment(tx *legacy.Tx) error {
 		case len(args) == 0:
 			lastError = ErrNoTxSighashAttempt
 			continue
+		case len(args) == 1:
+			// This input contains a raw tx signature witness component
+			return nil
 		case len(args) < 3:
 			lastError = ErrTxSignatureFailure
 			continue

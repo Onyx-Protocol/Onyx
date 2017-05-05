@@ -15,7 +15,14 @@ export type SignatureWitness = {
   signatures: string[]
 }
 
-export type WitnessComponent = DataWitness | SignatureWitness
+export type RawTxSignatureWitness = {
+  type: "raw_tx_signature",
+  quorum: 1,
+  keys: KeyId[],
+  signatures: string[]
+}
+
+export type WitnessComponent = RawTxSignatureWitness | DataWitness | SignatureWitness
 
 export type SigningInstruction = {
   position: number,
