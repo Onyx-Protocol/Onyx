@@ -133,6 +133,50 @@ When it is fully signed, it can be submitted.
 Core verifies the fully-signed transaction and publishes it if it's valid.
 
 
+### Confidential issuance
+
+Confidential issuance works by hiding the issued asset ID among a specified set of asset IDs.
+For instance, `AliceIOU` can be issued among `{AliceIOU,BobIOU,CarolIOU}` so that the fact that
+Alice is issuing more debt can be kept private from the market and only disclose it to regulators
+and concerned counter-parties.
+
+There are three ways to issue assets confidentially:
+
+1. You use only _your_ asset IDs (which you can issue).
+2. You use other issuers’ asset IDs that support a specific _issuance key_ in their issuance programs. 
+   This is an option for newer asset IDs created with a built-in issuance key support.
+3. You use other issuers’ asset IDs that have publicly available signed signature programs with _issuance key_ support.
+   This is an option for legacy asset IDs created without built-in issuance key support.
+
+To support second and third option, user must import other issuers’ assets with necessary issuance public keys and witness data:
+
+    chain.assets.import(
+      alias: 'BobIOU',
+      issuance_details: {
+        asset_id:         'fa0bd0ad1241...',
+        initial_block_id: 'a9f03712fad1...',  # the initial_block_id, issuance_program, reference_data define asset ID
+        issuance_program: '5604afe9baf0...',
+        reference_data:   '9af9f9839102...',
+        arguments: ['ad3703...', 'fe8a7210...'], # VM arguments to satisfy issuance program
+        issuance_key:     '048af9bd9e01...',     # 
+      }
+    )
+
+Structure `issuance_details` is supposed to be published by the issuer so that others could use it.
+
+To create a set of issuance candidates, Alice uses `issuance_choices` field.
+She can refer to imported or her own assets by `asset_alias` or `asset_id`.
+
+    tx = client.transactions.build do |b|
+      b.issue asset_alias: 'AliceIOU', amount: 10, confidential: {asset_id: true, amount: true}, issuance_choices: [
+        {asset_alias: 'AliceIOU2'},
+        {asset_alias: 'BobIOU'},
+        {asset_id:    'CarlIOU'}
+      ]
+      ...
+    end
+
+
 ### Creating disclosure
 
 Alice wants to have read access to Bob's transactions.
@@ -156,9 +200,6 @@ Alice wants to have read access to Bob's transactions.
 7. Alice imports the encrypted disclosure to Alice's Core.
 8. Core derives the decryption key from its root key, verifies the proofs and imports the keys.
 9. If the disclosure is at account level, Core begins watching the blockchain for that account and indexing past (?) and future transactions.
-
-
-
 
 
 
@@ -417,7 +458,7 @@ To control confidentiality of specific entries, `confidential` key is used (defa
         b.base_transaction tx  # (optional)
         b.issue                ..., confidential: {data: true, asset_id: true, amount: true}
         b.control_with_account ..., confidential: {data: true, asset_id: true, amount: true}
-        b.retire               ..., confidential: {data: true, asset_id: true, amount: true}
+        b.retire               ..., confidential: {daq  ta: true, asset_id: true, amount: true}
     end
 
 It is an error to use `confidential` key with actions `spend_*` or `control_with_receiver`.
