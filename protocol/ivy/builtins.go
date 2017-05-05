@@ -17,45 +17,55 @@ var builtins = []builtin{
 	{"checkTxSig", "TXSIGHASH SWAP CHECKSIG", []string{"PublicKey", "Signature"}, "Boolean"},
 }
 
-var binaryOps = map[string]struct {
-	opcodes             string
+type binaryOp struct {
+	op      string
+	opcodes string
+
+	// types of operands and result
 	left, right, result string
-}{
-	"||": {"BOOLOR", "Boolean", "Boolean", "Boolean"},
-	"&&": {"BOOLAND", "Boolean", "Boolean", "Boolean"},
-
-	">":  {"GREATERTHAN", "Integer", "Integer", "Boolean"},
-	"<":  {"LESSTHAN", "Integer", "Integer", "Boolean"},
-	">=": {"GREATERTHANOREQUAL", "Integer", "Integer", "Boolean"},
-	"<=": {"LESSTHANOREQUAL", "Integer", "Integer", "Boolean"},
-
-	"==": {"EQUAL", "", "", "Boolean"},
-	"!=": {"EQUAL NOT", "", "", "Boolean"},
-
-	"^": {"XOR", "", "", ""},
-	"|": {"OR", "", "", ""},
-
-	"+": {"ADD", "Integer", "Integer", "Integer"},
-	"-": {"SUB", "Integer", "Integer", "Integer"},
-
-	"&^": {"INVERT AND", "", "", ""},
-	"&":  {"AND", "", "", ""},
-
-	"<<": {"LSHIFT", "Integer", "Integer", "Integer"},
-	">>": {"RSHIFT", "Integer", "Integer", "Integer"},
-
-	"%": {"MOD", "Integer", "Integer", "Integer"},
-	"*": {"MUL", "Integer", "Integer", "Integer"},
-	"/": {"DIV", "Integer", "Integer", "Integer"},
 }
 
-var unaryOps = map[string]struct {
-	opcodes         string
+var binaryOps = []binaryOp{
+	{"||", "BOOLOR", "Boolean", "Boolean", "Boolean"},
+	{"&&", "BOOLAND", "Boolean", "Boolean", "Boolean"},
+
+	{">", "GREATERTHAN", "Integer", "Integer", "Boolean"},
+	{"<", "LESSTHAN", "Integer", "Integer", "Boolean"},
+	{">=", "GREATERTHANOREQUAL", "Integer", "Integer", "Boolean"},
+	{"<=", "LESSTHANOREQUAL", "Integer", "Integer", "Boolean"},
+
+	{"==", "EQUAL", "", "", "Boolean"},
+	{"!=", "EQUAL NOT", "", "", "Boolean"},
+
+	{"^", "XOR", "", "", ""},
+	{"|", "OR", "", "", ""},
+
+	{"+", "ADD", "Integer", "Integer", "Integer"},
+	{"-", "SUB", "Integer", "Integer", "Integer"},
+
+	{"&^", "INVERT AND", "", "", ""},
+	{"&", "AND", "", "", ""},
+
+	{"<<", "LSHIFT", "Integer", "Integer", "Integer"},
+	{">>", "RSHIFT", "Integer", "Integer", "Integer"},
+
+	{"%", "MOD", "Integer", "Integer", "Integer"},
+	{"*", "MUL", "Integer", "Integer", "Integer"},
+	{"/", "DIV", "Integer", "Integer", "Integer"},
+}
+
+type unaryOp struct {
+	op      string
+	opcodes string
+
+	// types of operand and result
 	operand, result string
-}{
-	"-": {"NEGATE", "Integer", "Integer"},
-	"!": {"NOT", "Boolean", "Boolean"},
-	"^": {"INVERT", "", ""},
+}
+
+var unaryOps = []unaryOp{
+	{"-", "NEGATE", "Integer", "Integer"},
+	{"!", "NOT", "Boolean", "Boolean"},
+	{"^", "INVERT", "", ""},
 }
 
 // properties[type] is a map from property names to their types
