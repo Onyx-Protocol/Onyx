@@ -152,17 +152,17 @@ To support second and third option, user must import other issuers’ assets wit
 
     chain.assets.import(
       alias: 'BobIOU',
-      issuance_details: {
+      confidential_issuance_spec: {
         asset_id:         'fa0bd0ad1241...',
-        initial_block_id: 'a9f03712fad1...',  # the initial_block_id, issuance_program, reference_data define asset ID
+        initial_block_id: 'a9f03712fad1...',     # the initial_block_id, issuance_program, reference_data define asset ID
         issuance_program: '5604afe9baf0...',
         reference_data:   '9af9f9839102...',
         arguments: ['ad3703...', 'fe8a7210...'], # VM arguments to satisfy issuance program
-        issuance_key:     '048af9bd9e01...',     # 
+        issuance_key:     '048af9bd9e01...',     # issuance public key
       }
     )
 
-Structure `issuance_details` is supposed to be published by the issuer so that others could use it.
+Structure `confidential_issuance_spec` is published by the issuer so that other issuers could use it.
 
 To create a set of issuance candidates, Alice uses `issuance_choices` field.
 She can refer to imported or her own assets by `asset_alias` or `asset_id`.
@@ -175,6 +175,10 @@ She can refer to imported or her own assets by `asset_alias` or `asset_id`.
       ]
       ...
     end
+
+TBD: to create `confidential_issuance_spec` we need to generate an issuance key, and to support multisig we need to set up a threshold key (ChainTS).
+For now we'll only support either non-confidential issuance, or same-issuer assets with transient issuance keys (generated randomly per-issuance).
+
 
 
 ### Creating disclosure
