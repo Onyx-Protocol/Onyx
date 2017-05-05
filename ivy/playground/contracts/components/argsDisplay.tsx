@@ -6,7 +6,7 @@ import { Input, ParameterInput, NumberInput, BooleanInput, StringInput,
          BlocksDurationInput, TimeInput, BlockheightTimeInput, TimestampTimeInput,
          PublicKeyInput, GeneratePublicKeyInput, ProvidePublicKeyInput, GenerateHashInput,
          ProvideHashInput, InputType, ComplexInput, ValueInput,
-         AssetAliasInput, AccountAliasInput, AssetAmountInput, AmountInput, ProgramInput } from '../../inputs/types'
+         AssetAliasInput, AccountAliasInput, AssetAmountInput, AmountInput, AddressInput } from '../../inputs/types'
 import { getChild, getParameterIdentifier, getGenerateStringInputValue, computeDataForInput } from '../../inputs/data'
 import { typeToString } from 'ivy-compiler'
 import { getItemMap as getAssetMap } from '../../assets/selectors'
@@ -71,7 +71,7 @@ function TextWidget(props: { input: Input }) {
   return <div><pre>{props.input.value}</pre></div>
 }
 
-function ComputedWidget(props: { input: ProgramInput }) {
+function ComputedWidget(props: { input: AddressInput }) {
   return <div><pre>{props.input.computedData}</pre></div>
 }
 
@@ -130,7 +130,7 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
     case "assetAmountInput": return AssetAmountWidget
     case "accountAliasInput": return AccountAliasWidget
     case "assetAliasInput": return AssetAliasWidget
-    case "programInput":
+    case "addressInput":
     case "publicKeyInput": return ComputedWidget
     case "numberInput":
     case "booleanInput":

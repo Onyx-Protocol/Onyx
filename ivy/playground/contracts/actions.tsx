@@ -1,4 +1,4 @@
-import { AssetAliasInput, ProgramInput } from '../inputs/types';
+import { AssetAliasInput, AddressInput } from '../inputs/types';
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
 export const CREATE_CONTRACT = 'contracts/CREATE_CONTRACT'

@@ -12,7 +12,7 @@ import {
 import {
   Input,
   InputMap,
-  ProgramInput
+  AddressInput
 } from '../inputs/types'
 
 import {
@@ -326,11 +326,11 @@ export const getClauseOutputActions = createSelector(
       if (amountInput === undefined) throw "amount input for " + assetAmountParam + " surprisingly undefined"
       if (assetAliasInput === undefined) throw "asset input for " + assetAmountParam + " surprisingly undefined"
       let amount = parseInt(amountInput.value, 10)
-      let programIdentifier = clauseOutput.contract.program.identifier
-      let programInput = inputMap["contractParameters." + programIdentifier + ".programInput"] as ProgramInput
-      if (programInput === undefined) throw "programInput unexpectedly undefined"
-      if (programInput.computedData === undefined) throw "programInput.computedData unexpectedly undefined"
-      let controlProgram = programInput.computedData
+      let addressIdentifier = clauseOutput.contract.address.identifier
+      let addressInput = inputMap["contractParameters." + addressIdentifier + ".addressInput"] as AddressInput
+      if (addressInput === undefined) throw "addressInput unexpectedly undefined"
+      if (addressInput.computedData === undefined) throw "addressInput.computedData unexpectedly undefined"
+      let controlProgram = addressInput.computedData
       let receiver: Receiver = {
         controlProgram: controlProgram,
         expiresAt: "2017-06-25T00:00:00.000Z" // TODO
