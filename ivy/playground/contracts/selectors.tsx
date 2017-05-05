@@ -29,7 +29,7 @@ import {
   DataWitness,
   KeyId,
   Receiver,
-  SignatureWitness,
+  RawTxSignatureWitness,
   SpendFromAccount,
   WitnessComponent
 } from '../transactions/types';
@@ -182,14 +182,14 @@ export const getClauseWitnessComponents = createSelector(
               }
               const keymap = input.keyMap[pubkey]
               witness.push({
-                type: "signature",
+                type: "raw_tx_signature",
                 quorum: 1,
                 keys: [{
                   xpub: keymap.rootXpub,
                   derivationPath: keymap.pubkeyDerivationPath
                 } as KeyId],
                 signatures: []
-              } as SignatureWitness)
+              } as RawTxSignatureWitness)
               break
             default:
               break
