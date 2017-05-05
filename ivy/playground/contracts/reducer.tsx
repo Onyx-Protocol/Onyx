@@ -39,6 +39,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         }
       }
     case SELECT_TEMPLATE:
+      console.log("action", action)
       return {
         ...state,
         inputMap: generateInputMap(action.template),
