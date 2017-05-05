@@ -1317,6 +1317,36 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
                 type: string
                 description: Hex-encoded blinding scalar.
 
+      Upgrade1Template:
+        type: object
+        required:
+          - type
+          - upgrade_program
+          - asset_id
+          - amount
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `upgrade1`).
+            enum:
+              - upgrade1
+          upgrade_program:
+            type: string
+            description: Program that identifies a Retirement1 entry in this transaction.
+          asset_id:
+            type: string
+            description: Hex-encoded asset ID.
+          amount:
+            type: integer
+            description: Amount of units of a specified asset ID.
+          exthash:
+            type: string
+            description: Extension hash
+          signing_instructions:
+            type: object
+            description: An opaque object describing signing instructions for the upgrade program.
+
+
       InputPlaceholder:
         description: Specifies asset amount necessary on the left side of the transaction
           (which must by provided via an issuance or an input entry).
