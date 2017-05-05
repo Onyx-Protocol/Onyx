@@ -16,7 +16,6 @@ export type Item = {
   // contract template
   template: Template,
 
-  // control program representing the contract
   controlProgram: string,
 
   // map of parameter inputs by id
