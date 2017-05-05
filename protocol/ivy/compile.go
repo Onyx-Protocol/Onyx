@@ -18,7 +18,7 @@ type (
 
 	ClauseInfo struct {
 		Name   string      `json:"name"`
-		Args   []ClauseArg `json:"args,omitempty"`
+		Args   []ClauseArg `json:"args"`
 		Values []ValueInfo `json:"value_info"`
 	}
 
@@ -51,7 +51,7 @@ func Compile(r io.Reader) (CompileResult, error) {
 	}
 	result := CompileResult{Program: prog}
 	for _, clause := range c.clauses {
-		info := ClauseInfo{Name: clause.name}
+		info := ClauseInfo{Name: clause.name, Args: []ClauseArg{}}
 		for _, p := range clause.params {
 			switch p.typ {
 			case "Value":
