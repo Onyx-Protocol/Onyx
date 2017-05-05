@@ -432,7 +432,8 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 1. [Validate](#value-source-1-validation) `Source`.
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
-
+3. Verify that the program VM version is not equal to 0.
+4. If the program VM version is 1, verify that the program’s bytecode does not begin with [FAIL](vm1.md#fail) instruction.
 
 #### Retirement 1
 
@@ -555,6 +556,8 @@ Arguments           | String                     | Arguments for the program con
     3. Verify that the two sums are equal.
 5. Verify that for every asset ID among `Destinations`, there is at least one `Source` with such asset ID. (This prevents creating zero units of an asset not present among the valid sources.)
 6. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+7. Verify that the program VM version is not equal to 0.
+8. If the program VM version is 1, verify that the program’s bytecode does not begin with [FAIL](vm1.md#fail) instruction.
 
 Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
