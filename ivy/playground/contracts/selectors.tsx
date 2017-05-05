@@ -156,44 +156,56 @@ export const getSpendTemplateClause = createSelector(
   }
 )
 
+export const getClauseParameters = createSelector(
+  getSpendTemplateClause,
+  (clause) => clause.parameters
+)
+
+export const getClauseName = createSelector(
+  getSpendTemplateClause,
+  clause => clause.name
+)
+
 export const getClauseParameterIds = createSelector(
-  getSpendContract,
-  getSpendContractSelectedClauseIndex,
-  (spendContract, clauseIndex) => {
-    let clauseName = spendContract.clauseList[clauseIndex]
-    return spendContract.template.clauses[clauseIndex].parameters.map(param => "clauseParameters." + clauseName + "." + param.identifier)
+  getClauseName,
+  getClauseParameters,
+  (clauseName, clauseParameters) => {
+    return clauseParameters.map(param => "clauseParameters." + clauseName + "." + param.identifier)
   }
 )
 
 export const getClauseWitnessComponents = createSelector(
   getSpendInputMap,
-  getClauseParameterIds,
-  (spendInputMap: InputMap, clauseIds: string[]): WitnessComponent[] => {
+  getClauseName,
+  getClauseParameters,
+  (spendInputMap: InputMap, clauseName: string, clauseParameters): WitnessComponent[] => {
+    console.log("spendInputMap", spendInputMap)
     const witness: WitnessComponent[] = []
-    clauseIds.forEach(clauseId => {
-      for (const inputId in spendInputMap) {
-        const input = spendInputMap[inputId]
-        if (input.name.includes(clauseId)) {
-          switch(input.type) {
-            case "choosePublicKeyInput":
-              const pubkey = input.value
-              if (input.keyMap === undefined) {
-                throw 'undefined keymap for input type ' + input.type
-              }
-              const keymap = input.keyMap[pubkey]
-              witness.push({
-                type: "raw_tx_signature",
-                quorum: 1,
-                keys: [{
-                  xpub: keymap.rootXpub,
-                  derivationPath: keymap.pubkeyDerivationPath
-                } as KeyId],
-                signatures: []
-              } as RawTxSignatureWitness)
-              break
-            default:
-              break
+    clauseParameters.forEach(clauseParameter => {
+      let clauseParameterPrefix = "clauseParameters." + clauseName + "." + clauseParameter.identifier
+      switch (clauseParameter.valueType) {
+        case "Value": {
+          return
+        }
+        case "Signature": {
+          let inputId = clauseParameterPrefix + ".signatureInput.choosePublicKeyInput"
+          let input = spendInputMap[inputId]
+          if (input === undefined || input.type !== "choosePublicKeyInput") throw "choosePublicKeyInput surprisingly not found"
+          const pubkey = input.value
+          if (input.keyMap === undefined) {
+            throw 'surprisingly undefined keymap for input ' + input.name
           }
+          const keymap = input.keyMap[pubkey]
+          witness.push({
+            type: "raw_tx_signature",
+            quorum: 1,
+            keys: [{
+              xpub: keymap.rootXpub,
+              derivationPath: keymap.pubkeyDerivationPath
+            } as KeyId],
+            signatures: []
+          } as RawTxSignatureWitness)
+          return
         }
       }
     })
@@ -251,7 +263,6 @@ export const getClauseValues = createSelector(
   getSpendTemplateClause,
   getSpendInputMap,
   (clause, spendInputMap) => {
-    console.log("spend input map", spendInputMap)
     return clause.parameters
       .filter(param => param.valueType === "Value")
       .map(param => {
@@ -343,7 +354,6 @@ export const getClauseOutputActions = createSelector(
   getSpendContract,
   getClauseOutputs,
   (contract, clauseOutputs) => {
-    console.log("clauseOutputs", clauseOutputs)
     let inputMap = contract.inputMap
     return clauseOutputs.map(clauseOutput => {
       let assetAmountParam = clauseOutput.assetAmountParam
