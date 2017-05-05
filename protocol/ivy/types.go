@@ -108,6 +108,10 @@ func (v varRef) String() string {
 	return v.name
 }
 
+type bytesLiteral []byte
+
+func (bytesLiteral) iamaExpression() {}
+
 type integerLiteral int64
 
 func (integerLiteral) iamaExpression() {}
@@ -119,10 +123,10 @@ func (booleanLiteral) iamaExpression() {}
 func typeOf(expr expression) string {
 	switch e := expr.(type) {
 	case *binaryExpr:
-		return binaryOps[e.op].result
+		return e.op.result
 
 	case *unaryExpr:
-		return unaryOps[e.op].result
+		return e.op.result
 
 	case *call:
 		b := referencedBuiltin(e.fn)
@@ -147,6 +151,9 @@ func typeOf(expr expression) string {
 			// xxx
 		}
 		return ""
+
+	case bytesLiteral:
+		return "String"
 
 	case integerLiteral:
 		return "Integer"

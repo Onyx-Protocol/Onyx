@@ -18,40 +18,41 @@ var builtins = []builtin{
 }
 
 type binaryOp struct {
-	op      string
-	opcodes string
+	op         string
+	precedence int
+	opcodes    string
 
 	// types of operands and result
 	left, right, result string
 }
 
 var binaryOps = []binaryOp{
-	{"||", "BOOLOR", "Boolean", "Boolean", "Boolean"},
-	{"&&", "BOOLAND", "Boolean", "Boolean", "Boolean"},
+	{"||", 1, "BOOLOR", "Boolean", "Boolean", "Boolean"},
+	{"&&", 2, "BOOLAND", "Boolean", "Boolean", "Boolean"},
 
-	{">", "GREATERTHAN", "Integer", "Integer", "Boolean"},
-	{"<", "LESSTHAN", "Integer", "Integer", "Boolean"},
-	{">=", "GREATERTHANOREQUAL", "Integer", "Integer", "Boolean"},
-	{"<=", "LESSTHANOREQUAL", "Integer", "Integer", "Boolean"},
+	{">", 3, "GREATERTHAN", "Integer", "Integer", "Boolean"},
+	{"<", 3, "LESSTHAN", "Integer", "Integer", "Boolean"},
+	{">=", 3, "GREATERTHANOREQUAL", "Integer", "Integer", "Boolean"},
+	{"<=", 3, "LESSTHANOREQUAL", "Integer", "Integer", "Boolean"},
 
-	{"==", "EQUAL", "", "", "Boolean"},
-	{"!=", "EQUAL NOT", "", "", "Boolean"},
+	{"==", 3, "EQUAL", "", "", "Boolean"},
+	{"!=", 3, "EQUAL NOT", "", "", "Boolean"},
 
-	{"^", "XOR", "", "", ""},
-	{"|", "OR", "", "", ""},
+	{"^", 4, "XOR", "", "", ""},
+	{"|", 4, "OR", "", "", ""},
 
-	{"+", "ADD", "Integer", "Integer", "Integer"},
-	{"-", "SUB", "Integer", "Integer", "Integer"},
+	{"+", 4, "ADD", "Integer", "Integer", "Integer"},
+	{"-", 4, "SUB", "Integer", "Integer", "Integer"},
 
-	{"&^", "INVERT AND", "", "", ""},
-	{"&", "AND", "", "", ""},
+	{"&^", 5, "INVERT AND", "", "", ""},
+	{"&", 5, "AND", "", "", ""},
 
-	{"<<", "LSHIFT", "Integer", "Integer", "Integer"},
-	{">>", "RSHIFT", "Integer", "Integer", "Integer"},
+	{"<<", 5, "LSHIFT", "Integer", "Integer", "Integer"},
+	{">>", 5, "RSHIFT", "Integer", "Integer", "Integer"},
 
-	{"%", "MOD", "Integer", "Integer", "Integer"},
-	{"*", "MUL", "Integer", "Integer", "Integer"},
-	{"/", "DIV", "Integer", "Integer", "Integer"},
+	{"%", 5, "MOD", "Integer", "Integer", "Integer"},
+	{"*", 5, "MUL", "Integer", "Integer", "Integer"},
+	{"/", 5, "DIV", "Integer", "Integer", "Integer"},
 }
 
 type unaryOp struct {

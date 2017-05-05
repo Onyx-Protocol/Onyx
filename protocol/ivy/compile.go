@@ -284,10 +284,6 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	}
 	switch e := expr.(type) {
 	case *binaryExpr:
-		info, ok := binaryOps[e.op]
-		if !ok {
-			return fmt.Errorf("unknown operator \"%s\"", e.op)
-		}
 		err = compileExpr(b, stack, contract, clause, e.left)
 		if err != nil {
 			return err
@@ -296,7 +292,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if err != nil {
 			return err
 		}
-		ops, err := vm.Assemble(info.opcodes)
+		ops, err := vm.Assemble(e.op.opcodes)
 		if err != nil {
 			return err
 		}
@@ -307,14 +303,11 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if err != nil {
 			return err
 		}
-		switch e.op {
-		case "-":
-			b.addOp(vm.OP_NEGATE)
-		case "!":
-			b.addOp(vm.OP_NOT)
-		default:
-			return fmt.Errorf("unknown operator \"%s\"", e.op)
+		ops, err := vm.Assemble(e.op.opcodes)
+		if err != nil {
+			return err
 		}
+		b.addRawBytes(ops)
 
 	case *call:
 		bi := referencedBuiltin(e.fn)
@@ -342,6 +335,9 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 
 	case integerLiteral:
 		b.addInt64(int64(e))
+
+	case bytesLiteral:
+		b.addData([]byte(e))
 
 	case booleanLiteral:
 		if e {

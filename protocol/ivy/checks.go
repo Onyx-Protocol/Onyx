@@ -324,24 +324,16 @@ func typeCheckClause(contract *contract, clause *clause) error {
 func typeCheckExpr(expr expression) error {
 	switch e := expr.(type) {
 	case *binaryExpr:
-		info, ok := binaryOps[e.op]
-		if !ok {
-			return fmt.Errorf("unknown operator \"%s\"", e.op)
+		if e.op.left != "" && typeOf(e.left) != e.op.left {
+			return fmt.Errorf("left operand of \"%s\" has type \"%s\", must be \"%s\"", e.op.op, typeOf(e.left), e.op.left)
 		}
-		if info.left != "" && typeOf(e.left) != info.left {
-			return fmt.Errorf("left operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.left), info.left)
-		}
-		if info.right != "" && typeOf(e.right) != info.right {
-			return fmt.Errorf("right operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.right), info.right)
+		if e.op.right != "" && typeOf(e.right) != e.op.right {
+			return fmt.Errorf("right operand of \"%s\" has type \"%s\", must be \"%s\"", e.op.op, typeOf(e.right), e.op.right)
 		}
 
 	case *unaryExpr:
-		info, ok := unaryOps[e.op]
-		if !ok {
-			return fmt.Errorf("unknown operator \"%s\"", e.op)
-		}
-		if info.operand != "" && typeOf(e.expr) != info.operand {
-			return fmt.Errorf("operand of \"%s\" has type \"%s\", must be \"%s\"", e.op, typeOf(e.expr), info.operand)
+		if e.op.operand != "" && typeOf(e.expr) != e.op.operand {
+			return fmt.Errorf("operand of \"%s\" has type \"%s\", must be \"%s\"", e.op.op, typeOf(e.expr), e.op.operand)
 		}
 
 	case *call:
