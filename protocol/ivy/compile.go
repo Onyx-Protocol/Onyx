@@ -39,7 +39,7 @@ type (
 func Compile(r io.Reader) (CompileResult, error) {
 	inp, err := ioutil.ReadAll(r)
 	if err != nil {
-		return CompileResult{}, err
+		return CompileResult{}, errors.Wrap(err, "reading input")
 	}
 	c, err := parse(inp)
 	if err != nil {
@@ -47,7 +47,7 @@ func Compile(r io.Reader) (CompileResult, error) {
 	}
 	prog, err := compileContract(c)
 	if err != nil {
-		return CompileResult{}, err
+		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
 	result := CompileResult{Program: prog}
 	for _, clause := range c.clauses {
@@ -149,11 +149,11 @@ func compileContract(contract *contract) ([]byte, error) {
 		b2 := newBuilder()
 		err = compileClause(b2, stack, contract, clause)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "compiling clause %d", i)
 		}
 		prog, err := b2.build()
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "assembling bytecode")
 		}
 		b.addRawBytes(prog)
 		if i < len(contract.clauses)-1 {
