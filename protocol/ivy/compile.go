@@ -12,6 +12,7 @@ import (
 
 type (
 	CompileResult struct {
+		Name    string             `json:"name"`
 		Program chainjson.HexBytes `json:"program"`
 		Params  []ContractParam    `json:"params"`
 		Clauses []ClauseInfo       `json:"clause_info"`
@@ -55,7 +56,11 @@ func Compile(r io.Reader) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
-	result := CompileResult{Program: prog, Params: []ContractParam{}}
+	result := CompileResult{
+		Name:    c.name,
+		Program: prog,
+		Params:  []ContractParam{},
+	}
 	for _, param := range c.params {
 		result.Params = append(result.Params, ContractParam{Name: param.name, Typ: param.typ})
 	}
