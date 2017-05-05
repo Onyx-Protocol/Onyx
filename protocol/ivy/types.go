@@ -57,7 +57,7 @@ type expression interface {
 
 type binaryExpr struct {
 	left, right expression
-	op          string
+	op          *binaryOp
 }
 
 func (binaryExpr) iamaExpression() {}
@@ -70,7 +70,7 @@ type partialBinaryExpr struct {
 func (partialBinaryExpr) iamaExpression() {}
 
 type unaryExpr struct {
-	op   string
+	op   *unaryOp
 	expr expression
 }
 
