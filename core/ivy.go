@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
-
 	chainjson "chain/encoding/json"
 	"chain/protocol/ivy"
 	"chain/protocol/vm"
@@ -38,7 +36,6 @@ type (
 )
 
 func compileIvy(req compileReq) (compileResp, error) {
-	fmt.Printf("* compileIvy:\n%s", spew.Sdump(req))
 	var resp compileResp
 	compiled, err := ivy.Compile(strings.NewReader(req.Contract))
 	if err == nil {
