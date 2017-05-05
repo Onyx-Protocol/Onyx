@@ -1,3 +1,4 @@
+import { Return } from '../../ivy-compiler/src/ast';
 import * as React from 'react'
 import { createSelector } from 'reselect'
 
@@ -439,7 +440,7 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
     case "assetAmountInput":
       return "" // TODO(dan)
     case "amountInput":
-      return "1"
+      return ""
     case "choosePublicKeyInput":
     case "generatePrivateKeyInput":
       throw inputType + ' should not be allowed'
@@ -632,13 +633,16 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
     case "valueInput": {
       addDefaultInput(inputs, "accountAliasInput", name)
       addDefaultInput(inputs, "assetAmountInput", name)
+      return
     }
     case "assetAmountInput": {
       addDefaultInput(inputs, "assetAliasInput", name)
       addDefaultInput(inputs, "amountInput", name)
+      return
     }
     case "addressInput": {
       addDefaultInput(inputs, "accountAliasInput", name)
+      return
     }
     default:
       return

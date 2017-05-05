@@ -117,6 +117,7 @@ export const spend = () => {
     let clauseDataParams = getClauseDataParameterIds(state)
     console.log("actions", actions)
     const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
+    console.log("witness", witness)
     createSpendingTx(actions, witness).then((result) => {
       console.log("result", result)
     })
