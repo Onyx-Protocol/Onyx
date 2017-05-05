@@ -9,7 +9,10 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
       console.log('itemMap', action.itemMap)
       return {
         ...state,
-        itemMap: action.itemMap
+        itemMap: action.itemMap,
+        idList: action.idList,
+        selected: action.selected,
+        source: action.source
       }
     case LOAD_TEMPLATE:
       let source = state.itemMap[action.selected].source

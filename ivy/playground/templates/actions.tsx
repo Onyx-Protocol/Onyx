@@ -28,7 +28,10 @@ export const compileTemplates = () => {
       const selected = idList[0]
       dispatch({
         type: COMPILE_TEMPLATES,
-        itemMap
+        itemMap,
+        idList,
+        selected,
+        source
       })
     }).catch(err => {
       throw err
