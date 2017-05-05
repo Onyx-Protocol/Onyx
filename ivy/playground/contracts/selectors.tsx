@@ -207,6 +207,10 @@ export const getClauseWitnessComponents = createSelector(
           } as RawTxSignatureWitness)
           return
         }
+        case "AssetAmount": // TODO
+        default: {
+          return // TODO: handle
+        }
       }
     })
     return witness
