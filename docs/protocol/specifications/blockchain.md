@@ -729,7 +729,7 @@ Witness             | Struct               | See below.
 
 Body field          | Type                           | Description
 --------------------|--------------------------------|----------------
-Source              | Pointer<Retirement>            | The source of the value being upgraded.
+Source              | Pointer<Retirement1>           | The source of the value being upgraded.
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                       | Description

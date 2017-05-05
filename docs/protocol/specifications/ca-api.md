@@ -256,7 +256,10 @@ Transaction template contains transaction entries and additional data that helps
                 asset_commitment:   "ac00fa9eab0...",
                 value_commitment:   "5ca9f901248...",
                 valure_range_proof: "9df90af8a0c...",
-                program:            "...",
+                program:            {
+                    vm_version: 1, 
+                    bytecode: "..."
+                },
                 data:               "da1a00fa9e628...", # raw data
                 exthash:            "e40fa89202...",
 
@@ -999,35 +1002,180 @@ Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit
       
       Issuance1Template:
         type: object
-        description:
-
-      Input1Template:
-        type: object
-        description: TBD
-      
-      Output1Template:
-        type: object
-        description: TBD
-
-      Retirement1Template:
-        type: object
-        description: TBD
+        required:
+          - type
+          - asset_id
+          - amount
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `issuance1`).
+            enum:
+              - issuance1
+          asset_id:
+            type: string
+            description: Hex-encoded asset ID.
+          amount:
+            type: integer
+            description: Amount of units of a specified asset ID.
+          data:
+            $ref: '#/definitions/DataTemplate'
+          signing_instructions:
+            type: object
+            description: An opaque object describing signing instructions for issuing.
 
       Issuance2Template:
         type: object
         description: TBD
 
+
+      Input1Template:
+        type: object
+        required:
+          - type
+          - spent_output_id
+          - spent_output
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `input1`).
+            enum:
+              - input1
+          spent_output_id:
+            type: string
+            description: Hex ID of the spent output.
+          data:
+            $ref: '#/definitions/DataTemplate'
+          spent_output:
+            type: object
+            description: Minimal information about the contents of the output necessary for constructing a transaction witness.
+            properties:
+              asset_id:
+                type: string
+                description: Hex-encoded asset ID.
+              amount:
+                type: integer
+                description: Amount of units of a specified asset ID.
+              program:
+                $ref: '#/definitions/Program'
+              data:
+                type: string
+                description: Raw hex-encoded 32-byte data.
+              exthash:
+                type: string
+                description: Extension hash
+          signing_instructions:
+            type: object
+            description: An opaque object describing signing instructions for the input.
+
       Input2Template:
         type: object
         description: TBD
+
+      Output1Template:
+        type: object
+        required:
+          - asset_id
+          - amount
+          - program
+        properties:
+          asset_id:
+            type: string
+            description: Hex-encoded asset ID.
+          amount:
+            type: integer
+            description: Amount of units of a specified asset ID.
+          program:
+            $ref: '#/definitions/Program'
+          data:
+            $ref: '#/definitions/DataTemplate'
+          
       
       Output2Template:
         type: object
-        description: TBD
+        required:
+          - asset_commitment
+          - value_commitment
+          - program
+        properties:
+          asset_commitment:
+            type: string
+            description: Hex-encoded asset commitment (64 bytes).
+          value_commitment:
+            type: string
+            description: Hex-encoded value commitment (64 bytes).
+          asset_range_proof:
+            type: string
+            description: Raw hex-encoded rangeproof for the asset_commitment.
+          value_range_proof:
+            type: string
+            description: Raw hex-encoded rangeproof for the value_commitment.
+          asset_range_proof_instructions:
+            type: object
+            description: Optional instructions for generating an asset range proof.
+            required:
+              - asset_id
+              - blinding_factor
+            properties:
+              asset_id:
+                type: string
+                description: Hex-encoded asset ID.
+              blinding_factor:
+                type: string
+                description: Hex-encoded blinding scalar.
+
+          program:
+            $ref: '#/definitions/Program'
+          data:
+            $ref: '#/definitions/DataTemplate'
+
+
+      Retirement1Template:
+        type: object
+        required:
+          - asset_id
+          - amount
+        properties:
+          asset_id:
+            type: string
+            description: Hex-encoded asset ID.
+          amount:
+            type: integer
+            description: Amount of units of a specified asset ID.
+          upgrade_program:
+            $ref: '#/definitions/Program'
 
       Retirement2Template:
         type: object
-        description: TBD
+        required:
+          - asset_commitment
+          - value_commitment
+        properties:
+          asset_commitment:
+            type: string
+            description: Hex-encoded asset commitment (64 bytes).
+          value_commitment:
+            type: string
+            description: Hex-encoded value commitment (64 bytes).
+          asset_range_proof:
+            type: string
+            description: Raw hex-encoded rangeproof for the asset_commitment.
+          value_range_proof:
+            type: string
+            description: Raw hex-encoded rangeproof for the value_commitment.
+          asset_range_proof_instructions:
+            type: object
+            description: Optional instructions for generating an asset range proof.
+            required:
+              - asset_id
+              - blinding_factor
+            properties:
+              asset_id:
+                type: string
+                description: Hex-encoded asset ID.
+              blinding_factor:
+                type: string
+                description: Hex-encoded blinding scalar.
 
       InputPlaceholder:
         description: Specifies asset amount necessary on the left side of the transaction
@@ -1070,6 +1218,36 @@ Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit
           amount:
             type: integer
             description: Amount of units of a specified asset ID.
+
+      Program:
+        type: object
+        required:
+          - vm_version
+          - bytecode
+        properties:
+          vm_version:
+            type: integer
+            description: VM version.
+          bytecode:
+            type: string
+            description: Hex-encoded raw bytecode of the program.
+
+      DataTemplate:
+        type: object
+        required:
+          - hash
+        properties:
+          hash:
+            type: string
+            description: Raw hex-encoded 32-byte data.
+          raw_contents:
+            type: string
+            description: Raw hex-encoded data string, preimage of the `hash` property.
+          reference_data:
+            type: string
+            description: Hex-encoded 32-byte cleartext reference data which
+              is equal, or a portion of `raw_contents`.
+
 
       DisclosureImportKey:
         type: object
