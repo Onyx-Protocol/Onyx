@@ -206,8 +206,8 @@ func decorateOutputs(contract *contract, clause *clause) error {
 		if !ok {
 			continue
 		}
-		if typeOf(stmt.call.fn) != "Program" {
-			return fmt.Errorf("type of function in output statement is \"%s\", must be Program", typeOf(stmt.call.fn))
+		if typeOf(stmt.call.fn) != "Address" {
+			return fmt.Errorf("type of function in output statement is \"%s\", must be Address", typeOf(stmt.call.fn))
 		}
 		if len(stmt.call.args) != 1 {
 			return fmt.Errorf("multiple arguments in output function calls not yet supported")
