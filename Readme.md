@@ -26,7 +26,6 @@ The following software is needed to build Chain Core Developer Edition:
   preferred directory
 * [protoc](https://github.com/google/protobuf#protocol-compiler-installation),
   if you need to compile protos
-* [pigeon](https://github.com/mna/pigeon), if you need to change any .peg files: `go get -u github.com/mna/pigeon`
 
 The following software is needed to run Chain Core Developer Edition:
 
