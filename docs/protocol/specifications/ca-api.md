@@ -196,7 +196,7 @@ If the receiver specifies `output_version=1` (or that field is missing), existin
 
 If there is no version 1 unspent outputs, the payment cannot succeed. The recipient needs to upgrade, or the current Core needs to swap the version 2 unspent with the issuer or any other node that holds corresponding asset on a version 1 output.
 
-
+TBD: maybe allow creating v1 receivers explicitly to be compatible with older counterparties?
 
 ### Creating disclosure
 
