@@ -328,7 +328,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
 
 1. If the asset ID is confidential, [encrypt it](ca.md#encrypt-asset-id) and set `ea` to a 64-byte ciphertext. Otherwise, set `ea` to an empty string.
 2. If the amount is confidential, [encrypt it](ca.md#encrypt-value) and set `ev` to a 40-byte ciphertext. Otherwise, set `ea` to an empty string.
-3. If the data is confidential, [encrypt it](#reference-data-encryption) and set `ed` to the ciphertext. Otherwise, set `ed` to the plaintext data.
+3. If the data is confidential, [encrypt it](#reference-data-encryption) and set `ed` to the ciphertext. Otherwise, set `ed` to the cleartext data.
 4. Concatenate `d = ea || ev || ed`.
 5. Attach `d` to the transaction entry (output, retirement or issuance).
 
@@ -336,7 +336,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
 
 1. If the asset ID is confidential, extract first 64 bytes of the data attachment and [decrypt them](ca.md#decrypt-asset-id).
 2. If the amount is confidential, extract next 40 bytes of the data attachment and [decrypt them](ca.md#decrypt-value).
-3. If the data is confidential, [decrypt](#reference-data-encryption) the remaining bytes of the data. Otherwise, set the plaintext to the remaining bytes without modification.
+3. If the data is confidential, [decrypt](#reference-data-encryption) the remaining bytes of the data. Otherwise, set the cleartext to the remaining bytes without modification.
 
 
 ### Disclosure
@@ -345,7 +345,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
 
     {
         type: "encdisclosure1",              # version of the encrypted disclosure
-        import_key: "fe9af9bc3923...",       # IK pubkey
+        sender_key: "fe9af9bc3923...",       # ephemeral sender pubkey
         selector:   "589af9b1a730...",       # blinding selector
         ciphertext: "cc9e012f7a8f99ea9b...", # encrypted hex of the Cleartext Disclosure object
     }
@@ -364,15 +364,15 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
                 entry_id: "...",                 # ID of the output (hex-encoded)
                 transaction_id: "...",           # ID of the transaction (hex-encoded)
                 data: {
-                    plaintext: "...",            # Hex-encoded decrypted reference data
+                    cleartext: "...",            # Hex-encoded decrypted reference data
                     dek: "...",                  # Data Encryption Key for this entry
                 },
                 asset_id: {
-                    asset_id: "...",             # Hex-encoded plaintext asset ID
+                    asset_id: "...",             # Hex-encoded cleartext asset ID
                     aek: "...",                  # Asset Encryption Key for this entry
                 },
                 amount: {
-                    amount: ...,                 # Hex-encoded plaintext asset ID
+                    amount: ...,                 # Hex-encoded cleartext asset ID
                     vek: "...",                  # Value Encryption Key for this entry
                 }
             },
@@ -620,7 +620,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
 4. Return a pair of the import key and a blinding selector `IK,b`:
 
         {
-            type: "importkey1",
+            type: "disclosureimportkey1",
             key: IKpub,
             selector: b
         }
@@ -628,7 +628,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
 #### Encrypt Disclosure
 
 1. Verify that import key’s `type` equals `importkey1`.
-2. Serialize plaintext disclosure as `data`.
+2. Serialize cleartext disclosure as `data`.
 3. Generate a sender private key using Core's root key `RK` as a seed:
 
         r = ScalarHash("DH" || RK || IKpub || b || data)
@@ -695,7 +695,7 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
 
 #### Encrypt Packet
 
-1. Compute keystream of the same length as plaintext: `keystream = SHAKE128(EK, len(payload))`
+1. Compute keystream of the same length as cleartext: `keystream = SHAKE128(EK, len(payload))`
 2. Encrypt the payload with the keystream: `ct = payload XOR keystream`.
 3. Compute MAC on the ciphertext `ct`: `mac = SHAKE128(ct || EK, 32)`.
 4. Append MAC to the ciphertext: `ct’ = ct || mac`.
@@ -741,7 +741,7 @@ When users upgrade to a new Chain Core, the tx template is changed, but the beha
 
 (This is similar to Stealth Addresses proposal, but compatible with usage by the recipient.)
 
-To make accounts to be trackable without exchanging receivers it is possible 
+To make accounts to be trackable without exchanging receivers it is possible
 to embed a random selector within the control program.
 
 To make it compatible with sequential key derivation, the random selector is
@@ -754,7 +754,7 @@ Scheme overview:
 3. Bob deterministically derives a random nonce to be used as a ChainKD selector:
 
         nonce = SHA3(xpub || uint64le(N)[0,16]
-        
+
 4. Bob derives a one-time key using that nonce:
 
         pubkey = ChainKD-ND(xpub, nonce)
@@ -768,7 +768,7 @@ Scheme overview:
 
 6. Bob sends receiver to a sender Sandy.
 7. Sandy makes payment to that address.
-8. Alice scans all outputs on blockchain, trying to check if any given public 
+8. Alice scans all outputs on blockchain, trying to check if any given public
    key is derived from the xpub using an associated nonce.
 9. Network cannot link two outputs to the same xpub because nonces are random and
    no one except Alice and Bob has xpub that contains "derivation key" entropy used
@@ -905,7 +905,7 @@ intend to introduce it as an additional feature that allows applications to opti
           InputPlaceholder,
           OutputPlaceholder.
 
-      
+
 
       TransactionTemplatePayload:
         type: object
@@ -942,7 +942,170 @@ intend to introduce it as an additional feature that allows applications to opti
               $ref: '#/definitions/TransactionTemplateEntry'
 
 
+      DisclosureImportKey:
+        type: object
+        required:
+          - type
+          - key
+          - selector
+        properties:
+          type:
+            type: string
+            description: Versioned type of the object. Current type is "disclosureimportkey1".
+          key:
+            type: string
+            description: EdDSA public key in hex.
+          selector:
+            type: string
+            description: Pseudo-random selector in hex used to derive a corresponding private key.
 
+      EncryptedDisclosure:
+        type: object
+        required:
+          - type
+          - sender_key
+          - selector
+          - ciphertext
+        properties:
+          type:
+            type: string
+            description: Versioned type of the object. Current type is "encdisclosure1".
+          sender_key:
+            type: string
+            description: EdDSA public key in hex used to reconstruct an encryption key.
+          selector:
+            type: string
+            description: Pseudo-random selector in hex as specified in DisclosureImportKey.
+          ciphertext:
+            type: string
+            description: Hex-encoded ciphertext of the CleartextDisclosure.
 
+      CleartextDisclosure:
+        type: object
+        required:
+          - type
+          - items
+        properties:
+          type:
+            type: string
+            description: Versioned type of the object. Current type is "disclosure1".
+          items:
+            type: array
+            items:
+              $ref: '#/definitions/DisclosureItem'
 
+      DisclosureItem:
+        type: object
+        description: There are several types of items in disclosure. Since Swagger 2.0
+          does not allow for polymorphic types, the individual properties are not listed here.
+          Please refer to the definitions of:
+          DisclosureItemEntry,
+          DisclosureItemAccount.
 
+      DisclosureItemEntry:
+        type: object
+        required:
+          - scope
+          - entry_id
+          - transaction_id
+        properties:
+          scope:
+            type: string
+            description: Type of entry being disclosed.
+            enum:
+              - output
+              - retirement
+              - issuance
+          entry_id:
+            type: string
+            description: Hash of the entry in hex.
+          transaction_id:
+            type: string
+            description: Hash of the transaction including this entry in hex.
+          data:
+            type: object
+            required:
+              - cleartext
+              - dek
+            properties:
+              cleartext:
+                type: string
+                description: Cleartext contents of the data.
+              dek:
+                type: string
+                description: Data encryption key in hex. An empty string if data is not encrypted.
+          asset_id:
+            type: object
+            required:
+              - asset_id
+              - aek
+            properties:
+              asset_id:
+                type: string
+                description: Cleartext asset ID in hex.
+              aek:
+                type: string
+                description: Asset ID encryption key in hex.
+          amount:
+            type: object
+            required:
+              - amount
+              - vek
+            properties:
+              amount:
+                type: integer
+                description: Cleartext amount.
+              vek:
+                type: string
+                description: Value encryption key in hex.
+
+      DisclosureItemAccount:
+        type: object
+        required:
+          - scope
+          - account_id
+          - account_xpubs
+          - account_quorum
+        properties:
+          scope:
+            type: string
+            description: Contains "account" string to identify the account-scoped disclosure item.
+            enum:
+              - account
+          account_id:
+            type: string
+            description: Core's internal account identifier.
+          account_xpubs:
+            type: array
+            items:
+              type: string
+            description: A list of xpubs from which the account's control
+              program pubkeys will be derived.
+          account_quorum:
+            type: integer
+            description: The number of signatures required for spending
+              funds controlled by the account's control programs.
+          data:
+            type: object
+            required:
+              - dek
+            properties:
+              dek:
+                type: string
+                description: Data encryption key in hex. An empty string if data is not encrypted.
+          asset_id:
+            type: object
+            required:
+              - aek
+            properties:
+              aek:
+                type: string
+                description: Asset ID encryption key in hex.
+          amount:
+            type: object
+            required:
+              - vek
+            properties:
+              vek:
+                type: string
+                description: Value encryption key in hex.
