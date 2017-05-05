@@ -23,7 +23,7 @@ export type ContractParameterHash =
   }
 
 export type ContractParameterType = "PublicKey" | "String" | "Number" | 
-                                    "Time" | "Boolean" | "Program" |
+                                    "Time" | "Boolean" | "Address" |
                                     "AssetAmount" | "Value" | ContractParameterHash
 
 export type ContractParameter = {

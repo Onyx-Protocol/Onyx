@@ -26,10 +26,10 @@ type Props = {
 
 const CreateFooter = (props: Props) => {
   let td = props.disabled ? 
-    <td data-tip="One or more inputs is invalid."><ReactTooltip type="error" effect="solid"/><button className="btn btn-primary btn-wide" disabled={true}>Create</button></td>
+    <td data-tip="One or more inputs is invalid."><button className="btn btn-primary btn-wide" disabled={true}>Create</button></td>
   :
     <td><button className="btn btn-primary btn-wide" onClick={props.handleClick}>Create</button></td>  
-  return <table><tbody><tr>{td}</tr></tbody></table>
+  return <div><ReactTooltip type="error" effect="solid"/><table><tbody><tr>{td}</tr></tbody></table></div>
 }
 
 export default connect(
