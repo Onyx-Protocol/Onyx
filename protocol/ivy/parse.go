@@ -139,7 +139,7 @@ func parseVerifyStmt(p *parser) *verifyStatement {
 
 func parseOutputStmt(p *parser) *outputStatement {
 	consumeKeyword(p, "output")
-	c := parseCallExpr(p)
+	c := parseExpr(p)
 	callExpr, ok := c.(*call)
 	if !ok {
 		p.errorf("expected call expression, got %T", c)
@@ -168,7 +168,7 @@ func parseExpr(p *parser) expression {
 func parseUnaryExpr(p *parser) expression {
 	op, pos := scanUnaryOp(p.buf, p.pos)
 	if pos < 0 {
-		return parsePrimaryExpr(p)
+		return parseExpr2(p)
 	}
 	p.pos = pos
 	expr := parseUnaryExpr(p)
@@ -200,28 +200,37 @@ func parseExprCont(p *parser, lhs expression, minPrecedence int) (expression, in
 	return lhs, p.pos
 }
 
-func parsePrimaryExpr(p *parser) expression {
-	if peekTok(p, "(") {
-		consumeTok(p, "(")
-		expr := parseExpr(p)
-		consumeTok(p, ")")
-		return expr
-	}
+func parseExpr2(p *parser) expression {
 	if expr, pos := scanLiteralExpr(p.buf, p.pos); pos >= 0 {
 		p.pos = pos
 		return expr
 	}
-	return parseCallExpr(p)
+	return parseExpr3(p)
 }
 
-func parseCallExpr(p *parser) expression {
-	name := consumeIdentifier(p) // xxx allow prop ref exprs too
-	v := &varRef{name: name}
-	if !peekTok(p, "(") {
-		return v
+func parseExpr3(p *parser) expression {
+	e := parseExpr4(p)
+	if peekTok(p, "(") {
+		args := parseArgs(p)
+		return &call{fn: e, args: args}
 	}
-	args := parseArgs(p)
-	return &call{fn: v, args: args}
+	if peekTok(p, ".") {
+		consumeTok(p, ".")
+		prop := consumeIdentifier(p)
+		return &propRef{expr: e, property: prop}
+	}
+	return e
+}
+
+func parseExpr4(p *parser) expression {
+	if peekTok(p, "(") {
+		consumeTok(p, "(")
+		e := parseExpr(p)
+		consumeTok(p, ")")
+		return e
+	}
+	name := consumeIdentifier(p)
+	return &varRef{name: name}
 }
 
 func parseArgs(p *parser) []expression {
@@ -287,7 +296,6 @@ func scanUnaryOp(buf []byte, offset int) (*unaryOp, int) {
 	if _, pos := scanIntLiteral(buf, offset); pos >= 0 {
 		return nil, -1
 	}
-
 	for _, op := range unaryOps {
 		newOffset := scanTok(buf, offset, op.op)
 		if newOffset >= 0 {
@@ -303,11 +311,11 @@ func scanBinaryOp(buf []byte, offset int) (*binaryOp, int) {
 		found     *binaryOp
 		newOffset = -1
 	)
-	for _, op := range binaryOps {
+	for i, op := range binaryOps {
 		offset2 := scanTok(buf, offset, op.op)
 		if offset2 >= 0 {
 			if found == nil || len(op.op) > len(found.op) {
-				found = &op
+				found = &binaryOps[i]
 				newOffset = offset2
 			}
 		}
