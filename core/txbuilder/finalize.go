@@ -89,10 +89,10 @@ func checkTxSighashCommitment(tx *legacy.Tx) error {
 		// N is 0 (prog takes no args), and assuming there must be at
 		// least one signature, args has a minimum length of 3.
 		case len(args) == 0:
-			lastError = ErrNoTxSighashAttempt
-			continue
+			// This input could be an anyone can spend contract
+			return nil
 		case len(args) == 1:
-			// This input contains a raw tx signature witness component
+			// This input could be a custom contract
 			return nil
 		case len(args) < 3:
 			lastError = ErrTxSignatureFailure
