@@ -42,7 +42,6 @@ export function createFundingTx(actions: Action[]): Promise<Object> {
 }
 
 export const createSpendingTx = (actions: Action[], witness: WitnessComponent[]): Promise<Object> => {
-  console.log("witness", witness)
   return client.transactions.build(builder => {
     actions.forEach(action => {
       switch (action.type) {
@@ -67,18 +66,20 @@ export const createSpendingTx = (actions: Action[], witness: WitnessComponent[])
     tpl.signingInstructions[0].witnessComponents = witness
     return signer.sign(tpl)
   }).then((tpl) => {
-    tpl.signingInstructions[0].witnessComponents = tpl.signingInstructions[0].witnessComponents.map(component => {
-      console.log("component", component)
-      switch(component.type) {
-        case "signature":
-          return {
-            type: "data",
-            value: component.signatures[0]
-          } as DataWitness
-        default:
-          return component
-      }
-    })
+    witness = tpl.signingInstructions[0].witnessComponents
+    if (witness !== undefined) {
+      tpl.signingInstructions[0].witnessComponents = witness.map(component => {
+        switch(component.type) {
+          case "signature":
+            return {
+              type: "data",
+              value: component.signatures[0]
+            } as DataWitness
+          default:
+            return component
+        }
+      })
+    }
     return client.transactions.submit(tpl)
   })
 }
