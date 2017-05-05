@@ -751,20 +751,26 @@ Scheme overview:
 
 1. Alice is an auditor, Bob is an account holder.
 2. Bob generates a receiver with a sequence number N.
-3. Bob deterministically derives a random nonce to be used as a ChainKD selector:
+3. Bob deterministically derives a random selector to be used with ChainKD:
 
-        nonce = SHA3(xpub || uint64le(N)[0,16]
+        selector = SHA3(xpub || uint64le(N)[0,16]
 
-4. Bob derives a one-time key using that nonce:
+4. Bob derives a one-time key using that selector:
 
-        pubkey = ChainKD-ND(xpub, nonce)
+        pubkey = ChainKD-ND(xpub, selector)
 
-5. Bob creates a control program where pubkey is annotated with the nonce:
+5. Bob creates a control program where pubkey is annotated with the selector:
 
-        <pubkey> <nonce> DROP CHECKSIG
+        <pubkey> <selector> DROP CHECKSIG
 
-    Note: this easily extends to multisig programs: each individual pubkey
-    is annotated with `<nonce> DROP` opcode.
+    This easily extends to multisig programs: each individual pubkey
+    is annotated with `<selector> DROP` opcode in case of multi-party signing:
+
+        <pk1> <sel1> DROP <pk2> <sel2> DROP <pk3> <sel3> DROP CHECKMULTISIG
+
+    In case all keys are derived by one party, a shared selector may be used for all keys:
+
+        <pk1> <pk2> <pk3> <selector> DROP CHECKMULTISIG
 
 6. Bob sends receiver to a sender Sandy.
 7. Sandy makes payment to that address.
@@ -775,7 +781,6 @@ Scheme overview:
    to produce child keys.
 
 Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit ones at a slightly higher risk of collisions (still, negligible in practice). Nonce collisions link two outputs to the same account and may make accounting slightly more complicated by requiring linking through reference data (which could be a requirement anyway).
-
 
 
 
@@ -941,6 +946,137 @@ intend to introduce it as an additional feature that allows applications to opti
             items:
               $ref: '#/definitions/TransactionTemplateEntry'
 
+
+      TxHeaderTemplate:
+        type: object
+        required:
+          - type
+          - version
+          - mintime
+          - maxtime
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `txheader`).
+            enum:
+              - txheader
+          version:
+            type: integer
+            description: Blockchain version of the transaction.
+          mintime:
+            type: integer
+            description: Minimum allowed timestamp of a block including the transaction.
+          maxtime:
+            type: integer
+            description: Zero or a maximum allowed timestamp of a block including the transaction.
+          txid:
+            type: string
+            description: Optional transaction ID in hex which is available if the template is finalized.
+
+      Mux1Template:
+        type: object
+        required:
+          - type
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `mux1`).
+            enum:
+              - mux1
+          program:
+            type: string
+            description: The raw hex of the control program.
+
+      Mux2Template:
+        type: object
+        required:
+          - type
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `mux2`).
+            enum:
+              - mux2
+          program:
+            type: string
+            description: The raw hex of the control program.
+          excess_factor:
+            type: string
+            description: The raw excess scalar to be turned into excess commitment.
+      
+      Issuance1Template:
+        type: object
+        description: TBD
+
+      Input1Template:
+        type: object
+        description: TBD
+      
+      Output1Template:
+        type: object
+        description: TBD
+
+      Retirement1Template:
+        type: object
+        description: TBD
+
+      Issuance2Template:
+        type: object
+        description: TBD
+
+      Input2Template:
+        type: object
+        description: TBD
+      
+      Output2Template:
+        type: object
+        description: TBD
+
+      Retirement2Template:
+        type: object
+        description: TBD
+
+      InputPlaceholder:
+        description: Specifies asset amount necessary on the left side of the transaction
+          (which must by provided via an issuance or an input entry).
+        type: object
+        required:
+          - type
+          - asset_id
+          - amount
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `input-placeholder`).
+            enum:
+              - input-placeholder
+          asset_id:
+            type: string
+            description: Hex-encoded asset ID.
+          amount:
+            type: integer
+            description: Amount of units of a specified asset ID.
+        
+      OutputPlaceholder:
+        description: Specifies asset amount necessary on the right side of the transaction
+          (which must by consumed via an output or a retirement entry).
+        type: object
+        required:
+          - type
+          - asset_id
+          - amount
+        properties:
+          type:
+            type: string
+            description: Type of the entry (required to be `output-placeholder`).
+            enum:
+              - output-placeholder
+          asset_id:
+            type: string
+            description: Hex-encoded asset ID.
+          amount:
+            type: integer
+            description: Amount of units of a specified asset ID.
 
       DisclosureImportKey:
         type: object
