@@ -9,6 +9,7 @@ const mockHsmKeysAPI = require('./api/mockHsmKeys')
 const transactionsAPI = require('./api/transactions')
 const transactionFeedsAPI = require('./api/transactionFeeds')
 const unspentOutputsAPI = require('./api/unspentOutputs')
+const ivyAPI = require('./api/ivy')
 
 /**
  * The Chain API Client object is the root object for all API interactions.
@@ -104,6 +105,12 @@ class Client {
      * @type {module:UnspentOutputsApi}
      */
     this.unspentOutputs = unspentOutputsAPI(this)
+
+    /**
+     * API actions for ivy compiler.
+     * @type {module:IvyAPI}
+     */
+    this.ivy = ivyAPI(this)
   }
 
 

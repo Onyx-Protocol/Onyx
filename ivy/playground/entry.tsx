@@ -10,6 +10,7 @@ import DocumentTitle from 'react-document-title'
 import persistState from 'redux-localstorage'
 import thunk from 'redux-thunk'
 import { reset } from './app/actions'
+import { selectTemplate } from './contracts/actions'
 
 import accounts from './accounts'
 import assets from './assets'
@@ -33,7 +34,9 @@ const store = createStore(
   composeEnhancers(applyMiddleware(thunk), applyMiddleware(routerMiddleware(history)), persistState())
 )
 
-// store.dispatch(reset)
+store.dispatch(reset)
+store.dispatch(templates.actions.compileTemplates())
+store.dispatch(selectTemplate("TrivialLock"))
 
 render(
   <Provider store={store}>

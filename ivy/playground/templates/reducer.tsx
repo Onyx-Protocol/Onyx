@@ -1,10 +1,16 @@
 import { State } from './types'
-import { LOAD_TEMPLATE, SET_SOURCE, SAVE_TEMPLATE } from './actions'
+import { COMPILE_TEMPLATES, LOAD_TEMPLATE, SET_SOURCE, SAVE_TEMPLATE } from './actions'
 import { INITIAL_STATE } from './constants'
 import { isError } from './util'
 
 export default function reducer(state: State = INITIAL_STATE, action): State {
   switch (action.type) {
+    case COMPILE_TEMPLATES:
+      console.log('itemMap', action.itemMap)
+      return {
+        ...state,
+        itemMap: action.itemMap
+      }
     case LOAD_TEMPLATE:
       let source = state.itemMap[action.selected].source
       return {
