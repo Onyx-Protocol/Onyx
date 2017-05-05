@@ -4,10 +4,9 @@
 * [Data structures](#data-structures)
 * [Actions](#actions)
 * [Encryption](#encryption)
-* [Compatibility](#compatibility)
 * [Trackable addresses](#trackable-addresses)
-* [Alternatives considered](#alternatives-considered)
-* [Swagger specification](#swagger-specification)
+* [API specification](#api-specification)
+* [Discussion](#discussion)
 
 ## Introduction
 
@@ -75,7 +74,7 @@ First party (Alice) uses `client.transactions` API to build a transaction to sen
 
     tx1 = client.transactions.build do |b|
       b.spend_from_account    account_alias: 'alice', asset_id: 'USD',  amount: 140
-      b.control_with_receiver receiver: bob_rcvr,     asset_id: 'USD',  amount: 140, data: "Hello, world!"
+      b.control_with_receiver receiver: bob_rcvr,     asset_id: 'USD',  amount: 140, reference_data: "Hello, world!"
     end
 
 Suppose Alice has 1000 USD on the inputs. Transaction builder creates two outputs:
@@ -258,7 +257,7 @@ Transaction template contains transaction entries and additional data that helps
                 value_commitment:   "5ca9f901248...",
                 valure_range_proof: "9df90af8a0c...",
                 program:            "...",
-                data:               "da1a00fa9e628...",
+                data:               "da1a00fa9e628...", # raw data
                 exthash:            "e40fa89202...",
 
                 asset_range_proof_instructions: {
@@ -408,7 +407,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
                 scope: "output",                 # disclosure for a single output/retirement/issuance
                 entry_id: "...",                 # ID of the output (hex-encoded)
                 transaction_id: "...",           # ID of the transaction (hex-encoded)
-                data: {
+                reference_data: {
                     cleartext: "...",            # Hex-encoded decrypted reference data
                     dek: "...",                  # Data Encryption Key for this entry
                 },
@@ -426,7 +425,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
                 account_id: "...",               # ID of the output (hex-encoded)
                 account_xpubs: [...],            # List of xpubs forming an account
                 account_quorum: 1,               # Number of keys required for signing in the account
-                data: {
+                reference_data: {
                     dek: "...",                  # Data Encryption Key for this account
                 },
                 asset_id: {
@@ -460,9 +459,9 @@ To control confidentiality of specific entries, `confidential` key is used (defa
 
     chain.transactions.build do |b|
         b.base_transaction tx  # (optional)
-        b.issue                ..., confidential: {data: true, asset_id: true, amount: true}
-        b.control_with_account ..., confidential: {data: true, asset_id: true, amount: true}
-        b.retire               ..., confidential: {daq  ta: true, asset_id: true, amount: true}
+        b.issue                ..., confidential: {reference_data: true, asset_id: true, amount: true}
+        b.control_with_account ..., confidential: {reference_data: true, asset_id: true, amount: true}
+        b.retire               ..., confidential: {reference_data: true, asset_id: true, amount: true}
     end
 
 It is an error to use `confidential` key with actions `spend_*` or `control_with_receiver`.
@@ -544,9 +543,9 @@ that the document is encrypted in-transit (without assuming direct secure connec
 Bob receives `import_key` from Alice and uses it to build a disclosure object:
 
     encrypted_disclosure = client.disclosures.build(import_key: import_key) do |d|
-      d.disclose_entry(entry_id: "fa0e8fb0ad...",            fields: {asset_id: true, amount: true, data: true})
-      d.disclose_transaction(transaction_id: "57ad0fea9...", fields: {asset_id: true, amount: true, data: true})
-      d.disclose_account(account_alias: "bob",               fields: {asset_id: true, amount: true, data: true})
+      d.disclose_entry(entry_id: "fa0e8fb0ad...",            fields: {asset_id: true, amount: true, reference_data: true})
+      d.disclose_transaction(transaction_id: "57ad0fea9...", fields: {asset_id: true, amount: true, reference_data: true})
+      d.disclose_account(account_alias: "bob",               fields: {asset_id: true, amount: true, reference_data: true})
     end
     disclosure_serialized = encrypted_disclosure.to_json
 
@@ -763,25 +762,6 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
 
 
 
-## Compatibility
-
-Current SDK uses `signer.sign()` method to sign a partial transaction. We can keep this behavior and introduce an additional API:
-
-    HSMSigner.sign() - existing behavior as is
-    Client.sign()    - verifies payload and signs TXSIGHASH-based predicate via Client.signer.sign(txhash instead of checkpredicate)
-
-When users upgrade to a new Chain Core, the tx template is changed, but the behavior of the application remains the same. Then, they can smoothly transition to a new API usage:
-
-1. Configure Client.signer instead of a standalone HSMSigner instance.
-2. Introduce a second round of tx template exchange to do `Client.sign` after other parties have participated.
-3. If using confidential amounts, new signing mechanism is required.
-
-
-
-
-
-
-
 ## Trackable addresses
 
 (This is similar to Stealth Addresses proposal, but compatible with usage by the recipient.)
@@ -811,11 +791,15 @@ Scheme overview:
     This easily extends to multisig programs: each individual pubkey
     is annotated with `<selector> DROP` opcode in case of multi-party signing:
 
-        <pk1> <sel1> DROP <pk2> <sel2> DROP <pk3> <sel3> DROP CHECKMULTISIG
+        <pk1> <sel1> DROP 
+        <pk2> <sel2> DROP 
+        <pk3> <sel3> DROP
+        2 3 CHECKMULTISIG
 
     In case all keys are derived by one party, a shared selector may be used for all keys:
 
-        <pk1> <pk2> <pk3> <selector> DROP CHECKMULTISIG
+        <pk1> <pk2> <pk3> <selector> DROP
+        2 3 CHECKMULTISIG
 
 6. Bob sends receiver to a sender Sandy.
 7. Sandy makes payment to that address.
@@ -831,44 +815,8 @@ Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit
 
 
 
-## Alternatives considered
 
-### 1. Encryption of the exported disclosure
-
-Possible options:
-
-1. Encrypting to a Core-generated "Import Key" (as in this spec).
-2. Not encrypting and relying on security of the transmission channels.
-
-Arguments for encryption:
-
-1. Encrypting disclosure ensures that data cannot be intercepted between two Cores without assuming that Cores connect directly to each other.
-2. Encryption allows concrete auditability of data access and policies: import keys can be signed by long-term keys to provide a delegation chain. This is more important for manual handling of disclosures where a user of one Core exports and transmits it to other people who import it to the target Core.
-
-Arguments against encryption:
-
-1. Recipient must generate a receiving key first, before the exporter can create a disclosure.
-2. We may figure a more generalized way for encryption of arbitrary data between Cores, and that would be a custom use of it.
-
-### 2. Inline data VS out of band data
-
-Possible options:
-
-1. Automatically split data for inline (INL) and out of band (OOB) pieces.
-2. Keep these explicitly separate.
-
-We choose to keep these fields separate since the inline data has special features and considerations:
-
-* Inline data does not require out-of-band transmission. Therefore, nodes can receive the data from raw blockchain data w/o setting up additional channels.
-* Inline data has limited size: around 3-4 Kb.
-* Inline data requires reveal of the numeric amount, so these two fields cannot be indepdently disclosed.
-
-In the present specification we omit support for inline data entirely for simplicity of the interface and
-intend to introduce it as an additional feature that allows applications to optimize bandwidth usage.
-
-
-
-## Swagger specification
+## API specification
 
     ---
     swagger: '2.0'
@@ -1051,7 +999,7 @@ intend to introduce it as an additional feature that allows applications to opti
       
       Issuance1Template:
         type: object
-        description: TBD
+        description:
 
       Input1Template:
         type: object
@@ -1203,7 +1151,7 @@ intend to introduce it as an additional feature that allows applications to opti
           transaction_id:
             type: string
             description: Hash of the transaction including this entry in hex.
-          data:
+          reference_data:
             type: object
             required:
               - cleartext
@@ -1266,7 +1214,7 @@ intend to introduce it as an additional feature that allows applications to opti
             type: integer
             description: The number of signatures required for spending
               funds controlled by the account's control programs.
-          data:
+          reference_data:
             type: object
             required:
               - dek
@@ -1290,3 +1238,57 @@ intend to introduce it as an additional feature that allows applications to opti
               vek:
                 type: string
                 description: Value encryption key in hex.
+
+
+
+
+## Discussion
+
+### Compatibility
+
+Current SDK uses `signer.sign()` method to sign a partial transaction. We can keep this behavior and introduce an additional API:
+
+    HSMSigner.sign() - existing behavior as is
+    Client.sign()    - verifies payload and signs TXSIGHASH-based predicate via Client.signer.sign(txhash instead of checkpredicate)
+
+When users upgrade to a new Chain Core, the tx template is changed, but the behavior of the application remains the same. Then, they can smoothly transition to a new API usage:
+
+1. Configure Client.signer instead of a standalone HSMSigner instance.
+2. Introduce a second round of tx template exchange to do `Client.sign` after other parties have participated.
+3. If using confidential amounts, new signing mechanism is required.
+
+
+### Encryption of the exported disclosure
+
+Possible options:
+
+1. Encrypting to a Core-generated "Import Key" (as in this spec).
+2. Not encrypting and relying on security of the transmission channels.
+
+Arguments for encryption:
+
+1. Encrypting disclosure ensures that data cannot be intercepted between two Cores without assuming that Cores connect directly to each other.
+2. Encryption allows concrete auditability of data access and policies: import keys can be signed by long-term keys to provide a delegation chain. This is more important for manual handling of disclosures where a user of one Core exports and transmits it to other people who import it to the target Core.
+
+Arguments against encryption:
+
+1. Recipient must generate a receiving key first, before the exporter can create a disclosure.
+2. We may figure a more generalized way for encryption of arbitrary data between Cores, and that would be a custom use of it.
+
+### Inline data VS out of band data
+
+Possible options:
+
+1. Automatically split data for inline (INL) and out of band (OOB) pieces.
+2. Keep these explicitly separate.
+
+We choose to keep these fields separate since the inline data has special features and considerations:
+
+* Inline data does not require out-of-band transmission. Therefore, nodes can receive the data from raw blockchain data w/o setting up additional channels.
+* Inline data has limited size: around 3-4 Kb.
+* Inline data requires reveal of the numeric amount, so these two fields cannot be indepdently disclosed.
+
+In the present specification we omit support for inline data entirely for simplicity of the interface and
+intend to introduce it as an additional feature that allows applications to optimize bandwidth usage.
+
+
