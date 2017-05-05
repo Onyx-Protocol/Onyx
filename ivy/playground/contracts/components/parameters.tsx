@@ -8,9 +8,9 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
          BlocksDurationInput, TimeInput, BlockheightTimeInput, TimestampTimeInput,
          PublicKeyInput, GeneratePublicKeyInput, ProvidePublicKeyInput, GeneratePrivateKeyInput, GenerateHashInput,
          ProvideHashInput, InputType, ComplexInput, SignatureInput, GenerateSignatureInput,
-         ProvideSignatureInput, AddressInput, GenerateAddressInput, ProvideAddressInput, ProvidePrivateKeyInput,
+         ProvideSignatureInput, ProvidePrivateKeyInput,
          MaxtimeInput, MintimeInput, ValueInput, AccountAliasInput, AssetAliasInput, AssetAmountInput, AmountInput,
-         ProgramInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
+         AddressInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
 import { getParameterIdentifier, getInputContext } from '../../inputs/data'
 import { getInputMap, getSpendInputMap, getClauseParameterIds, getShowErrors } from '../selectors'
 import { updateClauseInput } from '../actions'
@@ -87,19 +87,9 @@ function StringWidget(props: { input: StringInput, handleChange: (e)=>undefined 
   </div>
 }
 
-function AddressWidget(props: { input: AddressInput, handleChange: (e)=>undefined }) {
-  let options = [{label: "Spend to Wallet", value: "generateAddressInput"},
-                 {label: "Provide Address", value: "provideAddressInput"}]
-  let handleChange = (s: string) => undefined
-  return <div>
-    <app.components.RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
-    {getChildWidget(props.input)}
-  </div>
-}
-
 function TextWidget(props: { input: ProvideStringInput | ProvideHashInput |
                                     ProvidePublicKeyInput | ProvideSignatureInput |
-                                    ProvidePrivateKeyInput | ProvideAddressInput
+                                    ProvidePrivateKeyInput
                              handleChange: (e)=>undefined }) {
   return <div className = "form-group"><input type="text" key={props.input.name} className="form-control" value={props.input.value} onChange={props.handleChange} /></div>
 }
@@ -180,12 +170,6 @@ function TimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
   </div>
 }
 
-function WalletWidget(props: { input: GenerateAddressInput, handleChange: (e)=>undefined, computedValue?: string }) {
-  // vestigial from when this was generating addresses
-  // this will use the wallet instead
-  return props.computedValue ? <pre>{props.computedValue}</pre> : <div />
-}
-
 function MintimeWidget(props: { input: MintimeInput, handleChange: (e)=>undefined }) {
   return getChildWidget(props.input)
 }
@@ -208,7 +192,7 @@ function AssetAmountWidget(props: { input: AssetAmountInput, handleChange: (e)=>
   </div>
 }
 
-function ProgramWidget(props: { input: ProgramInput, handleChange: (e)=>undefined }) {
+function AddressWidget(props: { input: AddressInput, handleChange: (e)=>undefined }) {
   return <div>
     {getChildWidget(props.input)}
   </div>
@@ -296,8 +280,6 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
     case "timestampTimeInput": return PositiveNumberWidget
     case "blockheightTimeInput": return PositiveNumberWidget
     case "addressInput": return AddressWidget
-    case "provideAddressInput": return TextWidget
-    case "generateAddressInput": return WalletWidget
     case "mintimeInput": return MintimeWidget
     case "maxtimeInput": return MaxtimeWidget
     case "valueInput": return ValueWidget
@@ -306,7 +288,7 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
     case "assetAliasInput": return AssetAliasWidget
     case "amountInput": return AmountWidget
     case "amountInput": return AmountWidget
-    case "programInput": return ProgramWidget
+    case "addressInput": return AddressWidget
     case "choosePublicKeyInput": return ChoosePublicKeyWidget
     default: return ParameterWidget
   }
@@ -323,8 +305,7 @@ function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
   if (input === undefined) throw "bad input ID: " + id
   if (input.type === "generatePublicKeyInput" ||
       input.type === "generateHashInput" ||
-      input.type === "generateStringInput" ||
-      input.type === "generateAddressInput") {
+      input.type === "generateStringInput") {
     try {
       let computedValue = computeDataForInput(id, inputsById)
       return {

@@ -31,7 +31,7 @@ function UnspentContracts(props: { contractIds: string[] }) {
     <table className="table">
       <thead><tr>
         <th>Contract Template</th>
-        <th>Control Program</th>
+        <th>Control Address</th>
         <th>Funding Transaction ID</th>
         <th></th>
       </tr></thead>

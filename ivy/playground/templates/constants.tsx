@@ -17,33 +17,33 @@ const LOCK_WITH_PUBLIC_KEY = `contract LockWithPublicKey(publicKey: PublicKey, l
   }
 }`
 
-const LOCK_TO_OUTPUT =`contract LockToOutput(program: Program, locked: Value) {
+const LOCK_TO_OUTPUT =`contract LockToOutput(address: Address, locked: Value) {
   clause unlock() {
-    output program(locked)
+    output address(locked)
   }
 }`
 
 const TRADE_OFFER = `contract TradeOffer(
   requested: AssetAmount, 
-  sellerControlProgram: Program, 
+  sellerAddress: Address, 
   sellerKey: PublicKey, 
   offered: Value
 ) {
   clause trade(payment: Value) {
     verify payment.assetAmount == requested
-    output sellerControlProgram(payment)
+    output sellerAddress(payment)
     return offered
   }
   clause cancel(sellerSig: Signature) {
     verify checkTxSig(sellerKey, sellerSig)
-    output sellerControlProgram(offered)
+    output sellerAddress(offered)
   }
 }`
 
 const ESCROWED_TRANSFER = `contract EscrowedTransfer(
   agent: PublicKey, 
-  sender: Program, 
-  recipient: Program, 
+  sender: Address, 
+  recipient: Address, 
   value: Value
 ) {
   clause approve(sig: Signature) {
