@@ -9,7 +9,7 @@ if (isProd) {
 }
 
 export const client = new chain.Client({
-  baseUrl: apiHost
+  url: apiHost
 })
 
 export const signer = new chain.HsmSigner()
