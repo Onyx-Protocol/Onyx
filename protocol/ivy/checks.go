@@ -239,7 +239,7 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			if !ok {
 				continue
 			}
-			if e.op != "==" {
+			if e.op.op != "==" {
 				continue
 			}
 

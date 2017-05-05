@@ -163,13 +163,13 @@ func parseExpr(p *parser) expression {
 }
 
 func parseUnaryExpr(p *parser) expression {
-	opInfo, pos := scanUnaryOp(p.buf, p.pos)
+	op, pos := scanUnaryOp(p.buf, p.pos)
 	if pos < 0 {
 		return parsePrimaryExpr(p)
 	}
 	p.pos = pos
 	expr := parseUnaryExpr(p)
-	return &unaryExpr{op: opInfo.op, expr: expr}
+	return &unaryExpr{op: op, expr: expr}
 }
 
 func parseExprCont(p *parser, lhs expression, minPrecedence int) (expression, int) {
