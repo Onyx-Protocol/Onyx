@@ -14,7 +14,8 @@ import {
   getSpendContractId,
   getClauseWitnessComponents,
   getSpendContractSelectedClauseIndex,
-  getClauseOutputActions
+  getClauseOutputActions,
+  getClauseValues
 } from './selectors';
 
 import { getPromisedInputMap } from '../inputs/data'
@@ -100,7 +101,9 @@ export const spend = () => {
       outputId
     }
     let clauseOutputActions: Action[] = getClauseOutputActions(state)
-    let actions: Action[] = [spendContractAction, ...clauseOutputActions]
+    console.log("clause output actions", clauseOutputActions)
+    let clauseValues = getClauseValues(state)
+    let actions: Action[] = [spendContractAction, ...clauseOutputActions, ...clauseValues]
     let returnInput = spendInputMap["transactionDetails.accountAliasInput"]
     if (returnInput !== undefined) {
       actions.push({
