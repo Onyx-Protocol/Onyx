@@ -44,8 +44,8 @@ func requireValueParam(contract *contract) error {
 	if len(contract.params) == 0 {
 		return fmt.Errorf("must have at least one contract parameter")
 	}
-	if contract.params[len(contract.params)-1].typ != "Value" {
-		return fmt.Errorf("final contract parameter has type \"%s\" but should be Value", contract.params[len(contract.params)-1].typ)
+	if t := contract.params[len(contract.params)-1].typ; t != "Value" {
+		return fmt.Errorf("final contract parameter has type \"%s\" but should be Value", t)
 	}
 	for i := 0; i < len(contract.params)-1; i++ {
 		if contract.params[i].typ == "Value" {
@@ -174,6 +174,8 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 		}
 
 	case *varRef:
+		// TODO(bobg): Should parameters be allowed to shadow builtins?
+		// Should builtin names be reserved words?
 		for _, b := range builtins {
 			if e.name == b.name {
 				e.builtin = &b
@@ -192,7 +194,7 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 				return nil
 			}
 		}
-		return fmt.Errorf("undefined variable \"%s\"", e.name)
+		return fmt.Errorf("undefined variable \"%s\" in clause \"%s\"", e.name, clause.name)
 
 	case *propRef:
 		return decorateRefsInExpr(contract, clause, e.expr)
@@ -206,14 +208,14 @@ func decorateOutputs(contract *contract, clause *clause) error {
 		if !ok {
 			continue
 		}
-		if typeOf(stmt.call.fn) != "Address" {
-			return fmt.Errorf("type of function in output statement is \"%s\", must be Address", typeOf(stmt.call.fn))
+		if t := typeOf(stmt.call.fn); t != "Address" {
+			return fmt.Errorf("type of function (%s) in output statement of clause \"%s\" is \"%s\", must be Address", stmt.call.fn, clause.name, t)
 		}
 		if len(stmt.call.args) != 1 {
-			return fmt.Errorf("multiple arguments in output function calls not yet supported")
+			return fmt.Errorf("not yet supported: zero or multiple arguments in call to \"%s\" in output statement of clause \"%s\"", stmt.call.fn, clause.name)
 		}
-		if typeOf(stmt.call.args[0]) != "Value" {
-			return fmt.Errorf("passing anything other than a value parameter to an output function call not yet supported")
+		if t := typeOf(stmt.call.args[0]); t != "Value" {
+			return fmt.Errorf("not yet supported: argument of non-Value type \"%s\" passed to \"%s\" in output statement of clause \"%s\"", t, stmt.call.fn, clause.name)
 		}
 		p := referencedParam(stmt.call.args[0])
 		if p == contract.params[len(contract.params)-1] {
@@ -266,13 +268,13 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			v.associatedOutput = stmt
 			stmt.param = referencedParam(other)
 			if stmt.param == nil {
-				return fmt.Errorf("cannot statically determine the AssetAmount to check \"%s\" against", p.name)
+				return fmt.Errorf("cannot statically determine an AssetAmount parameter in \"%s\" in clause \"%s\" to check \"%s\" against", other, clause.name, p.name)
 			}
 			found = true
 			break
 		}
 		if !found {
-			return fmt.Errorf("value param \"%s\" is in an output statement but not checked in a verify statement", p.name)
+			return fmt.Errorf("Value parameter \"%s\" is in an output statement in clause \"%s\" but not checked in a verify statement", p.name, clause.name)
 		}
 	}
 	return nil
@@ -303,18 +305,18 @@ func typeCheckClause(contract *contract, clause *clause) error {
 				continue
 			}
 			if t := typeOf(stmt.expr); t != "Boolean" {
-				return fmt.Errorf("expression in verify statement is \"%s\", must be Boolean", t)
+				return fmt.Errorf("expression in verify statement in clause \"%s\" has type \"%s\", must be Boolean", clause.name, t)
 			}
 
 		case *returnStatement:
 			if i != len(clause.statements)-1 {
-				return fmt.Errorf("return must be the final statement of the clause")
+				return fmt.Errorf("return must be the final statement of clause \"%s\"", clause.name)
 			}
-			if typeOf(stmt.expr) != "Value" {
-				return fmt.Errorf("expression in return statement has type \"%s\", must be Value", typeOf(stmt.expr))
+			if t := typeOf(stmt.expr); t != "Value" {
+				return fmt.Errorf("expression \"%s\" in return statement of clause \"%s\" has type \"%s\", must be Value", stmt.expr, clause.name, t)
 			}
 			if referencedParam(stmt.expr) != contract.params[len(contract.params)-1] {
-				return fmt.Errorf("expression in return statement must be the contract value parameter")
+				return fmt.Errorf("expression in return statement of clause \"%s\" must be the contract Value parameter")
 			}
 		}
 	}
@@ -325,15 +327,15 @@ func typeCheckExpr(expr expression) error {
 	switch e := expr.(type) {
 	case *binaryExpr:
 		if e.op.left != "" && typeOf(e.left) != e.op.left {
-			return fmt.Errorf("left operand of \"%s\" has type \"%s\", must be \"%s\"", e.op.op, typeOf(e.left), e.op.left)
+			return fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, typeOf(e.left), e.op.left)
 		}
 		if e.op.right != "" && typeOf(e.right) != e.op.right {
-			return fmt.Errorf("right operand of \"%s\" has type \"%s\", must be \"%s\"", e.op.op, typeOf(e.right), e.op.right)
+			return fmt.Errorf("in \"%s\", right operand has type \"%s\", must be \"%s\"", e, typeOf(e.right), e.op.right)
 		}
 
 	case *unaryExpr:
 		if e.op.operand != "" && typeOf(e.expr) != e.op.operand {
-			return fmt.Errorf("operand of \"%s\" has type \"%s\", must be \"%s\"", e.op.op, typeOf(e.expr), e.op.operand)
+			return fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, typeOf(e.expr), e.op.operand)
 		}
 
 	case *call:
