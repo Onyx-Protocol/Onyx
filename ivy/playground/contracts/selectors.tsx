@@ -257,8 +257,8 @@ export const getClauseValues = createSelector(
       .map(param => {
         let clauseParameterPrefix = "clauseParameters." + clause.name + "." + param.identifier
         let accountInput = spendInputMap[clauseParameterPrefix + ".valueInput.accountAliasInput"]
-        let assetInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetAliasInput"]
-        let amountInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetAliasInput"]
+        let assetInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetAmountInput.assetAliasInput"]
+        let amountInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetAmountInput.amountInput"]
         if (accountInput === undefined) throw "accountInput for clause Value parameter surprisingly undefined"
         if (assetInput === undefined) throw "assetInput for clause Value parameter surprisingly undefined"
         if (assetInput === undefined) throw "assetInput for clause Value parameter surprisingly undefined"
