@@ -35,8 +35,6 @@ const store = createStore(
 )
 
 store.dispatch(reset)
-store.dispatch(templates.actions.compileTemplates())
-store.dispatch(selectTemplate("TrivialLock"))
 
 render(
   <Provider store={store}>
