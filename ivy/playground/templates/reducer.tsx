@@ -6,7 +6,6 @@ import { isError } from './util'
 export default function reducer(state: State = INITIAL_STATE, action): State {
   switch (action.type) {
     case COMPILE_TEMPLATES:
-      console.log('itemMap', action.itemMap)
       return {
         ...state,
         itemMap: action.itemMap,

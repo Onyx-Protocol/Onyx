@@ -2,7 +2,6 @@ import { ContractsState } from './types'
 import { SELECT_TEMPLATE } from './actions'
 import { getParameterIdList } from '../templates/selectors'
 import { Item as Template } from '../templates/types'
-// import { itemMap as initialItemMap } from '../templates/constants'
 import { Input, InputMap } from '../inputs/types'
 import { getInputMap } from './selectors'
 import { addParameterInput } from '../inputs/data'
@@ -16,8 +15,8 @@ import { Item as Contract } from './types'
 export const INITIAL_STATE: ContractsState = {
   itemMap: {},
   idList: [],
-  inputMap: {}, //generateInputMap(initialItemMap["TrivialLock"]),
-  selectedTemplateId: "", //TrivialLock",
+  inputMap: {},
+  selectedTemplateId: "TrivialLock",
   spendContractId: "",
   selectedClauseIndex: 0,
   showErrors: false
@@ -39,7 +38,6 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         }
       }
     case SELECT_TEMPLATE:
-      console.log("action", action)
       return {
         ...state,
         inputMap: generateInputMap(action.template),
@@ -66,7 +64,6 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       let spendInputMap = {}
       let keyMap = getPublicKeys(action.inputMap)
       for (let input of inputs) {
-        console.log(input)
         spendInputMap[input.name] = input
         if (input.type === "choosePublicKeyInput") {
           input.keyMap = keyMap
