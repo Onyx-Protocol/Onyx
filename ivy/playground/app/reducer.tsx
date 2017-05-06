@@ -12,7 +12,10 @@ import { RESET, INITIAL_STATE } from './constants'
 export default function reducer(state: AppState, action): AppState {
   switch (action.type) {
     case RESET:
-      return INITIAL_STATE
+      return {
+        ...INITIAL_STATE,
+        templates: state.templates
+      }
     default:
       return combineReducers({
         accounts: accounts.reducer,
