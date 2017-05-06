@@ -6,7 +6,7 @@ import app from '../../app'
 import { Item as Template } from '../../templates/types'
 import CreateFooter from './createfooter'
 
-import { getSelectedTemplate } from '../selectors'
+import { getSelectedTemplate, getState as getContractsState } from '../selectors'
 
 import { ContractParameters } from './parameters'
 
@@ -16,14 +16,16 @@ import { Display } from './display'
 
 const mapStateToProps = (state) => {
   const template = getSelectedTemplate(state)
-  return { template }
+  const contracts = getContractsState(state)
+  return { template, contracts }
 }
 
-type Props = {
-  template: Template
-}
-
-const Create = (props: Props) => {
+const Create = (props) => {
+  console.log(props.contracts.inputMap)
+  if (Object.keys(props.contracts.inputMap).length === 0) {
+    // TODO(boymanjor): Fix me if possible
+    return <div />
+  }
   return (
     <DocumentTitle title='Create Contract'>
       <app.components.Section name="Create Contract" footer={<CreateFooter />}>
