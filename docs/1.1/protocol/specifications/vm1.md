@@ -1147,9 +1147,11 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc2  | (∅ → assetid)  | 1; [standard memory cost](#standard-memory-cost)
 
-If the current entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1) entry, pushes the `SpentOutput.Source.Value.AssetID` of that entry.
-
-If the current entry is a [nonce](blockchain.md#nonce) entry, verifies that the `AnchoredEntry` field is an [issuance](blockchain.md#issuance-1) entry, and pushes the `Value.AssetID` of that issuance entry. Fails if `AnchoredEntry` is not an issuance version 1.
+1. If the current entry is an [issuance](blockchain.md#issuance-1), pushes `Value.AssetID`.
+2. If the current entry is a [spend](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.AssetID` of that entry.
+3. If the current entry is a [nonce](blockchain.md#nonce) entry:
+    1. Verifies that the `AnchoredEntry` field is an [issuance 1](blockchain.md#issuance-1) entry, and pushes the `Value.AssetID` of that issuance entry.
+    2. Fails if `AnchoredEntry` is not an [issuance 1](blockchain.md#issuance-1).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1161,9 +1163,11 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
-If the current entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1) entry, pushes the `SpentOutput.Source.Value.Amount` of that entry.
-
-If the current entry is a [nonce](blockchain.md#nonce) entry, verifies that the `AnchoredEntry` field is an [issuance](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry. Fails if `AnchoredEntry` is not an issuance version 1.
+1. If the current entry is an [issuance](blockchain.md#issuance-1), pushes `Value.Amount`.
+2. If the current entry is a [spend](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.Amount` of that entry.
+3. If the current entry is a [nonce](blockchain.md#nonce) entry:
+    1. Verifies that the `AnchoredEntry` field is an [issuance 1](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry.
+    2. Fails if `AnchoredEntry` is not an [issuance 1](blockchain.md#issuance-1).
 
 Fails if executed in the [block context](#block-context).
 
