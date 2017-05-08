@@ -179,7 +179,10 @@ func TestCompile(t *testing.T) {
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "trade",
-					Args: []ClauseArg{},
+					Args: []ClauseArg{{
+						Name: "payment",
+						Typ:  "Value",
+					}},
 					Values: []ValueInfo{{
 						Name:        "payment",
 						Program:     "sellerAddress",
@@ -266,7 +269,10 @@ func TestCompile(t *testing.T) {
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "repay",
-					Args: []ClauseArg{},
+					Args: []ClauseArg{{
+						Name: "payment",
+						Typ:  "Value",
+					}},
 					Values: []ValueInfo{
 						{
 							Name:        "payment",
