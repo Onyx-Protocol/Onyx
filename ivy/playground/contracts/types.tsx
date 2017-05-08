@@ -38,6 +38,7 @@ export type ItemMap = { [s: string]: Item }
 export type ContractsState = {
   itemMap: ItemMap,
   idList: string[],
+  spentIdList: string[],
   inputMap: InputMap,
   selectedTemplateId: string,
   spendContractId: string,

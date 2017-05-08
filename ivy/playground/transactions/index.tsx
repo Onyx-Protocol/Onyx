@@ -70,7 +70,7 @@ export const createSpendingTx = (actions: Action[], witness: WitnessComponent[])
     if (witness !== undefined) {
       tpl.signingInstructions[0].witnessComponents = witness.map(component => {
         switch(component.type) {
-          case "signature":
+          case "raw_tx_signature":
             return {
               type: "data",
               value: component.signatures[0]

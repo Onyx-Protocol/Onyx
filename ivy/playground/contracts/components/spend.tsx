@@ -5,7 +5,6 @@ import { Item as Contract } from '../types'
 import { Template, TemplateClause } from 'ivy-compiler'
 
 import DocumentTitle from 'react-document-title'
-// import SpendInputs from './spendinputs'
 import SpendInputs from './argsDisplay'
 import SpendFooter from './spendfooter'
 import { DisplaySpendContract } from './display'
