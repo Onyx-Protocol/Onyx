@@ -5,32 +5,9 @@ import { TRIVIAL_LOCK, LOCK_WITH_PUBLIC_KEY, LOCK_TO_OUTPUT, TRADE_OFFER, ESCROW
 import { selectTemplate } from '../contracts/actions'
 import { ContractParameter, TemplateClause, ClauseParameter } from 'ivy-compiler'
 
-export const COMPILE_TEMPLATES = 'templates/COMPILE_TEMPLATES'
+export const SET_INITIAL_TEMPLATES = 'templates/SET_TEMPLATES'
 export const LOAD_TEMPLATE = 'templates/LOAD_TEMPLATE'
 export const SET_SOURCE = 'templates/SET_SOURCE'
-
-// export type TemplateClause = {
-//   type: "templateClause",
-//   name: string,
-//   parameters: ClauseParameter[],
-//   outputs: Output[],
-//   returnStatement?: Return
-// }
-//
-// export type Output = {
-//   type: "output",
-//   location: Location,
-//   contract: ContractExpression,
-//   assetAmountParam?: string,
-//   index?: number
-// }
-//
-// export type ContractExpression = {
-//   type: "contractExpression",
-//   location: Location,
-//   address: Variable,
-//   value: Variable | StoredValue
-// }
 
 const mapServerTemplate = (tpl): Template => {
   const clauses: TemplateClause[] = tpl.clauseInfo.map(clause => {
@@ -100,31 +77,39 @@ const mapServerTemplate = (tpl): Template => {
   } as Template
 }
 
-export const compileTemplates = () => {
+export const setInitialTemplates = () => {
   return (dispatch, getState) => {
-    const itemMap: ItemMap = {}
-    return Promise.all([
+    Promise.all([
       client.ivy.compile({ contract: TRIVIAL_LOCK }),
       client.ivy.compile({ contract: LOCK_WITH_PUBLIC_KEY }),
       client.ivy.compile({ contract: LOCK_TO_OUTPUT }),
       client.ivy.compile({ contract: TRADE_OFFER }),
       client.ivy.compile({ contract: ESCROWED_TRANSFER }),
     ]).then(result => {
-      itemMap["TrivialLock"] = mapServerTemplate(result[0])
-      itemMap["LockWithPublicKey"] = mapServerTemplate(result[1])
-      itemMap["LockToOutput"] = mapServerTemplate(result[2])
-      itemMap["TradeOffer"] = mapServerTemplate(result[3])
-      itemMap["EscrowedTransfer"] = mapServerTemplate(result[4])
-      const idList = ["TrivialLock", "LockWithPublicKey", "LockToOutput", "TradeOffer", "EscrowedTransfer"]
-      const source = itemMap["TrivialLock"].source
+      const itemMap = {
+        TrivialLock: mapServerTemplate(result[0]),
+        LockWithPublicKey: mapServerTemplate(result[1]),
+        LockToOutput: mapServerTemplate(result[2]),
+        TradeOffer: mapServerTemplate(result[3]),
+        EscrowedTransfer: mapServerTemplate(result[4])
+      }
+      const idList = [
+        "TrivialLock",
+        "LockWithPublicKey",
+        "LockToOutput",
+        "TradeOffer",
+        "EscrowedTransfer"
+      ]
       const selected = idList[0]
+      const source = itemMap[selected].source
       dispatch({
-        type: COMPILE_TEMPLATES,
+        type: SET_INITIAL_TEMPLATES,
         itemMap,
         idList,
-        selected,
-        source
+        source,
+        selected
       })
+      dispatch(selectTemplate(selected))
     }).catch(err => {
       throw err
     })
