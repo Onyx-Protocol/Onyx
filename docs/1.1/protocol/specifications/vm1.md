@@ -1181,9 +1181,12 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
-1. If the current entry is an [Issuance1](blockchain.md#issuance-1), pushes `Value.Amount`.
-2. If the current entry is a [Spend1](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.Amount` of that entry.
-3. If the current entry is a [Nonce](blockchain.md#nonce) entry:
+1. If [Confidential Issuance Choice Flag](#vm-state) is on:
+    1. If the amount in the current issuance entry is [non-confidential](#non-confidential-value-range-proof), pushes the amount.
+    2. If the amount in the current issuance entry is [confidential](#confidential-value-range-proof), fails execution.
+2. If the current entry is an [Issuance1](blockchain.md#issuance-1), pushes `Value.Amount`.
+3. If the current entry is a [Spend1](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.Amount` of that entry.
+4. If the current entry is a [Nonce](blockchain.md#nonce) entry:
     1. Verifies that the `AnchoredEntry` field is an [Issuance1](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry.
     2. Fails if `AnchoredEntry` is not an [Issuance1](blockchain.md#issuance-1).
 
