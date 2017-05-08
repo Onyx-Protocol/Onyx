@@ -1126,8 +1126,8 @@ Code  | Stack Diagram                                        | Cost
         1. the destination entry is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1),
         2. if the destination is an output: control program equals `prog` and VM version equals `version`,
         3. if the destination is a retirement:
-            * `version` must be 1,
-            * `prog` must begin with a [FAIL](#fail) instruction.
+            * `version` equals 1,
+            * `prog` begins with a [FAIL](#fail) instruction.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
         6. `data` is an empty string or it matches the 32-byte data string in the destination entry.
