@@ -392,11 +392,24 @@ func typeCheckClause(contract *contract, clause *clause) error {
 func typeCheckExpr(expr expression) error {
 	switch e := expr.(type) {
 	case *binaryExpr:
-		if e.op.left != "" && typeOf(e.left) != e.op.left {
-			return fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, typeOf(e.left), e.op.left)
+		lType := typeOf(e.left)
+		rType := typeOf(e.right)
+
+		if e.op.left != "" && lType != e.op.left {
+			return fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
 		}
-		if e.op.right != "" && typeOf(e.right) != e.op.right {
-			return fmt.Errorf("in \"%s\", right operand has type \"%s\", must be \"%s\"", e, typeOf(e.right), e.op.right)
+		if e.op.right != "" && rType != e.op.right {
+			return fmt.Errorf("in \"%s\", right operand has type \"%s\", must be \"%s\"", e, rType, e.op.right)
+		}
+
+		switch e.op.op {
+		case "==", "!=":
+			if lType != rType {
+				return fmt.Errorf("type mismatch in \"%s\": left operand has type \"%s\", right operand has type \"%s\"", e, lType, rType)
+			}
+			if lType == "Boolean" {
+				return fmt.Errorf("in \"%s\": using \"%s\" on Boolean values not allowed", e, e.op.op)
+			}
 		}
 
 	case *unaryExpr:
