@@ -16,7 +16,8 @@ func (s stackEntry) matches(expr expression) bool {
 }
 
 func addParamsToStack(stack []stackEntry, params []*param) []stackEntry {
-	for _, p := range params {
+	for i := len(params) - 1; i >= 0; i-- {
+		p := params[i]
 		switch p.typ {
 		case "Value":
 			continue
