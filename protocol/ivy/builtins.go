@@ -17,6 +17,8 @@ var builtins = []builtin{
 	{"checkTxSig", "TXSIGHASH SWAP CHECKSIG", []string{"PublicKey", "Signature"}, "Boolean"},
 	{"concat", "CAT", []string{"", ""}, "String"},
 	{"concatpush", "CATPUSHDATA", []string{"", ""}, "String"},
+	{"before", "MAXTIME GREATERTHAN", []string{"Time"}, "Boolean"},
+	{"after", "MINTIME LESSTHAN", []string{"Time"}, "Boolean"},
 }
 
 type binaryOp struct {
