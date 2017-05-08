@@ -10,7 +10,7 @@ export default function instantiate(template: Template, args: (Buffer|number)[])
   const numArgs = countTemplateParams(template)
   if (numArgs !== args.length) throw "expected " + numArgs + " arguments, got " + args.length
   let instructions = template.instructions
-  let body = instructions //instructions.slice(numArgs)
+  let body = instructions
   let argOps = [...args].reverse()
   let opcodes = ([] as any[]).concat(argOps, body)
   let res = assemble(opcodes)

@@ -7,14 +7,15 @@ import { getInputMap } from './selectors'
 import { addParameterInput } from '../inputs/data'
 import { AppState } from '../app/types'
 import { createSelector } from 'reselect'
-import { CREATE_CONTRACT, UPDATE_CLAUSE_INPUT, UPDATE_INPUT, 
-         SET_CLAUSE_INDEX, SHOW_ERRORS } from './actions'
+import { CREATE_CONTRACT, UPDATE_CLAUSE_INPUT, UPDATE_INPUT,
+         SET_CLAUSE_INDEX, SHOW_ERRORS, SPEND_CONTRACT } from './actions'
 import { addDefaultInput, getPublicKeys } from '../inputs/data'
 import { Item as Contract } from './types'
 
 export const INITIAL_STATE: ContractsState = {
   itemMap: {},
   idList: [],
+  spentIdList: [],
   inputMap: {},
   selectedTemplateId: "",
   spendContractId: "",
@@ -43,6 +44,12 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         inputMap: generateInputMap(action.template),
         selectedTemplateId: action.templateId,
         showErrors: false
+      }
+    case SPEND_CONTRACT:
+      return {
+        ...state,
+        idList: state.idList.filter(id => id !== action.id),
+        spentIdList: [...state.spentIdList, action.id]
       }
     case CREATE_CONTRACT: // reset keys etc. this is safe (the action already has this stuff)
       let controlProgram = action.controlProgram
@@ -134,7 +141,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
     }
     case "@@router/LOCATION_CHANGE":
       let path = action.payload.pathname.split("/")
-      if (path[1] === "spend") {
+      if (path.length > 2 && path[1] === "spend") {
         return {
           ...state,
           spendContractId: path[2],

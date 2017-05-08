@@ -89,6 +89,8 @@ export const create = () => {
   }
 }
 
+export const SPEND_CONTRACT = "contracts/SPEND_CONTRACT"
+
 export const spend = () => {
   return(dispatch, getState) => {
     let state = getState()
@@ -119,11 +121,12 @@ export const spend = () => {
     const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
     console.log("witness", witness)
     createSpendingTx(actions, witness).then((result) => {
-      console.log("result", result)
+      dispatch({
+        type: SPEND_CONTRACT,
+        id: contract.id
+      })
+      dispatch(push(prefixRoute('/spend')))
     })
-    // dispatch({
-    //   type: SPEND
-    // })
   }
 }
 
