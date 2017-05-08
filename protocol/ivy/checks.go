@@ -2,6 +2,72 @@ package ivy
 
 import "fmt"
 
+func requireAllParamsUsedInClauses(params []*param, clauses []*clause) error {
+	for _, p := range params {
+		used := false
+		for _, c := range clauses {
+			err := requireAllParamsUsedInClause([]*param{p}, c)
+			if err == nil {
+				used = true
+				break
+			}
+		}
+		if !used {
+			return fmt.Errorf("parameter \"%s\" is unused", p.name)
+		}
+	}
+	return nil
+}
+
+func requireAllParamsUsedInClause(params []*param, clause *clause) error {
+	for _, p := range params {
+		used := false
+		var e expression
+		for _, stmt := range clause.statements {
+			switch s := stmt.(type) {
+			case *verifyStatement:
+				e = s.expr
+			case *outputStatement:
+				e = s.call
+			case *returnStatement:
+				e = s.expr
+			}
+			if exprReferencesParam(e, p) {
+				used = true
+				break
+			}
+		}
+		if !used {
+			return fmt.Errorf("parameter \"%s\" is unused in clause \"%s\"", p.name, clause.name)
+		}
+	}
+	return nil
+}
+
+func exprReferencesParam(expr expression, p *param) bool {
+	switch e := expr.(type) {
+	case *binaryExpr:
+		return exprReferencesParam(e.left, p) || exprReferencesParam(e.right, p)
+	case *unaryExpr:
+		return exprReferencesParam(e.expr, p)
+	case *call:
+		if exprReferencesParam(e.fn, p) {
+			return true
+		}
+		for _, a := range e.args {
+			if exprReferencesParam(a, p) {
+				return true
+			}
+		}
+		return false
+	case *propRef:
+		return exprReferencesParam(e.expr, p)
+	case *varRef:
+		return e.name == p.name
+	}
+	return false
+}
+
 func prohibitDuplicateClauseNames(contract *contract) error {
 	// Prohibit duplicate clause names
 	for i, c := range contract.clauses {
