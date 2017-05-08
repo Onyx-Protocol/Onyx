@@ -18,7 +18,6 @@
   * [Logical and numeric operators](#logical-and-numeric-operators)
   * [Cryptographic instructions](#cryptographic-instructions)
   * [Introspection instructions](#introspection-instructions)
-  * [Confidential computation instructions](#confidential-computation-instructions)
   * [Expansion opcodes](#expansion-opcodes)
 * [References](#references)
 
@@ -107,7 +106,6 @@ Execution of any of the following instructions results in immediate failure:
 7. Execution Context:
     a. Block
     b. (Transaction, Current Entry)
-8. Confidential Assets Flag
 
 **Initial State** has empty stacks, uninitialized program, PC set to zero, and *run limit* set to 10,000.
 
@@ -122,8 +120,6 @@ Execution of any of the following instructions results in immediate failure:
 **Expansion Flag** indicates whether the [expansion opcodes](#expansion-opcodes) are allowed in the program or not. If the flag is off, these opcodes immediately fail the program execution.
 
 **Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-context).
-
-**Confidential Assets Flag** indicates whether certain [expansion opcodes](#expansion-opcodes) are defined to support instructions for [Confidential Assets](ca.md).
 
 
 ## Operations
@@ -1316,116 +1312,11 @@ Fails if executed in the [transaction context](#transaction-context).
 
 
 
-
-### Confidential computation instructions
-
-
-#### ASSETCOMMITMENT
-
-Code  | Stack Diagram           | Cost
-------|-------------------------|-----------------------------------------------------
-0xd0  | (∅ → assetcommitment)   | 1; [standard memory cost](#standard-memory-cost)
-
-Pushes the [asset ID commitment](ca.md#asset-id-commitment) encoded as a 64-byte string on the data stack.
-
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
-Fails if executed in the [block context](#block-context).
-
-
-#### VALUECOMMITMENT
-
-Code  | Stack Diagram             | Cost
-------|---------------------------|-----------------------------------------------------
-0xd1  | (∅ → valuecommitment)     | 1; [standard memory cost](#standard-memory-cost)
-
-Pushes the [value commitment](ca.md#value-commitment) encoded as a 64-byte string on the data stack.
-
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
-Fails if executed in the [block context](#block-context).
-
-
-#### ISSUANCEKEY
-
-Code  | Stack Diagram             | Cost
-------|---------------------------|-----------------------------------------------------
-0xd2  | (∅ → issuancekey)         | 1; [standard memory cost](#standard-memory-cost)
-
-Pushes the issuance public key from the [issuance asset range proof](ca.md#issuance-asset-range-proof) at the index corresponding to the current asset ID in the [asset issuance choice](blockchain.md#asset-issuance-choice).
-
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
-Fails if executed outside [Asset Issuance Choice](#asset-issuance-choice) context.
-
-
-#### ADDCOMMITMENT
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0xd3  | (A B → A+B)     | 16; [standard memory cost](#standard-memory-cost)
-
-Pops two [point pairs](ca.md#point-pair) from the data stack, adds them, and pushes the result to the data stack.
-
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
-Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
-
-
-#### SUBCOMMITMENT
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0xd4  | (A B → A–B)     | 16; [standard memory cost](#standard-memory-cost)
-
-Pops two [point pairs](ca.md#point-pair) from the data stack, subtracts them, and pushes the result to the data stack.
-
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
-Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
-
-
-#### MULCOMMITMENT
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0xd5  | (A b → b·A)     | 512; [standard memory cost](#standard-memory-cost)
-
-1. Pops a [number](#vm-number) from the data stack.
-2. Pops a [point pair](ca.md#point-pair) from the data stack.
-3. [Multiplies](ca.md#point-operations) the point pair `A` with a number `b` and pushes the resulting point pair to the data stack.
-
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
-Fails if `A` is not a valid [point pair](ca.md#point-pair).
-
-Fails if `b` is not a valid [VM number](#vm-number).
-
-
-#### DIVCOMMITMENT
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0xd6  | (A B → B/A)     | 2<sup>126</sup>; [standard memory cost](#standard-memory-cost)
-
-Pops two [point pairs](ca.md#point-pair) from the data stack, computes discrete log of `B` in respect to `A` and pushes the resulting [scalar](#scalar) to the data stack.
-
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
-Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
-
-Fails if `A` is a [zero point](ca.md#zero-point).
-
-
-
-
-
 ### Expansion opcodes
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xcf, 0xd7..0xff  | (∅ → ∅)     | 1
-
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion.
 
