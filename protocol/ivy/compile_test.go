@@ -16,7 +16,7 @@ func TestCompile(t *testing.T) {
 		{
 			"TradeOffer",
 			tradeOffer,
-			`{"name":"TradeOffer","program":"547a6416000000000054795679515679c16325000000765579ae7bac690000c3c2515679c1","params":[{"name":"requested","type":"AssetAmount"},{"name":"sellerAddress","type":"Address"},{"name":"sellerKey","type":"PublicKey"},{"name":"offered","type":"Value"}],"clause_info":[{"name":"trade","args":[],"value_info":[{"name":"payment","program":"sellerAddress","asset_amount":"requested"},{"name":"offered"}]},{"name":"cancel","args":[{"name":"sellerSig","type":"Signature"}],"value_info":[{"name":"offered","program":"sellerAddress"}]}]}`,
+			`{"name":"TradeOffer","program":"547a6416000000000052795479515779c1632600000054795479ae7cac690000c3c2515779c1","params":[{"name":"requested","type":"AssetAmount"},{"name":"sellerAddress","type":"Address"},{"name":"sellerKey","type":"PublicKey"},{"name":"offered","type":"Value"}],"clause_info":[{"name":"trade","args":[],"value_info":[{"name":"payment","program":"sellerAddress","asset_amount":"requested"},{"name":"offered"}]},{"name":"cancel","args":[{"name":"sellerSig","type":"Signature"}],"value_info":[{"name":"offered","program":"sellerAddress"}]}]}`,
 		},
 	}
 	for _, c := range cases {
