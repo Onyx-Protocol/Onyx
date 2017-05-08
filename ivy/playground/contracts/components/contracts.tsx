@@ -1,7 +1,7 @@
 import * as React from 'react'
 import Section from '../../app/components/section'
 import { Item as Contract } from '../types'
-import { getIdList as getContractIds, getItem as getContract } from '../selectors'
+import { getIdList as getContractIds, getItem as getContract, getSpentIdList as getSpentContractIds } from '../selectors'
 import { connect } from 'react-redux'
 import { Link } from 'react-router-dom'
 
@@ -14,7 +14,7 @@ function shortenHash(hash: string) {
 }
 
 const Contracts = connect(
-  (state) => ({ contractIds: getContractIds(state), spentContractIds: [] })//getSpentContractIds(state) })
+  (state) => ({ contractIds: getContractIds(state), spentContractIds: getSpentContractIds(state)})
 )(ContractsUnconnected)
 
 export default Contracts
