@@ -71,7 +71,10 @@ type unaryOp struct {
 
 var unaryOps = []unaryOp{
 	{"-", "NEGATE", "Integer", "Integer"},
-	{"!", "NOT", "Boolean", "Boolean"},
+
+	// not not allowed (for now?)
+	// {"!", "NOT", "Boolean", "Boolean"},
+
 	{"~", "INVERT", "", ""},
 }
 
