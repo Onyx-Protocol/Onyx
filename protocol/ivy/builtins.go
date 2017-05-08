@@ -31,7 +31,9 @@ type binaryOp struct {
 }
 
 var binaryOps = []binaryOp{
-	{"||", 1, "BOOLOR", "Boolean", "Boolean", "Boolean"},
+	// disjunctions disallowed (for now?)
+	// {"||", 1, "BOOLOR", "Boolean", "Boolean", "Boolean"},
+
 	{"&&", 2, "BOOLAND", "Boolean", "Boolean", "Boolean"},
 
 	{">", 3, "GREATERTHAN", "Integer", "Integer", "Boolean"},
