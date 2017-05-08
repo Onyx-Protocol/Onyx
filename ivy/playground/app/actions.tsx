@@ -7,10 +7,8 @@ import { selectTemplate } from '../contracts/actions'
 import { RESET } from './constants'
 
 export const reset = (dispatch, getState) => {
-  return templates.actions.compileTemplates()(dispatch, getState).then((res) => {
-    dispatch({ type: RESET })
-    dispatch(selectTemplate("TrivialLock"))
-    dispatch(accounts.actions.fetch())
-    dispatch(assets.actions.fetch())
-  })
+  dispatch({ type: RESET })
+  dispatch(selectTemplate("TrivialLock"))
+  dispatch(accounts.actions.fetch())
+  dispatch(assets.actions.fetch())
 }
