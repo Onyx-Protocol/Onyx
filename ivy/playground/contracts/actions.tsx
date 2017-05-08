@@ -8,7 +8,7 @@ import {
   getClauseParameterIds,
   getClauseDataParameterIds,
   getInputMap,
-  getControlProgram,
+  getParameterData,
   getContractValue,
   getSelectedTemplate,
   getSpendContractId,
@@ -32,7 +32,7 @@ import {
   Action
 } from '../transactions/types'
 import { createFundingTx, createSpendingTx } from '../transactions'
-import { prefixRoute } from '../util'
+import { client, prefixRoute } from '../util'
 
 export const SELECT_TEMPLATE = 'contracts/SELECT_TEMPLATE'
 export const SET_CLAUSE_INDEX = 'contracts/SET_CLAUSE_INDEX'
@@ -56,32 +56,52 @@ export const create = () => {
     let inputMap = getInputMap(state)
     let promisedInputMap = getPromisedInputMap(inputMap)
     promisedInputMap.then((inputMap) => {
-      let controlProgram = getControlProgram(state, inputMap)
-      if (controlProgram === undefined) return
-      let spendFromAccount = getContractValue(state)
-      if (spendFromAccount === undefined) throw "spendFromAccount should not be undefined here"
-      let assetId = spendFromAccount.assetId
-      let amount = spendFromAccount.amount
-      let receiver: Receiver = {
-        controlProgram: controlProgram,
-        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
-      }
-      let controlWithReceiver: ControlWithReceiver = {
-        type: "controlWithReceiver",
-        receiver,
-        assetId,
-        amount
-      }
-      let actions: Action[] = [spendFromAccount, controlWithReceiver]
-      return createFundingTx(actions).then(utxo => {
-        dispatch({
-          type: CREATE_CONTRACT,
+      const args = getParameterData(state, inputMap).map(param => {
+        if (param instanceof Buffer) {
+          return { "string": param.toString('hex') }
+        }
+
+        if (typeof param === 'string') {
+          return { "string": param }
+        }
+
+        if (typeof param === 'number') {
+          return { "integer": param }
+        }
+
+        if (typeof param === 'boolean') {
+          return { 'boolean': param }
+        }
+        throw 'unsupported argument type ' + (typeof param)
+      })
+      const template = getSelectedTemplate(state)
+      client.ivy.compile({ contract: template.source, args: args }).then(contract => {
+        let controlProgram = contract.program
+        let spendFromAccount = getContractValue(state)
+        if (spendFromAccount === undefined) throw "spendFromAccount should not be undefined here"
+        let assetId = spendFromAccount.assetId
+        let amount = spendFromAccount.amount
+        let receiver: Receiver = {
           controlProgram: controlProgram,
-          template: getSelectedTemplate(state),
-          inputMap: inputMap,
-          utxo: utxo
+          expiresAt: "2017-06-25T00:00:00.000Z" // TODO
+        }
+        let controlWithReceiver: ControlWithReceiver = {
+          type: "controlWithReceiver",
+          receiver,
+          assetId,
+          amount
+        }
+        let actions: Action[] = [spendFromAccount, controlWithReceiver]
+        return createFundingTx(actions).then(utxo => {
+          dispatch({
+            type: CREATE_CONTRACT,
+            controlProgram,
+            template,
+            inputMap,
+            utxo
+          })
+          dispatch(push(prefixRoute('/spend')))
         })
-        dispatch(push(prefixRoute('/spend')))
       })
     }).catch(err => {
       dispatch(showErrors())
