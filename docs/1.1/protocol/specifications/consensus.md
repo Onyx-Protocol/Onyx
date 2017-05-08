@@ -109,7 +109,7 @@ The block generator collects transactions to include in each block it generates.
 
 1. [Validate the transaction](blockchain.md#transaction-header-validation) with respect to the current blockchain state, but using system timestamp instead of the latest block timestamp; if invalid, halt and return false.
 2. For every visited [Nonce](blockchain.md#nonce) entry in the transaction:
-    1. Test that transaction mintime plus the [maximum issuance window](#generator-state) is greater or equal to the transaction maxtime; if not, halt and return false.
+    1. Test that nonce mintime plus the [maximum issuance window](#generator-state) is greater or equal to the nonce maxtime; if not, halt and return false.
 3. Add the transaction to the transaction pool.
 4. Return true.
 
