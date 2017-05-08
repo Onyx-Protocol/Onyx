@@ -106,6 +106,7 @@ Execution of any of the following instructions results in immediate failure:
 7. Execution Context:
     a. Block
     b. (Transaction, Current Entry)
+8. Confidential Issuance Choice Flag
 
 **Initial State** has empty stacks, uninitialized program, PC set to zero, and *run limit* set to 10,000.
 
@@ -120,6 +121,8 @@ Execution of any of the following instructions results in immediate failure:
 **Expansion Flag** indicates whether the [expansion opcodes](#expansion-opcodes) are allowed in the program or not. If the flag is off, these opcodes immediately fail the program execution.
 
 **Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-context).
+
+**Confidential Issuance Choice Flag** is switched on when the VM is instantiated to verify an [Asset Issuance Choice](blockchain.md#asset-issuance-choice) within an [Issuance Asset Range Proof](ca.md#issuance-asset-range-proof).
 
 
 ## Operations
@@ -1035,6 +1038,19 @@ Code  | Stack Diagram                  | Cost
 Replaces top stack item with its [SHA3-256](blockchain.md#sha3) hash value.
 
 
+#### VERIFYISSUANCEKEY
+
+Code  | Stack Diagram               | Cost
+------|-----------------------------|-----------------------------------------------------
+0xab  | (issuancekey → issuancekey) | 1; [standard memory cost](#standard-memory-cost)
+
+Verifies that the argument issuance public key is the same used in the [issuance asset range proof](ca.md#issuance-asset-range-proof) at the index corresponding to the current asset ID in the [asset issuance choice](blockchain.md#asset-issuance-choice).
+
+Fails if the issuance key on stack is not equal to the issuance key in the [Asset Issuance Choice](blockchain.md#asset-issuance-choice).
+
+Fails if executed outside [Asset Issuance Choice](blockchain.md#asset-issuance-choice) context (that is, [confidential issuance choice flag](#vm-state) is off).
+
+
 #### CHECKSIG
 
 Code  | Stack Diagram                  | Cost
@@ -1316,7 +1332,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xb0..0xbf, 0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion.
 
