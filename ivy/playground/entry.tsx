@@ -34,8 +34,7 @@ const store = createStore(
   composeEnhancers(applyMiddleware(thunk), applyMiddleware(routerMiddleware(history)), persistState())
 )
 
-store.dispatch(reset)
-
+store.dispatch(templates.actions.setInitialTemplates())
 render(
   <Provider store={store}>
     <DocumentTitle title='Ivy Playground'>

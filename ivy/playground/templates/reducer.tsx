@@ -1,11 +1,11 @@
 import { State } from './types'
-import { COMPILE_TEMPLATES, LOAD_TEMPLATE, SET_SOURCE, SAVE_TEMPLATE } from './actions'
+import { SET_INITIAL_TEMPLATES, LOAD_TEMPLATE, SET_SOURCE, SAVE_TEMPLATE } from './actions'
 import { INITIAL_STATE } from './constants'
 import { isError } from './util'
 
 export default function reducer(state: State = INITIAL_STATE, action): State {
   switch (action.type) {
-    case COMPILE_TEMPLATES:
+    case SET_INITIAL_TEMPLATES:
       return {
         ...state,
         itemMap: action.itemMap,

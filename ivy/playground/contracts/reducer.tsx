@@ -16,7 +16,7 @@ export const INITIAL_STATE: ContractsState = {
   itemMap: {},
   idList: [],
   inputMap: {},
-  selectedTemplateId: "TrivialLock",
+  selectedTemplateId: "",
   spendContractId: "",
   selectedClauseIndex: 0,
   showErrors: false
@@ -149,17 +149,19 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
 }
 
 function generateInputMap(template: Template): InputMap {
+  if (template === undefined) {
+    return {}
+  }
+
   let inputs: Input[] = []
   for (let parameter of template.contractParameters) {
     addParameterInput(inputs, parameter.valueType, "contractParameters." + parameter.identifier)
   }
 
   let inputMap = {}
-
   for (let input of inputs) {
     inputMap[input.name] = input
   }
-
   return inputMap
 }
 
