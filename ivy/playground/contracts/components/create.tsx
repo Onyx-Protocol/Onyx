@@ -21,13 +21,11 @@ const mapStateToProps = (state) => {
 }
 
 const Create = (props) => {
-  console.log(props.contracts.inputMap)
+  let view
   if (Object.keys(props.contracts.inputMap).length === 0) {
-    // TODO(boymanjor): Fix me if possible
-    return <div />
-  }
-  return (
-    <DocumentTitle title='Create Contract'>
+    view = ( <div /> )
+  } else {
+    view = (
       <app.components.Section name="Create Contract" footer={<CreateFooter />}>
         <div className="form-wrapper">
           <section>
@@ -42,6 +40,11 @@ const Create = (props) => {
           <ContractParameters />
         </div>
       </app.components.Section>
+    )
+  }
+  return (
+    <DocumentTitle title='Create Contract'>
+      {view}
     </DocumentTitle>
   )
 }
