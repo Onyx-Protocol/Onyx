@@ -34,7 +34,8 @@ var binaryOps = []binaryOp{
 	// disjunctions disallowed (for now?)
 	// {"||", 1, "BOOLOR", "Boolean", "Boolean", "Boolean"},
 
-	{"&&", 2, "BOOLAND", "Boolean", "Boolean", "Boolean"},
+	// and disallow this too
+	// {"&&", 2, "BOOLAND", "Boolean", "Boolean", "Boolean"},
 
 	{">", 3, "GREATERTHAN", "Integer", "Integer", "Boolean"},
 	{"<", 3, "LESSTHAN", "Integer", "Integer", "Boolean"},
