@@ -120,6 +120,10 @@ func compileContract(contract *contract) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = requireAllParamsUsedInClauses(contract.params, contract.clauses)
+	if err != nil {
+		return nil, err
+	}
 
 	stack := addParamsToStack(nil, contract.params)
 
@@ -193,6 +197,10 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 		return err
 	}
 	err = typeCheckClause(contract, clause)
+	if err != nil {
+		return err
+	}
+	err = requireAllParamsUsedInClause(clause.params, clause)
 	if err != nil {
 		return err
 	}
