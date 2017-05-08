@@ -67,15 +67,10 @@ func Compile(r io.Reader) (CompileResult, error) {
 
 	for _, clause := range c.clauses {
 		info := ClauseInfo{Name: clause.name, Args: []ClauseArg{}}
+		// TODO(bobg): this could just be info.Args = clause.params, if we
+		// rejigger the types and exports.
 		for _, p := range clause.params {
-			switch p.typ {
-			case "Value":
-				continue
-			case "AssetAmount":
-				info.Args = append(info.Args, ClauseArg{Name: p.name + ".asset", Typ: p.typ}, ClauseArg{Name: p.name + ".amount", Typ: p.typ})
-			default:
-				info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: p.typ})
-			}
+			info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: p.typ})
 		}
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {
