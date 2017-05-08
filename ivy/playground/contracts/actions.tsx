@@ -15,7 +15,8 @@ import {
   getClauseWitnessComponents,
   getSpendContractSelectedClauseIndex,
   getClauseOutputActions,
-  getClauseValues
+  getClauseValues,
+  getClauseReturnAction
 } from './selectors';
 
 import { getPromisedInputMap } from '../inputs/data'
@@ -113,33 +114,26 @@ export const SPEND_CONTRACT = "contracts/SPEND_CONTRACT"
 
 export const spend = () => {
   return(dispatch, getState) => {
-    let state = getState()
-    let contract = getSpendContract(state)
-    let clauseIndex = getSpendContractSelectedClauseIndex(state)
-    let outputId = contract.outputId
-    let spendInputMap = contract.spendInputMap
-    let spendContractAction: SpendUnspentOutput = {
+    const state = getState()
+    const contract = getSpendContract(state)
+    const clauseIndex = getSpendContractSelectedClauseIndex(state)
+    const outputId = contract.outputId
+    const spendContractAction: SpendUnspentOutput = {
       type: "spendUnspentOutput",
       outputId
     }
-    let clauseOutputActions: Action[] = getClauseOutputActions(state)
-    console.log("clause output actions", clauseOutputActions)
-    let clauseValues = getClauseValues(state)
-    let actions: Action[] = [spendContractAction, ...clauseOutputActions, ...clauseValues]
-    let returnInput = spendInputMap["transactionDetails.accountAliasInput"]
-    if (returnInput !== undefined) {
-      actions.push({
-        type: "controlWithAccount",
-        accountId: returnInput.value,
-        assetId: contract.assetId,
-        amount: contract.amount
-      } as ControlWithAccount)
+
+    const clauseOutputActions: Action[] = getClauseOutputActions(state)
+    const clauseValues = getClauseValues(state)
+    const actions: Action[] = [spendContractAction, ...clauseOutputActions, ...clauseValues]
+    const returnAction = getClauseReturnAction(state)
+    if (returnAction !== undefined) {
+      actions.push(returnAction)
     }
-    let clauseParams = getClauseParameterIds(state)
-    let clauseDataParams = getClauseDataParameterIds(state)
-    console.log("actions", actions)
+
+    const clauseParams = getClauseParameterIds(state)
+    const clauseDataParams = getClauseDataParameterIds(state)
     const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
-    console.log("witness", witness)
     createSpendingTx(actions, witness).then((result) => {
       dispatch({
         type: SPEND_CONTRACT,
