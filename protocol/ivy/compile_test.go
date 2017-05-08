@@ -65,6 +65,26 @@ contract EscrowedTransfer(
 }
 `
 
+const collateralizedLoan = `
+contract CollateralizedLoan(
+  balance: AssetAmount,
+  deadline: Time,
+  lender: Address,
+  borrower: Address,
+  collateral: Value
+) {
+  clause repay(payment: Value) {
+    verify payment.assetAmount == balance
+    output lender(payment)
+    output borrower(collateral)
+  }
+  clause default() {
+    verify after(deadline)
+    output lender(collateral)
+  }
+}
+`
+
 func TestCompile(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -219,6 +239,54 @@ func TestCompile(t *testing.T) {
 						Name:    "value",
 						Program: "sender",
 					}},
+				}},
+			},
+		},
+		{
+			"CollateralizedLoan",
+			collateralizedLoan,
+			CompileResult{
+				Name:    "CollateralizedLoan",
+				Program: mustDecodeHex("557a641f000000000052795479515879c1695100c3c2515e79c1632c0000005279c59f690000c3c2515879c1"),
+				Params: []ContractParam{{
+					Name: "balance",
+					Typ:  "AssetAmount",
+				}, {
+					Name: "deadline",
+					Typ:  "Time",
+				}, {
+					Name: "lender",
+					Typ:  "Address",
+				}, {
+					Name: "borrower",
+					Typ:  "Address",
+				}, {
+					Name: "collateral",
+					Typ:  "Value",
+				}},
+				Clauses: []ClauseInfo{{
+					Name: "repay",
+					Args: []ClauseArg{},
+					Values: []ValueInfo{
+						{
+							Name:        "payment",
+							Program:     "lender",
+							AssetAmount: "balance",
+						},
+						{
+							Name:    "collateral",
+							Program: "borrower",
+						},
+					},
+				}, {
+					Name: "default",
+					Args: []ClauseArg{},
+					Values: []ValueInfo{
+						{
+							Name:    "collateral",
+							Program: "lender",
+						},
+					},
 				}},
 			},
 		},
