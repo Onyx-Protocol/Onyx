@@ -331,7 +331,8 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if bi == nil {
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
-		for i, a := range e.args {
+		for i := len(e.args) - 1; i >= 0; i-- {
+			a := e.args[i]
 			err = compileExpr(b, stack, contract, clause, a)
 			if err != nil {
 				return errors.Wrapf(err, "compiling argument %d in call expression", i)
