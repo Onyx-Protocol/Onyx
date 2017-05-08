@@ -247,7 +247,7 @@ function ChoosePublicKeyWidget(props: { input: ChoosePublicKeyInput,
   options.unshift(<option key="" value="">Select Public Key</option>)
   return <div className="form-inline form-group">
     <div className="input-group">
-    <div className="input-group-addon">Pubkey</div>
+    <div className="input-group-addon">Public Key</div>
     <select id={props.input.name} className="form-control with-addon" value={props.input.value} onChange={props.handleChange}>
       {options}
     </select>
