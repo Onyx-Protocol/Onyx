@@ -66,7 +66,7 @@ func (lc *logConn) Query(query string, args []driver.Value) (driver.Rows, error)
 }
 
 // TODO(kr): implement context variants
-// (but don't bother until lib/pq does first.
+// (but don't bother until lib/pq does first).
 //func (lc *logConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error)
 //func (lc *logConn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error)
 //func (lc *logConn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error)
