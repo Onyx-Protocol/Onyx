@@ -14,7 +14,8 @@ import {
 import {
   Input,
   InputMap,
-  AddressInput
+  AddressInput,
+  ValueInput
 } from '../inputs/types'
 
 import {
@@ -28,6 +29,7 @@ import {
 
 import {
   ControlWithReceiver,
+  ControlWithAccount,
   DataWitness,
   KeyId,
   Receiver,
@@ -233,6 +235,32 @@ export const getClauseOutputs = createSelector(
   }
 )
 
+export const getClauseReturnStatement = createSelector(
+  getSpendContract,
+  getSpendContractSelectedClauseIndex,
+  (spendContract, clauseIndex) => {
+    return spendContract.template.clauses[clauseIndex].returnStatement
+  }
+)
+
+export const getClauseReturnAction = createSelector(
+  getSpendContract,
+  getSpendInputMap,
+  getClauseReturnStatement,
+  (contract, spendInputMap, returnStatement) => {
+    if (returnStatement === undefined) {
+      return undefined
+    }
+    const returnInput = spendInputMap["transactionDetails.accountAliasInput"]
+    return {
+        type: "controlWithAccount",
+        accountId: returnInput.value,
+        assetId: contract.assetId,
+        amount: contract.amount
+    } as ControlWithAccount
+  }
+)
+
 export const getClauseDataParameterIds = createSelector(
   getSpendContract,
   getSpendContractSelectedClauseIndex,
@@ -343,7 +371,7 @@ export const getParameterData = (state, inputMap) => {
       if (inputMap[id].value === "assetAmountInput") {
         let name = inputMap[id].name
         parameterData.push(getData(name + ".assetAmountInput.assetAliasInput", inputMap))
-        parameterData.push(getData(name + ".assetAmountInput.amountInput", inputMap))        
+        parameterData.push(getData(name + ".assetAmountInput.amountInput", inputMap))
       } else {
         parameterData.push(getData(id, inputMap))
       }
@@ -367,28 +395,34 @@ export const getClauseOutputActions = createSelector(
   getClauseOutputs,
   (contract, clauseOutputs) => {
     let inputMap = contract.inputMap
+    console.log(clauseOutputs)
     return clauseOutputs.map(clauseOutput => {
-      let assetAmountParam = clauseOutput.assetAmountParam
-      if (assetAmountParam === undefined) throw "assetAmountParam of clauseOutput should not be undefined"
-      let amountInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.amountInput"]
-      let assetAliasInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.assetAliasInput"]
-      if (amountInput === undefined) throw "amount input for " + assetAmountParam + " surprisingly undefined"
-      if (assetAliasInput === undefined) throw "asset input for " + assetAmountParam + " surprisingly undefined"
-      let amount = parseInt(amountInput.value, 10)
-      let addressIdentifier = clauseOutput.contract.address.identifier
-      let addressInput = inputMap["contractParameters." + addressIdentifier + ".addressInput"] as AddressInput
+      const addressIdentifier = clauseOutput.contract.address.identifier
+      const addressInput = inputMap["contractParameters." + addressIdentifier + ".addressInput"] as AddressInput
       if (addressInput === undefined) throw "addressInput unexpectedly undefined"
       if (addressInput.computedData === undefined) throw "addressInput.computedData unexpectedly undefined"
-      let controlProgram = addressInput.computedData
-      let receiver: Receiver = {
-        controlProgram: controlProgram,
-        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
+      const receiver: Receiver = {
+        controlProgram: addressInput.computedData,
+        expiresAt: "2020-06-25T00:00:00.000Z" // TODO
       }
+
+      let amountInput
+      let assetAliasInput
+      if (clauseOutput.assetAmountParam === undefined) {
+        const valueIdentifier = clauseOutput.contract.value.identifier
+        assetAliasInput = inputMap["contractParameters." + valueIdentifier + ".valueInput.assetAmountInput.assetAliasInput"]
+        amountInput = inputMap["contractParameters." + valueIdentifier + ".valueInput.assetAmountInput.amountInput"]
+      } else {
+        let assetAmountParam = clauseOutput.assetAmountParam
+        amountInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.amountInput"]
+        assetAliasInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.assetAliasInput"]
+      }
+
       let action: ControlWithReceiver = {
         type: "controlWithReceiver",
         assetId: assetAliasInput.value,
-        amount: amount,
-        receiver: receiver
+        amount: parseInt(amountInput.value, 10),
+        receiver
       }
       return action
     })
