@@ -23,7 +23,7 @@ The block generator maintains, in addition to its [node state](validation.md#nod
 * A *pending transaction pool*, or simply a *transaction pool*, that is a set of transactions used to construct each block it generates. Transactions can be added to and removed from the transaction pool.
 * The *last generated block*, to avoid proposing more than one block at the same height.
 * The *generator’s signing key*. All signers recognize the corresponding *verification key* and verify generated blocks using this key before validating and co-signing the block themselves. This key can be replaced by an operator after an out-of-band agreement with other nodes.
-* The *maximum issuance window* (in milliseconds), configurable parameter that limits the maximum time field of a transaction containing issuances. This relieves nodes of having to store transactions in the [issuance memory](validation.md#node-state) indefinitely.
+* The *maximum issuance window* (in milliseconds), configurable parameter that limits the maximum time field of a transaction containing issuances. This relieves nodes of having to store transactions in the [nonce set](validation.md#node-state) indefinitely.
 
 Note that the generator can also be a signer, and if so, it also has [signer state](#signer-state).
 
