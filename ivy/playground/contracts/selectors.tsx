@@ -3,6 +3,8 @@ import { Item as Template } from '../templates/types'
 
 import * as app from '../app/types'
 
+import { client, signer } from '../util'
+
 import {
   Item as Contract,
   ItemMap,
@@ -60,6 +62,11 @@ export const getSelectedTemplate = createSelector(
 export const getIdList = createSelector(
   getState,
   (state: ContractsState) => state.idList
+)
+
+export const getSpentIdList = createSelector(
+  getState,
+  (state: ContractsState) => state.spentIdList
 )
 
 export const getItemMap = createSelector(
@@ -205,6 +212,7 @@ export const getClauseWitnessComponents = createSelector(
             } as KeyId],
             signatures: []
           } as RawTxSignatureWitness)
+          signer.addKey(keymap.rootXpub, client.mockHsm.signerConnection)
           return
         }
         case "AssetAmount": // TODO
