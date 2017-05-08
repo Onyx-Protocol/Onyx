@@ -202,7 +202,7 @@ Position         | [Integer](#integer)         | Iff this source refers to a [Mu
         2. Define `RefDestination` as `Mux.Destinations[Position]`.
 3. Verify that `RefDestination.Ref` is equal to the ID of the current entry.
 4. Verify that `RefDestination.Position` is equal to `SourcePosition`, where `SourcePosition` is defined as follows:
-    1. If the current entry being validated is an [Output](#output-1) or [Retirement](#retirement-1), `SourcePosition` is 0.
+    1. If the current entry being validated is an [Output1](#output-1) or [Retirement1](#retirement-1), `SourcePosition` is 0.
     2. If the current entry being validated is a `Mux`, `SourcePosition` is the index of this `ValueSource` in the current entry's `Sources`.
 5. Verify that `RefDestination.Value` is equal to `Value`.
 
@@ -315,7 +315,7 @@ Each entry has the following generic structure:
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------------------------------------------------
-Type                | String               | The type of this Entry. E.g. [Issuance](#issuance-1), [Retirement](#retirement-1) etc.
+Type                | String               | The type of this Entry. E.g. [Issuance1](#issuance-1), [Retirement1](#retirement-1) etc.
 Body                | Struct               | Varies by type.
 Witness             | Struct               | Varies by type.
 
