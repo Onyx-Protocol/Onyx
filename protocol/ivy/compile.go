@@ -197,7 +197,8 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 		return err
 	}
 	assignIndexes(clause)
-	stack := addParamsToStack(contractStack, clause.params)
+	stack := addParamsToStack(nil, clause.params)
+	stack = append(stack, contractStack...)
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *verifyStatement:
