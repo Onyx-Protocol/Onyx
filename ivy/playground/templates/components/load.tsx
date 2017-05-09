@@ -23,7 +23,7 @@ const Load = ({ selected, idList, handleChange }) => {
   const options = idList.map(id => {
     return <option key={id} value={id}>{id}</option>
   })
-  options.unshift(<option key={""} value={""}>Load template...</option>)
+  options.unshift(<option key={""} value={""}>Load...</option>)
   return (
     <select value={selected} className="form-control" onChange={ (e) => handleChange(e.target.value) }>
       {options}
