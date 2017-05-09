@@ -49,7 +49,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction, tmpl.IncludesContract)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction, tmpl.IncludesContract)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestWaitForTxInBlock(t *testing.T) {
 	// Start a goroutine waiting for submittedTx to appear in a block.
 	heightFound := make(chan uint64)
 	go func() {
-		h, err := a.waitForTxInBlock(context.Background(), submittedTx, 1)
+		h, err := a.waitForTxInBlock(context.Background(), submittedTx, false, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -170,7 +170,7 @@ func TestWaitForTxInBlockResubmits(t *testing.T) {
 	// Start a goroutine waiting for orig to appear in a block.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go a.waitForTxInBlock(ctx, orig, 1)
+	go a.waitForTxInBlock(ctx, orig, false, 1)
 
 	// Make n blocks but never include the transaction
 	// that we're looking for. The tx should be resubmitted

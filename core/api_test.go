@@ -54,7 +54,7 @@ func TestBuildFinal(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction, tmpl.IncludesContract)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction, tmpl.IncludesContract)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction, tmpl.IncludesContract)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +245,7 @@ func TestTransfer(t *testing.T) {
 
 	coretest.SignTxTemplate(t, ctx, txTemplate, nil)
 
-	err = txbuilder.FinalizeTx(ctx, c, g, txTemplate.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, g, txTemplate.Transaction, txTemplate.IncludesContract)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -131,7 +131,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 	unsignedTx := *firstTemplate.Transaction
 	coretest.SignTxTemplate(t, ctx, firstTemplate, nil)
-	err = FinalizeTx(ctx, info.Chain, g, firstTemplate.Transaction)
+	err = FinalizeTx(ctx, info.Chain, g, firstTemplate.Transaction, firstTemplate.IncludesContract)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -147,7 +147,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Program = nil
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs = nil
 	coretest.SignTxTemplate(t, ctx, secondTemplate, nil)
-	err = FinalizeTx(ctx, info.Chain, g, secondTemplate.Transaction)
+	err = FinalizeTx(ctx, info.Chain, g, secondTemplate.Transaction, secondTemplate.IncludesContract)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -200,7 +200,7 @@ func TestInvalidTx(t *testing.T) {
 		MinTime: 1,
 		MaxTime: 2,
 	})
-	err := FinalizeTx(ctx, c, nil, badTx)
+	err := FinalizeTx(ctx, c, nil, badTx, false)
 	if errors.Root(err) != ErrRejected {
 		t.Errorf("got error %s, want %s", err, ErrRejected)
 	}
@@ -427,7 +427,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destA
 		return nil, err
 	}
 	coretest.SignTxTemplate(t, ctx, issueTx, nil)
-	return issueTx.Transaction, FinalizeTx(ctx, info.Chain, s, issueTx.Transaction)
+	return issueTx.Transaction, FinalizeTx(ctx, info.Chain, s, issueTx.Transaction, issueTx.IncludesContract)
 }
 
 func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*legacy.Tx, error) {
@@ -445,6 +445,6 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, sr
 
 	coretest.SignTxTemplate(t, ctx, xferTx, nil)
 
-	err = FinalizeTx(ctx, info.Chain, s, xferTx.Transaction)
+	err = FinalizeTx(ctx, info.Chain, s, xferTx.Transaction, xferTx.IncludesContract)
 	return xferTx.Transaction, errors.Wrap(err)
 }

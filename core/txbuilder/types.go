@@ -11,6 +11,12 @@ import (
 
 // Template represents a partially- or fully-signed transaction.
 type Template struct {
+	// IncludesContract specifies if any of the inputs include control
+	// programs created by ivy contracts. If true, certain assumptions
+	// about control programs will need to be relaxed, namely the
+	// amount of witness arguments provided to the VM during validation.
+	IncludesContract bool `json:"includes_contract"`
+
 	Transaction *legacy.Tx `json:"raw_transaction"`
 
 	// One SigningInstruction per input.
