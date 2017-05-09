@@ -383,11 +383,13 @@ export const isValid = createSelector(
 export const areSpendInputsValid = createSelector(
   getSpendInputMap,
   getClauseParameterIds,
-  (spendInputMap, paramIdList) => {
+  getSpendTemplateClause,
+  (spendInputMap, paramIdList, spendTemplateClause) => {
     const invalid = paramIdList.filter(id => {
       return !isValidInput(id, spendInputMap)
     })
-    return (invalid.length === 0) && isValidInput('transactionDetails.accountAliasInput', spendInputMap)
+    console.log(invalid)
+    return (invalid.length === 0) && (spendTemplateClause.returnStatement === undefined || isValidInput('transactionDetails.accountAliasInput', spendInputMap))
   }
 )
 
