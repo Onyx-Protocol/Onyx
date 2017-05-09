@@ -567,9 +567,10 @@ UpgradeDestination  | ValueDestination1    | The Destination ("forward pointer")
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 3. If the transaction version is greater than 1 and `ExtHash` is not all-zero hash:
   1. Verify that the `ExtHash` is the hash of the Extension Struct 1.
-  2. Verify that `UpgradeDestination` is either an all-zero hash, or a pointer to an [Upgrade1](#upgrade-1) entry that is present in the transaction.
+  2. Verify that `UpgradeDestination` is either an all-zero hash, or a pointer to an entry that is present in the transaction.
   3. If the transaction version is 2:
-    1. Verify that the `ExtHash2` is the all-zero hash.
+    1. Verify that `UpgradeDestination` (if not all-zero) points to an [Upgrade1](#upgrade-1) entry.
+    2. Verify that the `ExtHash2` is the all-zero hash.
 
 ### Upgrade 1
 

@@ -4,6 +4,7 @@
 * [Summary of changes](#summary-of-changes)
 * [Amended instructions](#amended-instructions)
 * [Additional instructions](#additional-instructions)
+* [Expansion opcodes](#expansion-opcodes)
 * [References](#references)
 
 
@@ -40,7 +41,7 @@ Code  | Stack Diagram               | Cost
 ------|-----------------------------|-----------------------------------------------------
 0xab  | (issuancekey → issuancekey) | 1; [standard memory cost](#standard-memory-cost)
 
-`VERIFYISSUANCEKEY` is an expansion opcode [assigned](vm1.md#verifyissuancekey) in VM1 to enforce an issuance key in [Asset Issuance Choice](blockchain.md#asset-issuance-choice). 
+`VERIFYISSUANCEKEY` is an expansion opcode [specified](vm1.md#verifyissuancekey) in VM1 to enforce an issuance key in [Asset Issuance Choice](blockchain.md#asset-issuance-choice). 
 
 In VM2 it has the [same](vm1.md#verifyissuancekey) behavior as in VM1.
 
@@ -74,7 +75,7 @@ In both version 1 and version 2 entries, `CHECKOUTPUT` in VM2 is not used to mat
         2. If the [destination entry](blockchain.md#value-destination-1) is an [Output1](blockchain.md#output-1):
             1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
             2. Otherwise, performs checks as described in step 6.2.
-2. If the current entry is one of [Mux2](blockchain.md#mux-2), [Issuance2](blockchain.md#issuance-2) or [Spend2](blockchain.md#spend-2).    
+2. If the current entry is one of [Mux2](blockchain.md#mux-2), [Issuance2](blockchain.md#issuance-2) or [Spend2](blockchain.md#spend-2):
     1. Pops 6 items from the data stack: `index`, `data`, `amount`, `assetid`, `version`, `prog`.
     2. Fails if `index` is negative or not a valid [number](vm1.md#vm-number).
     3. Fails if `version` is not a [number](vm1.md#vm-number).
@@ -109,8 +110,11 @@ Code  | Stack Diagram  | Cost
 1. If the current entry is an [Issuance1](blockchain.md#issuance-1), pushes `Value.AssetID`.
 2. If the current entry is a [Spend1](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.AssetID` of that entry.
 3. If the current entry is an [Issuance2](blockchain.md#issuance-2):
-    1. Verifies that the [issuance asset range proof](ca.md#non-confidential-issuance-asset-range-proof) is non-confidential.
-    2. Pushes the `Value.AssetID` of that issuance entry.
+    2. If the [confidential issuance choice flag](#vm-state) is off (VM evaluates an issuance delegate program):
+        1. Verifies that the [issuance asset range proof](ca.md#non-confidential-issuance-asset-range-proof) is non-confidential.
+        2. Pushes the `Value.AssetID` of that issuance entry.
+    3. If the [confidential issuance choice flag](#vm-state) is on (VM evaluates an issuance program for an asset ID choice):
+        1. Pushes the `AssetID` of that issuance choice.
 4. If the current entry is a [Spend2](blockchain.md#spend-2):
     1. Verifies that the [asset range proof](ca.md#non-confidential-asset-range-proof) is non-confidential.
     2. Pushes the `SpentOutput.Source.Value.AssetID` of that entry.
@@ -134,8 +138,12 @@ Code  | Stack Diagram  | Cost
 1. If the current entry is an [Issuance1](blockchain.md#issuance-1), pushes `Value.Amount`.
 2. If the current entry is a [Spend1](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.Amount` of that entry.
 3. If the current entry is an [Issuance2](blockchain.md#issuance-2):
-    1. Verifies that the [issuance asset range proof](ca.md#non-confidential-issuance-asset-range-proof) is non-confidential.
-    2. Pushes the `Value.Amount` of that issuance entry.
+    1. If the [confidential issuance choice flag](#vm-state) is off (VM evaluates an issuance delegate program):
+        1. Verifies that the [issuance asset range proof](ca.md#non-confidential-issuance-asset-range-proof) is non-confidential.
+        2. Pushes the `Value.Amount` of the issuance entry.
+    2. If the [confidential issuance choice flag](#vm-state) is on (VM evaluates an issuance program for an asset ID choice):
+        1. Verifies that the [issuance asset range proof](ca.md#non-confidential-issuance-asset-range-proof) is non-confidential.
+        2. Pushes the `Value.Amount` of the issuance entry.
 4. If the current entry is a [Spend2](blockchain.md#spend-2):
     1. Verifies that the [asset range proof](ca.md#non-confidential-asset-range-proof) is non-confidential.
     2. Pushes the `SpentOutput.Source.Value.Amount` of that entry.
@@ -200,10 +208,10 @@ This instruction uses [value commitments](ca.md#value-commitment) instead of a c
             5. `data` is an empty string or it matches the 32-byte data string in the output.
     6. If the entry is an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1):
         1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux1](blockchain.md#mux-1), performs checks as described in step 5.
-        2. If the [destination entry](blockchain.md#value-destination-1) is an [Output1](blockchain.md#output-1):
+        2. If the [destination entry](blockchain.md#value-destination-1) is an [Retirement1](blockchain.md#retirement-1):
             1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
             2. Otherwise, performs checks as described in step 5.2.
-2. If the current entry is one of [Mux2](blockchain.md#mux-2), [Issuance2](blockchain.md#issuance-2) or [Spend2](blockchain.md#spend-2).    
+2. If the current entry is one of [Mux2](blockchain.md#mux-2), [Issuance2](blockchain.md#issuance-2) or [Spend2](blockchain.md#spend-2):
     1. Pops 4 items from the data stack: `index`, `data`, `amount`, `assetid`.
     2. Fails if `index` is negative or not a valid [number](vm1.md#vm-number).
     3. Fails if `amount` is not a valid [point pair](ca.md#point-pair) (representing a [value commitment](ca.md#value-commitment)).
@@ -214,10 +222,10 @@ This instruction uses [value commitments](ca.md#value-commitment) instead of a c
             1. destination entry type is [Retirement2](blockchain.md#retirement-2),
             2. retirement asset ID commitment equals `assetid`,
             3. retirement value commitment equals `amount`,
-            5. `data` is an empty string or it matches the 32-byte data string in the output.
+            4. `data` is an empty string or it matches the 32-byte data string in the output.
     6. If the entry is an [Issuance2](blockchain.md#issuance-2) or a [Spend2](blockchain.md#spend-2):
         1. If the [destination entry](blockchain.md#value-destination-2) is a [Mux2](blockchain.md#mux-2), performs checks as described in step 5.
-        2. If the [destination entry](blockchain.md#value-destination-2) is an [Output2](blockchain.md#output-2):
+        2. If the [destination entry](blockchain.md#value-destination-2) is an [Retirement2](blockchain.md#retirement-2):
             1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
             2. Otherwise, performs checks as described in step 5.2.
 
@@ -225,24 +233,70 @@ Fails if executed in the [block context](#block-context).
 
 Fails if the entry is not a [Mux1](blockchain.md#mux-1)/[Mux2](blockchain.md#mux-2), [Issuance1](blockchain.md#issuance-1)/[Issuance2](blockchain.md#issuance-2) or [Spend1](blockchain.md#spend-1)/[Spend2](blockchain.md#spend-2).
 
-#### CHECKUPGRADE
+#### VERIFYUPGRADE
 
-Code  | Stack Diagram                   | Cost
-------|---------------------------------|-----------------------------------------------------
-0xd0  | (amount assetid → commitment)   | 1; [standard memory cost](#standard-memory-cost)
+Code  | Stack Diagram                                                    | Cost
+------|------------------------------------------------------------------|-----------------------------------------------------
+0xd0  | (index data amount assetid vmversion program upgradetype → ∅)    | 16; [standard memory cost](#standard-memory-cost)
 
-TBD.
+Checks that the value is upgraded. 
+
+This instruction uses [value commitments](ca.md#value-commitment) instead of a cleartext amounts and [asset ID commitments](ca.md#asset-id-commitment) instead of cleartext [asset IDs](blockchain.md#asset-id) when evaluating in the context of [Mux2](blockchain.md#mux-2), [Issuance2](blockchain.md#issuance-2) or [Spend2](blockchain.md#spend-2).
+
+1. If the current entry is one of [Mux1](blockchain.md#mux-1), [Issuance1](blockchain.md#issuance-1) or [Spend1](blockchain.md#spend-1):
+    1. Pops 7 items from the data stack: `index`, `data`, `amount`, `assetid`, `vmversion`, `program` and `upgradetype`.
+    2. Fails if `index` is negative or not a valid [number](vm1.md#vm-number).
+    3. Fails if `amount` and `vmversion` are not valid [numbers](vm1.md#vm-number).
+    4. Fails if `assetid` is not a 32-byte [string](vm1.md#vm-string).
+    5. If the current entry is a [Mux1](blockchain.md#mux-1):
+        1. Finds a [destination entry](blockchain.md#value-destination-1) at the given `index`. Fails if there is no entry at `index`.
+        2. If the entry satisfies all of the following conditions pushes [true](vm1.md#vm-boolean) on the data stack; otherwise pushes [false](vm1.md#vm-boolean):
+            1. destination entry type is [Retirement1](blockchain.md#output-1),
+            2. retirement asset ID equals `assetid`,
+            3. retirement amount equals `amount`,
+            4. retirement upgrade program’s VM version equals `vmversion`,
+            5. `data` is an empty string or it matches the 32-byte data string in the output.
+            6. verify that retirement’s `UpgradeDestination` points to a valid entry with type `upgradetype`.
+    6. If the entry is an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1):
+        1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux1](blockchain.md#mux-1), performs checks as described in step 5.
+        2. If the [destination entry](blockchain.md#value-destination-1) is an [Retirement1](blockchain.md#output-1):
+            1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
+            2. Otherwise, performs checks as described in step 5.2.
+2. If the current entry is one of [Mux2](blockchain.md#mux-2), [Issuance2](blockchain.md#issuance-2) or [Spend2](blockchain.md#spend-2):
+    1. Pops 4 items from the data stack: `index`, `data`, `amount`, `assetid`.
+    2. Fails if `index` is negative or not a valid [number](vm1.md#vm-number).
+    3. Fails if `vmversion` is not a valid [number](vm1.md#vm-number).
+    4. Fails if `amount` is not a valid [point pair](ca.md#point-pair) (representing a [value commitment](ca.md#value-commitment)).
+    5. Fails if `assetid` is not a valid [point pair](ca.md#point-pair) (representing an [asset ID commitment](ca.md#asset-id-commitment)).
+    6. If the current entry is a [Mux2](blockchain.md#mux-2):
+        1. Finds a [destination entry](blockchain.md#value-destination-2) at the given `index`. Fails if there is no entry at `index`.
+        2. If the entry satisfies all of the following conditions pushes [true](vm1.md#vm-boolean) on the data stack; otherwise pushes [false](vm1.md#vm-boolean):
+            1. destination entry type is [Retirement2](blockchain.md#retirement-2),
+            2. retirement asset ID commitment equals `assetid`,
+            3. retirement value commitment equals `amount`,
+            4. `data` is an empty string or it matches the 32-byte data string in the output.
+            5. If the [expansion flag](#vm-state) is on: do nothing.
+            6. If the [expansion flag](#vm-state) is off: fail execution.
+    7. If the entry is an [Issuance2](blockchain.md#issuance-2) or a [Spend2](blockchain.md#spend-2):
+        1. If the [destination entry](blockchain.md#value-destination-2) is a [Mux2](blockchain.md#mux-2), performs checks as described in step 6.
+        2. If the [destination entry](blockchain.md#value-destination-2) is an [Output2](blockchain.md#output-2):
+            1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
+            2. Otherwise, performs checks as described in step 6.2.
+
+Fails if executed in the [block context](#block-context).
+
+Fails if the entry is not a [Mux1](blockchain.md#mux-1)/[Mux2](blockchain.md#mux-2), [Issuance1](blockchain.md#issuance-1)/[Issuance2](blockchain.md#issuance-2) or [Spend1](blockchain.md#spend-1)/[Spend2](blockchain.md#spend-2).
 
 
 #### MAKECOMMITMENT
 
 Code  | Stack Diagram                   | Cost
 ------|---------------------------------|-----------------------------------------------------
-0xd1  | (amount assetid → commitment)   | 1; [standard memory cost](#standard-memory-cost)
+0xd1  | (amount assetid → commitment)   | 32; [standard memory cost](#standard-memory-cost)
 
 Pushes the non-blinded [value commitment](ca.md#value-commitment) encoded as a 64-byte string on the data stack.
 
-Note: on order to create an [asset ID commitment](ca.md#asset-id-commitment), use this instruction with amount set to 1.
+Note: in order to create an [asset ID commitment](ca.md#asset-id-commitment), use this instruction with `amount` set to 1.
 
 Fails if executed in the [block context](#block-context).
 
@@ -255,7 +309,18 @@ Code  | Stack Diagram           | Cost
 
 Pushes the [asset ID commitment](ca.md#asset-id-commitment) encoded as a 64-byte string on the data stack.
 
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
+1. If the current entry is an [Issuance1](blockchain.md#issuance-1), fails execution.
+2. If the current entry is a [Spend1](blockchain.md#spend-1), fails execution.
+3. If the current entry is an [Issuance2](blockchain.md#issuance-2):
+    1. If the [confidential issuance choice flag](#vm-state) is off (VM evaluates an issuance delegate program):
+        1. Pushes asset ID commitment specified in the issuance entry.
+    2. If the [confidential issuance choice flag](#vm-state) is on (VM evaluates an issuance program for an asset ID choice):
+        1. Converts `AssetID` in the issuance choice as a non-confidential asset ID commitment and pushes it on stack.
+4. If the current entry is a [Spend2](blockchain.md#spend-2):
+    1. Pushes the `SpentOutput.Source.Value.AssetIDCommitment` of that entry.
+5. If the current entry is a [Nonce](blockchain.md#nonce) entry:
+    1. Verifies that the `AnchoredEntry` reference is an [Issuance 2](blockchain.md#issuance-2) entry.
+    2. Pushes the `Value.AssetIDCommitment` of that issuance entry.
 
 Fails if executed in the [block context](#block-context).
 
@@ -268,7 +333,18 @@ Code  | Stack Diagram             | Cost
 
 Pushes the [value commitment](ca.md#value-commitment) encoded as a 64-byte string on the data stack.
 
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
+1. If the current entry is an [Issuance1](blockchain.md#issuance-1), fails execution.
+2. If the current entry is a [Spend1](blockchain.md#spend-1), fails execution
+3. If the current entry is an [Issuance2](blockchain.md#issuance-2):
+    1. If the [confidential issuance choice flag](#vm-state) is off (VM evaluates an issuance delegate program):
+        1. Pushes the `Value.ValueCommitment` of the issuance entry.
+    2. If the [confidential issuance choice flag](#vm-state) is on (VM evaluates an issuance program for an asset ID choice):
+        1. Pushes the `Value.ValueCommitment` of the issuance entry.
+4. If the current entry is a [Spend2](blockchain.md#spend-2):
+    1. Pushes the `SpentOutput.Source.Value.ValueCommitment` of that entry.
+5. If the current entry is a [Nonce](blockchain.md#nonce) entry:
+    1. Verifies that the `AnchoredEntry` reference is an [Issuance 2](blockchain.md#issuance-2) entry.
+    2. Pushes the `Value.ValueCommitment` of that issuance entry.
 
 Fails if executed in the [block context](#block-context).
 
@@ -281,8 +357,6 @@ Code  | Stack Diagram   | Cost
 
 Pops two [point pairs](ca.md#point-pair) from the data stack, adds them, and pushes the result to the data stack.
 
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
 Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
 
 
@@ -293,8 +367,6 @@ Code  | Stack Diagram   | Cost
 0xd5  | (A B → A–B)     | 16; [standard memory cost](#standard-memory-cost)
 
 Pops two [point pairs](ca.md#point-pair) from the data stack, subtracts them, and pushes the result to the data stack.
-
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
 
 Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
 
@@ -309,8 +381,6 @@ Code  | Stack Diagram   | Cost
 2. Pops a [point pair](ca.md#point-pair) from the data stack.
 3. [Multiplies](ca.md#point-operations) the point pair `A` with a number `b` and pushes the resulting point pair to the data stack.
 
-This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
-
 Fails if `A` is not a valid [point pair](ca.md#point-pair).
 
 Fails if `b` is not a valid [VM number](#vm-number).
@@ -318,7 +388,7 @@ Fails if `b` is not a valid [VM number](#vm-number).
 
 
 
-### Expansion opcodes
+## Expansion opcodes
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
