@@ -2,8 +2,8 @@ import * as React from 'react'
 import { connect } from 'react-redux'
 import { getSpendInputMap } from '../selectors'
 import { Input, ParameterInput, NumberInput, BooleanInput, StringInput,
-         ProvideStringInput, GenerateStringInput, HashInput, DurationInput, SecondsDurationInput,
-         BlocksDurationInput, TimeInput, BlockheightTimeInput, TimestampTimeInput,
+         ProvideStringInput, GenerateStringInput, HashInput,
+         TimeInput, TimestampTimeInput,
          PublicKeyInput, GeneratePublicKeyInput, ProvidePublicKeyInput, GenerateHashInput,
          ProvideHashInput, InputType, ComplexInput, ValueInput,
          AssetAliasInput, AccountAliasInput, AssetAmountInput, AmountInput, AddressInput } from '../../inputs/types'
@@ -90,19 +90,6 @@ function ParentWidget(props: { input: ComplexInput }) {
   return getChildWidget(props.input)
 }
 
-function BlocksDurationWidget(props: { input: BlocksDurationInput }) {
-  return <div>{props.input.value} blocks</div>
-}
-
-function SecondsDurationWidget(props: { input: BlocksDurationInput }) {
-  let numIncrements = parseInt(props.input.value, 10)
-  return <div>{numIncrements * 512} seconds</div>
-}
-
-function BlockheightTimeWidget(props: { input: BlockheightTimeInput }) {
-  return <div>block {props.input.value}</div>
-}
-
 function TimestampTimeWidget(props: { input: TimestampTimeInput }) {
   return <div>{props.input.value} seconds after the epoch</div> // super lazy for now!
 }
@@ -116,15 +103,11 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
   switch (type) {
     case "stringInput":
     case "hashInput":
-    case "durationInput":
     case "timeInput":
       return ParentWidget
     case "generatePublicKeyInput": return GeneratePublicKeyWidget
     case "generateHashInput": return GenerateHashWidget
-    case "blocksDurationInput": return BlocksDurationWidget
-    case "secondsDurationInput": return SecondsDurationWidget
     case "timestampTimeInput": return TimestampTimeWidget
-    case "blockheightTimeInput": return BlockheightTimeWidget
     case "generateStringInput": return GenerateStringWidget
     case "valueInput": return ValueWidget
     case "assetAmountInput": return AssetAmountWidget
