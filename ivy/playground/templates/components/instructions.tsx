@@ -7,13 +7,12 @@ import { getTemplate, getOpcodes } from '../selectors'
 import { Item } from '../types'
 
 const mapStateToProps = (state) => {
-  const template = getTemplate(state)
   const opcodes = getOpcodes(state)
   if (opcodes === "") throw "uncaught compiler error"
-  return { template, opcodes }
+  return { opcodes }
 }
 
-const Instructions = ({ template, opcodes }) => {
+const Instructions = ({ opcodes }) => {
   return (
     <app.components.Section name="Compiled">
       <div className="codeblock">
