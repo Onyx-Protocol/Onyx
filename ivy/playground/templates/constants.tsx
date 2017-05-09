@@ -57,5 +57,23 @@ export const ESCROWED_TRANSFER = `contract EscrowedTransfer(
   }
 }`
 
+export const COLLATERALIZED_LOAN = `contract CollateralizedLoan(
+  balance: AssetAmount,
+  deadline: Time,
+  lender: Address,
+  borrower: Address,
+  collateral: Value
+) {
+  clause repay(payment: Value) {
+    verify payment.assetAmount == balance
+    output lender(payment)
+    output borrower(collateral)
+  }
+  clause default() {
+    verify after(deadline)
+    output lender(collateral)
+  }
+}`
+
 export const itemMap: ItemMap = {}
 export const INITIAL_STATE: State = { itemMap: {}, idList: [], source: '', selected: '' }

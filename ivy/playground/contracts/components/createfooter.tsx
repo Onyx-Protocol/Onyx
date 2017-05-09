@@ -9,7 +9,9 @@ import ReactTooltip from 'react-tooltip'
 
 const mapStateToProps = (state) => {
   return {
-    disabled: (isValid(state) === undefined) || (getContractValue(state) === undefined)
+    disabled: (isValid(state) === undefined) || 
+              (isValid(state) === false) || 
+              (getContractValue(state) === undefined)
   }
 }
 

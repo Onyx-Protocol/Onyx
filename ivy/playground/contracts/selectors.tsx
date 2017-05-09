@@ -338,7 +338,7 @@ export const isValid = createSelector(
   getParameterIds,
   (inputMap, paramIdList) => {
     const invalid = paramIdList.filter(id => {
-      !isValidInput(id, inputMap)
+      return !isValidInput(id, inputMap)
     })
     return invalid.length === 0
   }
