@@ -79,7 +79,19 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	}
 
 	for _, clause := range c.clauses {
-		info := ClauseInfo{Name: clause.name, Args: []ClauseArg{}}
+		info := ClauseInfo{
+			Name:     clause.name,
+			Args:     []ClauseArg{},
+			Mintimes: clause.mintimes,
+			Maxtimes: clause.maxtimes,
+		}
+		if info.Mintimes == nil {
+			info.Mintimes = []string{}
+		}
+		if info.Maxtimes == nil {
+			info.Maxtimes = []string{}
+		}
+
 		// TODO(bobg): this could just be info.Args = clause.params, if we
 		// rejigger the types and exports.
 		for _, p := range clause.params {
