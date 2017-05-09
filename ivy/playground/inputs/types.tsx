@@ -8,27 +8,26 @@ import {
 import { Item as Template } from '../templates/types'
 
 export type Input = ParameterInput | StringInput | HashInput | PublicKeyInput | NumberInput |
-  BooleanInput | DurationInput | TimeInput | GenerateStringInput | ProvideStringInput | GenerateHashInput |
+  BooleanInput | TimeInput | GenerateStringInput | ProvideStringInput | GenerateHashInput |
   ProvideHashInput | GeneratePublicKeyInput | ProvidePublicKeyInput | GeneratePrivateKeyInput |
-  ProvidePrivateKeyInput | BlocksDurationInput | SecondsDurationInput | BlockheightTimeInput | TimestampTimeInput |
-  SignatureInput | GenerateSignatureInput | ProvideSignatureInput | AddressInput | MintimeInput | MaxtimeInput | 
+  ProvidePrivateKeyInput | TimestampTimeInput |
+  SignatureInput | GenerateSignatureInput | ProvideSignatureInput | AddressInput | 
   ValueInput | AccountAliasInput | AssetAliasInput | AmountInput |
   AddressInput | AssetAmountInput | ChoosePublicKeyInput
 
-export type ComplexInput = StringInput | HashInput | GenerateHashInput | PublicKeyInput | DurationInput | TimeInput |
+export type ComplexInput = StringInput | HashInput | GenerateHashInput | PublicKeyInput | TimeInput |
   ParameterInput | GeneratePublicKeyInput | SignatureInput | GenerateSignatureInput | AddressInput |
-  MintimeInput | MaxtimeInput | AddressInput
+  AddressInput
 
 export type InputType = "parameterInput" | "stringInput" | "generateStringInput" | "provideStringInput" |
   "hashInput" | "generateHashInput" | "provideHashInput" | "publicKeyInput" | "generatePublicKeyInput" |
   "providePublicKeyInput" | "generatePrivateKeyInput" | "providePrivateKeyInput" | "numberInput" | "booleanInput" |
-  "durationInput" | "blocksDurationInput" | "secondsDurationInput" | "timeInput" | "blockheightTimeInput" |
-  "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "addressInput" |
-  "mintimeInput" | "maxtimeInput" | "valueInput" | "accountAliasInput" |
+  "timeInput" | "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "addressInput" |
+  "valueInput" | "accountAliasInput" |
   "assetAliasInput" | "amountInput" | "addressInput" | "assetAmountInput" | "choosePublicKeyInput"
 
 export type PrimaryInputType = "stringInput" | "hashInput" | "publicKeyInput" | "numberInput" | "booleanInput" |
-  "durationInput" | "timeInput" | "signatureInput" | "valueInput" | "addressInput" | "assetAmountInput"
+  "timeInput" | "signatureInput" | "valueInput" | "addressInput" | "assetAmountInput"
 
 export type InputContext = "contractParameters"|"clauseParameters"|"transactionDetails"
 
@@ -139,33 +138,9 @@ export type BooleanInput = {
   name: string
 }
 
-export type DurationInput = {
-  type: "durationInput",
-  value: "blocksDurationInput"|"secondsDurationInput",
-  name: string
-}
-
-export type BlocksDurationInput = {
-  type: "blocksDurationInput",
-  value: string,
-  name: string
-}
-
-export type SecondsDurationInput = {
-  type: "secondsDurationInput",
-  value: string,
-  name: string
-}
-
 export type TimeInput = {
   type: "timeInput",
   value: "blockheightTimeInput"|"timestampTimeInput",
-  name: string
-}
-
-export type BlockheightTimeInput = {
-  type: "blockheightTimeInput",
-  value: string,
   name: string
 }
 
@@ -192,18 +167,6 @@ export type ProvideSignatureInput = {
 export type GenerateSignatureInput = {
   type: "generateSignatureInput",
   value: "providePrivateKeyInput", // (for now this is the only option)
-  name: string
-}
-
-export type MintimeInput = {
-  type: "mintimeInput",
-  value: string, // always "timeInput"
-  name: string
-}
-
-export type MaxtimeInput = {
-  type: "maxtimeInput",
-  value: string, // always "timeInput"
   name: string
 }
 
