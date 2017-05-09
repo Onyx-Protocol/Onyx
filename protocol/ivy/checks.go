@@ -68,41 +68,54 @@ func exprReferencesParam(expr expression, p *param) bool {
 	return false
 }
 
-func prohibitDuplicateClauseNames(contract *contract) error {
-	// Prohibit duplicate clause names
-	for i, c := range contract.clauses {
-		for j := i + 1; j < len(contract.clauses); j++ {
-			if c.name == contract.clauses[j].name {
-				return fmt.Errorf("clause name \"%s\" is duplicated", c.name)
-			}
-		}
+// Identifiers that may not conflict:
+//  - language keywords
+//  - the contract name
+//  - clause names
+//  - contract params
+//  - clause params
+// However, two sibling clauses _may_ reuse the same parameter names (including "spends" identifiers).
+func prohibitNameCollisions(contract *contract) error {
+	topLevelNames := make(map[string]string) // maps identifiers to a description of their first use
+	for _, k := range keywords {
+		topLevelNames[k] = "keyword"
 	}
-	return nil
-}
+	for _, b := range builtins {
+		topLevelNames[b.name] = "built-in function"
+	}
+	if desc, ok := topLevelNames[contract.name]; ok {
+		return fmt.Errorf("contract name \"%s\" conflicts with %s", contract.name, desc)
+	}
+	topLevelNames[contract.name] = "contract name"
+	for _, p := range contract.params {
+		if desc, ok := topLevelNames[p.name]; ok {
+			return fmt.Errorf("contract parameter \"%s\" conflicts with %s", p.name, desc)
+		}
+		topLevelNames[p.name] = "contract parameter"
+	}
 
-func prohibitDuplicateVars(contract *contract) error {
-	for i, p := range contract.params {
-		for j := i + 1; j < len(contract.params); j++ {
-			if p.name == contract.params[j].name {
-				return fmt.Errorf("contract parameter \"%s\" is duplicated", p.name)
-			}
-		}
-	}
+	// clause names are top-level names
 	for _, clause := range contract.clauses {
-		for i := 0; i < len(clause.params); i++ {
-			clauseParam := clause.params[i]
-			for _, contractParam := range contract.params {
-				if clauseParam.name == contractParam.name {
-					return fmt.Errorf("parameter \"%s\" in clause \"%s\" shadows contract parameter", clauseParam.name, clause.name)
-				}
+		if desc, ok := topLevelNames[clause.name]; ok {
+			return fmt.Errorf("clause name \"%s\" conflicts with %s", clause.name, desc)
+		}
+		topLevelNames[clause.name] = "clause name"
+	}
+
+	// clause params are local to clauses
+	for _, clause := range contract.clauses {
+		clauseNames := make(map[string]string)
+		for k, v := range topLevelNames {
+			clauseNames[k] = v
+		}
+		for _, p := range clause.params {
+			if desc, ok := clauseNames[p.name]; ok {
+				return fmt.Errorf("parameter \"%s\" of clause \"%s\" conflicts with %s", p.name, clause.name, desc)
 			}
-			for j := i + 1; j < len(clause.params); j++ {
-				if clauseParam.name == clause.params[j].name {
-					return fmt.Errorf("parameter \"%s\" is duplicated in clause \"%s\"", clauseParam.name, clause.name)
-				}
-			}
+			clauseNames[p.name] = fmt.Sprintf("clause parameter")
 		}
 	}
+
 	return nil
 }
 
@@ -240,8 +253,6 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 		}
 
 	case *varRef:
-		// TODO(bobg): Should parameters be allowed to shadow builtins?
-		// Should builtin names be reserved words?
 		for _, b := range builtins {
 			if e.name == b.name {
 				e.builtin = &b
