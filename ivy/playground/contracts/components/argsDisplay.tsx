@@ -91,7 +91,7 @@ function ParentWidget(props: { input: ComplexInput }) {
 }
 
 function TimestampTimeWidget(props: { input: TimestampTimeInput }) {
-  return <div>{props.input.value} seconds after the epoch</div> // super lazy for now!
+  return <pre>{props.input.value}</pre> // super lazy for now!
 }
 
 function GenerateStringWidget(props: { input: GenerateStringInput }) {
