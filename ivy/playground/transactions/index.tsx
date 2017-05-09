@@ -64,6 +64,16 @@ export const createSpendingTx = (actions: Action[], witness: WitnessComponent[])
   }).then((tpl) => {
     // there should only be one
     tpl.signingInstructions[0].witnessComponents = witness
+    tpl.signingInstructions.forEach((instruction, idx) => {
+      instruction.witnessComponents.forEach((component) => {
+        if (component.keys === undefined) {
+          return
+        }
+        component.keys.forEach((key) => {
+          signer.addKey(key.xpub, client.mockHsm.signerConnection)
+        })
+      })
+    })
     return signer.sign(tpl)
   }).then((tpl) => {
     witness = tpl.signingInstructions[0].witnessComponents
