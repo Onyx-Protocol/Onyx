@@ -153,6 +153,27 @@ Fails if executed in the [block context](#block-context).
 Fails if the entry is not a [Nonce](blockchain.md#nonce), an [Issuance1](blockchain.md#issuance-1)/[Issuance2](blockchain.md#issuance-2) or a [Spend1](blockchain.md#spend-1)/[Spend2](blockchain.md#spend-2).
 
 
+#### PROGRAM
+
+Code  | Stack Diagram  | Cost
+------|----------------|-----------------------------------------------------
+0xc4  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes a program based on a type of current entry and the context:
+
+Entry Type                                               | Program
+---------------------------------------------------------|----------------
+[Nonce](blockchain.md#nonce)                             | Nonce program
+[Issuance1](blockchain.md#issuance-1)                    | Issuance program for the asset ID
+[Issuance2](blockchain.md#issuance-2) (delegate program) | Issuance delegate program as specified in the issuance entry
+[Issuance2](blockchain.md#issuance-2) (issuance choice)  | Issuance program for a given [asset ID choice](#asset-issuance-choice)
+[Spend1](blockchain.md#spend-1)                          | Control program of the output being spent
+[Spend2](blockchain.md#spend-2)                          | Control program of the output being spent
+[Mux1](blockchain.md#mux-1)                              | Mux program
+[Mux2](blockchain.md#mux-2)                              | Mux program
+
+Fails if executed in the [block context](#block-context).
+
 
 ## Additional instructions
 
