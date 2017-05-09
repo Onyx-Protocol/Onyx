@@ -141,6 +141,9 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
     }
     case "@@router/LOCATION_CHANGE":
       let path = action.payload.pathname.split("/")
+      if (path[1] === "ivy") {
+        path.shift()
+      }
       if (path.length > 2 && path[1] === "spend") {
         return {
           ...state,
