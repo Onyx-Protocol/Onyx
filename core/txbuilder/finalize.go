@@ -28,10 +28,13 @@ type Submitter interface {
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *legacy.Tx) error {
-	err := checkTxSighashCommitment(tx)
-	if err != nil {
-		return err
+func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *legacy.Tx, includesContract bool) error {
+	var err error
+	if !includesContract {
+		err = checkTxSighashCommitment(tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Make sure there is at least one block in case client is trying to

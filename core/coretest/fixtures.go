@@ -65,7 +65,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 
 	SignTxTemplate(t, ctx, tpl, &testutil.TestXPrv)
 
-	err = txbuilder.FinalizeTx(ctx, c, s, tpl.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, s, tpl.Transaction, tpl.IncludesContract)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -84,7 +84,7 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.
 	SignTxTemplate(t, ctx, template, &testutil.TestXPrv)
 
 	tx := legacy.NewTx(template.Transaction.TxData)
-	err = txbuilder.FinalizeTx(ctx, c, s, tx)
+	err = txbuilder.FinalizeTx(ctx, c, s, tx, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
