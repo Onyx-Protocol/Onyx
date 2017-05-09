@@ -1182,13 +1182,15 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc4  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
-1. In [transaction context](#transaction-context):
-  * For [Spends](blockchain.md#spend-1): pushes the control program from the output being spent.
-  * For [Issuances](blockchain.md#issuance-1): pushes the issuance program.
-  * For [Muxes](blockchain.md#mux-1): pushes the mux program.
-  * For [Nonces](blockchain.md#nonce): pushes the nonce program.
-2. In [block context](#block-context):
-  * Pushes the current [consensus program](blockchain.md#block-header) being executed (that is specified in the previous block header).
+Pushes a program based on a type of current entry and the context:
+
+Entry Type                                               | Program
+---------------------------------------------------------|----------------
+[Block header] ([block context](#block-context))         | Current [consensus program](blockchain.md#block-header) being executed (specified in the previous block header)
+[Nonce](blockchain.md#nonce)                             | Nonce program
+[Issuance1](blockchain.md#issuance-1)                    | Issuance program for the asset ID
+[Spend1](blockchain.md#spend-1)                          | Control program of the output being spent
+[Mux1](blockchain.md#mux-1)                              | Mux program
 
 
 #### MINTIME
