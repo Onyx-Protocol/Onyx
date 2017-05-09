@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
 import { spend } from '../actions'
+import { areSpendInputsValid } from '../selectors'
 
 const mapDispatchToProps = (dispatch) => ({
   handleSpendClick() {
@@ -12,6 +13,6 @@ const SpendFooter = (props: {enabled: boolean, handleSpendClick: (e)=>undefined}
 }
 
 export default connect(
-  (state) => ({ enabled: true }), // dummy! was (getResult(state) === "Contract can be spent with these inputs"))
+  (state) => ({ enabled: areSpendInputsValid(state) }),
   mapDispatchToProps
 )(SpendFooter)
