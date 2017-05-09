@@ -4,7 +4,7 @@ import {
 
 export type Type = Primitive | TypeVariable | Hash | List | "SigHash" | "Contract"
 
-export type Primitive = "PublicKey" | "Signature" | "String" | "Number" | 
+export type Primitive = "PublicKey" | "Signature" | "String" | "Integer" | 
                         "Time" | "Boolean" | "Value" | "AssetAmount" |
                         "Address"
 
@@ -44,7 +44,7 @@ export function isPrimitive(str: Type|string): str is Primitive {
     case "PublicKey":
     case "Signature":
     case "String":
-    case "Number":
+    case "Integer":
     case "Time":
     case "Boolean":
     case "Value":

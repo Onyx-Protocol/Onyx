@@ -199,7 +199,7 @@ export const getClauseParameterIds = createSelector(
 export function dataToArgString(data: number | Buffer): string {
   if (typeof data === "number") {
     let buf = Buffer.alloc(8)
-    buf.writeUIntLE(data, 0, 8)
+    buf.writeIntLE(data, 0, 8)
     return buf.toString("hex")
   } else {
     return data.toString("hex")
