@@ -26,10 +26,10 @@ const Create = (props) => {
     view = ( <div /> )
   } else {
     view = (
-      <app.components.Section name="Create Contract" footer={<CreateFooter />}>
+      <app.components.Section name="Instantiate" footer={<CreateFooter />}>
         <div className="form-wrapper">
           <section>
-            <h4>Select Contract Template</h4>
+            <h4>Select Contract Type</h4>
             <div className="form-group">
               <Select />
             </div>
