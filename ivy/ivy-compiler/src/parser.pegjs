@@ -82,7 +82,7 @@ PartialBinaryExpression
   = left:Expression3 __ operator:BinaryOperator __ { return { type: "partial", location: location(), left: left, operator: operator } }
 
 BinaryOperator
-  = (operator:Operator & { isArithmeticOperator(operator) }) { return text() }
+  = (operator:Operator & { return isArithmeticOperator(operator) }) { return text() }
 
 CallExpression
   = name:FunctionIdentifier "(" args:Expressions ")" { return createInstructionExpression("callExpression", location(), name, args) }
