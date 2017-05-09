@@ -323,7 +323,7 @@ Transaction template contains transaction entries and additional data that helps
                 type: "output2",
                 asset_commitment:   "ac00fa9eab0...",
                 value_commitment:   "5ca9f901248...",
-                valure_range_proof: "9df90af8a0c...",
+                value_range_proof: "9df90af8a0c...",
                 program:            {
                     vm_version: 1, 
                     bytecode: "..."
@@ -1601,7 +1601,7 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
 Current SDK uses `signer.sign()` method to sign a partial transaction. We can keep this behavior and introduce an additional API:
 
     HSMSigner.sign() - existing behavior as is
-    Client.sign()    - verifies payload and signs TXSIGHASH-based predicate via Client.signer.sign(txhash instead of checkpredicate)
+    Client.transactions.sign()    - verifies payload and signs TXSIGHASH-based predicate via Client.signer.sign(txhash instead of checkpredicate)
 
 When users upgrade to a new Chain Core, the tx template is changed, but the behavior of the application remains the same. Then, they can smoothly transition to a new API usage:
 
