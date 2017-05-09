@@ -1,6 +1,10 @@
 package ivy
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/davecgh/go-spew/spew"
+)
 
 func requireAllParamsUsedInClauses(params []*param, clauses []*clause) error {
 	for _, p := range params {
@@ -273,8 +277,13 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 		for _, s := range clause.spends {
 			if e.name == string(s) {
 				e.typ = "Value"
+				return nil
 			}
 		}
+
+		spew.Config.DisableMethods = true
+		fmt.Printf("%s", spew.Sdump(clause))
+
 		return fmt.Errorf("undefined variable \"%s\" in clause \"%s\"", e.name, clause.name)
 
 	case *propRef:

@@ -86,10 +86,7 @@ func TestCompile(t *testing.T) {
 			CompileResult{
 				Name:    "TrivialLock",
 				Program: mustDecodeHex("51"),
-				Params: []ContractParam{{
-					Name: "locked",
-					Typ:  "Value",
-				}},
+				Params:  []ContractParam{},
 				Clauses: []ClauseInfo{{
 					Name: "unlock",
 					Args: []ClauseArg{},
@@ -110,9 +107,6 @@ func TestCompile(t *testing.T) {
 				Params: []ContractParam{{
 					Name: "publicKey",
 					Typ:  "PublicKey",
-				}, {
-					Name: "locked",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "unlock",
@@ -137,9 +131,6 @@ func TestCompile(t *testing.T) {
 				Params: []ContractParam{{
 					Name: "address",
 					Typ:  "Address",
-				}, {
-					Name: "locked",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "unlock",
@@ -168,16 +159,10 @@ func TestCompile(t *testing.T) {
 				}, {
 					Name: "sellerKey",
 					Typ:  "PublicKey",
-				}, {
-					Name: "offered",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "trade",
-					Args: []ClauseArg{{
-						Name: "payment",
-						Typ:  "Value",
-					}},
+					Args: []ClauseArg{},
 					Values: []ValueInfo{{
 						Name:        "payment",
 						Program:     "sellerAddress",
@@ -217,9 +202,6 @@ func TestCompile(t *testing.T) {
 				}, {
 					Name: "recipient",
 					Typ:  "Address",
-				}, {
-					Name: "value",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "approve",
@@ -266,16 +248,10 @@ func TestCompile(t *testing.T) {
 				}, {
 					Name: "borrower",
 					Typ:  "Address",
-				}, {
-					Name: "collateral",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "repay",
-					Args: []ClauseArg{{
-						Name: "payment",
-						Typ:  "Value",
-					}},
+					Args: []ClauseArg{},
 					Values: []ValueInfo{
 						{
 							Name:        "payment",
