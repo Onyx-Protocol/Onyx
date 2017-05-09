@@ -4,6 +4,7 @@ import { Item as Contract } from '../types'
 import { getIdList as getContractIds, getItem as getContract, getSpentIdList as getSpentContractIds } from '../selectors'
 import { connect } from 'react-redux'
 import { Link } from 'react-router-dom'
+import { prefixRoute } from '../../util'
 
 function shortenHash(hash: string) {
   if (hash.length < 13) {
@@ -90,5 +91,5 @@ const SpentContractRow = connect(
 )(SpentContractRowUnconnected)
 
 function SpendButton(props: {contractId: string} ) {
-  return <Link to={"/spend/" + props.contractId} ><button className="btn btn-primary">Spend</button></Link>
+  return <Link to={prefixRoute("/spend/" + props.contractId)} ><button className="btn btn-primary">Spend</button></Link>
 }
