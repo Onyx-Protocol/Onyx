@@ -41,11 +41,13 @@
   * [Transaction ID](#transaction-id)
   * [Output 1](#output-1)
   * [Output 2](#output-2)
+  * [Retirement 1](#retirement-1)
+  * [Upgrade 1](#upgrade-1)
+  * [Retirement 2](#retirement-2)
   * [Spend 1](#spend-1)
   * [Spend 2](#spend-2)
   * [Issuance 1](#issuance-1)
   * [Issuance 2](#issuance-2)
-  * [Upgrade 1](#upgrade-1)
   * [Mux 1](#mux-1)
   * [Mux 2](#mux-2)
   * [Nonce](#nonce)
@@ -550,16 +552,10 @@ Source              | ValueSource1         | The source of the units that are be
 Data                | String32             | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is 1, this must be 32 zero-bytes. If the transaction version is 1, this must be the hash of the Extension Struct 1.
 
-Extension Struct 1                 | Type                                         | Description
------------------------------------|----------------------------------------------|-------------------------
-UpgradeDestination                 | Pointer<Upgrade1>                            | An optional pointer to an [Upgrade1](#upgrade-1) entry that should receive the value being retired.
-ExtHash2                           | [ExtStruct](#extension-struct)               | Hash of next extension struct. (See [Extstruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
-
-
 Extension Struct 1 | Type                                    | Description
--------------------|----------------------------------------------|-------------------------
-UpgradeProgram     | [Program](#program)                          | A predicate that must be satisfied
-ExtHash2           | [ExtStruct](#extension-struct)               | Hash of next extension struct. (See [ExtStruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
+-------------------|-----------------------------------------|-------------------------
+UpgradeProgram     | [Program](#program)                     | A predicate that must be satisfied.
+ExtHash2           | [ExtStruct](#extension-struct)          | Hash of next extension struct. (See [ExtStruct](#extension-struct).) If the transaction version is 2, this must be 32 zero-bytes.
 
 Witness field       | Type                 | Description
 --------------------|----------------------|----------------
@@ -574,6 +570,35 @@ UpgradeDestination  | ValueDestination1    | The Destination ("forward pointer")
   2. Verify that `UpgradeDestination` is either an all-zero hash, or a pointer to an [Upgrade1](#upgrade-1) entry that is present in the transaction.
   3. If the transaction version is 2:
     1. Verify that the `ExtHash2` is the all-zero hash.
+
+### Upgrade 1
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "upgrade1"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+Body field          | Type                           | Description
+--------------------|--------------------------------|----------------
+Source              | Pointer<Retirement1>           | The source of the value being upgraded.
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+
+Witness field       | Type                       | Description
+--------------------|----------------------------|----------------
+Destination         | ValueDestination2          | The destination for the value contained in this `Upgrade`.
+Arguments           | List<String>               | Arguments for the upgrade program contained in the [Retirement1](#retirement-1) entry.
+
+
+#### Upgrade 1 Validation
+
+1. [Convert](#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
+2. Fail validation if `Retirement1.UpgradeProgram` has VM version 0.
+3. [Validate program](#program-validation) `Retirement1.UpgradeProgram` with the given `Arguments` and the transaction version.
+4. [Validate](#value-destination-2) `Destination`.
+5. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
+
+Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
 
 #### Retirement 2
@@ -727,34 +752,6 @@ Arguments                  | List<String>                                       
     * `Anchor` reference as `nonce`.
 7. [Validate](#program-validation) `IssuanceDelegateProgram` with `Arguments` as the arguments.
 
-
-### Upgrade 1
-
-Field               | Type                 | Description
---------------------|----------------------|----------------
-Type                | String               | "upgrade1"
-Body                | Struct               | See below.
-Witness             | Struct               | See below.
-
-Body field          | Type                           | Description
---------------------|--------------------------------|----------------
-Source              | Pointer<Retirement1>           | The source of the value being upgraded.
-ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
-
-Witness field       | Type                       | Description
---------------------|----------------------------|----------------
-Destination         | ValueDestination2          | The destination for the value contained in this `Upgrade`.
-Arguments           | List<String>         | Arguments for the upgrade program contained in the [Retirement1](#retirement-1) entry.
-
-
-#### Upgrade 1 Validation
-
-1. [Convert](#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
-2. [Validate program](#program-validation) `Retirement1.UpgradeProgram` with the given `Arguments` and the transaction version.
-3. [Validate](#value-destination-2) `Destination`.
-4. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
-
-Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
 ### Mux 1
 

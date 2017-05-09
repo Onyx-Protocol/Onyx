@@ -1146,6 +1146,8 @@ Code  | Stack Diagram                                        | Cost
         3. if the destination is a retirement:
             * `version` equals 1,
             * `prog` begins with a [FAIL](#fail) instruction.
+            * if transaction version is 1 or higher:
+                * upgrade program’s VM version is 0.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
         6. `data` is an empty string or it matches the 32-byte data string in the destination entry.
@@ -1208,6 +1210,7 @@ Entry Type                                               | Program
 [Block header] ([block context](#block-context))         | Current [consensus program](blockchain.md#block-header) being executed (specified in the previous block header)
 [Nonce](blockchain.md#nonce)                             | Nonce program
 [Issuance1](blockchain.md#issuance-1)                    | Issuance program for the asset ID
+[Issuance2](blockchain.md#issuance-2) (issuance choice)  | Issuance program for a given [asset ID choice](#asset-issuance-choice) (when [Confidential Issuance Choice Flag](#vm-state) is on)
 [Spend1](blockchain.md#spend-1)                          | Control program of the output being spent
 [Mux1](blockchain.md#mux-1)                              | Mux program
 

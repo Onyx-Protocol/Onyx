@@ -57,11 +57,10 @@ In both version 1 and version 2 entries, `CHECKOUTPUT` in VM2 is not used to mat
 1. If the current entry is one of [Mux1](blockchain.md#mux-1), [Issuance1](blockchain.md#issuance-1) or [Spend1](blockchain.md#spend-1):
     1. Pops 6 items from the data stack: `index`, `data`, `amount`, `assetid`, `version`, `prog`.
     2. Fails if `index` is negative or not a valid [number](vm1.md#vm-number).
-    3. Fails if the number of outputs is less or equal to `index`.
-    4. Fails if `version` is not a [number](vm1.md#vm-number).
-    5. Fails if `amount` is not a valid [number](vm1.md#vm-number).
-    6. Fails if `assetid` is not a 32-byte [string](vm1.md#vm-string).
-    7. If the current entry is a [Mux1](blockchain.md#mux-1):
+    3. Fails if `version` is not a [number](vm1.md#vm-number).
+    4. Fails if `amount` is not a valid [number](vm1.md#vm-number).
+    5. Fails if `assetid` is not a 32-byte [string](vm1.md#vm-string).
+    6. If the current entry is a [Mux1](blockchain.md#mux-1):
         1. Finds a [destination entry](blockchain.md#value-destination-1) at the given `index`. Fails if there is no entry at `index`.
         2. If the entry satisfies all of the following conditions pushes [true](vm1.md#vm-boolean) on the data stack; otherwise pushes [false](vm1.md#vm-boolean):
             1. destination entry type is [Output1](blockchain.md#output-1),
@@ -70,19 +69,18 @@ In both version 1 and version 2 entries, `CHECKOUTPUT` in VM2 is not used to mat
             4. output asset ID commitment equals `assetid`,
             5. output value commitment equals `amount`,
             6. `data` is an empty string or it matches the 32-byte data string in the output.
-    8. If the entry is an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1):
-        1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux1](blockchain.md#mux-1), performs checks as described in step 7.
+    7. If the entry is an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1):
+        1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux1](blockchain.md#mux-1), performs checks as described in step 6.
         2. If the [destination entry](blockchain.md#value-destination-1) is an [Output1](blockchain.md#output-1):
             1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
-            2. Otherwise, performs checks as described in step 7.2.
+            2. Otherwise, performs checks as described in step 6.2.
 2. If the current entry is one of [Mux2](blockchain.md#mux-2), [Issuance2](blockchain.md#issuance-2) or [Spend2](blockchain.md#spend-2).    
     1. Pops 6 items from the data stack: `index`, `data`, `amount`, `assetid`, `version`, `prog`.
     2. Fails if `index` is negative or not a valid [number](vm1.md#vm-number).
-    3. Fails if the number of outputs is less or equal to `index`.
-    4. Fails if `version` is not a [number](vm1.md#vm-number).
-    5. Fails if `amount` is not a valid [point pair](ca.md#point-pair) (representing a [value commitment](ca.md#value-commitment)).
-    6. Fails if `assetid` is not a valid [point pair](ca.md#point-pair) (representing an [asset ID commitment](ca.md#asset-id-commitment)).
-    7. If the current entry is a [Mux2](blockchain.md#mux-2):
+    3. Fails if `version` is not a [number](vm1.md#vm-number).
+    4. Fails if `amount` is not a valid [point pair](ca.md#point-pair) (representing a [value commitment](ca.md#value-commitment)).
+    5. Fails if `assetid` is not a valid [point pair](ca.md#point-pair) (representing an [asset ID commitment](ca.md#asset-id-commitment)).
+    6. If the current entry is a [Mux2](blockchain.md#mux-2):
         1. Finds a [destination entry](blockchain.md#value-destination-2) at the given `index`. Fails if there is no entry at `index`.
         2. If the entry satisfies all of the following conditions pushes [true](vm1.md#vm-boolean) on the data stack; otherwise pushes [false](vm1.md#vm-boolean):
             1. destination entry type is [Output2](blockchain.md#output-2),
@@ -91,11 +89,11 @@ In both version 1 and version 2 entries, `CHECKOUTPUT` in VM2 is not used to mat
             4. output asset ID commitment equals `assetid`,
             5. output value commitment equals `amount`,
             6. `data` is an empty string or it matches the 32-byte data string in the output.
-    8. If the entry is an [Issuance2](blockchain.md#issuance-2) or a [Spend2](blockchain.md#spend-2):
-        1. If the [destination entry](blockchain.md#value-destination-2) is a [Mux2](blockchain.md#mux-2), performs checks as described in step 7.
+    7. If the entry is an [Issuance2](blockchain.md#issuance-2) or a [Spend2](blockchain.md#spend-2):
+        1. If the [destination entry](blockchain.md#value-destination-2) is a [Mux2](blockchain.md#mux-2), performs checks as described in step 6.
         2. If the [destination entry](blockchain.md#value-destination-2) is an [Output2](blockchain.md#output-2):
             1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
-            2. Otherwise, performs checks as described in step 7.2.
+            2. Otherwise, performs checks as described in step 6.2.
 
 Fails if executed in the [block context](#block-context).
 
@@ -177,7 +175,6 @@ Fails if executed in the [block context](#block-context).
 
 ## Additional instructions
 
-
 #### CHECKRETIREMENT
 
 Code  | Stack Diagram                                        | Cost
@@ -191,44 +188,38 @@ This instruction uses [value commitments](ca.md#value-commitment) instead of a c
 1. If the current entry is one of [Mux1](blockchain.md#mux-1), [Issuance1](blockchain.md#issuance-1) or [Spend1](blockchain.md#spend-1):
     1. Pops 4 items from the data stack: `index`, `data`, `amount`, `assetid`.
     2. Fails if `index` is negative or not a valid [number](vm1.md#vm-number).
-    4. Fails if `version` is not a [number](vm1.md#vm-number).
-    5. Fails if `amount` is not a valid [number](vm1.md#vm-number).
-    6. Fails if `assetid` is not a 32-byte [string](vm1.md#vm-string).
-    7. If the current entry is a [Mux1](blockchain.md#mux-1):
+    3. Fails if `amount` is not a valid [number](vm1.md#vm-number).
+    4. Fails if `assetid` is not a 32-byte [string](vm1.md#vm-string).
+    5. If the current entry is a [Mux1](blockchain.md#mux-1):
         1. Finds a [destination entry](blockchain.md#value-destination-1) at the given `index`. Fails if there is no entry at `index`.
         2. If the entry satisfies all of the following conditions pushes [true](vm1.md#vm-boolean) on the data stack; otherwise pushes [false](vm1.md#vm-boolean):
-            1. destination entry type is [Output1](blockchain.md#output-1),
-            2. output VM version equals `version`,
-            3. output program bytecode equals `prog`,
-            4. output asset ID commitment equals `assetid`,
-            5. output value commitment equals `amount`,
-            6. `data` is an empty string or it matches the 32-byte data string in the output.
-    8. If the entry is an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1):
-        1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux1](blockchain.md#mux-1), performs checks as described in step 7.
+            1. destination entry type is [Retirement1](blockchain.md#output-1),
+            2. retirement asset ID equals `assetid`,
+            3. retirement amount equals `amount`,
+            4. retirement upgrade program’s VM version equals 0,
+            5. `data` is an empty string or it matches the 32-byte data string in the output.
+    6. If the entry is an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1):
+        1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux1](blockchain.md#mux-1), performs checks as described in step 5.
         2. If the [destination entry](blockchain.md#value-destination-1) is an [Output1](blockchain.md#output-1):
             1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
-            2. Otherwise, performs checks as described in step 7.2.
+            2. Otherwise, performs checks as described in step 5.2.
 2. If the current entry is one of [Mux2](blockchain.md#mux-2), [Issuance2](blockchain.md#issuance-2) or [Spend2](blockchain.md#spend-2).    
-    1. Pops 6 items from the data stack: `index`, `data`, `amount`, `assetid`, `version`, `prog`.
+    1. Pops 4 items from the data stack: `index`, `data`, `amount`, `assetid`.
     2. Fails if `index` is negative or not a valid [number](vm1.md#vm-number).
-    3. Fails if the number of outputs is less or equal to `index`.
-    4. Fails if `version` is not a [number](vm1.md#vm-number).
-    5. Fails if `amount` is not a valid [point pair](ca.md#point-pair) (representing a [value commitment](ca.md#value-commitment)).
-    6. Fails if `assetid` is not a valid [point pair](ca.md#point-pair) (representing an [asset ID commitment](ca.md#asset-id-commitment)).
-    7. If the current entry is a [Mux2](blockchain.md#mux-2):
-        1. Finds a [destination entry](blockchain.md#value-destination-2) at the given `index`.
+    3. Fails if `amount` is not a valid [point pair](ca.md#point-pair) (representing a [value commitment](ca.md#value-commitment)).
+    4. Fails if `assetid` is not a valid [point pair](ca.md#point-pair) (representing an [asset ID commitment](ca.md#asset-id-commitment)).
+    5. If the current entry is a [Mux2](blockchain.md#mux-2):
+        1. Finds a [destination entry](blockchain.md#value-destination-2) at the given `index`. Fails if there is no entry at `index`.
         2. If the entry satisfies all of the following conditions pushes [true](vm1.md#vm-boolean) on the data stack; otherwise pushes [false](vm1.md#vm-boolean):
-            1. destination entry type is [Output2](blockchain.md#output-2),
-            2. output VM version equals `version`,
-            3. output program bytecode equals `prog`,
-            4. output asset ID commitment equals `assetid`,
-            5. output value commitment equals `amount`,
-            6. `data` is an empty string or it matches the 32-byte data string in the output.
-    8. If the entry is an [Issuance2](blockchain.md#issuance-2) or a [Spend2](blockchain.md#spend-2):
-        1. If the [destination entry](blockchain.md#value-destination-2) is a [Mux2](blockchain.md#mux-2), performs checks as described in step 7.
+            1. destination entry type is [Retirement2](blockchain.md#retirement-2),
+            2. retirement asset ID commitment equals `assetid`,
+            3. retirement value commitment equals `amount`,
+            5. `data` is an empty string or it matches the 32-byte data string in the output.
+    6. If the entry is an [Issuance2](blockchain.md#issuance-2) or a [Spend2](blockchain.md#spend-2):
+        1. If the [destination entry](blockchain.md#value-destination-2) is a [Mux2](blockchain.md#mux-2), performs checks as described in step 5.
         2. If the [destination entry](blockchain.md#value-destination-2) is an [Output2](blockchain.md#output-2):
             1. If `index` is not zero, pushes [false](vm1.md#vm-boolean) on the data stack.
-            2. Otherwise, performs checks as described in step 7.2.
+            2. Otherwise, performs checks as described in step 5.2.
 
 Fails if executed in the [block context](#block-context).
 
