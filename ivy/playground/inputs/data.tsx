@@ -177,7 +177,7 @@ export const isComplexInput = (input: Input): input is ComplexInput => {
 export const getInputType = (type: ClauseParameterType): PrimaryInputType => {
   if (isHash(type)) return "hashInput"
   switch (type) {
-    case "Number": return "numberInput"
+    case "Integer": return "numberInput"
     case "Boolean": return "booleanInput"
     case "String": return "stringInput"
     case "PublicKey": return "publicKeyInput"

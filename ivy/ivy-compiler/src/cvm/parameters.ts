@@ -22,7 +22,7 @@ export type ContractParameterHash =
     hashFunction: HashFunction
   }
 
-export type ContractParameterType = "PublicKey" | "String" | "Number" | 
+export type ContractParameterType = "PublicKey" | "String" | "Integer" | 
                                     "Time" | "Boolean" | "Address" |
                                     "AssetAmount" | "Value" | ContractParameterHash
 

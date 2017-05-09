@@ -33,7 +33,7 @@ function setupClauses(oldClauses: Clause[], clauseSelector: string): Block {
     condition = { type: "variable", location: clause.location, identifier: clauseSelector }
   } else {
     let args: Expression[] = [{ type: "literal", 
-                                literalType: "Number",
+                                literalType: "Integer",
                                 location: clause.location, 
                                 value: newClauses.length.toString()
                               }, {
@@ -306,11 +306,11 @@ export function desugarContract(rawContract: RawContract): Contract {
           // and add the dummy 0 value
           let pubKeys = node.args[0] as ListLiteral
           let sigs = node.args[1] as ListLiteral
-          let args: Expression[] = [{ type: "literal", location: pubKeys.location, literalType: "Number", value: pubKeys.values.length.toString()}, 
+          let args: Expression[] = [{ type: "literal", location: pubKeys.location, literalType: "Integer", value: pubKeys.values.length.toString()}, 
                                     ...pubKeys.values,
-                                    { type: "literal", location: sigs.location, literalType: "Number", value: sigs.values.length.toString()},
+                                    { type: "literal", location: sigs.location, literalType: "Integer", value: sigs.values.length.toString()},
                                     ...sigs.values,
-                                    { type: "literal", location: node.location, literalType: "Number", value: "0"}] // dummy 0 value
+                                    { type: "literal", location: node.location, literalType: "Integer", value: "0"}] // dummy 0 value
           return {
               ...node,
             args: args
