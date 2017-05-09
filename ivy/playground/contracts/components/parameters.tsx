@@ -47,18 +47,13 @@ function ParameterWidget(props: { input: ParameterInput, handleChange: (e)=>unde
 function GenerateStringWidget(props: { input: GenerateStringInput, handleChange: (e)=>undefined, computedValue: string }) {
   return <div>{ props.computedValue ? <pre>{props.computedValue}</pre> : <span />}<div className="input-group">
     <div className="input-group-addon">Length</div>
-    <input type="number" className="form-control" key={props.input.name} value={props.input.value} onChange={props.handleChange} />
+    <input type="text" className="form-control" key={props.input.name} value={props.input.value} onChange={props.handleChange} />
   </div></div>
 }
 
-function NumberWidget(props: { input: NumberInput,
+function NumberWidget(props: { input: NumberInput | AmountInput,
                                handleChange: (e)=>undefined }) {
-  return <input type="number" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
-}
-
-function PositiveNumberWidget(props: { input: AmountInput
-                               handleChange: (e)=>undefined }) {
-  return <input id={props.input.name} type="number" min={0} className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
+  return <input type="text" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
 }
 
 function TimestampTimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
@@ -73,7 +68,7 @@ function AmountWidget(props: { input: AmountInput
   return <div className="form-group form-inline">
     <div className="input-group">
     <div className="input-group-addon">Amount</div>
-    <PositiveNumberWidget input={props.input} handleChange={props.handleChange} />
+    <NumberWidget input={props.input} handleChange={props.handleChange} />
     </div>
   </div>
 }
