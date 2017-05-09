@@ -45,9 +45,8 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Warning: we write empty placeholder message types here
 // so that other messages in this package can refer to it.
-// However, we delete the generated code for these 2 types
-// and provide our own implementation.
-// See our hand-written hash.go.
+// However, we delete the generated definitions
+// for these 2 types and provide our own. See hash.go.
 
 func (m *Hash) Reset()                    { *m = Hash{} }
 func (m *Hash) String() string            { return proto.CompactTextString(m) }
