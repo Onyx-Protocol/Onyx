@@ -75,5 +75,25 @@ export const COLLATERALIZED_LOAN = `contract CollateralizedLoan(
   }
 }`
 
+export const REVEAL_PREIMAGE = `contract RevealPreimage(hash: Hash, value: Value) {
+  clause reveal(string: String) {
+    verify sha3(string) == hash
+    return value
+  }
+}`
+
+export const REVEAL_FACTORS = `contract RevealFactors(product: Integer, value: Value) {
+  clause reveal(factor1: Integer, factor2: Integer) {
+    verify factor1 * factor2 == product
+    return value
+  }
+}`
+
 export const itemMap: ItemMap = {}
-export const INITIAL_STATE: State = { itemMap: {}, idList: [], source: '', selected: '' }
+export const INITIAL_STATE: State = { 
+  itemMap: {}, 
+  idList: [], 
+  source: '', 
+  selected: '',
+  compiled: undefined
+}

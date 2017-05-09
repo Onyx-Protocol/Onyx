@@ -2,22 +2,22 @@ import * as React from 'react'
 import { connect } from 'react-redux'
 
 import app from '../../app'
-import { isError, mustCompileTemplate } from '../util'
-import { getTemplate } from '../selectors'
+import { mustCompileTemplate } from '../util'
+import { getTemplate, getOpcodes } from '../selectors'
 import { Item } from '../types'
 
 const mapStateToProps = (state) => {
   const template = getTemplate(state)
-  if (isError(template)) throw "uncaught compiler error"
-  return { template }
+  const opcodes = getOpcodes(state)
+  if (opcodes === "") throw "uncaught compiler error"
+  return { template, opcodes }
 }
 
-const Instructions = ({ template }) => {
-  const instructions = template.instructions.join(" ")
+const Instructions = ({ template, opcodes }) => {
   return (
     <app.components.Section name="Compiled">
       <div className="codeblock">
-        { instructions }
+        { opcodes }
       </div>
     </app.components.Section>
   )

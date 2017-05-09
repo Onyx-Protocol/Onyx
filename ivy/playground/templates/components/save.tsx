@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
-import { getTemplate, getItemMap } from '../selectors'
-import { isError } from '../util'
+import { getCompiled, getItemMap } from '../selectors'
 import { saveTemplate } from '../actions'
 
 function SaveUnconnected({ reset, error, exists }) {
@@ -24,11 +23,11 @@ function SaveUnconnected({ reset, error, exists }) {
 }
 
 function mapStateToSaveProps(state) {
-  let template = getTemplate(state)
+  let compiled = getCompiled(state)
   let templates = getItemMap(state)
   return {
-    error: (isError(template)),
-    exists: !isError(template) && templates[template.name] !== undefined
+    error: (!compiled || compiled.error !== ""),
+    exists: compiled && compiled.error === "" && templates[compiled.name] !== undefined
   }
 }
 

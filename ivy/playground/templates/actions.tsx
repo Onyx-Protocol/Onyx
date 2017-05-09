@@ -1,14 +1,16 @@
 import { client } from '../util'
 import { getItemMap, getIdList, getTemplate } from './selectors'
-import { Item as Template, ItemMap } from './types'
+import { Item as Template, ItemMap, CompilerResult } from './types'
 import { TRIVIAL_LOCK, LOCK_WITH_PUBLIC_KEY, LOCK_TO_OUTPUT, TRADE_OFFER, ESCROWED_TRANSFER,
-         COLLATERALIZED_LOAN } from './constants'
+         COLLATERALIZED_LOAN, REVEAL_PREIMAGE, REVEAL_FACTORS } from './constants'
 import { selectTemplate } from '../contracts/actions'
 import { ContractParameter, TemplateClause, ClauseParameter } from 'ivy-compiler'
 
 export const SET_INITIAL_TEMPLATES = 'templates/SET_TEMPLATES'
 export const LOAD_TEMPLATE = 'templates/LOAD_TEMPLATE'
 export const SET_SOURCE = 'templates/SET_SOURCE'
+export const SET_COMPILED = 'templates/SET_COMPILED'
+export const COMPILER_ERROR = 'templates/COMPILER_ERROR'
 
 const mapServerTemplate = (tpl): Template => {
   const clauses: TemplateClause[] = tpl.clauseInfo.map(clause => {
@@ -87,6 +89,8 @@ export const setInitialTemplates = () => {
       client.ivy.compile({ contract: TRADE_OFFER }),
       client.ivy.compile({ contract: ESCROWED_TRANSFER }),
       client.ivy.compile({ contract: COLLATERALIZED_LOAN }),
+      client.ivy.compile({ contract: REVEAL_PREIMAGE }),
+      client.ivy.compile({ contract: REVEAL_FACTORS }),
     ]).then(result => {
       const itemMap = {
         TrivialLock: mapServerTemplate(result[0]),
@@ -94,7 +98,9 @@ export const setInitialTemplates = () => {
         LockToOutput: mapServerTemplate(result[2]),
         TradeOffer: mapServerTemplate(result[3]),
         EscrowedTransfer: mapServerTemplate(result[4]),
-        CollateralizedLoan: mapServerTemplate(result[5])
+        CollateralizedLoan: mapServerTemplate(result[5]),
+        RevealPreimage: mapServerTemplate(result[6]),
+        RevealFactors: mapServerTemplate(result[7])
       }
       const idList = [
         "TrivialLock",
@@ -102,7 +108,8 @@ export const setInitialTemplates = () => {
         "LockToOutput",
         "TradeOffer",
         "EscrowedTransfer",
-        "CollateralizedLoan"
+        "CollateralizedLoan",
+        "RevealPreimage"
       ]
       const selected = idList[0]
       const source = itemMap[selected].source
@@ -121,15 +128,30 @@ export const setInitialTemplates = () => {
 }
 
 export const load = (selected: string) => {
-  return {
-    type: LOAD_TEMPLATE,
-    selected: selected
+  return (dispatch, getState) => {
+    let state = getState()
+    let source = getItemMap(state)[selected].source
+    dispatch({
+      type: LOAD_TEMPLATE,
+      selected: selected
+    })
+    dispatch(fetchCompiled(source))
+  }
+}
+
+
+export const fetchCompiled = (source: string) => {
+  return (dispatch, getState) => {
+    return client.ivy.compile({ contract: source }).then(
+      (compiled: CompilerResult) => dispatch({type: SET_COMPILED, result: compiled})
+    ).catch((e) => {throw e})
   }
 }
 
 export const setSource = (source: string) => {
   return (dispatch, getState) => {
     const type = SET_SOURCE
+    dispatch(fetchCompiled(source))
     return dispatch({ type, source })
   }
 }

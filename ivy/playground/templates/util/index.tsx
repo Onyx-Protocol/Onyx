@@ -1,6 +1,6 @@
 import { compileTemplate } from 'ivy-compiler'
 
-import { CompilerError, Item } from '../types'
+import { CompilerError, Item, CompilerResult } from '../types'
 
 export const mustCompileTemplate = (source: string): Item => {
   const res = compileTemplate(source)
@@ -10,7 +10,3 @@ export const mustCompileTemplate = (source: string): Item => {
   return res
 }
 
-
-export const isError = (template: Item|CompilerError): template is CompilerError => {
-  return template.type === "compilerError"
-}
