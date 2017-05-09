@@ -105,6 +105,7 @@ export const create = () => {
         })
       })
     }).catch(err => {
+      console.log("error found", err)
       dispatch(showErrors())
     })
   }
