@@ -28,6 +28,12 @@ type (
 		Name   string      `json:"name"`
 		Args   []ClauseArg `json:"args"`
 		Values []ValueInfo `json:"value_info"`
+
+		// Mintimes is the stringified form of "x" for any "verify after(x)" in the clause
+		Mintimes []string `json:"mintimes"`
+
+		// Maxtimes is the stringified form of "x" for any "verify before(x)" in the clause
+		Maxtimes []string `json:"maxtimes"`
 	}
 
 	ClauseArg struct {
@@ -233,6 +239,20 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 				return errors.Wrapf(err, "in verify statement in clause \"%s\"", clause.name)
 			}
 			b.addOp(vm.OP_VERIFY)
+
+			// special-casing "verify before(expr)" and "verify after(expr)"
+			if c, ok := stmt.expr.(*call); ok {
+				if v, ok := c.fn.(*varRef); ok && len(c.args) == 1 {
+					if v.builtin != nil {
+						switch v.builtin.name {
+						case "before":
+							clause.maxtimes = append(clause.maxtimes, c.args[0].String())
+						case "after":
+							clause.mintimes = append(clause.mintimes, c.args[0].String())
+						}
+					}
+				}
+			}
 
 		case *outputStatement:
 			// index

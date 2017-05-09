@@ -21,6 +21,9 @@ type clause struct {
 	name       string
 	params     []*param
 	statements []statement
+
+	// decorations
+	mintimes, maxtimes []string
 }
 
 type statement interface {
