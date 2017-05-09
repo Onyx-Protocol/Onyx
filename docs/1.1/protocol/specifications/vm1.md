@@ -1,4 +1,4 @@
-# Virtual Machine Specification
+# Virtual Machine 1 Specification
 
 * [Introduction](#introduction)
 * [Versioning](#versioning)
@@ -380,7 +380,7 @@ If the remaining run limit is less than 256, execution fails immediately.
 3. Coerces `n` to an [integer](#vm-number).
 4. If `limit` equals zero, sets it to the VM's remaining run limit minus 256.
 5. Reduces VM’s run limit by `256 + limit`.
-6. Instantiates a new VM instance (“child VM”) with its run limit set to `limit`.
+6. Instantiates a new VM1 instance (“child VM”) with its run limit set to `limit`.
 7. Moves the top `n` items from the parent VM’s data stack to the child VM’s data stack without incurring run limit refund or charge of their [standard memory cost](#standard-memory-cost) in either VM. The order of the moved items is unchanged. The memory cost of these items will be refunded when the child VM pops them, or when the child VM is destroyed and its parent VM is refunded.
 8. Child VM evaluates the predicate and pushes `true` to the parent VM data stack if the evaluation did not fail and the child VM’s data stack is non-empty with a `true` value on top (this implements the same semantics as for the top-level [verify predicate](#verify-predicate) operation). It pushes `false` otherwise. Note that the parent VM does not fail when the child VM exhausts its run limit or otherwise fails.
 9. After the child VM finishes execution (normally or due to a failure), the parent VM’s run limit is refunded with a `leftover` value computed as a sum of the following values:
