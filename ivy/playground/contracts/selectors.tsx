@@ -388,7 +388,6 @@ export const areSpendInputsValid = createSelector(
     const invalid = paramIdList.filter(id => {
       return !isValidInput(id, spendInputMap)
     })
-    console.log(invalid)
     return (invalid.length === 0) && (spendTemplateClause.returnStatement === undefined || isValidInput('transactionDetails.accountAliasInput', spendInputMap))
   }
 )

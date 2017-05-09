@@ -25,7 +25,7 @@ const Editor = ({ template }) => {
       <ReactTooltip place="bottom" type="error" effect="solid"/>
       <div className="panel panel-default">
         <div className="panel-heading clearfix">
-          <h1 className="panel-title pull-left">Template Editor</h1>
+          <h1 className="panel-title pull-left">Draft Contract</h1>
           <table className="pull-right"><tbody><tr>
             <td style={{width: 300, paddingRight: 10}}><Load /></td>
             <Save />{/* Save returns a <td> element */}

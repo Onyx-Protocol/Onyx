@@ -17,10 +17,10 @@ export default function Spend(props: { contract: Contract }) {
   let contract = props.contract
   return (
     <DocumentTitle title="Spend">
-      <Section name="Spend Contract" footer={<SpendFooter />}>
+      <Section name="Spend" footer={<SpendFooter />}>
         <div className="form-wrapper">
         <section>
-        <h4>Contract Template</h4>
+        <h4>Contract</h4>
         <DisplaySpendContract />
         </section>
         <ClauseSelect />

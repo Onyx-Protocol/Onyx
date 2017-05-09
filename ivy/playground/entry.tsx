@@ -43,7 +43,7 @@ render(
     <ConnectedRouter history={history}>
       <app.components.Root>
        <Route exact={true} path={prefixRoute('/')} component={templates.components.Editor} />
-       <Route path={prefixRoute('/create')} component={Create} />
+       <Route path={prefixRoute('/instantiate')} component={Create} />
        <Route exact path={prefixRoute('/spend')}  component={Contracts} />
        <Route path={prefixRoute('/spend/:contractId')} component={Spend} />
       </app.components.Root>
