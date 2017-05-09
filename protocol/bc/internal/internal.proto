@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package internal;
 
+// Hash is a helper type used by package bc to marshal its type Hash.
 message Hash {
   fixed64 v0 = 1;
   fixed64 v1 = 2;

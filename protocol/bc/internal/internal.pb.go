@@ -28,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Hash is a helper type used by package bc to marshal its type Hash.
 type Hash struct {
 	V0 uint64 `protobuf:"fixed64,1,opt,name=v0" json:"v0,omitempty"`
 	V1 uint64 `protobuf:"fixed64,2,opt,name=v1" json:"v1,omitempty"`
