@@ -1,3 +1,4 @@
+import { SPEND_CONTRACT } from './actions';
 import { createSelector } from 'reselect'
 import { Item as Template } from '../templates/types'
 
@@ -157,6 +158,11 @@ export const getSpendInputSelector = (id: string) => {
 export const getSpendInputMap = createSelector(
   getSpendContract,
   spendContract => spendContract.spendInputMap
+)
+
+export const getSpendContractParametersInputMap = createSelector(
+  getSpendContract,
+  spendContract => spendContract.inputMap
 )
 
 export const getSpendParameterIds = createSelector(
