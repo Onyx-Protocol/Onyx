@@ -264,6 +264,10 @@ func peekTok(p *parser, token string) bool {
 
 // consume functions
 
+var keywords = []string{
+	"contract", "clause", "verify", "output", "return",
+}
+
 func consumeKeyword(p *parser, keyword string) {
 	pos := scanKeyword(p.buf, p.pos, keyword)
 	if pos < 0 {
