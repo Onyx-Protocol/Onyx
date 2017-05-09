@@ -35,6 +35,8 @@ const store = createStore(
 )
 
 store.dispatch(templates.actions.setInitialTemplates())
+store.dispatch(assets.actions.fetch())
+store.dispatch(accounts.actions.fetch())
 render(
   <Provider store={store}>
     <DocumentTitle title='Ivy Playground'>
