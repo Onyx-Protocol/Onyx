@@ -417,7 +417,7 @@ func multisigIssuanceProgram(pubkeys []ed25519.PublicKey, nrequired int) (progra
 	if err != nil {
 		return nil, 0, err
 	}
-	builder := vmutil.NewBuilder()
+	builder := vmutil.NewBuilder(false)
 	builder.AddRawBytes(issuanceProg)
 	prog, err := builder.Build()
 	return prog, 1, err

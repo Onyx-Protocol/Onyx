@@ -2,52 +2,65 @@ package vmutil
 
 import (
 	"encoding/binary"
+	"reflect"
 
 	"chain/errors"
 	"chain/protocol/vm"
 )
 
 type Builder struct {
-	program     []byte
+	items       []item
 	jumpCounter int
-
-	// Maps a jump target number to its absolute address.
-	jumpAddr map[int]uint32
-
-	// Maps a jump target number to the list of places where its
-	// absolute address must be filled in once known.
-	jumpPlaceholders map[int][]int
+	opt         bool
 }
 
-func NewBuilder() *Builder {
+type item interface {
+	bytes() []byte
+}
+
+type (
+	int64Item    int64
+	pushdataItem []byte
+	rawdataItem  []byte
+	opItem       vm.Op
+
+	jumpItem struct {
+		isIf      bool
+		targetNum int
+	}
+
+	jumpTargetItem int
+)
+
+func NewBuilder(optimize bool) *Builder {
 	return &Builder{
-		jumpAddr:         make(map[int]uint32),
-		jumpPlaceholders: make(map[int][]int),
+		opt: optimize,
 	}
 }
 
 // AddInt64 adds a pushdata instruction for an integer value.
 func (b *Builder) AddInt64(n int64) *Builder {
-	b.program = append(b.program, vm.PushdataInt64(n)...)
+	b.items = append(b.items, int64Item(n))
 	return b
 }
 
 // AddData adds a pushdata instruction for a given byte string.
 func (b *Builder) AddData(data []byte) *Builder {
-	b.program = append(b.program, vm.PushdataBytes(data)...)
+	b.items = append(b.items, pushdataItem(data))
 	return b
 }
 
 // AddRawBytes simply appends the given bytes to the program. (It does
 // not introduce a pushdata opcode.)
 func (b *Builder) AddRawBytes(data []byte) *Builder {
-	b.program = append(b.program, data...)
+	b.items = append(b.items, rawdataItem(data))
 	return b
 }
 
 // AddOp adds the given opcode to the program.
 func (b *Builder) AddOp(op vm.Op) *Builder {
-	b.program = append(b.program, byte(op))
+	b.items = append(b.items, opItem(op))
+	b.optimize()
 	return b
 }
 
@@ -63,32 +76,25 @@ func (b *Builder) NewJumpTarget() int {
 // number. The actual program location of the target does not need to
 // be known yet, as long as SetJumpTarget is called before Build.
 func (b *Builder) AddJump(target int) *Builder {
-	return b.addJump(vm.OP_JUMP, target)
+	b.items = append(b.items, jumpItem{false, target})
+	return b
 }
 
 // AddJump adds a JUMPIF opcode whose target is the given target
 // number. The actual program location of the target does not need to
 // be known yet, as long as SetJumpTarget is called before Build.
 func (b *Builder) AddJumpIf(target int) *Builder {
-	return b.addJump(vm.OP_JUMPIF, target)
-}
-
-func (b *Builder) addJump(op vm.Op, target int) *Builder {
-	b.AddOp(op)
-	b.jumpPlaceholders[target] = append(b.jumpPlaceholders[target], len(b.program))
-	b.AddRawBytes([]byte{0, 0, 0, 0})
+	b.items = append(b.items, jumpItem{true, target})
 	return b
 }
 
 // SetJumpTarget associates the given jump-target number with the
-// current position in the program - namely, the program's length,
-// such that the first instruction executed by a jump using this
-// target will be whatever instruction is added next. It is legal for
-// SetJumpTarget to be called at the end of the program, causing jumps
-// using that target to fall off the end. There must be a call to
-// SetJumpTarget for every jump target used before any call to Build.
+// current position in the program. It is legal for SetJumpTarget to
+// be called at the end of the program, causing jumps using that
+// target to fall off the end. There must be a call to SetJumpTarget
+// for every jump target used before any call to Build.
 func (b *Builder) SetJumpTarget(target int) *Builder {
-	b.jumpAddr[target] = uint32(len(b.program))
+	b.items = append(b.items, jumpTargetItem(target))
 	return b
 }
 
@@ -101,14 +107,116 @@ var ErrUnresolvedJump = errors.New("unresolved jump target")
 // any target's address hasn't been set in this way, this function
 // produces ErrUnresolvedJump. There are no other error conditions.
 func (b *Builder) Build() ([]byte, error) {
-	for target, placeholders := range b.jumpPlaceholders {
-		addr, ok := b.jumpAddr[target]
-		if !ok {
-			return nil, errors.Wrapf(ErrUnresolvedJump, "target %d", target)
+	var result []byte
+	jumps := make(map[int]int)
+	jumpTargets := make(map[int]uint32)
+	for _, it := range b.items {
+		switch j := it.(type) {
+		case jumpItem:
+			jumps[len(result)] = j.targetNum
+		case jumpTargetItem:
+			jumpTargets[int(j)] = uint32(len(result))
 		}
-		for _, placeholder := range placeholders {
-			binary.LittleEndian.PutUint32(b.program[placeholder:placeholder+4], addr)
+		result = append(result, it.bytes()...)
+	}
+	for jloc, targetNum := range jumps {
+		addr, ok := jumpTargets[targetNum]
+		if !ok {
+			return nil, errors.Wrapf(ErrUnresolvedJump, "target %d", targetNum)
+		}
+		binary.LittleEndian.PutUint32(result[jloc+1:jloc+5], addr)
+	}
+	return result, nil
+}
+
+func (i int64Item) bytes() []byte {
+	return vm.PushdataInt64(int64(i))
+}
+
+func (i pushdataItem) bytes() []byte {
+	return vm.PushdataBytes(i)
+}
+
+func (i rawdataItem) bytes() []byte {
+	return i
+}
+
+func (i opItem) bytes() []byte {
+	return []byte{byte(i)}
+}
+
+func (i jumpItem) bytes() []byte {
+	var b [5]byte
+	if i.isIf {
+		b[0] = byte(vm.OP_JUMPIF)
+	} else {
+		b[0] = byte(vm.OP_JUMP)
+	}
+	return b[:]
+}
+
+func (i jumpTargetItem) bytes() []byte {
+	return []byte{}
+}
+
+var optimizations = []struct {
+	before, after []item
+}{{
+	[]item{int64Item(0), opItem(vm.OP_ROLL)}, []item{},
+}, {
+	[]item{int64Item(0), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_DUP)},
+}, {
+	[]item{int64Item(1), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_SWAP)},
+}, {
+	[]item{int64Item(1), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_OVER)},
+}, {
+	[]item{int64Item(2), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_ROT)},
+}, {
+	[]item{opItem(vm.OP_TRUE), opItem(vm.OP_VERIFY)}, []item{},
+}, {
+	[]item{opItem(vm.OP_SWAP), opItem(vm.OP_SWAP)}, []item{},
+}, {
+	[]item{opItem(vm.OP_OVER), opItem(vm.OP_OVER)}, []item{opItem(vm.OP_2DUP)},
+}, {
+	[]item{opItem(vm.OP_SWAP), opItem(vm.OP_OVER)}, []item{opItem(vm.OP_TUCK)},
+}, {
+	[]item{opItem(vm.OP_DROP), opItem(vm.OP_DROP)}, []item{opItem(vm.OP_2DROP)},
+}, {
+	[]item{opItem(vm.OP_SWAP), opItem(vm.OP_DROP)}, []item{opItem(vm.OP_NIP)},
+}, {
+	[]item{int64Item(5), opItem(vm.OP_ROLL), int64Item(5), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_2ROT)},
+}, {
+	[]item{int64Item(3), opItem(vm.OP_PICK), int64Item(3), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_2OVER)},
+}, {
+	[]item{int64Item(3), opItem(vm.OP_ROLL), int64Item(3), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_2SWAP)},
+}, {
+	[]item{int64Item(2), opItem(vm.OP_PICK), int64Item(2), opItem(vm.OP_PICK), int64Item(2), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_3DUP)},
+}, {
+	[]item{int64Item(1), opItem(vm.OP_ADD)}, []item{opItem(vm.OP_1ADD)},
+}, {
+	[]item{int64Item(1), opItem(vm.OP_SUB)}, []item{opItem(vm.OP_1SUB)},
+}, {
+	[]item{opItem(vm.OP_EQUAL), opItem(vm.OP_VERIFY)}, []item{opItem(vm.OP_EQUALVERIFY)},
+}, {
+	[]item{opItem(vm.OP_SWAP), opItem(vm.OP_TXSIGHASH), opItem(vm.OP_ROT)}, []item{opItem(vm.OP_TXSIGHASH), opItem(vm.OP_SWAP)},
+}}
+
+func (b *Builder) optimize() {
+	if !b.opt {
+		return
+	}
+	looping := true
+	for looping {
+		looping = false
+		for _, o := range optimizations {
+			if len(b.items) < len(o.before) {
+				continue
+			}
+			if !reflect.DeepEqual(o.before, b.items[len(b.items)-len(o.before):]) {
+				continue
+			}
+			b.items = append(b.items[:len(b.items)-len(o.before)], o.after...)
+			looping = true
 		}
 	}
-	return b.program, nil
 }
