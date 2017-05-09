@@ -104,7 +104,14 @@ export const getSpendContractId = createSelector(
 
 export const getSpendContractSelectedClauseIndex = createSelector(
   getState,
-  (state: ContractsState): number => state.selectedClauseIndex
+  (state: ContractsState): number => {
+    let selectedClauseIndex = state.selectedClauseIndex
+    if (typeof selectedClauseIndex === "number") {
+      return selectedClauseIndex
+    } else {
+      return parseInt(selectedClauseIndex, 10)
+    }
+  }
 )
 
 export const getSpendContract = createSelector(
@@ -183,6 +190,17 @@ export const getClauseParameterIds = createSelector(
   }
 )
 
+export function dataToArgString(data: number | Buffer): string {
+  console.log(data, typeof data)
+  if (typeof data === "number") {
+    let buf = Buffer.alloc(8)
+    buf.writeUIntLE(data, 0, 8)
+    return buf.toString("hex")
+  } else {
+    return data.toString("hex")
+  }
+}
+
 export const getClauseWitnessComponents = createSelector(
   getSpendInputMap,
   getClauseName,
@@ -220,15 +238,18 @@ export const getClauseWitnessComponents = createSelector(
         }
         case "AssetAmount": // TODO
         default: {
+          let val = dataToArgString(getData(clauseParameterPrefix, spendInputMap))
+          witness.push({
+            type: "data",
+            value: val
+          })
           return // TODO: handle
         }
       }
     })
     if (contract.clauseList.length > 1) {
-      let value = clauseIndex.toString(16)
-      if (clauseIndex < 16) {
-        value = "0" + value
-      }
+      let value = dataToArgString(clauseIndex)
+      console.log("value", value)
       witness.push({
         type: "data",
         value
