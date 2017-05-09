@@ -107,6 +107,8 @@ func TestCompile(t *testing.T) {
 					Values: []ValueInfo{{
 						Name: "locked",
 					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -132,6 +134,8 @@ func TestCompile(t *testing.T) {
 					Values: []ValueInfo{{
 						Name: "locked",
 					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -155,6 +159,8 @@ func TestCompile(t *testing.T) {
 						Name:    "locked",
 						Program: "address",
 					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -190,6 +196,8 @@ func TestCompile(t *testing.T) {
 					}, {
 						Name: "offered",
 					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
 				}, {
 					Name: "cancel",
 					Args: []ClauseArg{{
@@ -200,6 +208,8 @@ func TestCompile(t *testing.T) {
 						Name:    "offered",
 						Program: "sellerAddress",
 					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -232,6 +242,8 @@ func TestCompile(t *testing.T) {
 						Name:    "value",
 						Program: "recipient",
 					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
 				}, {
 					Name: "reject",
 					Args: []ClauseArg{{
@@ -242,6 +254,8 @@ func TestCompile(t *testing.T) {
 						Name:    "value",
 						Program: "sender",
 					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -284,6 +298,8 @@ func TestCompile(t *testing.T) {
 							Program: "borrower",
 						},
 					},
+					Mintimes: []string{},
+					Maxtimes: []string{},
 				}, {
 					Name: "default",
 					Args: []ClauseArg{},
@@ -293,6 +309,8 @@ func TestCompile(t *testing.T) {
 							Program: "lender",
 						},
 					},
+					Mintimes: []string{"deadline"},
+					Maxtimes: []string{},
 				}},
 			},
 		},

@@ -195,6 +195,21 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 
 	for i, clause := range contract.clauses {
 		b.setJumpTarget(clauseTargets[i])
+
+		// An inner builder is used for each clause body in order to get
+		// any final VERIFY instruction left off, and the bytes of its
+		// program appended to the outer builder.
+		//
+		// (Building the clause in the outer builder, then adding a JUMP
+		// to endTarget, would cause the omitted VERIFY to be added.)
+		//
+		// This only works as long as the inner program contains no jumps,
+		// whose absolute addresses would be invalidated by this
+		// operation. Luckily we don't generate jumps in clause
+		// bodies... yet.
+		//
+		// TODO(bobg): when we _do_ generate jumps in clause bodies, we'll
+		// need a cleverer way to remove the trailing VERIFY.
 		b2 := newBuilder()
 		err = compileClause(b2, stack, contract, clause)
 		if err != nil {
@@ -205,6 +220,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 			return nil, errors.Wrap(err, "assembling bytecode")
 		}
 		b.addRawBytes(prog)
+
 		if i < len(contract.clauses)-1 {
 			b.addJump(endTarget)
 		}
