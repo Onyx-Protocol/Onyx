@@ -1,6 +1,7 @@
 package ivy
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -41,9 +42,15 @@ type (
 	}
 )
 
+type ContractArg struct {
+	B *bool               `json:"boolean,omitempty"`
+	I *int64              `json:"integer,omitempty"`
+	S *chainjson.HexBytes `json:"string,omitempty"`
+}
+
 // Compile parses an Ivy contract from the supplied reader and
 // produces the compiled bytecode and other analysis.
-func Compile(r io.Reader) (CompileResult, error) {
+func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	inp, err := ioutil.ReadAll(r)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "reading input")
@@ -52,7 +59,7 @@ func Compile(r io.Reader) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "parse error")
 	}
-	prog, err := compileContract(c)
+	prog, err := compileContract(c, args)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
@@ -98,7 +105,7 @@ func Compile(r io.Reader) (CompileResult, error) {
 	return result, nil
 }
 
-func compileContract(contract *contract) ([]byte, error) {
+func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	if len(contract.clauses) == 0 {
 		return nil, fmt.Errorf("empty contract")
 	}
@@ -122,8 +129,23 @@ func compileContract(contract *contract) ([]byte, error) {
 
 	stack := addParamsToStack(nil, contract.params)
 
+	b := newBuilder()
+	for _, a := range args {
+		switch {
+		case a.B != nil:
+			var n int64
+			if *a.B {
+				n = 1
+			}
+			b.addInt64(n)
+		case a.I != nil:
+			b.addInt64(*a.I)
+		case a.S != nil:
+			b.addData(*a.S)
+		}
+	}
+
 	if len(contract.clauses) == 1 {
-		b := newBuilder()
 		err = compileClause(b, stack, contract, contract.clauses[0])
 		if err != nil {
 			return nil, err
@@ -131,7 +153,6 @@ func compileContract(contract *contract) ([]byte, error) {
 		return b.build()
 	}
 
-	b := newBuilder()
 	endTarget := b.newJumpTarget()
 	clauseTargets := make([]int, len(contract.clauses))
 	for i := range contract.clauses {
@@ -387,4 +408,41 @@ func compileRef(b *builder, stack []stackEntry, ref expression) error {
 		}
 	}
 	return fmt.Errorf("undefined reference \"%s\"", ref)
+}
+
+func (a *ContractArg) UnmarshalJSON(b []byte) error {
+	var m map[string]json.RawMessage
+	err := json.Unmarshal(b, &m)
+	if err != nil {
+		return err
+	}
+	if r, ok := m["boolean"]; ok {
+		var bval bool
+		err = json.Unmarshal(r, &bval)
+		if err != nil {
+			return err
+		}
+		a.B = &bval
+		return nil
+	}
+	if r, ok := m["integer"]; ok {
+		var ival int64
+		err = json.Unmarshal(r, &ival)
+		if err != nil {
+			return err
+		}
+		a.I = &ival
+		return nil
+	}
+	r, ok := m["string"]
+	if !ok {
+		return fmt.Errorf("contract arg must define one of boolean, integer, string")
+	}
+	var sval chainjson.HexBytes
+	err = json.Unmarshal(r, &sval)
+	if err != nil {
+		return err
+	}
+	a.S = &sval
+	return nil
 }
