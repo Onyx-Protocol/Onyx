@@ -4,12 +4,12 @@ import { isHash, isTypeVariable, isList, typeToString,
          toContractParameter, Type, Template, ContractParameter,
          ContractParameterType } from 'ivy-compiler'
 import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringInput,
-         ProvideStringInput, GenerateStringInput, HashInput, DurationInput, SecondsDurationInput,
-         BlocksDurationInput, TimeInput, BlockheightTimeInput, TimestampTimeInput,
+         ProvideStringInput, GenerateStringInput, HashInput,
+         TimeInput, TimestampTimeInput,
          PublicKeyInput, GeneratePublicKeyInput, ProvidePublicKeyInput, GeneratePrivateKeyInput, GenerateHashInput,
          ProvideHashInput, InputType, ComplexInput, SignatureInput, GenerateSignatureInput,
          ProvideSignatureInput, ProvidePrivateKeyInput,
-         MaxtimeInput, MintimeInput, ValueInput, AccountAliasInput, AssetAliasInput, AssetAmountInput, AmountInput,
+         ValueInput, AccountAliasInput, AssetAliasInput, AssetAmountInput, AmountInput,
          AddressInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
 import { getParameterIdentifier, getInputContext } from '../../inputs/data'
 import { getInputMap, getSpendInputMap, getClauseParameterIds, getShowErrors } from '../selectors'
@@ -56,11 +56,16 @@ function NumberWidget(props: { input: NumberInput,
   return <input type="number" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
 }
 
-function PositiveNumberWidget(props: { input: BlockheightTimeInput |
-                                      TimestampTimeInput | BlocksDurationInput |
-                                      SecondsDurationInput | AmountInput
+function PositiveNumberWidget(props: { input: AmountInput
                                handleChange: (e)=>undefined }) {
   return <input id={props.input.name} type="number" min={0} className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
+}
+
+function TimestampTimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
+  console.log(props.input.value)
+  return <div className = "form-group">
+    <input type="datetime-local" key={props.input.name} className="form-control" value={props.input.value} onChange={props.handleChange} />
+  </div>
 }
 
 function AmountWidget(props: { input: AmountInput
@@ -155,27 +160,10 @@ function GeneratePrivateKeyWidget(props: { input: GeneratePrivateKeyInput, handl
   return <div><pre>{props.input.value}</pre></div>
 }
 
-function DurationWidget(props: { input: DurationInput, handleChange: (e)=>undefined }) {
-  let options = [{label: "Blocks", value: "blocksDurationInput"},
-                 {label: "512 Second Units", value: "secondsDurationInput"}]
-  return <div>
-    <app.components.RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
-    {getChildWidget(props.input)}
-  </div>
-}
-
 function TimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
   return <div>
     {getChildWidget(props.input)}
   </div>
-}
-
-function MintimeWidget(props: { input: MintimeInput, handleChange: (e)=>undefined }) {
-  return getChildWidget(props.input)
-}
-
-function MaxtimeWidget(props: { input: MaxtimeInput, handleChange: (e)=>undefined }) {
-  return getChildWidget(props.input)
 }
 
 function ValueWidget(props: { input: ValueInput, handleChange: (e)=>undefined }) {
@@ -273,15 +261,9 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
     case "hashInput": return HashWidget
     case "provideHashInput": return TextWidget
     case "generateHashInput": return GenerateHashWidget
-    case "durationInput": return DurationWidget
-    case "blocksDurationInput": return PositiveNumberWidget
-    case "secondsDurationInput": return PositiveNumberWidget
     case "timeInput": return TimeWidget
-    case "timestampTimeInput": return PositiveNumberWidget
-    case "blockheightTimeInput": return PositiveNumberWidget
+    case "timestampTimeInput": return TimestampTimeWidget
     case "addressInput": return AddressWidget
-    case "mintimeInput": return MintimeWidget
-    case "maxtimeInput": return MaxtimeWidget
     case "valueInput": return ValueWidget
     case "accountAliasInput": return AccountAliasWidget
     case "assetAmountInput": return AssetAmountWidget

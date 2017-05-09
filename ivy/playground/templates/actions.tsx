@@ -1,7 +1,8 @@
 import { client } from '../util'
 import { getItemMap, getIdList, getTemplate } from './selectors'
 import { Item as Template, ItemMap } from './types'
-import { TRIVIAL_LOCK, LOCK_WITH_PUBLIC_KEY, LOCK_TO_OUTPUT, TRADE_OFFER, ESCROWED_TRANSFER } from './constants'
+import { TRIVIAL_LOCK, LOCK_WITH_PUBLIC_KEY, LOCK_TO_OUTPUT, TRADE_OFFER, ESCROWED_TRANSFER,
+         COLLATERALIZED_LOAN } from './constants'
 import { selectTemplate } from '../contracts/actions'
 import { ContractParameter, TemplateClause, ClauseParameter } from 'ivy-compiler'
 
@@ -85,20 +86,23 @@ export const setInitialTemplates = () => {
       client.ivy.compile({ contract: LOCK_TO_OUTPUT }),
       client.ivy.compile({ contract: TRADE_OFFER }),
       client.ivy.compile({ contract: ESCROWED_TRANSFER }),
+      client.ivy.compile({ contract: COLLATERALIZED_LOAN }),
     ]).then(result => {
       const itemMap = {
         TrivialLock: mapServerTemplate(result[0]),
         LockWithPublicKey: mapServerTemplate(result[1]),
         LockToOutput: mapServerTemplate(result[2]),
         TradeOffer: mapServerTemplate(result[3]),
-        EscrowedTransfer: mapServerTemplate(result[4])
+        EscrowedTransfer: mapServerTemplate(result[4]),
+        CollateralizedLoan: mapServerTemplate(result[5])
       }
       const idList = [
         "TrivialLock",
         "LockWithPublicKey",
         "LockToOutput",
         "TradeOffer",
-        "EscrowedTransfer"
+        "EscrowedTransfer",
+        "CollateralizedLoan"
       ]
       const selected = idList[0]
       const source = itemMap[selected].source

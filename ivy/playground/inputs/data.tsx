@@ -59,12 +59,8 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
     case "parameterInput": 
     case "stringInput":
     case "hashInput":
-    case "durationInput":
-    case "mintimeInput":
-    case "maxtimeInput":
     case "timeInput":
     case "signatureInput":
-    case "durationInput":
       return getData(getChild(input), inputsById)
     case "addressInput":
     case "publicKeyInput": {
@@ -89,20 +85,8 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
     case "booleanInput": {
       return (input.value === "true") ? 0 : 1
     }
-    case "blocksDurationInput":
-    case "secondsDurationInput": {
-      let numValue = parseInt(input.value, 10)
-      let buf = Buffer.alloc(4)
-      buf.writeUInt16LE(numValue, 2)
-      if (input.type === "secondsDurationInput") { buf.writeUInt8(64, 1) } // set the flag
-      return buf.readUInt32LE(0)
-    }
-    case "timestampTimeInput":
-    case "blockheightTimeInput": {
-      let numValue = parseInt(input.value, 10)
-      let buf = Buffer.alloc(4)
-      buf.writeUInt32LE(numValue, 0)
-      return buf.readUInt32LE(0)
+    case "timestampTimeInput": {
+      return Date.parse(input.value)
     }
     case "generateStringInput": {
       let generated = getGenerateStringInputValue(input)
@@ -156,7 +140,6 @@ export const isPrimaryInputType = (str: string): str is PrimaryInputType => {
     case "booleanInput":
     case "stringInput":
     case "publicKeyInput":
-    case "durationInput":
     case "timeInput":
     case "signatureInput":
     case "valueInput":
@@ -175,14 +158,11 @@ export const isComplexType = (inputType: InputType) => {
     case "hashInput":
     case "stringInput":
     case "publicKeyInput":
-    case "durationInput":
     case "timeInput":
     case "generatePublicKeyInput":
     case "generateSignatureInput":
     case "signatureInput":
     case "addressInput":
-    case "mintimeInput":
-    case "maxtimeInput":
     case "addressInput":
       return true
     default:
@@ -218,14 +198,9 @@ export const isValidInput = (id: string, inputMap: InputMap): boolean => {
     case "stringInput":
     case "hashInput":
     case "publicKeyInput":
-    case "durationInput":
-    case "mintimeInput":
-    case "maxtimeInput":
     case "timeInput":
     case "signatureInput":
-    case "durationInput":
     case "addressInput":
-    case "timeInput":
     case "signatureInput":
       return isValidInput(getChild(input), inputMap)
     case "assetAmountInput":
@@ -261,9 +236,6 @@ export const validateInput = (input: Input): boolean => {
     case "generatePublicKeyInput":
       return (input.value === "generatePrivateKeyInput" ||
               input.value === "providePrivateKeyInput")
-    case "durationInput":
-      return (input.value === "secondsDurationInput" ||
-              input.value === "blocksDurationInput")
     case "timeInput":
       return (input.value === "timestampTimeInput")
     case "generatePublicKeyInput":
@@ -293,32 +265,13 @@ export const validateInput = (input: Input): boolean => {
       return (input.value === "true" ||
               input.value === "false")
     case "numberInput":
-    case "timestampTimeInput":
-    case "blockheightTimeInput":
-    case "secondsDurationInput":
-    case "blocksDurationInput":
       numberValue = parseInt(input.value, 10)
       if (isNaN(numberValue)) return false
-      switch(input.type) {
-        case "numberInput":
-          return (numberValue >= MIN_NUMBER && 
-                  numberValue <= MAX_NUMBER)
-        case "timestampTimeInput":
-          return (numberValue >= MIN_TIMESTAMP &&
-                  numberValue <= MAX_UINT32)
-        case "blockheightTimeInput":
-          return (numberValue >= 0 &&
-                  numberValue < MIN_TIMESTAMP)
-        case "secondsDurationInput":
-        case "blocksDurationInput":
-          return (numberValue >= 0 && 
-                  numberValue <= MAX_UINT16)
-        default:
-          throw "unexpectedly reached end of switch statement"
-      }
-    case "mintimeInput":
-    case "maxtimeInput":
-      return input.value === "timeInput"
+      return (numberValue >= MIN_NUMBER && 
+          numberValue <= MAX_NUMBER)
+    case "timestampTimeInput":
+      console.log("validating '" + input.value + "'")
+      return (input.value !== "")
     case "amountInput":
       numberValue = parseInt(input.value, 10)
       if (isNaN(numberValue)) return false
@@ -392,19 +345,13 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
   switch (inputType) {
     case "parameterInput":
     case "generateHashInput":
-    case "mintimeInput":
-    case "maxtimeInput":
-      throw "getDefaultContractParameterValue should not be called on " + inputType
     case "booleanInput": 
       return "false"
     case "generateStringInput":
       return "32"
     case "numberInput": 
-    case "blocksDurationInput":
-    case "secondsDurationInput":
     case "timestampTimeInput":
-    case "blockheightTimeInput":
-      return "0"
+      return ""
     case "provideStringInput":
     case "provideHashInput":
     case "providePublicKeyInput":
@@ -429,8 +376,6 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
       return "accountAliasInput"    
     case "booleanInput":
       return "false"
-    case "durationInput":
-      return "blocksDurationInput"
     case "timeInput":
       return "timestampTimeInput"
     case "accountAliasInput":
@@ -449,9 +394,6 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
 
 export function getDefaultTransactionDetailValue(inputType: InputType): string {
   switch (inputType) {
-    case "mintimeInput":
-    case "maxtimeInput":
-      return "timeInput"
     case "addressInput":
       return "generateAddressInput"
     default: // fall back for now
@@ -463,19 +405,14 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
   switch (inputType) {
     case "parameterInput":
     case "generateHashInput":
-    case "mintimeInput":
-    case "maxtimeInput":
       throw "getDefaultClauseParameterValue should not be called on " + inputType
     case "booleanInput": 
       return "false"
     case "generateStringInput":
       return "32"
     case "numberInput": 
-    case "blocksDurationInput":
-    case "secondsDurationInput":
     case "timestampTimeInput":
-    case "blockheightTimeInput":
-      return "0"
+      return ""
     case "provideStringInput":
     case "provideHashInput":
     case "providePublicKeyInput":
@@ -497,8 +434,6 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
       return "providePrivateKeyInput"
     case "booleanInput":
       return "false"
-    case "durationInput":
-      return "blocksDurationInput"
     case "timeInput":
       return "blockheightTimeInput"
     case "addressInput":
@@ -610,11 +545,6 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
       addDefaultInput(inputs, "timestampTimeInput", name)
       return
     }
-    case "durationInput": {
-      addDefaultInput(inputs, "blocksDurationInput", name)
-      addDefaultInput(inputs, "secondsDurationInput", name)
-      return
-    }
     case "signatureInput": {
       addDefaultInput(inputs, "choosePublicKeyInput", name)
       // addDefaultInput(inputs, "generateSignatureInput", name)
@@ -623,11 +553,6 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
     }
     case "generateSignatureInput": {
       addDefaultInput(inputs, "providePrivateKeyInput", name)
-      return
-    }
-    case "mintimeInput":
-    case "maxtimeInput": {
-      addDefaultInput(inputs, "timeInput", name)
       return
     }
     case "valueInput": {
