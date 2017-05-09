@@ -1118,28 +1118,30 @@ Code  | Stack Diagram                                        | Cost
 
 1. Pops 6 items from the data stack: `index`, `data`, `amount`, `assetid`, `version`, `prog`.
 2. Fails if `index` is negative or not a valid [number](#vm-number).
-3. Fails if the number of outputs is less or equal to `index`.
-4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
-5. If the current entry is a [Mux](blockchain.md#mux-1):
-    1. Finds a [destination entry](blockchain.md#value-destination-1) at the given `index`.
+3. Fails if `amount` is not a non-negative [number](#vm-number).
+4. Fails if `version` is not a non-negative [number](#vm-number).
+5. If the current entry is a [Mux1](blockchain.md#mux-1):
+    1. Finds a [destination entry](blockchain.md#value-destination-1) at the given `index`. Fails if there is no entry at `index`.
     2. If the entry satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
-        1. the destination entry is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1),
-        2. if the destination is an output: control program equals `prog` and VM version equals `version`,
+        1. the destination entry is an [Output1](blockchain.md#output-1) or a [Retirement1](blockchain.md#retirement-1),
+        2. if the destination is an output:
+            * output program bytecode equals `prog`,
+            * output VM version equals `version`.
         3. if the destination is a retirement:
             * `version` equals 1,
             * `prog` begins with a [FAIL](#fail) instruction.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
         6. `data` is an empty string or it matches the 32-byte data string in the destination entry.
-6. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
-    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux-1), performs checks as described in step 5.
-    2. If the [destination entry](blockchain.md#value-destination-1) is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1):
+6. If the entry is an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1):
+    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux1](blockchain.md#mux-1), performs checks as described in step 5.
+    2. If the [destination entry](blockchain.md#value-destination-1) is an [Output1](blockchain.md#output-1) or a [Retirement1](blockchain.md#retirement-1):
         1. If `index` is not zero, pushes [false](#vm-boolean) on the data stack.
         2. Otherwise, performs checks as described in step 5.2.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not a [mux](blockchain.md#mux-1), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
+Fails if the entry is not a [Mux1](blockchain.md#mux-1), an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1).
 
 #### ASSET
 
@@ -1147,15 +1149,15 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc2  | (∅ → assetid)  | 1; [standard memory cost](#standard-memory-cost)
 
-1. If the current entry is an [issuance](blockchain.md#issuance-1), pushes `Value.AssetID`.
-2. If the current entry is a [spend](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.AssetID` of that entry.
-3. If the current entry is a [nonce](blockchain.md#nonce) entry:
-    1. Verifies that the `AnchoredEntry` field is an [issuance 1](blockchain.md#issuance-1) entry, and pushes the `Value.AssetID` of that issuance entry.
-    2. Fails if `AnchoredEntry` is not an [issuance 1](blockchain.md#issuance-1).
+1. If the current entry is an [Issuance1](blockchain.md#issuance-1), pushes `Value.AssetID`.
+2. If the current entry is a [Spend1](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.AssetID` of that entry.
+3. If the current entry is a [Nonce](blockchain.md#nonce) entry:
+    1. Verifies that the `AnchoredEntry` field is an [Issuance1](blockchain.md#issuance-1) entry, and pushes the `Value.AssetID` of that issuance entry.
+    2. Fails if `AnchoredEntry` is not an [Issuance1](blockchain.md#issuance-1).
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not a [nonce](blockchain.md#nonce), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
+Fails if the entry is not a [Nonce](blockchain.md#nonce), an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1).
 
 #### AMOUNT
 
@@ -1163,15 +1165,15 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
-1. If the current entry is an [issuance](blockchain.md#issuance-1), pushes `Value.Amount`.
-2. If the current entry is a [spend](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.Amount` of that entry.
-3. If the current entry is a [nonce](blockchain.md#nonce) entry:
-    1. Verifies that the `AnchoredEntry` field is an [issuance 1](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry.
-    2. Fails if `AnchoredEntry` is not an [issuance 1](blockchain.md#issuance-1).
+1. If the current entry is an [Issuance1](blockchain.md#issuance-1), pushes `Value.Amount`.
+2. If the current entry is a [Spend1](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.Amount` of that entry.
+3. If the current entry is a [Nonce](blockchain.md#nonce) entry:
+    1. Verifies that the `AnchoredEntry` field is an [Issuance1](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry.
+    2. Fails if `AnchoredEntry` is not an [Issuance1](blockchain.md#issuance-1).
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not a [nonce](blockchain.md#nonce), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
+Fails if the entry is not a [Nonce](blockchain.md#nonce), an [Issuance1](blockchain.md#issuance-1) or a [Spend1](blockchain.md#spend-1).
 
 
 #### PROGRAM
@@ -1181,10 +1183,10 @@ Code  | Stack Diagram  | Cost
 0xc4  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
 1. In [transaction context](#transaction-context):
-  * For [spends](blockchain.md#spend-1): pushes the control program from the output being spent.
-  * For [issuances](blockchain.md#issuance-1): pushes the issuance program.
-  * For [muxes](blockchain.md#mux-1): pushes the mux program.
-  * For [nonces](blockchain.md#nonce): pushes the nonce program.
+  * For [Spends](blockchain.md#spend-1): pushes the control program from the output being spent.
+  * For [Issuances](blockchain.md#issuance-1): pushes the issuance program.
+  * For [Muxes](blockchain.md#mux-1): pushes the mux program.
+  * For [Nonces](blockchain.md#nonce): pushes the nonce program.
 2. In [block context](#block-context):
   * Pushes the current [consensus program](blockchain.md#block-header) being executed (that is specified in the previous block header).
 
