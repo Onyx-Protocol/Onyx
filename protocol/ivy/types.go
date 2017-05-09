@@ -10,6 +10,7 @@ import (
 type contract struct {
 	name    string
 	params  []*param
+	locks   []string
 	clauses []*clause
 }
 
@@ -20,6 +21,7 @@ type param struct {
 type clause struct {
 	name       string
 	params     []*param
+	spends     []string
 	statements []statement
 
 	// decorations

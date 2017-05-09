@@ -132,10 +132,6 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = requireValueParam(contract)
-	if err != nil {
-		return nil, err
-	}
 	err = requireAllParamsUsedInClauses(contract.params, contract.clauses)
 	if err != nil {
 		return nil, err

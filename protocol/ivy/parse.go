@@ -46,15 +46,17 @@ func parse(buf []byte) (c *contract, err error) {
 
 // parse functions
 
-// contract name(p1, p2: t1, p3: t2) { ... }
+// contract name(p1, p2: t1, p3: t2) locks x, y, z { ... }
 func parseContract(p *parser) *contract {
 	consumeKeyword(p, "contract")
 	name := consumeIdentifier(p)
 	params := parseParams(p)
+	consumeKeyword(p, "locks")
+	locks := parseIdentifierList(p)
 	consumeTok(p, "{")
 	clauses := parseClauses(p)
 	consumeTok(p, "}")
-	return &contract{name, params, clauses}
+	return &contract{name, params, locks, clauses}
 }
 
 // (p1, p2: t1, p3: t2)
@@ -73,6 +75,18 @@ func parseParams(p *parser) []*param {
 	}
 	consumeTok(p, ")")
 	return params
+}
+
+// x, y, z
+func parseIdentifierList(p *parser) []string {
+	first := consumeIdentifier(p)
+	result := []string{first}
+	for peekTok(p, ",") {
+		consumeTok(p, ",")
+		next := consumeIdentifier(p)
+		result = append(result, next)
+	}
+	return result
 }
 
 func parseClauses(p *parser) []*clause {
@@ -104,10 +118,15 @@ func parseClause(p *parser) *clause {
 	consumeKeyword(p, "clause")
 	name := consumeIdentifier(p)
 	params := parseParams(p)
+	var spends []string
+	if peekKeyword(p) == "spends" {
+		consumeKeyword(p, "spends")
+		spends = parseIdentifierList(p)
+	}
 	consumeTok(p, "{")
 	statements := parseStatements(p)
 	consumeTok(p, "}")
-	return &clause{name: name, params: params, statements: statements}
+	return &clause{name: name, params: params, spends: spends, statements: statements}
 }
 
 func parseStatements(p *parser) []statement {

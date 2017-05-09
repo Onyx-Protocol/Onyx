@@ -74,6 +74,8 @@ func exprReferencesParam(expr expression, p *param) bool {
 //  - clause names
 //  - contract params
 //  - clause params
+//  - value names in a "locks" list
+//  - value names in a "spends" list
 // However, two sibling clauses _may_ reuse the same parameter names (including "spends" identifiers).
 func prohibitNameCollisions(contract *contract) error {
 	topLevelNames := make(map[string]string) // maps identifiers to a description of their first use
@@ -92,6 +94,12 @@ func prohibitNameCollisions(contract *contract) error {
 			return fmt.Errorf("contract parameter \"%s\" conflicts with %s", p.name, desc)
 		}
 		topLevelNames[p.name] = "contract parameter"
+	}
+	for _, l := range contract.locks {
+		if desc, ok := topLevelNames[l]; ok {
+			return fmt.Errorf("locked-value name \"%s\" conflicts with %s", l, desc)
+		}
+		topLevelNames[l] = "locked-value name"
 	}
 
 	// clause names are top-level names
@@ -114,23 +122,13 @@ func prohibitNameCollisions(contract *contract) error {
 			}
 			clauseNames[p.name] = fmt.Sprintf("clause parameter")
 		}
-	}
-
-	return nil
-}
-
-func requireValueParam(contract *contract) error {
-	if len(contract.params) == 0 {
-		return fmt.Errorf("must have at least one contract parameter")
-	}
-	if t := contract.params[len(contract.params)-1].typ; t != "Value" {
-		return fmt.Errorf("final contract parameter has type \"%s\" but should be Value", t)
-	}
-	for i := 0; i < len(contract.params)-1; i++ {
-		if contract.params[i].typ == "Value" {
-			return fmt.Errorf("contract parameter %d has type Value, but only the final parameter may", i)
+		for _, s := range clause.spends {
+			if desc, ok := clauseNames[s]; ok {
+				return fmt.Errorf("spend-value name \"%s\" conflicts with %s", s, desc)
+			}
 		}
 	}
+
 	return nil
 }
 
