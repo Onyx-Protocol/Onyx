@@ -43,7 +43,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// Warning: we write empty placeholder message types here
+// Note: we write empty placeholder message types here
 // so that other messages in this package can refer to it.
 // However, we delete the generated definitions
 // for these 2 types and provide our own. See hash.go.
