@@ -24,11 +24,11 @@ func addParamsToStack(stack []stackEntry, params []*param) []stackEntry {
 		case "AssetAmount":
 			stack = append(stack, stackEntry{
 				param:    p,
-				property: "asset",
+				property: "amount",
 			})
 			stack = append(stack, stackEntry{
 				param:    p,
-				property: "amount",
+				property: "asset",
 			})
 		default:
 			stack = append(stack, stackEntry{
