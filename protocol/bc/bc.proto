@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package bc;
 
-import "hash.proto";
+import "chain/protocol/bc/hash.proto";
 
 message Program {
   uint64 vm_version = 1;
