@@ -95,7 +95,7 @@ func checkTxSighashCommitment(tx *legacy.Tx) error {
 			// This input could be a custom contract
 			return nil
 		case len(args) < 3:
-			lastError = ErrTxSignatureFailure
+			return nil
 			continue
 		}
 		lastError = ErrNoTxSighashCommitment
