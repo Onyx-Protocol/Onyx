@@ -197,7 +197,6 @@ export const getClauseParameterIds = createSelector(
 )
 
 export function dataToArgString(data: number | Buffer): string {
-  console.log(data, typeof data)
   if (typeof data === "number") {
     let buf = Buffer.alloc(8)
     buf.writeUIntLE(data, 0, 8)
@@ -255,7 +254,6 @@ export const getClauseWitnessComponents = createSelector(
     })
     if (contract.clauseList.length > 1) {
       let value = dataToArgString(clauseIndex)
-      console.log("value", value)
       witness.push({
         type: "data",
         value
@@ -382,6 +380,17 @@ export const isValid = createSelector(
   }
 )
 
+export const areSpendInputsValid = createSelector(
+  getSpendInputMap,
+  getClauseParameterIds,
+  (spendInputMap, paramIdList) => {
+    const invalid = paramIdList.filter(id => {
+      return !isValidInput(id, spendInputMap)
+    })
+    return (invalid.length === 0) && isValidInput('transactionDetails.accountAliasInput', spendInputMap)
+  }
+)
+
 export const getDataParameterIds = createSelector(
   getSelectedTemplate,
   (template: Template) => {
@@ -433,7 +442,6 @@ export const getClauseOutputActions = createSelector(
   getClauseOutputs,
   (contract, clauseOutputs) => {
     let inputMap = contract.inputMap
-    console.log(clauseOutputs)
     return clauseOutputs.map(clauseOutput => {
       const addressIdentifier = clauseOutput.contract.address.identifier
       const addressInput = inputMap["contractParameters." + addressIdentifier + ".addressInput"] as AddressInput
