@@ -21,10 +21,6 @@ type Hash [32]byte
 
 var EmptyStringHash Hash = sha3.Sum256(nil)
 
-func (m *Hash) Reset()         { *m = Hash{} }
-func (m *Hash) String() string { return hex.EncodeToString(m[:]) }
-func (*Hash) ProtoMessage()    {}
-
 func (m Hash) Marshal() ([]byte, error) {
 	var h internal.Hash
 	h.V0 = binary.BigEndian.Uint64(m[0:8])
