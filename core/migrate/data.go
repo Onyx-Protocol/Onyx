@@ -67,4 +67,9 @@ var migrations = []migration{
 		ALTER TABLE generator_pending_block
 			ADD COLUMN height bigint;
 	`},
+	{Name: `2017-05-08.0.core.drop-redundant-indexes.sql`, SQL: `
+		ALTER TABLE account_utxos DROP CONSTRAINT account_utxos_output_id_key;
+		DROP INDEX signers_type_id_idx;
+		DROP INDEX assets_sort_id;
+	`},
 }
