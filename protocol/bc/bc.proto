@@ -4,9 +4,8 @@ package bc;
 
 // Warning: we write empty placeholder message types here
 // so that other messages in this package can refer to it.
-// However, we delete the generated code for these 2 types
-// and provide our own implementation.
-// See our hand-written hash.go.
+// However, we delete the generated definitions
+// for these 2 types and provide our own. See hash.go.
 message Hash    {}
 message AssetID {}
 
