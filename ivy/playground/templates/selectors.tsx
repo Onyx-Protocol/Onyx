@@ -41,6 +41,16 @@ export const getItem = (id: string) => {
   )
 }
 
+export const getCompiled = createSelector(
+  getState,
+  (state) => state.compiled
+)
+
+export const getOpcodes = createSelector(
+  getCompiled,
+  (compiled) => compiled && compiled.opcodes
+)
+
 export const getTemplate = createSelector(
   getSource,
   (source: string): Item | CompilerError => {
