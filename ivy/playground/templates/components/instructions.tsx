@@ -3,11 +3,11 @@ import { connect } from 'react-redux'
 
 import app from '../../app'
 import { isError, mustCompileTemplate } from '../util'
-import { getSelectedTemplate } from '../selectors'
+import { getTemplate } from '../selectors'
 import { Item } from '../types'
 
 const mapStateToProps = (state) => {
-  const template = getSelectedTemplate(state)
+  const template = getTemplate(state)
   if (isError(template)) throw "uncaught compiler error"
   return { template }
 }
