@@ -59,7 +59,7 @@ export type InstructionOp = {
 
 export type Push = {
   type: "push",
-  literalType: "Number" | "Boolean" | "String",
+  literalType: "Integer" | "Boolean" | "String",
   value: string
 }
 
@@ -222,8 +222,8 @@ function compileToIntermediate(node: ASTNode, emit: (op: Operation)=>void): ASTN
       if (node.index === undefined) {
         throw new BugError("unannotated output node")
       }
-      emit({ type: "push", literalType: "Number", value: node.index.toString() }) // index
-      emit({ type: "push", literalType: "Number", value: "0" }) // TODO(bobg): explicitly the empty string
+      emit({ type: "push", literalType: "Integer", value: node.index.toString() }) // index
+      emit({ type: "push", literalType: "Integer", value: "0" }) // TODO(bobg): explicitly the empty string
       switch (node.contract.value.type) {
         case "variable":
           if (node.assetAmountParam === undefined) {
@@ -250,7 +250,7 @@ function compileToIntermediate(node: ASTNode, emit: (op: Operation)=>void): ASTN
           emit({ type: "op", name: "ASSET", numArgs: 0, numResults: 1 })
           break
       }
-      emit({ type: "push", literalType: "Number", value: "1" }) // VM version
+      emit({ type: "push", literalType: "Integer", value: "1" }) // VM version
       emit({ type: "get", variable: node.contract.address })
       emit({ type: "op", name: "CHECKOUTPUT", numArgs: 6, numResults: 1 })
       return node

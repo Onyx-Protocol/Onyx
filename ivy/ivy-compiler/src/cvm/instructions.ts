@@ -76,7 +76,7 @@ export function getTypeSignature(instruction: Instruction): TypeSignature {
     case "-":
     case "min":
     case "max":
-      return createTypeSignature(["Number", "Number"], "Number")
+      return createTypeSignature(["Integer", "Integer"], "Integer")
     case "==":
     case "!=":
       return createTypeSignature([{type: "typeVariable", name: "A"}, {type: "typeVariable", name: "A"}], "Boolean")
@@ -84,12 +84,12 @@ export function getTypeSignature(instruction: Instruction): TypeSignature {
     case ">":
     case ">=":
     case "<=":
-      return createTypeSignature(["Number", "Number"], "Boolean")
+      return createTypeSignature(["Integer", "Integer"], "Boolean")
     case "!":
       return createTypeSignature(["Boolean"], "Boolean")
     case "negate":
     case "abs":
-      return createTypeSignature(["Number"], "Number")
+      return createTypeSignature(["Integer"], "Integer")
     case "sha256":
     case "sha3":
       return createTypeSignature([{ type: "typeVariable", name: "A"}], 
@@ -97,7 +97,7 @@ export function getTypeSignature(instruction: Instruction): TypeSignature {
     case "checkTxSig":
       return createTypeSignature(["PublicKey", "Signature"], "Boolean")
     case "size":
-      return createTypeSignature(["String"], "Number")
+      return createTypeSignature(["String"], "Integer")
     case "after":
     case "before":
       return createTypeSignature(["Time"], "Boolean")

@@ -109,7 +109,7 @@ ListLiteral "listLiteral"
   = "[" values:Expressions "]" { return { type: "listLiteral", location: location(), text: text(), values: values } }
 
 IntegerLiteral "integer"
-  = [-]?[0-9]+ { return { type: "literal", literalType: "Number", location: location(), value: text() } }
+  = [-]?[0-9]+ { return { type: "literal", literalType: "Integer", location: location(), value: text() } }
 
 BooleanLiteral "boolean"
   = ("true" / "false") { return { type: "literal", literalType: "Boolean", location: location(), value: text() } }

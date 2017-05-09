@@ -157,7 +157,7 @@ export type Variable = {
   scope?: string
 }
 
-export type LiteralType = "Number" | "Boolean"
+export type LiteralType = "Integer" | "Boolean"
 
 export type ListLiteral = {
   type: "listLiteral",
@@ -186,7 +186,7 @@ function clauseToString(clause: Clause) {
 
 function literalToString(literal: ValueLiteral) {
   switch (literal.literalType) {
-    case "Number":
+    case "Integer":
     case "Boolean":
       return literal.value
   }
