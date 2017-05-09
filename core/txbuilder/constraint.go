@@ -27,7 +27,7 @@ func (t timeConstraint) code() []byte {
 	if t.minTimeMS == 0 && t.maxTimeMS == 0 {
 		return []byte{byte(vm.OP_TRUE)}
 	}
-	builder := vmutil.NewBuilder()
+	builder := vmutil.NewBuilder(false)
 	if t.minTimeMS > 0 {
 		builder.AddOp(vm.OP_MINTIME).AddInt64(int64(t.minTimeMS)).AddOp(vm.OP_GREATERTHANOREQUAL)
 	}
@@ -50,7 +50,7 @@ func (t timeConstraint) code() []byte {
 type outputIDConstraint bc.Hash
 
 func (o outputIDConstraint) code() []byte {
-	builder := vmutil.NewBuilder()
+	builder := vmutil.NewBuilder(false)
 	builder.AddData(bc.Hash(o).Bytes())
 	builder.AddOp(vm.OP_OUTPUTID)
 	builder.AddOp(vm.OP_EQUAL)
@@ -69,7 +69,7 @@ type refdataConstraint struct {
 func (r refdataConstraint) code() []byte {
 	var h [32]byte
 	sha3pool.Sum256(h[:], r.data)
-	builder := vmutil.NewBuilder()
+	builder := vmutil.NewBuilder(false)
 	builder.AddData(h[:])
 	if r.tx {
 		builder.AddOp(vm.OP_TXDATA)
@@ -91,7 +91,7 @@ type payConstraint struct {
 }
 
 func (p payConstraint) code() []byte {
-	builder := vmutil.NewBuilder()
+	builder := vmutil.NewBuilder(false)
 	builder.AddInt64(int64(p.Index))
 	if p.RefDataHash == nil {
 		builder.AddData([]byte{})
