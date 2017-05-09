@@ -161,45 +161,47 @@ func (i jumpTargetItem) bytes() []byte {
 
 var optimizations = []struct {
 	before, after []item
-}{{
-	[]item{int64Item(0), opItem(vm.OP_ROLL)}, []item{},
-}, {
-	[]item{int64Item(0), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_DUP)},
-}, {
-	[]item{int64Item(1), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_SWAP)},
-}, {
-	[]item{int64Item(1), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_OVER)},
-}, {
-	[]item{int64Item(2), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_ROT)},
-}, {
-	[]item{opItem(vm.OP_TRUE), opItem(vm.OP_VERIFY)}, []item{},
-}, {
-	[]item{opItem(vm.OP_SWAP), opItem(vm.OP_SWAP)}, []item{},
-}, {
-	[]item{opItem(vm.OP_OVER), opItem(vm.OP_OVER)}, []item{opItem(vm.OP_2DUP)},
-}, {
-	[]item{opItem(vm.OP_SWAP), opItem(vm.OP_OVER)}, []item{opItem(vm.OP_TUCK)},
-}, {
-	[]item{opItem(vm.OP_DROP), opItem(vm.OP_DROP)}, []item{opItem(vm.OP_2DROP)},
-}, {
-	[]item{opItem(vm.OP_SWAP), opItem(vm.OP_DROP)}, []item{opItem(vm.OP_NIP)},
-}, {
-	[]item{int64Item(5), opItem(vm.OP_ROLL), int64Item(5), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_2ROT)},
-}, {
-	[]item{int64Item(3), opItem(vm.OP_PICK), int64Item(3), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_2OVER)},
-}, {
-	[]item{int64Item(3), opItem(vm.OP_ROLL), int64Item(3), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_2SWAP)},
-}, {
-	[]item{int64Item(2), opItem(vm.OP_PICK), int64Item(2), opItem(vm.OP_PICK), int64Item(2), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_3DUP)},
-}, {
-	[]item{int64Item(1), opItem(vm.OP_ADD)}, []item{opItem(vm.OP_1ADD)},
-}, {
-	[]item{int64Item(1), opItem(vm.OP_SUB)}, []item{opItem(vm.OP_1SUB)},
-}, {
-	[]item{opItem(vm.OP_EQUAL), opItem(vm.OP_VERIFY)}, []item{opItem(vm.OP_EQUALVERIFY)},
-}, {
-	[]item{opItem(vm.OP_SWAP), opItem(vm.OP_TXSIGHASH), opItem(vm.OP_ROT)}, []item{opItem(vm.OP_TXSIGHASH), opItem(vm.OP_SWAP)},
-}}
+}{
+	{
+		[]item{int64Item(0), opItem(vm.OP_ROLL)}, []item{},
+	}, {
+		[]item{int64Item(0), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_DUP)},
+	}, {
+		[]item{int64Item(1), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_SWAP)},
+	}, {
+		[]item{int64Item(1), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_OVER)},
+	}, {
+		[]item{int64Item(2), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_ROT)},
+	}, {
+		[]item{opItem(vm.OP_TRUE), opItem(vm.OP_VERIFY)}, []item{},
+	}, {
+		[]item{opItem(vm.OP_SWAP), opItem(vm.OP_SWAP)}, []item{},
+	}, {
+		[]item{opItem(vm.OP_OVER), opItem(vm.OP_OVER)}, []item{opItem(vm.OP_2DUP)},
+	}, {
+		[]item{opItem(vm.OP_SWAP), opItem(vm.OP_OVER)}, []item{opItem(vm.OP_TUCK)},
+	}, {
+		[]item{opItem(vm.OP_DROP), opItem(vm.OP_DROP)}, []item{opItem(vm.OP_2DROP)},
+	}, {
+		[]item{opItem(vm.OP_SWAP), opItem(vm.OP_DROP)}, []item{opItem(vm.OP_NIP)},
+	}, {
+		[]item{int64Item(5), opItem(vm.OP_ROLL), int64Item(5), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_2ROT)},
+	}, {
+		[]item{int64Item(3), opItem(vm.OP_PICK), int64Item(3), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_2OVER)},
+	}, {
+		[]item{int64Item(3), opItem(vm.OP_ROLL), int64Item(3), opItem(vm.OP_ROLL)}, []item{opItem(vm.OP_2SWAP)},
+	}, {
+		[]item{int64Item(2), opItem(vm.OP_PICK), int64Item(2), opItem(vm.OP_PICK), int64Item(2), opItem(vm.OP_PICK)}, []item{opItem(vm.OP_3DUP)},
+	}, {
+		[]item{int64Item(1), opItem(vm.OP_ADD)}, []item{opItem(vm.OP_1ADD)},
+	}, {
+		[]item{int64Item(1), opItem(vm.OP_SUB)}, []item{opItem(vm.OP_1SUB)},
+	}, {
+		[]item{opItem(vm.OP_EQUAL), opItem(vm.OP_VERIFY)}, []item{opItem(vm.OP_EQUALVERIFY)},
+	}, {
+		[]item{opItem(vm.OP_SWAP), opItem(vm.OP_TXSIGHASH), opItem(vm.OP_ROT)}, []item{opItem(vm.OP_TXSIGHASH), opItem(vm.OP_SWAP)},
+	},
+}
 
 func (b *Builder) optimize() {
 	if !b.opt {
