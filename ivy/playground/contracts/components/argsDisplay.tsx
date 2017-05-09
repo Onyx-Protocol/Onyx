@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
-import { getSpendInputMap } from '../selectors'
+import { getSpendContractParametersInputMap } from '../selectors'
 import { Input, ParameterInput, NumberInput, BooleanInput, StringInput,
          ProvideStringInput, GenerateStringInput, HashInput,
          TimeInput, TimestampTimeInput,
@@ -141,7 +141,7 @@ function getWidget(id: string): JSX.Element {
       (state) => {
         return {
           input: getSpendContractParameterSelector(id)(state),
-          computedValue: computeDataForInput(id, getSpendInputMap(state))
+          computedValue: computeDataForInput(id, getSpendContractParametersInputMap(state))
         }
       }
     )(getWidgetType(type))
