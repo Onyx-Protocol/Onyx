@@ -393,7 +393,7 @@ func typeCheckClause(contract *contract, clause *clause) error {
 				return fmt.Errorf("expression \"%s\" in return statement of clause \"%s\" has type \"%s\", must be Value", stmt.expr, clause.name, t)
 			}
 			if referencedParam(stmt.expr) != contract.params[len(contract.params)-1] {
-				return fmt.Errorf("expression in return statement of clause \"%s\" must be the contract Value parameter")
+				return fmt.Errorf("expression in return statement of clause \"%s\" must be the contract Value parameter", clause.name)
 			}
 		}
 	}
