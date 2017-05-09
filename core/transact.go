@@ -228,7 +228,7 @@ func (a *API) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template
 		return errors.Wrap(err, "saving tx submitted height")
 	}
 
-	err = txbuilder.FinalizeTx(ctx, a.chain, a.submitter, txTemplate.Transaction)
+	err = txbuilder.FinalizeTx(ctx, a.chain, a.submitter, txTemplate.Transaction, txTemplate.IncludesContract)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (a *API) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template
 		return nil
 	}
 
-	height, err = a.waitForTxInBlock(ctx, txTemplate.Transaction, height)
+	height, err = a.waitForTxInBlock(ctx, txTemplate.Transaction, txTemplate.IncludesContract, height)
 	if err != nil {
 		return err
 	}
@@ -253,7 +253,7 @@ func (a *API) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template
 	return nil
 }
 
-func (a *API) waitForTxInBlock(ctx context.Context, tx *legacy.Tx, height uint64) (uint64, error) {
+func (a *API) waitForTxInBlock(ctx context.Context, tx *legacy.Tx, includesContract bool, height uint64) (uint64, error) {
 	for {
 		height++
 		select {
@@ -280,7 +280,7 @@ func (a *API) waitForTxInBlock(ctx context.Context, tx *legacy.Tx, height uint64
 			// tell definitively until its max time elapses.
 
 			// Re-insert into the pool in case it was dropped.
-			err = txbuilder.FinalizeTx(ctx, a.chain, a.submitter, tx)
+			err = txbuilder.FinalizeTx(ctx, a.chain, a.submitter, tx, includesContract)
 			if err != nil {
 				return 0, err
 			}

@@ -63,6 +63,7 @@ export const createSpendingTx = (actions: Action[], witness: WitnessComponent[])
     })
   }).then((tpl) => {
     // there should only be one
+    tpl.includesContract = true
     tpl.signingInstructions[0].witnessComponents = witness
     tpl.signingInstructions.forEach((instruction, idx) => {
       instruction.witnessComponents.forEach((component) => {
