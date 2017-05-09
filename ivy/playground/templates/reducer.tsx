@@ -1,7 +1,7 @@
 import { State } from './types'
-import { SET_INITIAL_TEMPLATES, LOAD_TEMPLATE, SET_SOURCE, SAVE_TEMPLATE } from './actions'
+import { SET_INITIAL_TEMPLATES, LOAD_TEMPLATE, SET_SOURCE, 
+         SAVE_TEMPLATE, SET_COMPILED } from './actions'
 import { INITIAL_STATE } from './constants'
-import { isError } from './util'
 
 export default function reducer(state: State = INITIAL_STATE, action): State {
   switch (action.type) {
@@ -28,7 +28,6 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
     }
     case SAVE_TEMPLATE: {
       let template = action.template
-      if (isError(template)) return state // shouldn't happen, but if it does, do nothing
       if (state.itemMap[template.name] !== undefined) return state // same
       let newItemMap = {
         ...state.itemMap,
@@ -38,6 +37,12 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
         ...state,
         idList: [...state.idList, template.name],
         itemMap: newItemMap
+      }
+    }
+    case SET_COMPILED: {
+      return { 
+        ...state,
+        compiled: action.result
       }
     }
     default:
