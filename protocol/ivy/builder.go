@@ -14,7 +14,7 @@ type builder struct {
 }
 
 func newBuilder() *builder {
-	return &builder{b: vmutil.NewBuilder()}
+	return &builder{b: vmutil.NewBuilder(true)}
 }
 
 func (b *builder) addInt64(n int64) *builder {

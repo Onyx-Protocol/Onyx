@@ -29,7 +29,10 @@ func TestInferConstraints(t *testing.T) {
 		}),
 		AllowAdditional: true,
 	}
-	prog := buildSigProgram(tpl, 0)
+	prog, err := buildSigProgram(tpl, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
 	spID := tpl.Transaction.Tx.InputIDs[0]
 	spend, err := tpl.Transaction.Tx.Spend(spID)
 	if err != nil {

@@ -38,7 +38,7 @@ import (
 func buildSigProgram(tpl *Template, index uint32) ([]byte, error) {
 	if !tpl.AllowAdditional {
 		h := tpl.Hash(index)
-		builder := vmutil.NewBuilder()
+		builder := vmutil.NewBuilder(false)
 		builder.AddData(h.Bytes())
 		builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 

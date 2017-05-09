@@ -104,7 +104,7 @@ func TestAddJump(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			b := NewBuilder()
+			b := NewBuilder(false)
 			c.fn(t, b)
 			prog, err := b.Build()
 			if err != nil {
