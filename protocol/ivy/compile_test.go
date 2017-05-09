@@ -9,7 +9,7 @@ import (
 )
 
 const trivialLock = `
-contract TrivialLock(locked: Value) {
+contract TrivialLock() locks locked {
   clause unlock() {
     return locked
   }
@@ -17,7 +17,7 @@ contract TrivialLock(locked: Value) {
 `
 
 const lockWithPublicKey = `
-contract LockWithPublicKey(publicKey: PublicKey, locked: Value) {
+contract LockWithPublicKey(publicKey: PublicKey) locks locked {
   clause unlock(sig: Signature) {
     verify checkTxSig(publicKey, sig)
     return locked
@@ -26,7 +26,7 @@ contract LockWithPublicKey(publicKey: PublicKey, locked: Value) {
 `
 
 const lockToOutput = `
-contract LockToOutput(address: Address, locked: Value) {
+contract LockToOutput(address: Address) locks locked {
   clause unlock() {
     output address(locked)
   }
@@ -34,8 +34,8 @@ contract LockToOutput(address: Address, locked: Value) {
 `
 
 const tradeOffer = `
-contract TradeOffer(requested: AssetAmount, sellerAddress: Address, sellerKey: PublicKey, offered: Value) {
-  clause trade(payment: Value) {
+contract TradeOffer(requested: AssetAmount, sellerAddress: Address, sellerKey: PublicKey) locks offered {
+  clause trade() spends payment {
     verify payment.assetAmount == requested
     output sellerAddress(payment)
     return offered
@@ -48,12 +48,7 @@ contract TradeOffer(requested: AssetAmount, sellerAddress: Address, sellerKey: P
 `
 
 const escrowedTransfer = `
-contract EscrowedTransfer(
-  agent: PublicKey,
-  sender: Address,
-  recipient: Address,
-  value: Value
-) {
+contract EscrowedTransfer(agent: PublicKey, sender: Address, recipient: Address) locks value {
   clause approve(sig: Signature) {
     verify checkTxSig(agent, sig)
     output recipient(value)
@@ -66,14 +61,8 @@ contract EscrowedTransfer(
 `
 
 const collateralizedLoan = `
-contract CollateralizedLoan(
-  balance: AssetAmount,
-  deadline: Time,
-  lender: Address,
-  borrower: Address,
-  collateral: Value
-) {
-  clause repay(payment: Value) {
+contract CollateralizedLoan(balance: AssetAmount, deadline: Time, lender: Address, borrower: Address) locks collateral {
+  clause repay() spends payment {
     verify payment.assetAmount == balance
     output lender(payment)
     output borrower(collateral)

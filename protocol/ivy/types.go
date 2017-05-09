@@ -10,7 +10,7 @@ import (
 type contract struct {
 	name    string
 	params  []*param
-	locks   []string
+	value   []lockedValue
 	clauses []*clause
 }
 
@@ -21,7 +21,7 @@ type param struct {
 type clause struct {
 	name       string
 	params     []*param
-	spends     []string
+	spends     []spentValue
 	statements []statement
 
 	// decorations
@@ -46,8 +46,9 @@ func (verifyStatement) iamaStatement() {}
 type outputStatement struct {
 	call *call
 
-	// The AssetAmount parameter against which the value is checked
-	param *param
+	// The name of the AssetAmount parameter against which the value is
+	// checked
+	param string
 
 	// Added as a decoration, used by CHECKOUTPUT
 	index int64
@@ -117,9 +118,8 @@ func (p propRef) String() string {
 type varRef struct {
 	name string
 
-	// decorations
-	param   *param
-	builtin *builtin
+	// decoration
+	typ string
 }
 
 func (varRef) iamaExpression() {}
@@ -155,6 +155,24 @@ func (e booleanLiteral) String() string {
 	return "false"
 }
 
+// TODO(bobg): is it overkill to separate lockedValue and spentValue?
+
+type lockedValue string
+
+func (lockedValue) iamaExpression() {}
+
+func (e lockedValue) String() string {
+	return string(e)
+}
+
+type spentValue string
+
+func (spentValue) iamaExpression() {}
+
+func (e spentValue) String() string {
+	return string(e)
+}
+
 func typeOf(expr expression) string {
 	switch e := expr.(type) {
 	case *binaryExpr:
@@ -179,13 +197,7 @@ func typeOf(expr expression) string {
 		return ""
 
 	case *varRef:
-		if e.param != nil {
-			return e.param.typ
-		}
-		if e.builtin != nil {
-			// xxx
-		}
-		return ""
+		return e.typ
 
 	case bytesLiteral:
 		return "String"
@@ -195,6 +207,13 @@ func typeOf(expr expression) string {
 
 	case booleanLiteral:
 		return "Boolean"
+
+	case lockedValue:
+		return "Value"
+
+	case spentValue:
+		return "Value"
 	}
+
 	return ""
 }

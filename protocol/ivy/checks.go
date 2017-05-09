@@ -32,7 +32,7 @@ func requireAllParamsUsedInClause(params []*param, clause *clause) error {
 			case *returnStatement:
 				e = s.expr
 			}
-			if exprReferencesParam(e, p) {
+			if references(e, p.name) {
 				used = true
 				break
 			}
@@ -44,26 +44,26 @@ func requireAllParamsUsedInClause(params []*param, clause *clause) error {
 	return nil
 }
 
-func exprReferencesParam(expr expression, p *param) bool {
+func references(expr expression, name string) bool {
 	switch e := expr.(type) {
 	case *binaryExpr:
-		return exprReferencesParam(e.left, p) || exprReferencesParam(e.right, p)
+		return references(e.left, name) || references(e.right, name)
 	case *unaryExpr:
-		return exprReferencesParam(e.expr, p)
+		return references(e.expr, name)
 	case *call:
-		if exprReferencesParam(e.fn, p) {
+		if references(e.fn, name) {
 			return true
 		}
 		for _, a := range e.args {
-			if exprReferencesParam(a, p) {
+			if references(a, name) {
 				return true
 			}
 		}
 		return false
 	case *propRef:
-		return exprReferencesParam(e.expr, p)
+		return references(e.expr, name)
 	case *varRef:
-		return e.name == p.name
+		return e.name == name
 	}
 	return false
 }
@@ -95,11 +95,11 @@ func prohibitNameCollisions(contract *contract) error {
 		}
 		topLevelNames[p.name] = "contract parameter"
 	}
-	for _, l := range contract.locks {
-		if desc, ok := topLevelNames[l]; ok {
+	for _, l := range contract.value {
+		if desc, ok := topLevelNames[string(l)]; ok {
 			return fmt.Errorf("locked-value name \"%s\" conflicts with %s", l, desc)
 		}
-		topLevelNames[l] = "locked-value name"
+		topLevelNames[string(l)] = "locked-value name"
 	}
 
 	// clause names are top-level names
@@ -123,9 +123,10 @@ func prohibitNameCollisions(contract *contract) error {
 			clauseNames[p.name] = fmt.Sprintf("clause parameter")
 		}
 		for _, s := range clause.spends {
-			if desc, ok := clauseNames[s]; ok {
-				return fmt.Errorf("spend-value name \"%s\" conflicts with %s", s, desc)
+			if desc, ok := clauseNames[string(s)]; ok {
+				return fmt.Errorf("spent-value name \"%s\" conflicts with %s", s, desc)
 			}
+			clauseNames[string(s)] = "spent-value name"
 		}
 	}
 
@@ -133,15 +134,14 @@ func prohibitNameCollisions(contract *contract) error {
 }
 
 func requireAllValuesDisposedOnce(contract *contract, clause *clause) error {
-	err := paramDisposedOnce(contract.params[len(contract.params)-1], clause)
-	if err != nil {
-		return err
-	}
-	for _, p := range clause.params {
-		if p.typ != "Value" {
-			continue
+	for _, l := range contract.value {
+		err := valueDisposedOnce(string(l), clause)
+		if err != nil {
+			return err
 		}
-		err = paramDisposedOnce(p, clause)
+	}
+	for _, s := range clause.spends {
+		err := valueDisposedOnce(string(s), clause)
 		if err != nil {
 			return err
 		}
@@ -149,44 +149,39 @@ func requireAllValuesDisposedOnce(contract *contract, clause *clause) error {
 	return nil
 }
 
-func paramDisposedOnce(p *param, clause *clause) error {
+func valueDisposedOnce(name string, clause *clause) error {
 	var count int
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *returnStatement:
-			if referencedParam(stmt.expr) == p {
+			if references(stmt.expr, name) {
 				count++
 			}
 		case *outputStatement:
-			if len(stmt.call.args) == 1 && referencedParam(stmt.call.args[0]) == p {
+			if len(stmt.call.args) == 1 && references(stmt.call.args[0], name) {
 				count++
 			}
 		}
 	}
 	switch count {
 	case 0:
-		return fmt.Errorf("value parameter \"%s\" not disposed in clause \"%s\"", p.name, clause.name)
+		return fmt.Errorf("value parameter \"%s\" not disposed in clause \"%s\"", name, clause.name)
 	case 1:
 		return nil
 	default:
-		return fmt.Errorf("value parameter \"%s\" disposed multiple times in clause \"%s\"", p.name, clause.name)
+		return fmt.Errorf("value parameter \"%s\" disposed multiple times in clause \"%s\"", name, clause.name)
 	}
-}
-
-func referencedParam(expr expression) *param {
-	switch e := expr.(type) {
-	case *varRef:
-		return e.param
-	case *propRef:
-		return referencedParam(e.expr)
-	}
-	return nil
 }
 
 func referencedBuiltin(expr expression) *builtin {
 	switch e := expr.(type) {
 	case *varRef:
-		return e.builtin
+		for _, b := range builtins {
+			if e.name == b.name {
+				return &b
+			}
+		}
+		return nil
 
 	case *propRef:
 		t := typeOf(e)
@@ -253,20 +248,31 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 	case *varRef:
 		for _, b := range builtins {
 			if e.name == b.name {
-				e.builtin = &b
+				e.typ = "Function"
 				return nil
 			}
 		}
 		for _, p := range contract.params {
 			if e.name == p.name {
-				e.param = p
+				e.typ = p.typ
+				return nil
+			}
+		}
+		for _, l := range contract.value {
+			if e.name == string(l) {
+				e.typ = "Value"
 				return nil
 			}
 		}
 		for _, p := range clause.params {
 			if e.name == p.name {
-				e.param = p
+				e.typ = p.typ
 				return nil
+			}
+		}
+		for _, s := range clause.spends {
+			if e.name == string(s) {
+				e.typ = "Value"
 			}
 		}
 		return fmt.Errorf("undefined variable \"%s\" in clause \"%s\"", e.name, clause.name)
@@ -292,27 +298,42 @@ func decorateOutputs(contract *contract, clause *clause) error {
 		if t := typeOf(stmt.call.args[0]); t != "Value" {
 			return fmt.Errorf("not yet supported: argument of non-Value type \"%s\" passed to \"%s\" in output statement of clause \"%s\"", t, stmt.call.fn, clause.name)
 		}
-		p := referencedParam(stmt.call.args[0])
-		if p == contract.params[len(contract.params)-1] {
-			// The contract value param doesn't have to be matched against
-			// an AssetAmount parameter.
+		found := false
+		for _, l := range contract.value {
+			if references(stmt.call.args[0], string(l)) {
+				found = true
+				break
+			}
+		}
+		if found {
+			// This output statement references the contract value, which
+			// doesn't have to be matched against an AssetAmount parameter
 			continue
 		}
+		var spend spentValue
+		for _, sp := range clause.spends {
+			if references(stmt.call.args[0], string(sp)) {
+				spend = sp
+				break
+			}
+		}
+		if string(spend) == "" {
+			return fmt.Errorf("not yet supported: argument other than clause value (%s) passed to \"%s\" in output statement of clause \"%s\"", stmt.call.args[0], stmt.call.fn, clause.name)
+		}
 
-		// Look for a verify statement matching stmt.call.args[0] to an
-		// assetamount.
-		found := false
+		// Look for a verify statement matching spend to an assetamount.
+		found = false
 		for _, s2 := range clause.statements {
-			v, ok := s2.(*verifyStatement)
+			vstmt, ok := s2.(*verifyStatement)
 			if !ok {
 				continue
 			}
-			if v.associatedOutput != nil {
+			if vstmt.associatedOutput != nil {
 				// This verify is already associated with a different output
 				// statement.
 				continue
 			}
-			e, ok := v.expr.(*binaryExpr)
+			e, ok := vstmt.expr.(*binaryExpr)
 			if !ok {
 				continue
 			}
@@ -320,12 +341,12 @@ func decorateOutputs(contract *contract, clause *clause) error {
 				continue
 			}
 
-			// Check that e.left is the value param + ".assetAmount" and e.right is an
+			// Check that e.left is the spend + ".assetAmount" and e.right is an
 			// assetamount param, or vice versa.
 			var other expression
 			check := func(e expression) bool {
 				if prop, ok := e.(*propRef); ok {
-					return referencedParam(prop.expr) == p && prop.property == "assetAmount"
+					return references(prop.expr, string(spend)) && prop.property == "assetAmount"
 				}
 				return false
 			}
@@ -337,19 +358,21 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			} else {
 				continue
 			}
-			if typeOf(other) != "AssetAmount" {
+
+			vref, ok := other.(*varRef)
+			if !ok {
 				continue
 			}
-			v.associatedOutput = stmt
-			stmt.param = referencedParam(other)
-			if stmt.param == nil {
-				return fmt.Errorf("cannot statically determine an AssetAmount parameter in \"%s\" in clause \"%s\" to check \"%s\" against", other, clause.name, p.name)
+			if vref.typ != "AssetAmount" {
+				continue
 			}
+			vstmt.associatedOutput = stmt
+			stmt.param = vref.name
 			found = true
 			break
 		}
 		if !found {
-			return fmt.Errorf("Value parameter \"%s\" is in an output statement in clause \"%s\" but not checked in a verify statement", p.name, clause.name)
+			return fmt.Errorf("Clause value \"%s\" is in an output statement in clause \"%s\" but not checked in a verify statement", spend, clause.name)
 		}
 	}
 	return nil
@@ -387,11 +410,18 @@ func typeCheckClause(contract *contract, clause *clause) error {
 			if i != len(clause.statements)-1 {
 				return fmt.Errorf("return must be the final statement of clause \"%s\"", clause.name)
 			}
+			found := false
 			if t := typeOf(stmt.expr); t != "Value" {
 				return fmt.Errorf("expression \"%s\" in return statement of clause \"%s\" has type \"%s\", must be Value", stmt.expr, clause.name, t)
 			}
-			if referencedParam(stmt.expr) != contract.params[len(contract.params)-1] {
-				return fmt.Errorf("expression in return statement of clause \"%s\" must be the contract Value parameter", clause.name)
+			for _, l := range contract.value {
+				if references(stmt.expr, string(l)) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("expression in return statement of clause \"%s\" must be a contract locked value", clause.name)
 			}
 		}
 	}

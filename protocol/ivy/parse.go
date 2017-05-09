@@ -52,11 +52,15 @@ func parseContract(p *parser) *contract {
 	name := consumeIdentifier(p)
 	params := parseParams(p)
 	consumeKeyword(p, "locks")
-	locks := parseIdentifierList(p)
+	lockIdentifiers := parseIdentifierList(p)
 	consumeTok(p, "{")
 	clauses := parseClauses(p)
 	consumeTok(p, "}")
-	return &contract{name, params, locks, clauses}
+	var lv []lockedValue
+	for _, l := range lockIdentifiers {
+		lv = append(lv, lockedValue(l))
+	}
+	return &contract{name, params, lv, clauses}
 }
 
 // (p1, p2: t1, p3: t2)
@@ -118,10 +122,13 @@ func parseClause(p *parser) *clause {
 	consumeKeyword(p, "clause")
 	name := consumeIdentifier(p)
 	params := parseParams(p)
-	var spends []string
+	var spends []spentValue
 	if peekKeyword(p) == "spends" {
 		consumeKeyword(p, "spends")
-		spends = parseIdentifierList(p)
+		spentIdentifiers := parseIdentifierList(p)
+		for _, s := range spentIdentifiers {
+			spends = append(spends, spentValue(s))
+		}
 	}
 	consumeTok(p, "{")
 	statements := parseStatements(p)

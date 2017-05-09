@@ -103,9 +103,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 				valueInfo := ValueInfo{
 					Name: s.call.args[0].(*varRef).name,
 				}
-				if s.param != nil {
-					valueInfo.AssetAmount = s.param.name
-				}
+				valueInfo.AssetAmount = s.param
 				switch f := s.call.fn.(type) {
 				case *varRef:
 					valueInfo.Program = f.String()
@@ -114,7 +112,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 				}
 				info.Values = append(info.Values, valueInfo)
 			case *returnStatement:
-				valueInfo := ValueInfo{Name: c.params[len(c.params)-1].name}
+				valueInfo := ValueInfo{Name: string(c.value[0])} // TODO(bobg): support multiple contract values
 				info.Values = append(info.Values, valueInfo)
 			}
 		}
@@ -267,8 +265,8 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 			// special-casing "verify before(expr)" and "verify after(expr)"
 			if c, ok := stmt.expr.(*call); ok {
 				if v, ok := c.fn.(*varRef); ok && len(c.args) == 1 {
-					if v.builtin != nil {
-						switch v.builtin.name {
+					if b := referencedBuiltin(v); b != nil {
+						switch b.name {
 						case "before":
 							clause.maxtimes = append(clause.maxtimes, c.args[0].String())
 						case "after":
@@ -281,62 +279,53 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 		case *outputStatement:
 			// index
 			b.addInt64(stmt.index)
-			stack = append(stack, stackEntry{})
+			stack = append(stack, stackEntry(fmt.Sprintf("%d", stmt.index)))
 
 			// refdatahash
 			b.addData(nil)
-			stack = append(stack, stackEntry{})
+			stack = append(stack, stackEntry("''"))
 
-			p := stmt.param
-			if p == nil {
+			if stmt.param == "" {
 				// amount
 				b.addOp(vm.OP_AMOUNT)
-				stack = append(stack, stackEntry{})
+				stack = append(stack, stackEntry("<AMOUNT>"))
 
 				// asset
 				b.addOp(vm.OP_ASSET)
-				stack = append(stack, stackEntry{})
+				stack = append(stack, stackEntry("<ASSET>"))
 			} else {
 				// amount
 				// TODO(bobg): this is a bit of a hack; need a cleaner way to
 				// introduce new stack references
 				r := &propRef{
 					expr: &varRef{
-						name: stmt.param.name,
+						name: stmt.param,
 					},
 					property: "amount",
-				}
-				err := decorateRefsInExpr(contract, clause, r)
-				if err != nil {
-					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
 				err = compileExpr(b, stack, contract, clause, r)
 				if err != nil {
 					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
-				stack = append(stack, stackEntry{})
+				stack = append(stack, stackEntry(r.String()))
 
 				// asset
 				r = &propRef{
 					expr: &varRef{
-						name: stmt.param.name,
+						name: stmt.param,
 					},
 					property: "asset",
-				}
-				err = decorateRefsInExpr(contract, clause, r)
-				if err != nil {
-					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
 				err = compileExpr(b, stack, contract, clause, r)
 				if err != nil {
 					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
-				stack = append(stack, stackEntry{})
+				stack = append(stack, stackEntry(r.String()))
 			}
 
 			// version
 			b.addInt64(1)
-			stack = append(stack, stackEntry{})
+			stack = append(stack, stackEntry("1"))
 
 			// prog
 			err = compileExpr(b, stack, contract, clause, stmt.call.fn)
@@ -369,7 +358,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if err != nil {
 			return errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
 		}
-		err = compileExpr(b, append(stack, stackEntry{}), contract, clause, e.right)
+		err = compileExpr(b, append(stack, stackEntry(e.left.String())), contract, clause, e.right)
 		if err != nil {
 			return errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
 		}
@@ -401,7 +390,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			if err != nil {
 				return errors.Wrapf(err, "compiling argument %d in call expression", i)
 			}
-			stack = append(stack, stackEntry{})
+			stack = append(stack, stackEntry(a.String()))
 		}
 		ops, err := vm.Assemble(bi.opcodes)
 		if err != nil {
