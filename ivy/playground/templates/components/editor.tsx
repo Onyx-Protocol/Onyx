@@ -8,18 +8,18 @@ import ErrorAlert from './errorAlert'
 import Load from './load'
 import Save from './save'
 import Instructions from './instructions'
-import { getTemplate, getCompiled } from '../selectors'
+import { getTemplate, getCompiled, getSource } from '../selectors'
 
 import ReactTooltip from 'react-tooltip'
 
 const mapStateToProps = (state) => {
   return {
-    template: getTemplate(state),
-    compiled: getCompiled(state)
+    compiled: getCompiled(state),
+    source: getSource(state)
   }
 }
 
-const Editor = ({ template, compiled }) => {
+const Editor = ({ compiled, source }) => {
   return (
     <div>
       <ReactTooltip place="bottom" type="error" effect="solid"/>
@@ -31,7 +31,7 @@ const Editor = ({ template, compiled }) => {
             <Save />{/* Save returns a <td> element */}
           </tr></tbody></table>
         </div>
-        <Ace source={template.source} />
+        <Ace source={source} />
       </div>
       { compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Instructions />}
     </div>
