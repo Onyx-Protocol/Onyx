@@ -53,7 +53,6 @@ func (m *Hash) String() string            { return proto.CompactTextString(m) }
 func (*Hash) ProtoMessage()               {}
 func (*Hash) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-
 func (m *AssetID) Reset()                    { *m = AssetID{} }
 func (m *AssetID) String() string            { return proto.CompactTextString(m) }
 func (*AssetID) ProtoMessage()               {}

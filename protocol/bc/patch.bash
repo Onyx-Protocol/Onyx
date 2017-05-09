@@ -8,3 +8,4 @@ sed -e '/type Hash struct {/ { N; d; }' bc.pb.go >bc.pb.go1
 mv bc.pb.go1 bc.pb.go
 sed -e '/type AssetID struct {/ { N; d; }' bc.pb.go >bc.pb.go1
 mv bc.pb.go1 bc.pb.go
+gofmt -w bc.pb.go
