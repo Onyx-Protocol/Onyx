@@ -300,14 +300,14 @@ func TestCompile(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			r := strings.NewReader(c.contract)
-			got, err := Compile(r)
+			got, err := Compile(r, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(got, c.want) {
 				gotJSON, _ := json.Marshal(got)
 				wantJSON, _ := json.Marshal(c.want)
-				t.Errorf("got %s, want %s", string(gotJSON), wantJSON)
+				t.Errorf("got %s\nwant %s", string(gotJSON), wantJSON)
 			}
 		})
 	}
