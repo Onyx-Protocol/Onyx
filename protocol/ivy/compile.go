@@ -110,11 +110,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 		return nil, fmt.Errorf("empty contract")
 	}
 
-	err := prohibitDuplicateClauseNames(contract)
-	if err != nil {
-		return nil, err
-	}
-	err = prohibitDuplicateVars(contract)
+	err := prohibitNameCollisions(contract)
 	if err != nil {
 		return nil, err
 	}
