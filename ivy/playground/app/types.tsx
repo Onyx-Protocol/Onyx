@@ -7,6 +7,6 @@ export type AppState = {
   accounts: accounts.State,
   assets: assets.State,
   contracts: contracts.ContractsState
-  templates: templates.State,
+  templates: templates.TemplateState,
   routing: any
 }

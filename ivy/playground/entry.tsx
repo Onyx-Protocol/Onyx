@@ -10,15 +10,17 @@ import DocumentTitle from 'react-document-title'
 import persistState from 'redux-localstorage'
 import thunk from 'redux-thunk'
 import { reset } from './app/actions'
-import { selectTemplate } from './contracts/actions'
+import { load } from './templates/actions'
 
 import accounts from './accounts'
 import assets from './assets'
-import templates from './templates'
+import Create from './templates/components/create'
 
-import Create from './contracts/components/create'
 import Contracts from './contracts/components/contracts'
 import Spend from './contracts/components/spend'
+
+import { idList } from './templates/constants'
+
 import { prefixRoute } from './util'
 
 require('./static/playground.css')
@@ -34,7 +36,7 @@ const store = createStore(
   composeEnhancers(applyMiddleware(thunk), applyMiddleware(routerMiddleware(history)), persistState())
 )
 
-store.dispatch(templates.actions.setInitialTemplates())
+store.dispatch(load(idList[0]))
 store.dispatch(assets.actions.fetch())
 store.dispatch(accounts.actions.fetch())
 render(
@@ -42,8 +44,7 @@ render(
     <DocumentTitle title='Ivy Playground'>
     <ConnectedRouter history={history}>
       <app.components.Root>
-       <Route exact={true} path={prefixRoute('/')} component={templates.components.Editor} />
-       <Route path={prefixRoute('/instantiate')} component={Create} />
+       <Route exact={true} path={prefixRoute('/')} component={Create} />
        <Route exact path={prefixRoute('/spend')}  component={Contracts} />
        <Route path={prefixRoute('/spend/:contractId')} component={Spend} />
       </app.components.Root>

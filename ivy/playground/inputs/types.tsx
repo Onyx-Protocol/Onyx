@@ -5,7 +5,7 @@ import {
   ClauseParameterHash // clause parameters are a superset of contract parameters
 } from 'ivy-compiler'
 
-import { Item as Template } from '../templates/types'
+import { Template } from '../templates/types'
 
 export type Input = ParameterInput | StringInput | HashInput | PublicKeyInput | NumberInput |
   BooleanInput | TimeInput | GenerateStringInput | ProvideStringInput | GenerateHashInput |

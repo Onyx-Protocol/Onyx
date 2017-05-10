@@ -12,7 +12,8 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
          ValueInput, AccountAliasInput, AssetAliasInput, AssetAmountInput, AmountInput,
          AddressInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
 import { getParameterIdentifier, getInputContext } from '../../inputs/data'
-import { getInputMap, getSpendInputMap, getClauseParameterIds, getShowErrors } from '../selectors'
+import { getSpendInputMap, getClauseParameterIds } from '../selectors'
+import { getInputMap } from '../../templates/selectors'
 import { updateClauseInput } from '../actions'
 /* import { getAssetAliasesById, getAssetIds } from '../assets' */
 /* import { getAccountAliasesById, getAccountIds } from '../accounts' */
@@ -23,7 +24,7 @@ import assets from '../../assets'
 import { Item as Asset } from '../../assets/types'
 
 import { updateInput } from '../actions'
-import { getParameterIds } from '../selectors'
+import { getParameterIds } from '../../templates/selectors'
 import { validateInput, computeDataForInput, getChild } from '../../inputs/data'
 // import { getSpendParameterIds, getSpending, getSignatureData } from '../spend'
 // import { updateClauseInput } from '../contracts'
@@ -57,7 +58,6 @@ function NumberWidget(props: { input: NumberInput | AmountInput,
 }
 
 function TimestampTimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
-  console.log(props.input.value)
   return <div className = "form-group">
     <input type="datetime-local" key={props.input.name} className="form-control" value={props.input.value} onChange={props.handleChange} />
   </div>
@@ -271,14 +271,8 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
   }
 }
 
-function InputErrorUnconnected(props: { state, input: Input, showErrors: boolean }) {
-  let isValid = validateInput(props.input)
-  return (isValid || !props.showErrors) ? <div /> : <div className="alert alert-danger">Invalid input</div>
-}
-
 function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
   let input = inputsById[id]
-  let showErrors = getShowErrors(state)
   if (input === undefined) throw "bad input ID: " + id
   if (input.type === "generatePublicKeyInput" ||
       input.type === "generateHashInput" ||
@@ -287,8 +281,7 @@ function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
       let computedValue = computeDataForInput(id, inputsById)
       return {
         input: input,
-        computedValue: computedValue,
-        showErrors: showErrors
+        computedValue: computedValue
       }
     } catch(e) {
       console.log(e)
@@ -298,12 +291,10 @@ function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
     return {
       input: input,
       computedValue: "",
-      showErrors: showErrors//getSignatureData(state, id, inputsById)
     }
   }
   return {
     input: input,
-    showErrors: showErrors
   }
 }
 
@@ -314,7 +305,7 @@ function mapStateToSpendInputProps(state, ownProps: { id: string }) {
 
 function mapStateToContractInputProps(state, ownProps: { id: string }) {
   let inputsById = getInputMap(state)
-  return mapToInputProps(state, inputsById, ownProps.id)
+  return inputsById && mapToInputProps(state, inputsById, ownProps.id)
 }
 
 function mapDispatchToContractInputProps(dispatch, ownProps: { id: string }) {
@@ -337,27 +328,19 @@ export function getWidget(id: string): JSX.Element {
   let inputContext = id.split(".").shift() as InputContext
   let type = id.split(".").pop() as InputType
   let widgetTypeConnected
-  let InputError
   if (inputContext === "contractParameters") {
     widgetTypeConnected = connect(
       mapStateToContractInputProps,
       mapDispatchToContractInputProps
     )(getWidgetType(type))
-    InputError = connect(
-      mapStateToContractInputProps
-    )(InputErrorUnconnected)
   } else {
     widgetTypeConnected = connect(
       mapStateToSpendInputProps,
       mapDispatchToSpendInputProps
     )(getWidgetType(type))
-    InputError = connect(
-      mapStateToSpendInputProps
-    )(InputErrorUnconnected)
   }
   return <div key={"container(" + id + ")"}>
     {React.createElement(widgetTypeConnected, { key: "connect(" + id + ")", id: id })}
-    <InputError id={id} key={"error(" + id + ")"} />
   </div>
 }
 

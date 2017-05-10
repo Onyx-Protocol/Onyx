@@ -1,16 +1,17 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
 
-import { getSelectedTemplate } from '../selectors'
+import { getCompiled } from '../selectors'
+import { CompilerResult } from '../types'
 
-const ErrorAlert = ({ errorMessage }) => {
+const ErrorAlert = (props: { compiled: CompilerResult }) => {
   return (
     <div className="row">
       <div className="col-xs-8" style={{marginTop: 20}}>
       <div className="alert alert-danger" role="alert">
         <span className="glyphicon glyphicon-exclamation-sign" style={{marginRight: "5px"}}></span>
         <span className="sr-only">Error:</span>
-          {errorMessage}
+          {props.compiled.error}
         </div>
       </div>
     </div>
@@ -19,7 +20,7 @@ const ErrorAlert = ({ errorMessage }) => {
 
 const mapStateToProps = (state) => {
   return {
-    template: getSelectedTemplate(state),
+    compiled: getCompiled(state),
   }
 }
 
