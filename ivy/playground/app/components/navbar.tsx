@@ -15,7 +15,7 @@ export default function Navbar() {
           </a>
         </div>
         <ul className="nav navbar-nav navbar-right">
-          <li><Link to={prefixRoute('/')}>Draft</Link></li>
+          <li><Link to={prefixRoute('/')}>Create</Link></li>
           <li><Link to={prefixRoute('/spend')}>Spend</Link></li>
           <li><Reset /></li>
         </ul>
