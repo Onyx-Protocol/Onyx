@@ -2,9 +2,9 @@ package ca
 
 import (
 	"chain/crypto/ed25519/ecmath"
-	"encoding/binary"
 )
 
+// G is a base point
 var G = makeG()
 var J = makeJ()
 
@@ -19,7 +19,7 @@ var Gi = []ecmath.Point{
 	makeGiPure(28), makeGiPure(29), makeGiPure(30),
 }
 
-// Precomputed reminder generators: GR[i] = G - Sum[G[j], j<i]; GR[0] = G
+// TBD: Precomputed reminder generators: GR[i] = G - Sum[G[j], j<i]; GR[0] = G
 var GRi = []ecmath.Point{
 	// TBD: these are not correctly computed
 	makeGiPure(0), makeGiPure(1), makeGiPure(2), makeGiPure(3),
@@ -59,7 +59,7 @@ func makeGi(i byte) (P ecmath.Point, ctr uint64) {
 	Gbuf := G.Encode()
 	for ctr = uint64(0); true; ctr++ {
 		// 1. Calculate `SHA3-256(i || Encode(G) || counter64le)`
-		h := hash256([]byte{i}, Gbuf[:], uint64le(ctr))
+		h := sha3_256([]byte{i}, Gbuf[:], uint64le(ctr))
 
 		// 2. Decode the resulting hash as a point `P` on the elliptic curve.
 		_, ok := P.Decode(h)
@@ -75,10 +75,4 @@ func makeGi(i byte) (P ecmath.Point, ctr uint64) {
 		break
 	}
 	return
-}
-
-func uint64le(value uint64) (result []byte) {
-	result = make([]byte, 8)
-	binary.LittleEndian.PutUint64(result[:8], value)
-	return result
 }
