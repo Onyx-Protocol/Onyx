@@ -32,8 +32,8 @@ const Editor = ({ compiled, source }) => {
           </tr></tbody></table>
         </div>
         <Ace source={source} />
+        { compiled && compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Instructions />}
       </div>
-      { compiled && compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Instructions />}
     </div>
   )
 }
