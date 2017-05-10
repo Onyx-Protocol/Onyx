@@ -14,7 +14,8 @@ type contract struct {
 }
 
 type param struct {
-	name, typ string
+	name string
+	typ  typeDesc
 }
 
 type clause struct {
@@ -61,7 +62,7 @@ func (returnStatement) iamaStatement() {}
 
 type expression interface {
 	String() string
-	typ() string
+	typ() typeDesc
 }
 
 type binaryExpr struct {
@@ -73,7 +74,7 @@ func (e binaryExpr) String() string {
 	return fmt.Sprintf("(%s %s %s)", e.left, e.op.op, e.right)
 }
 
-func (e binaryExpr) typ() string {
+func (e binaryExpr) typ() typeDesc {
 	return e.op.result
 }
 
@@ -86,7 +87,7 @@ func (e unaryExpr) String() string {
 	return fmt.Sprintf("%s%s", e.op.op, e.expr)
 }
 
-func (e unaryExpr) typ() string {
+func (e unaryExpr) typ() typeDesc {
 	return e.op.result
 }
 
@@ -103,14 +104,14 @@ func (e call) String() string {
 	return fmt.Sprintf("%s(%s)", e.fn, strings.Join(argStrs, ", "))
 }
 
-func (e call) typ() string {
+func (e call) typ() typeDesc {
 	if b := referencedBuiltin(e.fn); b != nil {
 		return b.result
 	}
-	if e.fn.typ() == "Predicate" {
-		return "Boolean"
+	if e.fn.typ() == predType {
+		return boolType
 	}
-	return ""
+	return nilType
 }
 
 type propRef struct {
@@ -122,7 +123,7 @@ func (p propRef) String() string {
 	return fmt.Sprintf("%s.%s", p.expr, p.property)
 }
 
-func (e propRef) typ() string {
+func (e propRef) typ() typeDesc {
 	t := e.expr.typ()
 	m := properties[t]
 	if m != nil {
@@ -143,7 +144,7 @@ func (v varRef) String() string {
 	return v.name
 }
 
-func (e varRef) typ() string {
+func (e varRef) typ() typeDesc {
 	if e.param != nil {
 		return e.param.typ
 	}
@@ -159,7 +160,7 @@ func (e bytesLiteral) String() string {
 	return "0x" + hex.EncodeToString([]byte(e))
 }
 
-func (bytesLiteral) typ() string {
+func (bytesLiteral) typ() typeDesc {
 	return "String"
 }
 
@@ -169,7 +170,7 @@ func (e integerLiteral) String() string {
 	return strconv.FormatInt(int64(e), 10)
 }
 
-func (integerLiteral) typ() string {
+func (integerLiteral) typ() typeDesc {
 	return "Integer"
 }
 
@@ -182,7 +183,7 @@ func (e booleanLiteral) String() string {
 	return "false"
 }
 
-func (booleanLiteral) typ() string {
+func (booleanLiteral) typ() typeDesc {
 	return "Boolean"
 }
 
@@ -196,6 +197,6 @@ func (e listExpr) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(elts, ", "))
 }
 
-func (listExpr) typ() string {
+func (listExpr) typ() typeDesc {
 	return "List"
 }
