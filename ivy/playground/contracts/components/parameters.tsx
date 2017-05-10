@@ -349,11 +349,13 @@ function ContractParametersUnconnected(props: { parameterIds: string[] }) {
   let parameterInputs = props.parameterIds.map((id) => {
     return <div key={id} className="argument">{getWidget(id)}</div>
   })
-  return <section style={{wordBreak: 'break-all'}}>
-    <h4>Contract Arguments</h4>
-    <form className="form">
-    {parameterInputs}
-  </form></section>
+  return (
+    <section style={{wordBreak: 'break-all'}}>
+      <form className="form">
+        {parameterInputs}
+      </form>
+    </section>
+  )
 }
 
 function mapStateToContractParametersProps(state) {
