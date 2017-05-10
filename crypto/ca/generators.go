@@ -2,6 +2,7 @@ package ca
 
 import (
 	"chain/crypto/ed25519/ecmath"
+	"encoding/binary"
 )
 
 var G = makeG()
@@ -38,39 +39,46 @@ func makeG() (r ecmath.Point) {
 
 func makeJ() (j ecmath.Point) {
 	// Decode the point from SHA3(G)
-	h := hash256(G.Encode())
-	err := j.fromBytes(&h)
-	if err != nil {
+	Gbuf := G.Encode()
+	_, ok := j.Decode(sha3_256(Gbuf[:]))
+	if !ok {
 		panic("failed to decode secondary generator")
 	}
 	// Calculate point `J = 8*J` (8 is a cofactor in edwards25519) which belongs to a subgroup of `G` with order `L`.
-	j.mul(&cofactor)
+	cofactor := ecmath.Scalar{8}
+	j.ScMul(&j, &cofactor)
 	return
 }
 
-func makeGiPure(i byte) Point {
+func makeGiPure(i byte) ecmath.Point {
 	p, _ := makeGi(i)
 	return p
 }
 
-func makeGi(i byte) (P Point, ctr uint64) {
-	Gbytes := G.bytes()
+func makeGi(i byte) (P ecmath.Point, ctr uint64) {
+	Gbuf := G.Encode()
 	for ctr = uint64(0); true; ctr++ {
 		// 1. Calculate `SHA3-256(i || Encode(G) || counter64le)`
-		h := hash256([]byte{i}, Gbytes, uint64le(ctr))
+		h := hash256([]byte{i}, Gbuf[:], uint64le(ctr))
 
 		// 2. Decode the resulting hash as a point `P` on the elliptic curve.
-		err := P.fromBytes(&h)
+		_, ok := P.Decode(h)
 
-		if err != nil {
+		if !ok {
 			continue
 		}
 
 		// 3. Calculate point `G[i] = 8*P` (8 is a cofactor in edwards25519) which belongs to a subgroup of `G` with order `L`.
 		cofactor := ecmath.Scalar{8}
-		P.mul(&cofactor)
+		P.ScMul(&P, &cofactor)
 
 		break
 	}
 	return
+}
+
+func uint64le(value uint64) (result []byte) {
+	result = make([]byte, 8)
+	binary.LittleEndian.PutUint64(result[:8], value)
+	return result
 }
