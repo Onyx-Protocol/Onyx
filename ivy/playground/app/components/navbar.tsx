@@ -1,7 +1,10 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import Reset from './reset'
+import ReactTooltip from 'react-tooltip'
+
 import { prefixRoute } from '../../util'
+import Reset from './reset'
+import Seed from './seed'
 
 const logo = require('../../static/images/logo.png')
 
@@ -14,9 +17,11 @@ export default function Navbar() {
             <img src={logo} />
           </a>
         </div>
+        <ReactTooltip id="seedButtonTooltip" place="bottom" type="error" effect="solid"/>
         <ul className="nav navbar-nav navbar-right">
           <li><Link to={prefixRoute('/')}>Create</Link></li>
           <li><Link to={prefixRoute('/spend')}>Spend</Link></li>
+          <li><Seed /></li>
           <li><Reset /></li>
         </ul>
       </div>
