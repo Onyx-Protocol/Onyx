@@ -170,11 +170,11 @@ To support second and third option, user must import other issuers’ assets wit
 
 Structure `confidential_issuance_spec` is published by the issuer so that other issuers could use it.
 
-To create a set of issuance candidates, Alice uses `issuance_choices` field.
+To create a set of issuance candidates, Alice uses optional `issuance_choices` field.
 She can refer to imported or her own assets by `asset_alias` or `asset_id`.
 
     tx = client.transactions.build do |b|
-      b.issue asset_alias: 'AliceIOU', amount: 10, confidential: {asset_id: true, amount: true}, issuance_choices: [
+      b.issue asset_alias: 'AliceIOU', amount: 10, confidential: {asset_id: true, amount: true}, issuance_choices: [ # optional override to Core's default behaviour to e.g. include all imported and local asset types
         {asset_alias: 'AliceIOU2'},
         {asset_alias: 'BobIOU'},
         {asset_id:    'CarlIOU'}
@@ -324,7 +324,7 @@ Transaction template contains transaction entries and additional data that helps
                 asset_commitment:   "ac00fa9eab0...",
                 value_commitment:   "5ca9f901248...",
                 value_range_proof: "9df90af8a0c...",
-                program:            {
+                program: {
                     vm_version: 1, 
                     bytecode: "..."
                 },
@@ -535,8 +535,9 @@ To control confidentiality of specific entries, `confidential` key is used (defa
         b.retire               ..., confidential: {reference_data: true, asset_id: true, amount: true}
     end
 
-It is an error to use `confidential` key with actions `spend_*` or `control_with_receiver`.
-This is because spends inherit confidentiality from the previous outputs and receivers fully control confidentiality options.
+It is an error to use `confidential` key with action `control_with_receiver`. This is because receivers fully control confidentiality options.
+
+It is an error to use `confidential:{asset_id:/amount:}` for action `spend_*`. Only `confidential:{reference_data:true/false}` is allowed for spends. And confidentiality of the value is already controlled by an existing spendable output.
 
 Procedure:
 
@@ -799,6 +800,13 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
     ODEK - Data Encryption Key for an output entry
     TDEK - Data Encryption Key for an retirement entry
     YDEK — Data Encryption Key for an issuance entry
+
+
+### Payload encryption
+
+Payload is encrypted/decrypted using [Packet Encryption](#packet-encryption) algorithm with the _payload encryption key_ `PK` derived from payload ID and _access key_ `AK`:
+
+    PK = SHAKE128(AK || payloadID, 32)
 
 
 ### Packet Encryption
@@ -1644,3 +1652,50 @@ In the present specification we omit support for inline data entirely for simpli
 intend to introduce it as an additional feature that allows applications to optimize bandwidth usage.
 
 
+
+
+
+
+## Discussion
+
+
+Jeff asks on May 9, 2017:
+
+> - TX template v2:
+>     - `signing_instructions` seems to be a misnomer...is `witness_data` a better/more generic term?
+
+Maybe `program_arguments_instructions`? Using `witness_something` covers range proofs, and we win nothing by grouping them together - different parts of the witness structures are filled in at different points in time and may get moved around in the template (e.g. ARP instructions can get consumed by another party and moved to their encrypted payload).
+
+>     - How are payloads encrypted? How do we configure this encryption at the Chain Core level?
+
+Oops, added [Payload Encryption](#payload-encryption) spec. Chain Core will derive necessary keys and encrypt/decrypt these transparently to the SDK user.
+
+> - SDK
+>     - Is it `client.sign` or `client.transactions.sign`?
+
+I'd keep it `client.transactions.sign` to be more specific about what is being signed. In case we introduce some other signing of different things later.
+
+>     - For a transitional period when both types of templates must be supported (Chain Core 1.3), how do we instruct `build` to produce a v2 template instead of a v1 template? Do we solve this with flags, or with a different namespace for methods?
+
+...
+
+>     - Is there a syntax for specifying non-encrypted outputs, similar to the `confidential` flag in issuance? Is there even a use case for such a thing?
+
+Yes.
+
+> - Confidential issuance
+>     - During confidential issuance, can we make `issuance_choices` optional, and let Chain Core provide sane defaults?
+
+Made optional. Good call.
+
+> - Trackable addresses
+>     - How will indexing work in practice? Do we need to test every known account xpub against the selector present in an incoming output entry?
+
+Trackable keys must be publicly visible in the UTXO and needed for Account Disclosures.
+
+Account Disclosures must be designed with Ivy-oriented account definitions in mind. So we can postpone those until Ivy is done.
+
+> - Transaction data structure
+>     - What does the entry-based tx data structure look like, from the perspective of an SDK?
+
+Should be an opaque type to hide versioned content inside for future-proofing.
