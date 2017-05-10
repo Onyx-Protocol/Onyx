@@ -2,9 +2,7 @@ import * as React from 'react'
 import { connect } from 'react-redux'
 
 import app from '../../app'
-import { mustCompileTemplate } from '../util'
-import { getTemplate, getOpcodes } from '../selectors'
-import { Item } from '../types'
+import { getOpcodes } from '../selectors'
 
 const mapStateToProps = (state) => {
   const opcodes = getOpcodes(state)
