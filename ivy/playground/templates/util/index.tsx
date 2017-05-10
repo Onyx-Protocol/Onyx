@@ -51,6 +51,8 @@ export const mapServerTemplate = (tpl): Template => {
       name: clause.name,
       parameters,
       outputs,
+      mintimes: clause.mintimes,
+      maxtimes: clause.maxtimes,
       returnStatement
     }
   })

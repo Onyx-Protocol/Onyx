@@ -55,7 +55,7 @@ func TestSighashCheck(t *testing.T) {
 	spendAction1 := info.NewSpendAction(assetAmount, info.acctA, nil, nil)
 	controlAction1 := info.NewControlAction(assetAmount, info.acctB, nil)
 
-	tpl1, err := Build(ctx, nil, []Action{spendAction1, controlAction1}, time.Now().Add(time.Minute))
+	tpl1, err := Build(ctx, nil, []Action{spendAction1, controlAction1}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestSighashCheck(t *testing.T) {
 	spendAction2a := info.NewSpendAction(assetAmount, info.acctB, nil, nil)
 	controlAction2 := info.NewControlAction(assetAmount, info.acctA, nil)
 
-	tpl2a, err := Build(ctx, &tpl1.Transaction.TxData, []Action{spendAction2a, controlAction2}, time.Now().Add(time.Minute))
+	tpl2a, err := Build(ctx, &tpl1.Transaction.TxData, []Action{spendAction2a, controlAction2}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestSighashCheck(t *testing.T) {
 	}
 
 	issueAction2b := info.NewIssueAction(assetAmount, nil)
-	tpl2b, err := Build(ctx, &tpl1.Transaction.TxData, []Action{issueAction2b, controlAction2}, time.Now().Add(time.Minute))
+	tpl2b, err := Build(ctx, &tpl1.Transaction.TxData, []Action{issueAction2b, controlAction2}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	dest1 := info.NewControlAction(assetAmount, info.acctB, nil)
 
 	// Build the first tx
-	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1}, time.Now().Add(time.Minute))
+	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -422,7 +422,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destA
 	issueTx, err := Build(ctx, nil, []Action{
 		info.Registry.NewIssueAction(assetAmount, nil),
 		info.Manager.NewControlAction(assetAmount, destAcctID, nil),
-	}, time.Now().Add(time.Minute))
+	}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +438,7 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, sr
 	source := info.NewSpendAction(assetAmount, srcAcctID, nil, nil)
 	dest := info.NewControlAction(assetAmount, destAcctID, nil)
 
-	xferTx, err := Build(ctx, nil, []Action{source, dest}, time.Now().Add(time.Minute))
+	xferTx, err := Build(ctx, nil, []Action{source, dest}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
