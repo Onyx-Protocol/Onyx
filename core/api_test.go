@@ -48,7 +48,7 @@ func TestBuildFinal(t *testing.T) {
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dests := accounts.NewControlAction(assetAmt, acc, nil)
 
-	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestBuildFinal(t *testing.T) {
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	sources = accounts.NewSpendAction(assetAmt, acc, nil, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestAccountTransfer(t *testing.T) {
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dests := accounts.NewControlAction(assetAmt, acc, nil)
-	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +172,7 @@ func TestAccountTransfer(t *testing.T) {
 
 	// new source
 	sources = accounts.NewSpendAction(assetAmt, acc, nil, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +238,7 @@ func TestTransfer(t *testing.T) {
 	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
 		api.assets.NewIssueAction(issueAssetAmount, nil),
 		api.accounts.NewControlAction(issueAssetAmount, account1ID, nil),
-	}, time.Now().Add(time.Minute))
+	}, time.Time{}, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
