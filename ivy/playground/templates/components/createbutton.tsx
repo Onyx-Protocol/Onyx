@@ -24,15 +24,15 @@ type Props = {
   handleClick: (e) => undefined
 }
 
-const CreateFooter = ({ createability, handleClick }: Props) => {
-  let td = createability.createable ? 
-    <td><button className="btn btn-primary btn-wide" onClick={handleClick}>Create</button></td>  
+const CreateButton = ({ createability, handleClick }: Props) => {
+  let td = createability.createable ?
+    <td><button className="btn btn-primary btn-wide" onClick={handleClick}>Create Contract</button></td>
   :
-    <td data-for="createButtonTooltip" data-tip={createability.error}><button className="btn btn-primary btn-wide" disabled={true}>Create</button></td>
+    <td data-for="createButtonTooltip" data-tip={createability.error}><button className="btn btn-primary btn-wide" disabled={true}>Create Contract</button></td>
   return <div><ReactTooltip id="createButtonTooltip" type="error" effect="solid"/><table><tbody><tr>{td}</tr></tbody></table></div>
 }
 
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(CreateFooter)
+)(CreateButton)

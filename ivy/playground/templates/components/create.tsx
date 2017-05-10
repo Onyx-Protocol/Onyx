@@ -4,7 +4,7 @@ import DocumentTitle from 'react-document-title'
 
 import app from '../../app'
 import { Template } from '../types'
-import CreateFooter from './createfooter'
+import CreateButton from './createbutton'
 
 import { getSource, getContractParameters, getCompiled } from '../selectors'
 
@@ -25,11 +25,16 @@ const mapStateToProps = (state) => {
 const Create = ({ source, instantiable }) => {
   let instantiate
   if (instantiable) {
-    instantiate = <app.components.Section name="Instantiate" footer={<CreateFooter />}>
-      <div className="form-wrapper">
-      <ContractParameters />
+    instantiate = (
+      <div>
+        <app.components.Section name="Instantiate">
+          <div className="form-wrapper">
+            <ContractParameters />
+          </div>
+        </app.components.Section>
+        <CreateButton />
       </div>
-    </app.components.Section>
+    )
   } else {
     instantiate = ( <div /> )
   }
