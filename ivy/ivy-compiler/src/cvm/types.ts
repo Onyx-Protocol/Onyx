@@ -6,7 +6,7 @@ export type Type = Primitive | TypeVariable | Hash | List | "SigHash" | "Contrac
 
 export type Primitive = "PublicKey" | "Signature" | "String" | "Integer" | 
                         "Time" | "Boolean" | "Value" | "AssetAmount" |
-                        "Address"
+                        "Program"
 
 export type DeclarableType = Primitive | "Hash"
 
@@ -49,7 +49,7 @@ export function isPrimitive(str: Type|string): str is Primitive {
     case "Boolean":
     case "Value":
     case "AssetAmount":
-    case "Address":
+    case "Program":
       return true
     default:
       return false

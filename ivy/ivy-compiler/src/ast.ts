@@ -77,7 +77,7 @@ export type StoredValue = { // representing the value stored in the contract
 export type ContractExpression = {
   type: "contractExpression",
   location: Location,
-  address: Variable,
+  program: Variable,
   value: Variable | StoredValue
 }
 
@@ -223,7 +223,7 @@ function expressionToString(expression: Expression): string {
     case "listLiteral":
       return listLiteralToString(expression)
     case "contractExpression":
-      return expression.address.identifier + "(" + expression.value + ")"
+      return expression.program.identifier + "(" + expression.value + ")"
     case "storedValue":
       return expression.identifier
   }
@@ -292,7 +292,7 @@ export function mapOverAST(func: (Node)=>(ASTNode), node: ASTNode): ASTNode {
     case "contractExpression": {
       return func({
         ...node,
-        address: mapOverAST(func, node.address),
+        program: mapOverAST(func, node.program),
         value: mapOverAST(func, node.value)
       })
     }

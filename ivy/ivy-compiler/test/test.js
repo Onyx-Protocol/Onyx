@@ -14,20 +14,20 @@ let testTemplates = {
     return locked  
   }
 }`,
-  "LockToOutput": `contract LockToOutput(address: Address, locked: Value) {
+  "LockToOutput": `contract LockToOutput(program: Program, locked: Value) {
   clause unlock() {
-    output address(locked)  
+    output program(locked)  
   }
 }`,
-  "TradeOffer": `contract TradeOffer(requested: AssetAmount, sellerAddress: Address, cancellationHash: Hash, offered: Value) {
+  "TradeOffer": `contract TradeOffer(requested: AssetAmount, sellerProgram: Program, cancellationHash: Hash, offered: Value) {
   clause trade(payment: Value) {
     verify payment.assetAmount == requested
-    output sellerAddress(payment)
+    output sellerProgram(payment)
     return offered
   }
   clause cancel(cancellationSecret: String) {
     verify sha3(cancellationSecret) == cancellationHash
-    output sellerAddress(offered)
+    output sellerProgram(offered)
   }
 }`
 }
