@@ -14,7 +14,6 @@ export default function reducer(state: AppState, action): AppState {
     case RESET:
       return {
         ...INITIAL_STATE,
-        templates: state.templates
       }
     default:
       return combineReducers({

@@ -9,7 +9,6 @@ import { RESET } from './constants'
 
 export const reset = (dispatch, getState) => {
   dispatch({ type: RESET })
-  dispatch(selectTemplate("TrivialLock"))
   dispatch(load("TrivialLock"))
   dispatch(accounts.actions.fetch())
   dispatch(assets.actions.fetch())

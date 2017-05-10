@@ -8,7 +8,7 @@ import ErrorAlert from './errorAlert'
 import Load from './load'
 import Save from './save'
 import Instructions from './instructions'
-import { getTemplate, getCompiled, getSource } from '../selectors'
+import { getCompiled, getSource } from '../selectors'
 
 import ReactTooltip from 'react-tooltip'
 
@@ -22,7 +22,7 @@ const mapStateToProps = (state) => {
 const Editor = ({ compiled, source }) => {
   return (
     <div>
-      <ReactTooltip place="bottom" type="error" effect="solid"/>
+      <ReactTooltip id="saveButtonTooltip" place="bottom" type="error" effect="solid"/>
       <div className="panel panel-default">
         <div className="panel-heading clearfix">
           <h1 className="panel-title pull-left">Draft Contract</h1>

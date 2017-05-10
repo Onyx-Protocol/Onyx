@@ -50,12 +50,20 @@ import {
 } from './template'
 
 import {
-  toContractParameter
+  toContractParameter, ContractParameter
 } from './cvm/parameters'
 
 import {
   assemble
 } from './cvm/assemble'
+
+export function compileContractParameters(source: string) { // this is all that the playground currently needs
+  let parsed = parser.parse(source)
+  let refChecked = referenceCheck(parsed)
+  let ast = typeCheckContract(refChecked)
+  let contractParameters = ast.parameters.map(toContractParameter)
+  return contractParameters
+}
 
 export function compileTemplate(source: string): Template|CompilerError {
   try {
