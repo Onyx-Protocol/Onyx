@@ -36,6 +36,7 @@ const store = createStore(
   composeEnhancers(applyMiddleware(thunk), applyMiddleware(routerMiddleware(history)), persistState())
 )
 
+// store.dispatch(reset)
 store.dispatch(load(idList[0]))
 store.dispatch(assets.actions.fetch())
 store.dispatch(accounts.actions.fetch())
