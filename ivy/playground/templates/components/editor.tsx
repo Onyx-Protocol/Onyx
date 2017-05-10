@@ -33,7 +33,7 @@ const Editor = ({ compiled, source }) => {
         </div>
         <Ace source={source} />
       </div>
-      { compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Instructions />}
+      { compiled && compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Instructions />}
     </div>
   )
 }
