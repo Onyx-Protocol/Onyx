@@ -25,6 +25,15 @@ contract LockWithPublicKey(publicKey: PublicKey, locked: Value) {
 }
 `
 
+const lockWith2of3Keys = `
+contract LockWith2of3Keys(pubkey1, pubkey2, pubkey3: PublicKey, locked: Value) {
+  clause unlock(sig1, sig2: Signature) {
+    verify checkTxMultiSig([pubkey1, pubkey2, pubkey3], [sig1, sig2])
+    return locked
+  }
+}
+`
+
 const lockToOutput = `
 contract LockToOutput(address: Address, locked: Value) {
   clause unlock() {
@@ -129,6 +138,42 @@ func TestCompile(t *testing.T) {
 					Name: "unlock",
 					Args: []ClauseArg{{
 						Name: "sig",
+						Typ:  "Signature",
+					}},
+					Values: []ValueInfo{{
+						Name: "locked",
+					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
+				}},
+			},
+		},
+		{
+			"LockWith2of3Keys",
+			lockWith2of3Keys,
+			CompileResult{
+				Name:    "LockWith2of3Keys",
+				Program: mustDecodeHex("54795479526bae557955795579536c7cad"),
+				Params: []ContractParam{{
+					Name: "pubkey1",
+					Typ:  "PublicKey",
+				}, {
+					Name: "pubkey2",
+					Typ:  "PublicKey",
+				}, {
+					Name: "pubkey3",
+					Typ:  "PublicKey",
+				}, {
+					Name: "locked",
+					Typ:  "Value",
+				}},
+				Clauses: []ClauseInfo{{
+					Name: "unlock",
+					Args: []ClauseArg{{
+						Name: "sig1",
+						Typ:  "Signature",
+					}, {
+						Name: "sig2",
 						Typ:  "Signature",
 					}},
 					Values: []ValueInfo{{
