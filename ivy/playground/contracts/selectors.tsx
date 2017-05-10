@@ -99,16 +99,15 @@ export const getSpendContractParameterSelector = (id: string) => {
   return createSelector(
     getSpendContract,
     (spendContract: Contract) => {
-     let spendInput = spendContract.inputMap[id]
-     if (spendInput === undefined) {
-       throw "bad spend input ID: " + id
-     } else {
-       return spendInput
-     }
+      let spendInput = spendContract.inputMap[id]
+      if (spendInput === undefined) {
+        throw "bad spend input ID: " + id
+      } else {
+        return spendInput
+      }
     }
   )
 }
-
 
 export const getSpendInputSelector = (id: string) => {
   return createSelector(
@@ -263,6 +262,38 @@ export const getClauseReturnAction = createSelector(
         assetId: contract.assetId,
         amount: contract.amount
     } as ControlWithAccount
+  }
+)
+
+export const getClauseMintimes = createSelector(
+  getSpendContract,
+  getSpendContractSelectedClauseIndex,
+  (spendContract, clauseIndex) => {
+    const clauseName = spendContract.clauseList[clauseIndex]
+    const mintimes = spendContract.template.clauses[clauseIndex].mintimes
+    if (mintimes === undefined)
+      return []
+
+    return mintimes.map(argName => {
+      const inputMap = spendContract.inputMap
+      return new Date(inputMap["contractParameters." + argName + ".timeInput.timestampTimeInput"].value)
+    })
+  }
+)
+
+export const getClauseMaxtimes = createSelector(
+  getSpendContract,
+  getSpendContractSelectedClauseIndex,
+  (spendContract, clauseIndex) => {
+    const clauseName = spendContract.clauseList[clauseIndex]
+    const maxtimes = spendContract.template.clauses[clauseIndex].maxtimes
+    if (maxtimes === undefined)
+      return []
+
+    return maxtimes.map(argName => {
+      const inputMap = spendContract.inputMap
+      return new Date(inputMap["contractParameters." + argName + ".timeInput.timestampTimeInput"].value)
+    })
   }
 )
 

@@ -81,8 +81,17 @@ func (a *API) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Te
 	if ttl == 0 {
 		ttl = defaultTxTTL
 	}
-	maxTime := time.Now().Add(ttl)
-	tpl, err := txbuilder.Build(ctx, req.Tx, actions, maxTime)
+
+	minTime := req.MinTime
+	maxTime := req.MaxTime
+	if maxTime.IsZero() {
+		maxTime = time.Now().Add(ttl)
+	}
+	if maxTime.Before(minTime) {
+		return nil, errors.WithDetailf(errBadMaxTime, "max_time is less than min_time")
+	}
+
+	tpl, err := txbuilder.Build(ctx, req.Tx, actions, minTime, maxTime)
 	if errors.Root(err) == txbuilder.ErrAction {
 		// Format each of the inner errors contained in the data.
 		var formattedErrs []httperror.Response

@@ -26,6 +26,8 @@ export type TemplateClause = {
   name: string,
   parameters: ClauseParameter[],
   outputs: Output[],
+  mintimes?: string[],
+  maxtimes?: string[],
   returnStatement?: Return
 }
 
