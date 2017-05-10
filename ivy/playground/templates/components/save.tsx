@@ -5,15 +5,23 @@ import { saveTemplate } from '../actions'
 
 function SaveUnconnected({ reset, saveability }) {
   if (saveability.saveable) {
-    return <td><button className="btn btn-primary" onClick={reset}>
-      <span className="glyphicon glyphicon-floppy-disk"></span>
-      Save Template
-    </button></td>
+    return (
+      <td>
+        <button className="btn btn-primary" onClick={reset}>
+          <span className="glyphicon glyphicon-floppy-disk"></span>
+          Save
+        </button>
+      </td>
+    )
   } else {
-    return <td data-for="saveButtonTooltip" data-tip={saveability.error}><button className="btn btn-primary" disabled={true}>
-        <span className="glyphicon glyphicon-floppy-disk"></span>
-        Save Template
-    </button></td>
+    return (
+      <td data-for="saveButtonTooltip" data-tip={saveability.error}>
+        <button className="btn btn-primary" disabled={true}>
+          <span className="glyphicon glyphicon-floppy-disk"></span>
+          Save
+        </button>
+     </td>
+    )
   }
 }
 

@@ -180,3 +180,7 @@ section h4 {
 .type-label {
   font-style: italic;
 }
+
+.navbar-inverse .navbar-nav > li > a.disabled:hover {
+  color: #9d9d9d;
+}
