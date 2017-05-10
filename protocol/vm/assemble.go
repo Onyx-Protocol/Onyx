@@ -159,10 +159,15 @@ func Disassemble(prog []byte) (string, error) {
 		case OP_JUMP, OP_JUMPIF:
 			addr := binary.LittleEndian.Uint32(inst.Data)
 			str = fmt.Sprintf("%s:$%s", inst.Op.String(), labels[addr])
+		case OP_FALSE:
+			str = "0"
 		default:
-			if len(inst.Data) > 0 {
+			switch {
+			case inst.Op >= OP_1 && inst.Op <= OP_16:
+				str = fmt.Sprintf("%d", inst.Op-0x50)
+			case len(inst.Data) > 0:
 				str = fmt.Sprintf("0x%x", inst.Data)
-			} else {
+			default:
 				str = inst.Op.String()
 			}
 		}

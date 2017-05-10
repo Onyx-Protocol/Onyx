@@ -49,8 +49,8 @@ func TestDisassemble(t *testing.T) {
 		want    string
 		wantErr error
 	}{
-		{mustDecodeHex("525393559c"), "0x02 0x03 ADD 0x05 NUMEQUAL", nil},
-		{mustDecodeHex("01135e94559c"), "0x13 0x0e SUB 0x05 NUMEQUAL", nil},
+		{mustDecodeHex("525393559c"), "2 3 ADD 5 NUMEQUAL", nil},
+		{mustDecodeHex("01135e94559c"), "0x13 14 SUB 5 NUMEQUAL", nil},
 		{mustDecodeHex("6300000000"), "$alpha JUMP:$alpha", nil},
 		{[]byte{0xff}, "NOPxff", nil},
 	}
