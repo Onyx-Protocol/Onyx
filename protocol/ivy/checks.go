@@ -64,6 +64,13 @@ func exprReferencesParam(expr expression, p *param) bool {
 		return exprReferencesParam(e.expr, p)
 	case *varRef:
 		return e.name == p.name
+	case listExpr:
+		for _, elt := range []expression(e) {
+			if exprReferencesParam(elt, p) {
+				return true
+			}
+		}
+		return false
 	}
 	return false
 }
@@ -251,6 +258,7 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 				return err
 			}
 		}
+		return nil
 
 	case *varRef:
 		for _, b := range builtins {
@@ -275,6 +283,15 @@ func decorateRefsInExpr(contract *contract, clause *clause, expr expression) err
 
 	case *propRef:
 		return decorateRefsInExpr(contract, clause, e.expr)
+
+	case listExpr:
+		for _, elt := range []expression(e) {
+			err := decorateRefsInExpr(contract, clause, elt)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	return nil
 }

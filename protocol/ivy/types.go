@@ -153,6 +153,18 @@ func (e booleanLiteral) String() string {
 	return "false"
 }
 
+type listExpr []expression
+
+func (e listExpr) iamaExpression() {}
+
+func (e listExpr) String() string {
+	var elts []string
+	for _, elt := range e {
+		elts = append(elts, elt.String())
+	}
+	return fmt.Sprintf("[%s]", strings.Join(elts, ", "))
+}
+
 func typeOf(expr expression) string {
 	switch e := expr.(type) {
 	case *binaryExpr:
@@ -193,6 +205,9 @@ func typeOf(expr expression) string {
 
 	case booleanLiteral:
 		return "Boolean"
+
+	case listExpr:
+		return "List"
 	}
 	return ""
 }

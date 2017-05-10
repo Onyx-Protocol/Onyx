@@ -402,13 +402,48 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if bi == nil {
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
+
+		// WARNING WARNING WOOP WOOP
+		// special-case hack
+		// WARNING WARNING WOOP WOOP
+		if bi.name == "checkTxMultiSig" {
+			// type checking should have done this for us, but just in case:
+			if len(e.args) != 2 {
+				// xxx err
+			}
+			newEntries, err := compileArg(b, stack, contract, clause, e.args[1])
+			if err != nil {
+				return err
+			}
+
+			// stack: [... sigM ... sig1 M]
+
+			b.addOp(vm.OP_TOALTSTACK) // stack: [... sigM ... sig1]
+			newEntries = newEntries[:len(newEntries)-1]
+
+			b.addOp(vm.OP_TXSIGHASH) // stack: [... sigM ... sig1 txsighash]
+			newEntries = append(newEntries, stackEntry("<txsighash>"))
+
+			_, err = compileArg(b, append(stack, newEntries...), contract, clause, e.args[0])
+			if err != nil {
+				return err
+			}
+
+			// stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 N]
+
+			b.addOp(vm.OP_FROMALTSTACK) // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 N M]
+			b.addOp(vm.OP_SWAP)         // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 M N]
+			b.addOp(vm.OP_CHECKMULTISIG)
+			return nil
+		}
+
 		for i := len(e.args) - 1; i >= 0; i-- {
 			a := e.args[i]
-			err = compileExpr(b, stack, contract, clause, a)
+			newEntries, err := compileArg(b, stack, contract, clause, a)
 			if err != nil {
 				return errors.Wrapf(err, "compiling argument %d in call expression", i)
 			}
-			stack = append(stack, stackEntry(a.String()))
+			stack = append(stack, newEntries...)
 		}
 		ops, err := vm.Assemble(bi.opcodes)
 		if err != nil {
@@ -434,8 +469,42 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		} else {
 			b.addOp(vm.OP_FALSE)
 		}
+
+	case listExpr:
+		// Lists are excluded here because they disobey the invariant of
+		// this function: namely, that it increases the stack size by
+		// exactly one. (A list pushes its items and its length on the
+		// stack.) But they're OK as function-call arguments because the
+		// function (presumably) consumes all the stack items added.
+		return fmt.Errorf("encountered list outside of function-call context")
 	}
 	return nil
+}
+
+func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, expr expression) ([]stackEntry, error) {
+	var newEntries []stackEntry
+
+	if list, ok := expr.(listExpr); ok {
+		for i := 0; i < len(list); i++ {
+			elt := list[len(list)-i-1]
+			err := compileExpr(b, stack, contract, clause, elt)
+			if err != nil {
+				return nil, err
+			}
+			newEntry := stackEntry(elt.String())
+			newEntries = append(newEntries, newEntry)
+			stack = append(stack, newEntry)
+		}
+		b.addInt64(int64(len(list)))
+		newEntries = append(newEntries, stackEntry(fmt.Sprintf("%d", len(list))))
+		return newEntries, nil
+	}
+
+	err := compileExpr(b, stack, contract, clause, expr)
+	if err != nil {
+		return nil, err
+	}
+	return []stackEntry{stackEntry(expr.String())}, nil
 }
 
 func compileRef(b *builder, stack []stackEntry, ref expression) error {

@@ -229,6 +229,22 @@ func parseExpr4(p *parser) expression {
 		consumeTok(p, ")")
 		return e
 	}
+	if peekTok(p, "[") {
+		var elts []expression
+		consumeTok(p, "[")
+		first := true
+		for !peekTok(p, "]") {
+			if first {
+				first = false
+			} else {
+				consumeTok(p, ",")
+			}
+			e := parseExpr(p)
+			elts = append(elts, e)
+		}
+		consumeTok(p, "]")
+		return listExpr(elts)
+	}
 	name := consumeIdentifier(p)
 	return &varRef{name: name}
 }
