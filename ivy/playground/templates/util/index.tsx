@@ -32,7 +32,7 @@ export const mapServerTemplate = (tpl): Template => {
         type: "output",
         contract: {
           type: "contractExpression",
-          address: {
+          program: {
             type: "variable",
             identifier: output.program
           },

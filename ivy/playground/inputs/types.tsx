@@ -11,23 +11,23 @@ export type Input = ParameterInput | StringInput | HashInput | PublicKeyInput | 
   BooleanInput | TimeInput | GenerateStringInput | ProvideStringInput | GenerateHashInput |
   ProvideHashInput | GeneratePublicKeyInput | ProvidePublicKeyInput | GeneratePrivateKeyInput |
   ProvidePrivateKeyInput | TimestampTimeInput |
-  SignatureInput | GenerateSignatureInput | ProvideSignatureInput | AddressInput | 
+  SignatureInput | GenerateSignatureInput | ProvideSignatureInput | ProgramInput | 
   ValueInput | AccountAliasInput | AssetAliasInput | AmountInput |
-  AddressInput | AssetAmountInput | ChoosePublicKeyInput
+  ProgramInput | AssetAmountInput | ChoosePublicKeyInput
 
 export type ComplexInput = StringInput | HashInput | GenerateHashInput | PublicKeyInput | TimeInput |
-  ParameterInput | GeneratePublicKeyInput | SignatureInput | GenerateSignatureInput | AddressInput |
-  AddressInput
+  ParameterInput | GeneratePublicKeyInput | SignatureInput | GenerateSignatureInput | ProgramInput |
+  ProgramInput
 
 export type InputType = "parameterInput" | "stringInput" | "generateStringInput" | "provideStringInput" |
   "hashInput" | "generateHashInput" | "provideHashInput" | "publicKeyInput" | "generatePublicKeyInput" |
   "providePublicKeyInput" | "generatePrivateKeyInput" | "providePrivateKeyInput" | "numberInput" | "booleanInput" |
-  "timeInput" | "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "addressInput" |
+  "timeInput" | "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "programInput" |
   "valueInput" | "accountAliasInput" |
-  "assetAliasInput" | "amountInput" | "addressInput" | "assetAmountInput" | "choosePublicKeyInput"
+  "assetAliasInput" | "amountInput" | "programInput" | "assetAmountInput" | "choosePublicKeyInput"
 
 export type PrimaryInputType = "stringInput" | "hashInput" | "publicKeyInput" | "numberInput" | "booleanInput" |
-  "timeInput" | "signatureInput" | "valueInput" | "addressInput" | "assetAmountInput"
+  "timeInput" | "signatureInput" | "valueInput" | "programInput" | "assetAmountInput"
 
 export type InputContext = "contractParameters"|"clauseParameters"|"transactionDetails"
 
@@ -150,7 +150,7 @@ export type TimestampTimeInput = {
   name: string
 }
 
-// signatures and addresses are only clause inputs, for now
+// signatures and programs are only clause inputs, for now
 
 export type SignatureInput = {
   type: "signatureInput",
@@ -194,8 +194,8 @@ export type AmountInput = {
   name: string
 }
 
-export type AddressInput = {
-  type: "addressInput",
+export type ProgramInput = {
+  type: "programInput",
   value: string, // for now just "accountAliasInput"
   name: string
   computedData?: string
