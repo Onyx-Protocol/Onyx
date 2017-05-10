@@ -1,8 +1,7 @@
-import { Template, ContractParameter, CompilerError as _CompilerError } from 'ivy-compiler'
+import { Template, ContractParameter } from 'ivy-compiler'
 
 import { InputMap } from '../inputs/types'
 
-export type CompilerError = _CompilerError
 export { Template }
 export type ItemMap = { [s: string]: string }
 
