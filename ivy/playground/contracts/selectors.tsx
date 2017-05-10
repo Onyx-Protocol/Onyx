@@ -15,7 +15,7 @@ import {
 import {
   Input,
   InputMap,
-  AddressInput,
+  ProgramInput,
   ValueInput
 } from '../inputs/types'
 
@@ -352,12 +352,12 @@ export const getClauseOutputActions = createSelector(
   (contract, clauseOutputs) => {
     let inputMap = contract.inputMap
     return clauseOutputs.map(clauseOutput => {
-      const addressIdentifier = clauseOutput.contract.address.identifier
-      const addressInput = inputMap["contractParameters." + addressIdentifier + ".addressInput"] as AddressInput
-      if (addressInput === undefined) throw "addressInput unexpectedly undefined"
-      if (addressInput.computedData === undefined) throw "addressInput.computedData unexpectedly undefined"
+      const programIdentifier = clauseOutput.contract.program.identifier
+      const programInput = inputMap["contractParameters." + programIdentifier + ".programInput"] as ProgramInput
+      if (programInput === undefined) throw "programInput unexpectedly undefined"
+      if (programInput.computedData === undefined) throw "programInput.computedData unexpectedly undefined"
       const receiver: Receiver = {
-        controlProgram: addressInput.computedData,
+        controlProgram: programInput.computedData,
         expiresAt: "2020-06-25T00:00:00.000Z" // TODO
       }
 

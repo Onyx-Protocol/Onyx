@@ -251,7 +251,7 @@ function compileToIntermediate(node: ASTNode, emit: (op: Operation)=>void): ASTN
           break
       }
       emit({ type: "push", literalType: "Integer", value: "1" }) // VM version
-      emit({ type: "get", variable: node.contract.address })
+      emit({ type: "get", variable: node.contract.program })
       emit({ type: "op", name: "CHECKOUTPUT", numArgs: 6, numResults: 1 })
       return node
     }

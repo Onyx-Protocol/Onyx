@@ -18,7 +18,7 @@ import {
   PrimaryInputType,
   InputContext,
   HashInput,
-  AddressInput,
+  ProgramInput,
   PublicKeyInput,
   GenerateStringInput,
   GenerateHashInput,
@@ -62,7 +62,7 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
     case "timeInput":
     case "signatureInput":
       return getData(getChild(input), inputsById)
-    case "addressInput":
+    case "programInput":
     case "publicKeyInput": {
       if (input.computedData === undefined) throw "input.computedData unexpectedly undefined"
       return Buffer.from(input.computedData, 'hex')
@@ -143,7 +143,7 @@ export const isPrimaryInputType = (str: string): str is PrimaryInputType => {
     case "timeInput":
     case "signatureInput":
     case "valueInput":
-    case "addressInput":
+    case "programInput":
     case "assetAmountInput":
       return true
     default:
@@ -162,8 +162,8 @@ export const isComplexType = (inputType: InputType) => {
     case "generatePublicKeyInput":
     case "generateSignatureInput":
     case "signatureInput":
-    case "addressInput":
-    case "addressInput":
+    case "programInput":
+    case "programInput":
       return true
     default:
       return false
@@ -184,7 +184,7 @@ export const getInputType = (type: ClauseParameterType): PrimaryInputType => {
     case "Time": return "timeInput"
     case "Signature": return "signatureInput"
     case "Value": return "valueInput"
-    case "Address": return "addressInput"
+    case "Program": return "programInput"
     case "AssetAmount": return "assetAmountInput"
     default:
       throw "can't yet get input type for " + type
@@ -200,7 +200,7 @@ export const isValidInput = (id: string, inputMap: InputMap): boolean => {
     case "publicKeyInput":
     case "timeInput":
     case "signatureInput":
-    case "addressInput":
+    case "programInput":
     case "signatureInput":
       return isValidInput(getChild(input), inputMap)
     case "assetAmountInput":
@@ -243,7 +243,7 @@ export const validateInput = (input: Input): boolean => {
       return input.value === "choosePublicKeyInput"
     case "generateSignatureInput":
       return (input.value === "providePrivateKeyInput")
-    case "addressInput":
+    case "programInput":
       return (input.value === "accountAliasInput")
     case "provideStringInput":
       return validateHex(input.value)
@@ -372,7 +372,7 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
       // return "generateSignatureInput"
     case "generateSignatureInput":
       return "providePrivateKeyInput"
-    case "addressInput":
+    case "programInput":
       return "accountAliasInput"    
     case "booleanInput":
       return "false"
@@ -394,8 +394,8 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
 
 export function getDefaultTransactionDetailValue(inputType: InputType): string {
   switch (inputType) {
-    case "addressInput":
-      return "generateAddressInput"
+    case "programInput":
+      return "generateProgramInput"
     default: // fall back for now
       return getDefaultContractParameterValue(inputType)
   }
@@ -436,7 +436,7 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
       return "false"
     case "timeInput":
       return "blockheightTimeInput"
-    case "addressInput":
+    case "programInput":
       return "accountAliasInput"
     case "accountAliasInput":
     case "assetAliasInput":
@@ -455,7 +455,7 @@ export function getPromisedInputMap(inputsById: {[s: string]: Input}): Promise<{
   let newInputsById = {}
   for (let id in inputsById) {
     let input = inputsById[id]
-    if (input.type === "publicKeyInput" || input.type === "addressInput") {
+    if (input.type === "publicKeyInput" || input.type === "programInput") {
       newInputsById[id] = getPromiseData(id, inputsById)
     } else {
       newInputsById[id] = input
@@ -467,14 +467,14 @@ export function getPromisedInputMap(inputsById: {[s: string]: Input}): Promise<{
 export function getPromiseData(inputId: string, inputsById: {[s: string]: Input}): Promise<Input> {
   let input = inputsById[inputId]
   switch (input.type) {
-    case "addressInput": {
+    case "programInput": {
       let accountId = inputsById[input.name + ".accountAliasInput"].value
       return client.accounts.createReceiver({ accountId }).then((receiver) => {
-        let addressInput: AddressInput = {
-          ...input as AddressInput,
+        let programInput: ProgramInput = {
+          ...input as ProgramInput,
           computedData: receiver.controlProgram
         }
-        return addressInput
+        return programInput
       })
     }
     case "publicKeyInput": {
@@ -564,7 +564,7 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
       addDefaultInput(inputs, "amountInput", name)
       return
     }
-    case "addressInput": {
+    case "programInput": {
       addDefaultInput(inputs, "accountAliasInput", name)
       return
     }
