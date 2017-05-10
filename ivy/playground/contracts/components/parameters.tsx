@@ -10,7 +10,7 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
          ProvideHashInput, InputType, ComplexInput, SignatureInput, GenerateSignatureInput,
          ProvideSignatureInput, ProvidePrivateKeyInput,
          ValueInput, AccountAliasInput, AssetAliasInput, AssetAmountInput, AmountInput,
-         AddressInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
+         ProgramInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
 import { getParameterIdentifier, getInputContext } from '../../inputs/data'
 import { getSpendInputMap, getClauseParameterIds } from '../selectors'
 import { getInputMap } from '../../templates/selectors'
@@ -175,7 +175,7 @@ function AssetAmountWidget(props: { input: AssetAmountInput, handleChange: (e)=>
   </div>
 }
 
-function AddressWidget(props: { input: AddressInput, handleChange: (e)=>undefined }) {
+function ProgramWidget(props: { input: ProgramInput, handleChange: (e)=>undefined }) {
   return <div>
     {getChildWidget(props.input)}
   </div>
@@ -258,14 +258,14 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
     case "generateHashInput": return GenerateHashWidget
     case "timeInput": return TimeWidget
     case "timestampTimeInput": return TimestampTimeWidget
-    case "addressInput": return AddressWidget
+    case "programInput": return ProgramWidget
     case "valueInput": return ValueWidget
     case "accountAliasInput": return AccountAliasWidget
     case "assetAmountInput": return AssetAmountWidget
     case "assetAliasInput": return AssetAliasWidget
     case "amountInput": return AmountWidget
     case "amountInput": return AmountWidget
-    case "addressInput": return AddressWidget
+    case "programInput": return ProgramWidget
     case "choosePublicKeyInput": return ChoosePublicKeyWidget
     default: return ParameterWidget
   }

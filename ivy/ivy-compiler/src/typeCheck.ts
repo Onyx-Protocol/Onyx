@@ -354,10 +354,10 @@ export function typeCheckExpression(expression: Expression, scope: Scope): Type 
                                          .reduce((firstType, secondType) => matchTypes(firstType, secondType, scope))
       return { type: "listType", elementType: unifiedType }
     case "contractExpression": {
-      let addressType = typeCheckExpression(expression.address, scope)
+      let programType = typeCheckExpression(expression.program, scope)
       let valueType = typeCheckExpression(expression.value, scope)
-      if (addressType !== "Address") {
-        throw new IvyTypeError("expected " + expression.address.identifier + "to have type Address, got " + typeToString(addressType)) 
+      if (programType !== "Program") {
+        throw new IvyTypeError("expected " + expression.program.identifier + "to have type Program, got " + typeToString(programType)) 
       }
       if (valueType !== "Value") {
         throw new IvyTypeError("expected" + expression.value.identifier + " to have type Value, got " + typeToString(valueType))

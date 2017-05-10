@@ -37,7 +37,7 @@ var DocCommentHighlightRules = function() {
     this.$rules = {
         "start" : [ {
             token : "comment.doc.tag",
-            regex : "@[\\w\\d_]+" // TODO: fix email addresses
+            regex : "@[\\w\\d_]+" // TODO: fix email programs
         }, 
         DocCommentHighlightRules.getTagRule(),
         {
@@ -84,7 +84,7 @@ var oop = acequire("../lib/oop");
 var DocCommentHighlightRules = acequire("./doc_comment_highlight_rules").DocCommentHighlightRules;
 var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
 var identifierRe = "[a-zA-Z\\$_\u00a1-\uffff][a-zA-Z\\d\\$_\u00a1-\uffff]*\\b";
-var typeRe = "PublicKey|Signature|String|Integer|Hash|Time|Boolean|Address|AssetAmount|Value"
+var typeRe = "PublicKey|Signature|String|Integer|Hash|Time|Boolean|Program|AssetAmount|Value"
 
 var IvyHighlightRules = function(options) {
     var keywordMapper = this.createKeywordMapper({
