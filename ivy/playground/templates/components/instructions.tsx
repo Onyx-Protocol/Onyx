@@ -12,11 +12,12 @@ const mapStateToProps = (state) => {
 
 const Instructions = ({ opcodes }) => {
   return (
-    <app.components.Section name="Compiled">
-      <div className="codeblock">
+    <div className="panel-body inner">
+      <h1>Compiled</h1>
+      <div className="codeblock instructions">
         { opcodes }
       </div>
-    </app.components.Section>
+    </div>
   )
 }
 
