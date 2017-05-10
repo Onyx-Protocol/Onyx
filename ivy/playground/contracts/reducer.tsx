@@ -1,50 +1,41 @@
 import { ContractsState } from './types'
 import { SELECT_TEMPLATE } from './actions'
 import { getParameterIdList } from '../templates/selectors'
-import { Item as Template } from '../templates/types'
+import { Template } from '../templates/types'
 import { Input, InputMap } from '../inputs/types'
-import { getInputMap } from './selectors'
+import { getInputMap } from '../templates/selectors'
 import { addParameterInput } from '../inputs/data'
 import { AppState } from '../app/types'
 import { createSelector } from 'reselect'
 import { CREATE_CONTRACT, UPDATE_CLAUSE_INPUT, UPDATE_INPUT,
-         SET_CLAUSE_INDEX, SHOW_ERRORS, SPEND_CONTRACT } from './actions'
+         SET_CLAUSE_INDEX, SPEND_CONTRACT } from './actions'
 import { addDefaultInput, getPublicKeys } from '../inputs/data'
 import { Item as Contract } from './types'
+import { ContractParameter } from 'ivy-compiler'
 
 export const INITIAL_STATE: ContractsState = {
   itemMap: {},
   idList: [],
   spentIdList: [],
-  inputMap: {},
-  selectedTemplateId: "",
   spendContractId: "",
   selectedClauseIndex: 0,
-  showErrors: false
+}
+
+export function generateInputMap(contractParameters: ContractParameter[]): InputMap {
+  let inputs: Input[] = []
+  for (let parameter of contractParameters) {
+    addParameterInput(inputs, parameter.valueType, "contractParameters." + parameter.identifier)
+  }
+
+  let inputMap = {}
+  for (let input of inputs) {
+    inputMap[input.name] = input
+  }
+  return inputMap
 }
 
 export default function reducer(state: ContractsState = INITIAL_STATE, action): ContractsState {
   switch (action.type) {
-    case UPDATE_INPUT:
-      let name = action.name
-      let newValue = action.newValue
-      return {
-        ...state,
-        inputMap: {
-          ...state.inputMap,
-          [name]: {
-            ...state.inputMap[name],
-            value: newValue
-          }
-        }
-      }
-    case SELECT_TEMPLATE:
-      return {
-        ...state,
-        inputMap: generateInputMap(action.template),
-        selectedTemplateId: action.templateId,
-        showErrors: false
-      }
     case SPEND_CONTRACT:
       return {
         ...state,
@@ -96,7 +87,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
           ...state.itemMap,
           [contractId]: contract
         },
-        inputMap: generateInputMap(action.template),
+        inputMap: generateInputMap(action.template.contractParameters),
         showErrors: false
       }
     case UPDATE_CLAUSE_INPUT: {
@@ -133,12 +124,6 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         selectedClauseIndex: action.selectedClauseIndex
       }
     }
-    case SHOW_ERRORS: {
-      return {
-        ...state,
-        showErrors: true
-      }
-    }
     case "@@router/LOCATION_CHANGE":
       let path = action.payload.pathname.split("/")
       if (path[1] === "ivy") {
@@ -149,7 +134,6 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
           ...state,
           spendContractId: path[2],
           selectedClauseIndex: 0,
-          showErrors: false
         }
       }
       return state
@@ -158,27 +142,10 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
   }
 }
 
-function generateInputMap(template: Template): InputMap {
-  if (template === undefined) {
-    return {}
-  }
-
-  let inputs: Input[] = []
-  for (let parameter of template.contractParameters) {
-    addParameterInput(inputs, parameter.valueType, "contractParameters." + parameter.identifier)
-  }
-
-  let inputMap = {}
-  for (let input of inputs) {
-    inputMap[input.name] = input
-  }
-  return inputMap
-}
-
 export const getParameterInputs = createSelector(
   getInputMap,
   getParameterIdList,
   (inputMap, parameterIdList) => {
-    return parameterIdList.map(id => inputMap[id])
+    return inputMap && parameterIdList && parameterIdList.map(id => inputMap[id])
   }
 )

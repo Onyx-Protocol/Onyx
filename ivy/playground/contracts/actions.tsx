@@ -1,3 +1,4 @@
+import { mapServerTemplate } from '../templates/util';
 import { AssetAliasInput, AddressInput } from '../inputs/types';
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
@@ -7,10 +8,6 @@ import { push } from 'react-router-redux'
 import {
   getClauseParameterIds,
   getClauseDataParameterIds,
-  getInputMap,
-  getParameterData,
-  getContractValue,
-  getSelectedTemplate,
   getSpendContractId,
   getClauseWitnessComponents,
   getSpendContractSelectedClauseIndex,
@@ -18,6 +15,15 @@ import {
   getClauseValues,
   getClauseReturnAction
 } from './selectors';
+import {
+  getContractValue,
+  getInputMap,
+  getParameterData,
+} from '../templates/selectors'
+
+import {
+  getSource
+} from '../templates/selectors'
 
 import { getPromisedInputMap } from '../inputs/data'
 
@@ -34,6 +40,7 @@ import {
 } from '../transactions/types'
 import { createFundingTx, createSpendingTx } from '../transactions'
 import { client, prefixRoute } from '../util'
+
 
 export const SELECT_TEMPLATE = 'contracts/SELECT_TEMPLATE'
 export const SET_CLAUSE_INDEX = 'contracts/SET_CLAUSE_INDEX'
@@ -55,6 +62,7 @@ export const create = () => {
   return (dispatch, getState) => {
     let state = getState()
     let inputMap = getInputMap(state)
+    if (inputMap === undefined) throw "create should not have been called when inputMap is undefined"
     let promisedInputMap = getPromisedInputMap(inputMap)
     promisedInputMap.then((inputMap) => {
       const args = getParameterData(state, inputMap).map(param => {
@@ -75,8 +83,8 @@ export const create = () => {
         }
         throw 'unsupported argument type ' + (typeof param)
       })
-      const template = getSelectedTemplate(state)
-      client.ivy.compile({ contract: template.source, args: args }).then(contract => {
+      const source = getSource(state)
+      client.ivy.compile({ contract: source, args: args }).then(contract => {
         let controlProgram = contract.program
         let spendFromAccount = getContractValue(state)
         if (spendFromAccount === undefined) throw "spendFromAccount should not be undefined here"
@@ -92,11 +100,13 @@ export const create = () => {
           assetId,
           amount
         }
+        let template = mapServerTemplate(contract)
         let actions: Action[] = [spendFromAccount, controlWithReceiver]
         return createFundingTx(actions).then(utxo => {
           dispatch({
             type: CREATE_CONTRACT,
             controlProgram,
+            source,
             template,
             inputMap,
             utxo
@@ -106,7 +116,6 @@ export const create = () => {
       })
     }).catch(err => {
       console.log("error found", err)
-      dispatch(showErrors())
     })
   }
 }

@@ -1,6 +1,5 @@
-import { mustCompileTemplate } from './util'
 import { client } from '../util'
-import { Item, ItemMap, State } from './types'
+import { Template, ItemMap, TemplateState } from './types'
 import { compileTemplate } from 'ivy-compiler'
 
 export const NAME = 'templates'
@@ -89,11 +88,34 @@ export const REVEAL_FACTORS = `contract RevealFactors(product: Integer, value: V
   }
 }`
 
-export const itemMap: ItemMap = {}
-export const INITIAL_STATE: State = { 
-  itemMap: {}, 
-  idList: [], 
-  source: '', 
-  selected: '',
+const itemMap = {
+  TrivialLock: TRIVIAL_LOCK,
+  LockWithPublicKey: LOCK_WITH_PUBLIC_KEY,
+  LockToOutput: LOCK_TO_OUTPUT,
+  TradeOffer: TRADE_OFFER,
+  EscrowedTransfer: ESCROWED_TRANSFER,
+  CollateralizedLoan: COLLATERALIZED_LOAN,
+  RevealPreimage: REVEAL_PREIMAGE,
+  RevealFactors: REVEAL_FACTORS
+}
+
+export const idList = [
+  "TrivialLock",
+  "LockWithPublicKey",
+  "LockToOutput",
+  "TradeOffer",
+  "EscrowedTransfer",
+  "CollateralizedLoan",
+  "RevealPreimage"
+]
+
+const selected = idList[0]
+const source = itemMap[selected].source
+
+export const INITIAL_STATE: TemplateState = { 
+  itemMap, 
+  idList, 
+  source: '',
+  inputMap: {},
   compiled: undefined
 }

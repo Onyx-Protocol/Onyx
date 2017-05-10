@@ -1,6 +1,6 @@
 import { Input, InputMap } from '../inputs/types'
 
-import { Item as Template } from '../templates/types'
+import { Template } from '../templates/types'
 
 export type Item = {
   // funding tx id
@@ -39,9 +39,6 @@ export type ContractsState = {
   itemMap: ItemMap,
   idList: string[],
   spentIdList: string[],
-  inputMap: InputMap,
-  selectedTemplateId: string,
   spendContractId: string,
   selectedClauseIndex: number,
-  showErrors: boolean
 }

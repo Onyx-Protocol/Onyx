@@ -468,7 +468,6 @@ export function getPromiseData(inputId: string, inputsById: {[s: string]: Input}
   let input = inputsById[inputId]
   switch (input.type) {
     case "addressInput": {
-      console.log("input", input)
       let accountId = inputsById[input.name + ".accountAliasInput"].value
       return client.accounts.createReceiver({ accountId }).then((receiver) => {
         let addressInput: AddressInput = {
