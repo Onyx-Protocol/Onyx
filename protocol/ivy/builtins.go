@@ -3,23 +3,23 @@ package ivy
 type builtin struct {
 	name    string
 	opcodes string
-	args    []string
-	result  string
+	args    []typeDesc
+	result  typeDesc
 }
 
 var builtins = []builtin{
-	{"sha3", "SHA3", []string{"String"}, "Hash"},
-	{"sha256", "SHA256", []string{"String"}, "Hash"},
-	{"size", "SIZE SWAP DROP", []string{""}, "Integer"},
-	{"abs", "ABS", []string{"Integer"}, "Integer"},
-	{"min", "MIN", []string{"Integer", "Integer"}, "Integer"},
-	{"max", "MAX", []string{"Integer", "Integer"}, "Integer"},
-	{"checkTxSig", "TXSIGHASH SWAP CHECKSIG", []string{"PublicKey", "Signature"}, "Boolean"},
-	{"concat", "CAT", []string{"", ""}, "String"},
-	{"concatpush", "CATPUSHDATA", []string{"", ""}, "String"},
-	{"before", "MAXTIME GREATERTHAN", []string{"Time"}, "Boolean"},
-	{"after", "MINTIME LESSTHAN", []string{"Time"}, "Boolean"},
-	{"checkTxMultiSig", "", []string{"List", "List"}, "Boolean"}, // WARNING WARNING WOOP WOOP special case
+	{"sha3", "SHA3", []typeDesc{strType}, hashType},
+	{"sha256", "SHA256", []typeDesc{strType}, hashType},
+	{"size", "SIZE SWAP DROP", []typeDesc{nilType}, intType},
+	{"abs", "ABS", []typeDesc{intType}, intType},
+	{"min", "MIN", []typeDesc{intType, intType}, intType},
+	{"max", "MAX", []typeDesc{intType, intType}, intType},
+	{"checkTxSig", "TXSIGHASH SWAP CHECKSIG", []typeDesc{pubkeyType, sigType}, boolType},
+	{"concat", "CAT", []typeDesc{nilType, nilType}, strType},
+	{"concatpush", "CATPUSHDATA", []typeDesc{nilType, nilType}, strType},
+	{"before", "MAXTIME GREATERTHAN", []typeDesc{timeType}, boolType},
+	{"after", "MINTIME LESSTHAN", []typeDesc{timeType}, boolType},
+	{"checkTxMultiSig", "", []typeDesc{listType, listType}, boolType}, // WARNING WARNING WOOP WOOP special case
 }
 
 type binaryOp struct {
@@ -27,8 +27,7 @@ type binaryOp struct {
 	precedence int
 	opcodes    string
 
-	// types of operands and result
-	left, right, result string
+	left, right, result typeDesc
 }
 
 var binaryOps = []binaryOp{
@@ -67,8 +66,7 @@ type unaryOp struct {
 	op      string
 	opcodes string
 
-	// types of operand and result
-	operand, result string
+	operand, result typeDesc
 }
 
 var unaryOps = []unaryOp{
@@ -81,12 +79,10 @@ var unaryOps = []unaryOp{
 }
 
 // properties[type] is a map from property names to their types
-var properties = map[string]map[string]string{
-	"Value": map[string]string{
-		"assetAmount": "AssetAmount",
-	},
-	"Transaction": map[string]string{
-		"after":  "Function",
-		"before": "Function",
-	},
+var properties = make(map[typeDesc]map[string]typeDesc)
+
+func init() {
+	properties[valueType] = map[string]typeDesc{
+		"assetAmount": assetAmountType,
+	}
 }

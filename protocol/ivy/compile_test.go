@@ -35,7 +35,7 @@ contract LockWith2of3Keys(pubkey1, pubkey2, pubkey3: PublicKey, locked: Value) {
 `
 
 const lockToOutput = `
-contract LockToOutput(address: Address, locked: Value) {
+contract LockToOutput(address: Program, locked: Value) {
   clause unlock() {
     output address(locked)
   }
@@ -43,15 +43,15 @@ contract LockToOutput(address: Address, locked: Value) {
 `
 
 const tradeOffer = `
-contract TradeOffer(requested: AssetAmount, sellerAddress: Address, sellerKey: PublicKey, offered: Value) {
+contract TradeOffer(requested: AssetAmount, sellerProgram: Program, sellerKey: PublicKey, offered: Value) {
   clause trade(payment: Value) {
     verify payment.assetAmount == requested
-    output sellerAddress(payment)
+    output sellerProgram(payment)
     return offered
   }
   clause cancel(sellerSig: Signature) {
     verify checkTxSig(sellerKey, sellerSig)
-    output sellerAddress(offered)
+    output sellerProgram(offered)
   }
 }
 `
@@ -59,8 +59,8 @@ contract TradeOffer(requested: AssetAmount, sellerAddress: Address, sellerKey: P
 const escrowedTransfer = `
 contract EscrowedTransfer(
   agent: PublicKey,
-  sender: Address,
-  recipient: Address,
+  sender: Program,
+  recipient: Program,
   value: Value
 ) {
   clause approve(sig: Signature) {
@@ -78,8 +78,8 @@ const collateralizedLoan = `
 contract CollateralizedLoan(
   balance: AssetAmount,
   deadline: Time,
-  lender: Address,
-  borrower: Address,
+  lender: Program,
+  borrower: Program,
   collateral: Value
 ) {
   clause repay(payment: Value) {
@@ -192,7 +192,7 @@ func TestCompile(t *testing.T) {
 				Program: mustDecodeHex("0000c3c2515579c1"),
 				Params: []ContractParam{{
 					Name: "address",
-					Typ:  "Address",
+					Typ:  "Program",
 				}, {
 					Name: "locked",
 					Typ:  "Value",
@@ -219,8 +219,8 @@ func TestCompile(t *testing.T) {
 					Name: "requested",
 					Typ:  "AssetAmount",
 				}, {
-					Name: "sellerAddress",
-					Typ:  "Address",
+					Name: "sellerProgram",
+					Typ:  "Program",
 				}, {
 					Name: "sellerKey",
 					Typ:  "PublicKey",
@@ -236,7 +236,7 @@ func TestCompile(t *testing.T) {
 					}},
 					Values: []ValueInfo{{
 						Name:        "payment",
-						Program:     "sellerAddress",
+						Program:     "sellerProgram",
 						AssetAmount: "requested",
 					}, {
 						Name: "offered",
@@ -251,7 +251,7 @@ func TestCompile(t *testing.T) {
 					}},
 					Values: []ValueInfo{{
 						Name:    "offered",
-						Program: "sellerAddress",
+						Program: "sellerProgram",
 					}},
 					Mintimes: []string{},
 					Maxtimes: []string{},
@@ -269,10 +269,10 @@ func TestCompile(t *testing.T) {
 					Typ:  "PublicKey",
 				}, {
 					Name: "sender",
-					Typ:  "Address",
+					Typ:  "Program",
 				}, {
 					Name: "recipient",
-					Typ:  "Address",
+					Typ:  "Program",
 				}, {
 					Name: "value",
 					Typ:  "Value",
@@ -318,10 +318,10 @@ func TestCompile(t *testing.T) {
 					Typ:  "Time",
 				}, {
 					Name: "lender",
-					Typ:  "Address",
+					Typ:  "Program",
 				}, {
 					Name: "borrower",
-					Typ:  "Address",
+					Typ:  "Program",
 				}, {
 					Name: "collateral",
 					Typ:  "Value",
