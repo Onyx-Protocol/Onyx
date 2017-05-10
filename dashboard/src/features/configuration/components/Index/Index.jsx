@@ -4,6 +4,7 @@ import pick from 'lodash/pick'
 import actions from 'actions'
 import React from 'react'
 import styles from './Index.scss'
+import { docsRoot } from 'utility/environment'
 
 class Index extends React.Component {
   constructor(props) {
@@ -161,7 +162,7 @@ class Index extends React.Component {
               <TextField
                 title={[
                   'Cross-core Access Token',
-                  <a href='http://www.chain.com/docs/core/learn-more/authentication-and-authorization' target='_blank'>
+                  <a href={`${docsRoot}/core/learn-more/authentication-and-authorization`} target='_blank'>
                     <small className={styles.infoLink}>
                       <span className='glyphicon glyphicon-info-sign'></span>
                     </small>
