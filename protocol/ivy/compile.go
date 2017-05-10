@@ -285,21 +285,24 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 		case *outputStatement:
 			// index
 			b.addInt64(stmt.index)
-			stack = append(stack, stackEntry{})
+
+			// copy of stack allows stack itself to remain unchanged in the
+			// next iteration of the statements loop
+			ostack := append(stack, stackEntry(fmt.Sprintf("%d", stmt.index)))
 
 			// refdatahash
 			b.addData(nil)
-			stack = append(stack, stackEntry{})
+			ostack = append(ostack, stackEntry("''"))
 
 			p := stmt.param
 			if p == nil {
 				// amount
 				b.addOp(vm.OP_AMOUNT)
-				stack = append(stack, stackEntry{})
+				ostack = append(ostack, stackEntry("<amount>"))
 
 				// asset
 				b.addOp(vm.OP_ASSET)
-				stack = append(stack, stackEntry{})
+				ostack = append(ostack, stackEntry("<asset>"))
 			} else {
 				// amount
 				// TODO(bobg): this is a bit of a hack; need a cleaner way to
@@ -314,11 +317,11 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 				if err != nil {
 					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
-				err = compileExpr(b, stack, contract, clause, r)
+				err = compileExpr(b, ostack, contract, clause, r)
 				if err != nil {
 					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
-				stack = append(stack, stackEntry{})
+				ostack = append(ostack, stackEntry(stmt.param.name+".amount"))
 
 				// asset
 				r = &propRef{
@@ -331,19 +334,19 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 				if err != nil {
 					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
-				err = compileExpr(b, stack, contract, clause, r)
+				err = compileExpr(b, ostack, contract, clause, r)
 				if err != nil {
 					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
-				stack = append(stack, stackEntry{})
+				ostack = append(ostack, stackEntry(stmt.param.name+".asset"))
 			}
 
 			// version
 			b.addInt64(1)
-			stack = append(stack, stackEntry{})
+			ostack = append(ostack, stackEntry("1"))
 
 			// prog
-			err = compileExpr(b, stack, contract, clause, stmt.call.fn)
+			err = compileExpr(b, ostack, contract, clause, stmt.call.fn)
 			if err != nil {
 				return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 			}
@@ -373,7 +376,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if err != nil {
 			return errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
 		}
-		err = compileExpr(b, append(stack, stackEntry{}), contract, clause, e.right)
+		err = compileExpr(b, append(stack, stackEntry(e.left.String())), contract, clause, e.right)
 		if err != nil {
 			return errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
 		}
@@ -405,7 +408,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			if err != nil {
 				return errors.Wrapf(err, "compiling argument %d in call expression", i)
 			}
-			stack = append(stack, stackEntry{})
+			stack = append(stack, stackEntry(a.String()))
 		}
 		ops, err := vm.Assemble(bi.opcodes)
 		if err != nil {
@@ -436,16 +439,15 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 }
 
 func compileRef(b *builder, stack []stackEntry, ref expression) error {
-	for i := len(stack) - 1; i >= 0; i-- {
-		if stack[i].matches(ref) {
-			depth := int64(len(stack) - 1 - i)
+	for depth := 0; depth < len(stack); depth++ {
+		if stack[len(stack)-depth-1].matches(ref) {
 			switch depth {
 			case 0:
 				b.addOp(vm.OP_DUP)
 			case 1:
 				b.addOp(vm.OP_OVER)
 			default:
-				b.addInt64(depth)
+				b.addInt64(int64(depth))
 				b.addOp(vm.OP_PICK)
 			}
 			return nil
