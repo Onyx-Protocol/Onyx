@@ -75,57 +75,6 @@ func exprReferencesParam(expr expression, p *param) bool {
 	return false
 }
 
-// Identifiers that may not conflict:
-//  - language keywords
-//  - the contract name
-//  - clause names
-//  - contract params
-//  - clause params
-// However, two sibling clauses _may_ reuse the same parameter names (including "spends" identifiers).
-func prohibitNameCollisions(contract *contract) error {
-	topLevelNames := make(map[string]string) // maps identifiers to a description of their first use
-	for _, k := range keywords {
-		topLevelNames[k] = "keyword"
-	}
-	for _, b := range builtins {
-		topLevelNames[b.name] = "built-in function"
-	}
-	if desc, ok := topLevelNames[contract.name]; ok {
-		return fmt.Errorf("contract name \"%s\" conflicts with %s", contract.name, desc)
-	}
-	topLevelNames[contract.name] = "contract name"
-	for _, p := range contract.params {
-		if desc, ok := topLevelNames[p.name]; ok {
-			return fmt.Errorf("contract parameter \"%s\" conflicts with %s", p.name, desc)
-		}
-		topLevelNames[p.name] = "contract parameter"
-	}
-
-	// clause names are top-level names
-	for _, clause := range contract.clauses {
-		if desc, ok := topLevelNames[clause.name]; ok {
-			return fmt.Errorf("clause name \"%s\" conflicts with %s", clause.name, desc)
-		}
-		topLevelNames[clause.name] = "clause name"
-	}
-
-	// clause params are local to clauses
-	for _, clause := range contract.clauses {
-		clauseNames := make(map[string]string)
-		for k, v := range topLevelNames {
-			clauseNames[k] = v
-		}
-		for _, p := range clause.params {
-			if desc, ok := clauseNames[p.name]; ok {
-				return fmt.Errorf("parameter \"%s\" of clause \"%s\" conflicts with %s", p.name, clause.name, desc)
-			}
-			clauseNames[p.name] = fmt.Sprintf("clause parameter")
-		}
-	}
-
-	return nil
-}
-
 func requireValueParam(contract *contract) error {
 	if len(contract.params) == 0 {
 		return fmt.Errorf("must have at least one contract parameter")

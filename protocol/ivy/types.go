@@ -7,6 +7,7 @@ var (
 	assetType       = typeDesc("Asset")
 	assetAmountType = typeDesc("AssetAmount")
 	boolType        = typeDesc("Boolean")
+	contractType    = typeDesc("Contract")
 	hashType        = typeDesc("Hash")
 	intType         = typeDesc("Integer")
 	listType        = typeDesc("List")
