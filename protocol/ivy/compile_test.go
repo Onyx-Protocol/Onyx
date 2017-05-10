@@ -264,7 +264,7 @@ func TestCompile(t *testing.T) {
 			collateralizedLoan,
 			CompileResult{
 				Name:    "CollateralizedLoan",
-				Program: mustDecodeHex("557a641c000000000070515879c1695100c3c2515e79c163290000005279c59f690000c3c2515879c1"),
+				Program: mustDecodeHex("557a641c000000000070515879c1695100c3c2515979c163290000005279c59f690000c3c2515879c1"),
 				Params: []ContractParam{{
 					Name: "balance",
 					Typ:  "AssetAmount",

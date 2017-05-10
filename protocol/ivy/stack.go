@@ -1,18 +1,9 @@
 package ivy
 
-type stackEntry struct {
-	param    *param
-	property string
-}
+type stackEntry string
 
 func (s stackEntry) matches(expr expression) bool {
-	if s.param != referencedParam(expr) {
-		return false
-	}
-	if p, ok := expr.(*propRef); ok {
-		return s.property == p.property
-	}
-	return s.property == ""
+	return string(s) == expr.String()
 }
 
 func addParamsToStack(stack []stackEntry, params []*param) []stackEntry {
@@ -22,18 +13,10 @@ func addParamsToStack(stack []stackEntry, params []*param) []stackEntry {
 		case "Value":
 			continue
 		case "AssetAmount":
-			stack = append(stack, stackEntry{
-				param:    p,
-				property: "amount",
-			})
-			stack = append(stack, stackEntry{
-				param:    p,
-				property: "asset",
-			})
+			stack = append(stack, stackEntry(p.name+".amount"))
+			stack = append(stack, stackEntry(p.name+".asset"))
 		default:
-			stack = append(stack, stackEntry{
-				param: p,
-			})
+			stack = append(stack, stackEntry(p.name))
 		}
 	}
 	return stack
