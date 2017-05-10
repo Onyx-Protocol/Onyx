@@ -198,7 +198,7 @@ func referencedBuiltin(expr expression) *builtin {
 		return e.builtin
 
 	case *propRef:
-		t := typeOf(e)
+		t := e.typ()
 		m := properties[t]
 		if m != nil {
 			if m[e.property] == "Function" {
@@ -302,13 +302,13 @@ func decorateOutputs(contract *contract, clause *clause) error {
 		if !ok {
 			continue
 		}
-		if t := typeOf(stmt.call.fn); t != "Address" {
+		if t := stmt.call.fn.typ(); t != "Address" {
 			return fmt.Errorf("type of function (%s) in output statement of clause \"%s\" is \"%s\", must be Address", stmt.call.fn, clause.name, t)
 		}
 		if len(stmt.call.args) != 1 {
 			return fmt.Errorf("not yet supported: zero or multiple arguments in call to \"%s\" in output statement of clause \"%s\"", stmt.call.fn, clause.name)
 		}
-		if t := typeOf(stmt.call.args[0]); t != "Value" {
+		if t := stmt.call.args[0].typ(); t != "Value" {
 			return fmt.Errorf("not yet supported: argument of non-Value type \"%s\" passed to \"%s\" in output statement of clause \"%s\"", t, stmt.call.fn, clause.name)
 		}
 		p := referencedParam(stmt.call.args[0])
@@ -356,7 +356,7 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			} else {
 				continue
 			}
-			if typeOf(other) != "AssetAmount" {
+			if other.typ() != "AssetAmount" {
 				continue
 			}
 			v.associatedOutput = stmt
@@ -398,7 +398,7 @@ func typeCheckClause(contract *contract, clause *clause) error {
 				// statement's CHECKOUTPUT.
 				continue
 			}
-			if t := typeOf(stmt.expr); t != "Boolean" {
+			if t := stmt.expr.typ(); t != "Boolean" {
 				return fmt.Errorf("expression in verify statement in clause \"%s\" has type \"%s\", must be Boolean", clause.name, t)
 			}
 
@@ -406,7 +406,7 @@ func typeCheckClause(contract *contract, clause *clause) error {
 			if i != len(clause.statements)-1 {
 				return fmt.Errorf("return must be the final statement of clause \"%s\"", clause.name)
 			}
-			if t := typeOf(stmt.expr); t != "Value" {
+			if t := stmt.expr.typ(); t != "Value" {
 				return fmt.Errorf("expression \"%s\" in return statement of clause \"%s\" has type \"%s\", must be Value", stmt.expr, clause.name, t)
 			}
 			if referencedParam(stmt.expr) != contract.params[len(contract.params)-1] {
@@ -420,8 +420,8 @@ func typeCheckClause(contract *contract, clause *clause) error {
 func typeCheckExpr(expr expression) error {
 	switch e := expr.(type) {
 	case *binaryExpr:
-		lType := typeOf(e.left)
-		rType := typeOf(e.right)
+		lType := e.left.typ()
+		rType := e.right.typ()
 
 		if e.op.left != "" && lType != e.op.left {
 			return fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
@@ -441,8 +441,8 @@ func typeCheckExpr(expr expression) error {
 		}
 
 	case *unaryExpr:
-		if e.op.operand != "" && typeOf(e.expr) != e.op.operand {
-			return fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, typeOf(e.expr), e.op.operand)
+		if e.op.operand != "" && e.expr.typ() != e.op.operand {
+			return fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(), e.op.operand)
 		}
 
 	case *call:
@@ -454,8 +454,8 @@ func typeCheckExpr(expr expression) error {
 			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", b.name, len(e.args), len(b.args))
 		}
 		for i, actual := range e.args {
-			if b.args[i] != "" && typeOf(actual) != b.args[i] {
-				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, b.name, typeOf(actual), b.args[i])
+			if b.args[i] != "" && actual.typ() != b.args[i] {
+				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, b.name, actual.typ(), b.args[i])
 			}
 		}
 	}
