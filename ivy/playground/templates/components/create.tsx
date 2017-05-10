@@ -27,7 +27,7 @@ const Create = ({ source, instantiable }) => {
   if (instantiable) {
     instantiate = (
       <div>
-        <app.components.Section name="Instantiate">
+        <app.components.Section name="Contract Arguments">
           <div className="form-wrapper">
             <ContractParameters />
           </div>
