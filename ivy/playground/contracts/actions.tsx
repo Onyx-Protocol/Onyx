@@ -13,7 +13,9 @@ import {
   getSpendContractSelectedClauseIndex,
   getClauseOutputActions,
   getClauseValues,
-  getClauseReturnAction
+  getClauseReturnAction,
+  getClauseMintimes,
+  getClauseMaxtimes
 } from './selectors';
 import {
   getContractValue,
@@ -144,7 +146,9 @@ export const spend = () => {
     const clauseParams = getClauseParameterIds(state)
     const clauseDataParams = getClauseDataParameterIds(state)
     const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
-    createSpendingTx(actions, witness).then((result) => {
+    const mintimes = getClauseMintimes(getState())
+    const maxtimes = getClauseMaxtimes(getState())
+    createSpendingTx(actions, witness, mintimes, maxtimes).then((result) => {
       dispatch({
         type: SPEND_CONTRACT,
         id: contract.id

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"chain/encoding/json"
 	"chain/errors"
@@ -12,11 +13,14 @@ var (
 	errBadActionType = errors.New("bad action type")
 	errBadAlias      = errors.New("bad alias")
 	errBadAction     = errors.New("bad action object")
+	errBadMaxTime    = errors.New("bad tx max time")
 )
 
 type buildRequest struct {
 	Tx      *legacy.TxData           `json:"base_transaction"`
 	Actions []map[string]interface{} `json:"actions"`
+	MinTime time.Time                `json:"min_time"`
+	MaxTime time.Time                `json:"max_time"`
 	TTL     json.Duration            `json:"ttl"`
 }
 
