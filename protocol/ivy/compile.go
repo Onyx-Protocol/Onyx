@@ -75,7 +75,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		Params:  []ContractParam{},
 	}
 	for _, param := range c.params {
-		result.Params = append(result.Params, ContractParam{Name: param.name, Typ: param.typ})
+		result.Params = append(result.Params, ContractParam{Name: param.name, Typ: string(param.typ)})
 	}
 
 	for _, clause := range c.clauses {
@@ -95,7 +95,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		// TODO(bobg): this could just be info.Args = clause.params, if we
 		// rejigger the types and exports.
 		for _, p := range clause.params {
-			info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: p.typ})
+			info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: string(p.typ)})
 		}
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {

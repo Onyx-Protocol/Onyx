@@ -302,8 +302,8 @@ func decorateOutputs(contract *contract, clause *clause) error {
 		if !ok {
 			continue
 		}
-		if t := stmt.call.fn.typ(); t != "Address" {
-			return fmt.Errorf("type of function (%s) in output statement of clause \"%s\" is \"%s\", must be Address", stmt.call.fn, clause.name, t)
+		if t := stmt.call.fn.typ(); t != progType {
+			return fmt.Errorf("type of function (%s) in output statement of clause \"%s\" is \"%s\", must be %s", stmt.call.fn, clause.name, t, progType)
 		}
 		if len(stmt.call.args) != 1 {
 			return fmt.Errorf("not yet supported: zero or multiple arguments in call to \"%s\" in output statement of clause \"%s\"", stmt.call.fn, clause.name)

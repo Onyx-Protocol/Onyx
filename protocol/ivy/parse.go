@@ -94,8 +94,12 @@ func parseParamsType(p *parser) []*param {
 	}
 	consumeTok(p, ":")
 	typ := consumeIdentifier(p)
-	for _, p := range params {
-		p.typ = typ
+	for _, parm := range params {
+		if tdesc, ok := types[typ]; ok {
+			parm.typ = tdesc
+		} else {
+			p.errorf("unknown type %s", typ)
+		}
 	}
 	return params
 }
