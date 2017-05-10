@@ -123,16 +123,63 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	return result, nil
 }
 
+type (
+	environ  map[string]envEntry
+	envEntry struct {
+		t typeDesc
+		r role
+	}
+	role int
+)
+
+const (
+	roleKeyword role = 1 + iota
+	roleBuiltin
+	roleContract
+	roleContractParam
+	roleClause
+	roleClauseParam
+)
+
+var roleDesc = map[role]string{
+	roleKeyword:       "keyword",
+	roleBuiltin:       "built-in function",
+	roleContract:      "contract",
+	roleContractParam: "contract parameter",
+	roleClause:        "clause",
+	roleClauseParam:   "clause parameter",
+}
+
 func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	if len(contract.clauses) == 0 {
 		return nil, fmt.Errorf("empty contract")
 	}
 
-	err := prohibitNameCollisions(contract)
-	if err != nil {
-		return nil, err
+	env := make(environ)
+	for _, k := range keywords {
+		env[k] = envEntry{t: nilType, r: roleKeyword}
 	}
-	err = requireValueParam(contract)
+	for _, b := range builtins {
+		env[b.name] = envEntry{t: nilType, r: roleBuiltin}
+	}
+	if entry, ok := env[contract.name]; ok {
+		return nil, fmt.Errorf("contract name \"%s\" conflicts with %s", contract.name, entry)
+	}
+	env[contract.name] = envEntry{t: contractType, r: roleContract}
+	for _, p := range contract.params {
+		if entry, ok := env[p.name]; ok {
+			return nil, fmt.Errorf("contract parameter \"%s\" conflicts with %s", p.name, roleDesc[entry.r])
+		}
+		env[p.name] = envEntry{t: p.typ, r: roleContractParam}
+	}
+	for _, c := range contract.clauses {
+		if entry, ok := env[c.name]; ok {
+			return nil, fmt.Errorf("clause \"%s\" conflicts with %s", c.name, roleDesc[entry.r])
+		}
+		env[c.name] = envEntry{t: nilType, r: roleClause}
+	}
+
+	err := requireValueParam(contract)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +207,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	}
 
 	if len(contract.clauses) == 1 {
-		err = compileClause(b, stack, contract, contract.clauses[0])
+		err = compileClause(b, stack, contract, env, contract.clauses[0])
 		if err != nil {
 			return nil, err
 		}
@@ -211,7 +258,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 		// TODO(bobg): when we _do_ generate jumps in clause bodies, we'll
 		// need a cleverer way to remove the trailing VERIFY.
 		b2 := newBuilder()
-		err = compileClause(b2, stack, contract, clause)
+		err = compileClause(b2, stack, contract, env, clause)
 		if err != nil {
 			return nil, errors.Wrapf(err, "compiling clause %d", i)
 		}
@@ -229,7 +276,19 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	return b.build()
 }
 
-func compileClause(b *builder, contractStack []stackEntry, contract *contract, clause *clause) error {
+func compileClause(b *builder, contractStack []stackEntry, contract *contract, outerEnv environ, clause *clause) error {
+	// copy env to leave outerEnv unchanged
+	env := make(environ)
+	for k, v := range outerEnv {
+		env[k] = v
+	}
+	for _, p := range clause.params {
+		if entry, ok := env[p.name]; ok {
+			return fmt.Errorf("clause parameter \"%s\" conflicts with %s", p.name, roleDesc[entry.r])
+		}
+		env[p.name] = envEntry{t: p.typ, r: roleClauseParam}
+	}
+
 	err := decorateRefs(contract, clause)
 	if err != nil {
 		return err
