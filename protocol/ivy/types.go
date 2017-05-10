@@ -61,7 +61,7 @@ func (returnStatement) iamaStatement() {}
 
 type expression interface {
 	String() string
-	iamaExpression()
+	typ() string
 }
 
 type binaryExpr struct {
@@ -69,10 +69,12 @@ type binaryExpr struct {
 	op          *binaryOp
 }
 
-func (binaryExpr) iamaExpression() {}
-
 func (e binaryExpr) String() string {
 	return fmt.Sprintf("(%s %s %s)", e.left, e.op.op, e.right)
+}
+
+func (e binaryExpr) typ() string {
+	return e.op.result
 }
 
 type unaryExpr struct {
@@ -80,18 +82,18 @@ type unaryExpr struct {
 	expr expression
 }
 
-func (unaryExpr) iamaExpression() {}
-
 func (e unaryExpr) String() string {
 	return fmt.Sprintf("%s%s", e.op.op, e.expr)
+}
+
+func (e unaryExpr) typ() string {
+	return e.op.result
 }
 
 type call struct {
 	fn   expression
 	args []expression
 }
-
-func (call) iamaExpression() {}
 
 func (e call) String() string {
 	var argStrs []string
@@ -101,15 +103,32 @@ func (e call) String() string {
 	return fmt.Sprintf("%s(%s)", e.fn, strings.Join(argStrs, ", "))
 }
 
+func (e call) typ() string {
+	if b := referencedBuiltin(e.fn); b != nil {
+		return b.result
+	}
+	if e.fn.typ() == "Predicate" {
+		return "Boolean"
+	}
+	return ""
+}
+
 type propRef struct {
 	expr     expression
 	property string
 }
 
-func (propRef) iamaExpression() {}
-
 func (p propRef) String() string {
 	return fmt.Sprintf("%s.%s", p.expr, p.property)
+}
+
+func (e propRef) typ() string {
+	t := e.expr.typ()
+	m := properties[t]
+	if m != nil {
+		return m[e.property]
+	}
+	return ""
 }
 
 type varRef struct {
@@ -120,31 +139,41 @@ type varRef struct {
 	builtin *builtin
 }
 
-func (varRef) iamaExpression() {}
-
 func (v varRef) String() string {
 	return v.name
 }
 
-type bytesLiteral []byte
+func (e varRef) typ() string {
+	if e.param != nil {
+		return e.param.typ
+	}
+	if e.builtin != nil {
+		// xxx
+	}
+	return ""
+}
 
-func (bytesLiteral) iamaExpression() {}
+type bytesLiteral []byte
 
 func (e bytesLiteral) String() string {
 	return "0x" + hex.EncodeToString([]byte(e))
 }
 
-type integerLiteral int64
+func (bytesLiteral) typ() string {
+	return "String"
+}
 
-func (integerLiteral) iamaExpression() {}
+type integerLiteral int64
 
 func (e integerLiteral) String() string {
 	return strconv.FormatInt(int64(e), 10)
 }
 
-type booleanLiteral bool
+func (integerLiteral) typ() string {
+	return "Integer"
+}
 
-func (booleanLiteral) iamaExpression() {}
+type booleanLiteral bool
 
 func (e booleanLiteral) String() string {
 	if e {
@@ -153,9 +182,11 @@ func (e booleanLiteral) String() string {
 	return "false"
 }
 
-type listExpr []expression
+func (booleanLiteral) typ() string {
+	return "Boolean"
+}
 
-func (e listExpr) iamaExpression() {}
+type listExpr []expression
 
 func (e listExpr) String() string {
 	var elts []string
@@ -165,49 +196,6 @@ func (e listExpr) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(elts, ", "))
 }
 
-func typeOf(expr expression) string {
-	switch e := expr.(type) {
-	case *binaryExpr:
-		return e.op.result
-
-	case *unaryExpr:
-		return e.op.result
-
-	case *call:
-		b := referencedBuiltin(e.fn)
-		if b != nil {
-			return b.result
-		}
-		return ""
-
-	case *propRef:
-		t := typeOf(e.expr)
-		m := properties[t]
-		if m != nil {
-			return m[e.property]
-		}
-		return ""
-
-	case *varRef:
-		if e.param != nil {
-			return e.param.typ
-		}
-		if e.builtin != nil {
-			// xxx
-		}
-		return ""
-
-	case bytesLiteral:
-		return "String"
-
-	case integerLiteral:
-		return "Integer"
-
-	case booleanLiteral:
-		return "Boolean"
-
-	case listExpr:
-		return "List"
-	}
-	return ""
+func (listExpr) typ() string {
+	return "List"
 }
