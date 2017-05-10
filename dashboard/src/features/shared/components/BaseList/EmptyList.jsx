@@ -1,6 +1,7 @@
 import React from 'react'
 import styles from './EmptyList.scss'
 import componentClassNames from 'utility/componentClassNames'
+import { docsRoot } from 'utility/environment'
 
 class EmptyList extends React.Component {
   render() {
@@ -27,8 +28,8 @@ class EmptyList extends React.Component {
         <div className={styles.emptyContent}>
           To learn how to query the API, please refer to the documentation:
           <ol>
-            <li><a href='/docs/core/build-applications/queries' target='_blank'>Queries</a></li>
-            <li><a href='/docs/core/reference/api-objects' target='_blank'>API Objects</a></li>
+            <li><a href={`${docsRoot}/core/build-applications/queries`} target='_blank'>Queries</a></li>
+            <li><a href={`${docsRoot}/core/reference/api-objects`} target='_blank'>API Objects</a></li>
           </ol>
         </div>
       </div>

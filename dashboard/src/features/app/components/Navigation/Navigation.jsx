@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import styles from './Navigation.scss'
 import Sync from '../Sync/Sync'
 import { navIcon } from '../../utils'
+import { docsRoot } from 'utility/environment'
 
 class Navigation extends React.Component {
   constructor(props) {
@@ -74,7 +75,7 @@ class Navigation extends React.Component {
         <ul className={styles.navigation}>
           <li className={styles.navigationTitle}>developers</li>
           <li>
-            <a href={`https://chain.com/docs/${this.props.docVersion}`} target='_blank'>
+            <a href={docsRoot} target='_blank'>
               {navIcon('docs', styles)}
               Documentation
             </a>

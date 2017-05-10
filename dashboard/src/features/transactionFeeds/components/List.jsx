@@ -2,6 +2,7 @@ import React from 'react'
 import { BaseList, EmptyContent } from 'features/shared/components'
 import ListItem from './ListItem'
 import { actions } from 'features/transactionFeeds'
+import { docsRoot } from 'utility/environment'
 
 const type = 'transactionFeed'
 
@@ -9,7 +10,7 @@ const firstTimeContent = <EmptyContent>
   <p>
     Transaction feeds enable real-time processing of transactions as they arrive on the blockchain.
   </p>
-  <a href='/docs/core/build-applications/real-time-transaction-processing' target='_blank'>
+  <a href={`${docsRoot}/core/build-applications/real-time-transaction-processing`} target='_blank'>
     Learn more
   </a> about how to use transaction feeds.
 </EmptyContent>

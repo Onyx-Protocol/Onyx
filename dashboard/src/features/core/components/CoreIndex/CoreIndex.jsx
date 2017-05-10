@@ -5,6 +5,7 @@ import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
 import styles from './CoreIndex.scss'
 import testnetUtils from 'features/testnet/utils'
+import { docsRoot } from 'utility/environment'
 
 class CoreIndex extends React.Component {
   constructor(props) {
@@ -122,7 +123,7 @@ class CoreIndex extends React.Component {
       if (testnetBlockchainMismatch) {
         testnetErr = 'Chain Testnet has been reset. Please reset your core below.'
       } else if (testnetNetworkMismatch) {
-        testnetErr = {message: <span>This core is no longer compatible with Chain Testnet. <a href='https://chain.com/docs' target='_blank'>Please upgrade Chain Core</a>.</span>}
+        testnetErr = {message: <span>This core is no longer compatible with Chain Testnet. <a href={`${docsRoot}/core/get-started/install`} target='_blank'>Please upgrade Chain Core</a>.</span>}
       }
     }
 
