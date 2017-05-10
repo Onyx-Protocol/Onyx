@@ -19,6 +19,7 @@ var builtins = []builtin{
 	{"concatpush", "CATPUSHDATA", []string{"", ""}, "String"},
 	{"before", "MAXTIME GREATERTHAN", []string{"Time"}, "Boolean"},
 	{"after", "MINTIME LESSTHAN", []string{"Time"}, "Boolean"},
+	{"checkTxMultiSig", "", []string{"List", "List"}, "Boolean"}, // WARNING WARNING WOOP WOOP special case
 }
 
 type binaryOp struct {
