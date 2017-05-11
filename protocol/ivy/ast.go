@@ -11,6 +11,7 @@ type contract struct {
 	name    string
 	params  []*param
 	clauses []*clause
+	value   string
 }
 
 type param struct {
@@ -22,9 +23,15 @@ type clause struct {
 	name       string
 	params     []*param
 	statements []statement
+	reqs       []*clauseRequirement
 
 	// decorations
 	mintimes, maxtimes []string
+}
+
+type clauseRequirement struct {
+	name                  string
+	assetExpr, amountExpr expression
 }
 
 type statement interface {
@@ -33,32 +40,25 @@ type statement interface {
 
 type verifyStatement struct {
 	expr expression
-
-	// Some verify statements are decorated with pointers to associated
-	// output statements. Such verifies don't get compiled themselves,
-	// but contribute arguments for use in CHECKOUTPUT.
-	associatedOutput *outputStatement
 }
 
 func (verifyStatement) iamaStatement() {}
 
-type outputStatement struct {
-	call *call
-
-	// The AssetAmount expression against which the value is checked
-	assetAmount expression
+type lockStatement struct {
+	locked  expression
+	program expression
 
 	// Added as a decoration, used by CHECKOUTPUT
 	index int64
 }
 
-func (outputStatement) iamaStatement() {}
+func (lockStatement) iamaStatement() {}
 
-type returnStatement struct {
+type unlockStatement struct {
 	expr expression
 }
 
-func (returnStatement) iamaStatement() {}
+func (unlockStatement) iamaStatement() {}
 
 type expression interface {
 	String() string
@@ -112,24 +112,6 @@ func (e call) typ(env environ) typeDesc {
 		return boolType
 	}
 	return nilType
-}
-
-type propRef struct {
-	expr     expression
-	property string
-}
-
-func (p propRef) String() string {
-	return fmt.Sprintf("%s.%s", p.expr, p.property)
-}
-
-func (e propRef) typ(env environ) typeDesc {
-	t := e.expr.typ(env)
-	m := properties[t]
-	if m != nil {
-		return m[e.property]
-	}
-	return ""
 }
 
 type varRef string
