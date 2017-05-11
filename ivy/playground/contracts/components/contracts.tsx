@@ -1,4 +1,5 @@
 import * as React from 'react'
+import DocumentTitle from 'react-document-title'
 import Section from '../../app/components/section'
 import { Contract } from '../types'
 import { getIdList as getContractIds, getItem as getContract, getSpentIdList as getSpentContractIds } from '../selectors'
@@ -31,21 +32,23 @@ function ContractsUnconnected(props: {contractIds: string[], spentContractIds: s
 
 function UnspentContracts(props: { contractIds: string[] }) {
   return (
-    <Section name="Unspent Contracts" >
-      <table className="table contracts-table">
-        <thead>
-          <tr>
-            <th>Template</th>
-            <th>Program</th>
-            <th>Creation Transaction</th>
-            <th className="table-spaceholder"></th>
-          </tr>
-        </thead>
-        <tbody>
-          { props.contractIds.map((id) => <ContractRow key={id} contractId={id} />) }
-        </tbody>
-      </table>
-    </Section>
+    <DocumentTitle title="Contracts">
+      <Section name="Unspent Contracts" >
+        <table className="table contracts-table">
+          <thead>
+            <tr>
+              <th>Template</th>
+              <th>Program</th>
+              <th>Creation Transaction</th>
+              <th className="table-spaceholder"></th>
+            </tr>
+          </thead>
+          <tbody>
+            { props.contractIds.map((id) => <ContractRow key={id} contractId={id} />) }
+          </tbody>
+        </table>
+      </Section>
+    </ DocumentTitle>
   )
 }
 
