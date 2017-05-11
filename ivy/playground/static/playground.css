@@ -108,25 +108,20 @@ select:hover {
   padding-right: 2px;
 }
 
-/*Styles*/
+pre {
+  padding: 15px;
+}
 
+pre.wrap {
+  white-space: pre-wrap;
+  word-break: keep-all;
+  line-height: 24px;
+}
+
+/*Styles*/
 
 .navbar-brand img {
   height: 30px;
-}
-
-.codeblock {
-  font-family: "Nitti", monospace;
-  font-size: 16px;
-}
-
-.codeblock.instructions {
-  padding: 17px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: #f5f5f5;
-  font-weight: 700;
-  color: #333;
 }
 
 section h4 {
