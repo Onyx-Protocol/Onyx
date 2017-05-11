@@ -9,7 +9,17 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
         const alias: string = item.alias
         return { ...map, [id]: { id, alias } }
       }, {})
-      const idList = action.items.map(item => item.id)
+
+      // Sort assets in alphabetical order
+      const idList = action.items.sort((a,b) => {
+        if (a.alias < b.alias) {
+          return -1
+        }
+        if (a.alias > b.alias) {
+          return 1
+        }
+        return 0
+      }).map(item => item.id)
       return { itemMap, idList }
     }
     default: return state

@@ -6,7 +6,7 @@ import { Template, TemplateClause } from 'ivy-compiler'
 
 import DocumentTitle from 'react-document-title'
 import SpendInputs from './argsDisplay'
-import SpendFooter from './spendfooter'
+import SpendButton from './spendbutton'
 import { DisplaySpendContract } from './display'
 import Return from './return'
 import ClauseSelect from './clauseselect'
@@ -16,19 +16,26 @@ import { ClauseParameters, getWidget } from './parameters'
 export default function Spend(props: { contract: Contract }) {
   let contract = props.contract
   return (
-    <DocumentTitle title="Spend">
-      <Section name="Spend" footer={<SpendFooter />}>
-        <div className="form-wrapper">
-        <section>
-        <h4>Contract</h4>
-        <DisplaySpendContract />
-        </section>
-        <ClauseSelect />
-        <SpendInputs />
-        <ClauseParameters />
-        <Return />
-        </div>
-      </Section>
+    <DocumentTitle title="Spend Contract">
+      <div>
+        <Section name="Contract Summary">
+          <div className="form-wrapper">
+            <section>
+              <h4>Contract Template</h4>
+              <DisplaySpendContract />
+              <SpendInputs />
+            </section>
+          </div>
+        </Section>
+        <Section name="Spending Details">
+          <div className="form-wrapper">
+            <ClauseSelect />
+            <ClauseParameters />
+            <Return />
+          </div>
+        </Section>
+        <SpendButton />
+      </div>
     </DocumentTitle>
   )
 }
