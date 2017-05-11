@@ -1,6 +1,9 @@
 package ivy
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 func requireAllParamsUsedInClauses(params []*param, clauses []*clause) error {
 	for _, p := range params {
@@ -32,7 +35,7 @@ func requireAllParamsUsedInClause(params []*param, clause *clause) error {
 			case *returnStatement:
 				e = s.expr
 			}
-			if exprReferencesParam(e, p) {
+			if references(e, p.name) {
 				used = true
 				break
 			}
@@ -44,29 +47,29 @@ func requireAllParamsUsedInClause(params []*param, clause *clause) error {
 	return nil
 }
 
-func exprReferencesParam(expr expression, p *param) bool {
+func references(expr expression, name string) bool {
 	switch e := expr.(type) {
 	case *binaryExpr:
-		return exprReferencesParam(e.left, p) || exprReferencesParam(e.right, p)
+		return references(e.left, name) || references(e.right, name)
 	case *unaryExpr:
-		return exprReferencesParam(e.expr, p)
+		return references(e.expr, name)
 	case *call:
-		if exprReferencesParam(e.fn, p) {
+		if references(e.fn, name) {
 			return true
 		}
 		for _, a := range e.args {
-			if exprReferencesParam(a, p) {
+			if references(a, name) {
 				return true
 			}
 		}
 		return false
 	case *propRef:
-		return exprReferencesParam(e.expr, p)
-	case *varRef:
-		return e.name == p.name
+		return references(e.expr, name)
+	case varRef:
+		return string(e) == name
 	case listExpr:
 		for _, elt := range []expression(e) {
-			if exprReferencesParam(elt, p) {
+			if references(elt, name) {
 				return true
 			}
 		}
@@ -112,11 +115,11 @@ func paramDisposedOnce(p *param, clause *clause) error {
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *returnStatement:
-			if referencedParam(stmt.expr) == p {
+			if references(stmt.expr, p.name) {
 				count++
 			}
 		case *outputStatement:
-			if len(stmt.call.args) == 1 && referencedParam(stmt.call.args[0]) == p {
+			if len(stmt.call.args) == 1 && references(stmt.call.args[0], p.name) {
 				count++
 			}
 		}
@@ -131,143 +134,43 @@ func paramDisposedOnce(p *param, clause *clause) error {
 	}
 }
 
-func referencedParam(expr expression) *param {
-	switch e := expr.(type) {
-	case *varRef:
-		return e.param
-	case *propRef:
-		return referencedParam(e.expr)
-	}
-	return nil
-}
-
 func referencedBuiltin(expr expression) *builtin {
-	switch e := expr.(type) {
-	case *varRef:
-		return e.builtin
-
-	case *propRef:
-		t := e.typ()
-		m := properties[t]
-		if m != nil {
-			if m[e.property] == "Function" {
-				// xxx find the builtin
-			}
-		}
-	}
-	return nil
-}
-
-func decorateRefs(contract *contract, clause *clause) error {
-	for _, s := range clause.statements {
-		switch stmt := s.(type) {
-		case *verifyStatement:
-			err := decorateRefsInExpr(contract, clause, stmt.expr)
-			if err != nil {
-				return err
-			}
-
-		case *outputStatement:
-			err := decorateRefsInExpr(contract, clause, stmt.call)
-			if err != nil {
-				return err
-			}
-
-		case *returnStatement:
-			err := decorateRefsInExpr(contract, clause, stmt.expr)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func decorateRefsInExpr(contract *contract, clause *clause, expr expression) error {
-	switch e := expr.(type) {
-	case *binaryExpr:
-		err := decorateRefsInExpr(contract, clause, e.left)
-		if err != nil {
-			return err
-		}
-		err = decorateRefsInExpr(contract, clause, e.right)
-		return err
-
-	case *unaryExpr:
-		return decorateRefsInExpr(contract, clause, e.expr)
-
-	case *call:
-		err := decorateRefsInExpr(contract, clause, e.fn)
-		if err != nil {
-			return err
-		}
-		for _, a := range e.args {
-			err = decorateRefsInExpr(contract, clause, a)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-
-	case *varRef:
+	if v, ok := expr.(varRef); ok {
 		for _, b := range builtins {
-			if e.name == b.name {
-				e.builtin = &b
-				return nil
+			if string(v) == b.name {
+				return &b
 			}
 		}
-		for _, p := range contract.params {
-			if e.name == p.name {
-				e.param = p
-				return nil
-			}
-		}
-		for _, p := range clause.params {
-			if e.name == p.name {
-				e.param = p
-				return nil
-			}
-		}
-		return fmt.Errorf("undefined variable \"%s\" in clause \"%s\"", e.name, clause.name)
-
-	case *propRef:
-		return decorateRefsInExpr(contract, clause, e.expr)
-
-	case listExpr:
-		for _, elt := range []expression(e) {
-			err := decorateRefsInExpr(contract, clause, elt)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
 	}
 	return nil
 }
 
-func decorateOutputs(contract *contract, clause *clause) error {
+func decorateOutputs(contract *contract, clause *clause, env environ) error {
 	for _, s := range clause.statements {
 		stmt, ok := s.(*outputStatement)
 		if !ok {
 			continue
 		}
-		if t := stmt.call.fn.typ(); t != progType {
+		if t := stmt.call.fn.typ(env); t != progType {
 			return fmt.Errorf("type of function (%s) in output statement of clause \"%s\" is \"%s\", must be %s", stmt.call.fn, clause.name, t, progType)
 		}
 		if len(stmt.call.args) != 1 {
 			return fmt.Errorf("not yet supported: zero or multiple arguments in call to \"%s\" in output statement of clause \"%s\"", stmt.call.fn, clause.name)
 		}
-		if t := stmt.call.args[0].typ(); t != "Value" {
+		valueExpr := stmt.call.args[0]
+		if t := valueExpr.typ(env); t != "Value" {
 			return fmt.Errorf("not yet supported: argument of non-Value type \"%s\" passed to \"%s\" in output statement of clause \"%s\"", t, stmt.call.fn, clause.name)
 		}
-		p := referencedParam(stmt.call.args[0])
-		if p == contract.params[len(contract.params)-1] {
-			// The contract value param doesn't have to be matched against
-			// an AssetAmount parameter.
-			continue
+		if valueVar, ok := valueExpr.(varRef); ok {
+			if entry, ok := env[string(valueVar)]; ok {
+				if entry.r == roleContractParam {
+					// Contract value doesn't have to be matched against an
+					// AssetAmount
+					continue
+				}
+			}
 		}
-
-		// Look for a verify statement matching stmt.call.args[0] to an
+		// Look for a verify statement matching valueExpr to an
 		// assetamount.
 		found := false
 		for _, s2 := range clause.statements {
@@ -293,7 +196,7 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			var other expression
 			check := func(e expression) bool {
 				if prop, ok := e.(*propRef); ok {
-					return referencedParam(prop.expr) == p && prop.property == "assetAmount"
+					return reflect.DeepEqual(prop.expr, valueExpr) && prop.property == "assetAmount"
 				}
 				return false
 			}
@@ -305,19 +208,16 @@ func decorateOutputs(contract *contract, clause *clause) error {
 			} else {
 				continue
 			}
-			if other.typ() != "AssetAmount" {
+			if other.typ(env) != "AssetAmount" {
 				continue
 			}
 			v.associatedOutput = stmt
-			stmt.param = referencedParam(other)
-			if stmt.param == nil {
-				return fmt.Errorf("cannot statically determine an AssetAmount parameter in \"%s\" in clause \"%s\" to check \"%s\" against", other, clause.name, p.name)
-			}
+			stmt.assetAmount = other
 			found = true
 			break
 		}
 		if !found {
-			return fmt.Errorf("Value parameter \"%s\" is in an output statement in clause \"%s\" but not checked in a verify statement", p.name, clause.name)
+			return fmt.Errorf("Value expression \"%s\" is in an output statement in clause \"%s\" but not checked in a verify statement", valueExpr, clause.name)
 		}
 	}
 	return nil
@@ -337,7 +237,7 @@ func assignIndexes(clause *clause) {
 	}
 }
 
-func typeCheckClause(contract *contract, clause *clause) error {
+func typeCheckClause(contract *contract, clause *clause, env environ) error {
 	for i, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *verifyStatement:
@@ -347,7 +247,7 @@ func typeCheckClause(contract *contract, clause *clause) error {
 				// statement's CHECKOUTPUT.
 				continue
 			}
-			if t := stmt.expr.typ(); t != "Boolean" {
+			if t := stmt.expr.typ(env); t != "Boolean" {
 				return fmt.Errorf("expression in verify statement in clause \"%s\" has type \"%s\", must be Boolean", clause.name, t)
 			}
 
@@ -355,10 +255,10 @@ func typeCheckClause(contract *contract, clause *clause) error {
 			if i != len(clause.statements)-1 {
 				return fmt.Errorf("return must be the final statement of clause \"%s\"", clause.name)
 			}
-			if t := stmt.expr.typ(); t != "Value" {
+			if t := stmt.expr.typ(env); t != "Value" {
 				return fmt.Errorf("expression \"%s\" in return statement of clause \"%s\" has type \"%s\", must be Value", stmt.expr, clause.name, t)
 			}
-			if referencedParam(stmt.expr) != contract.params[len(contract.params)-1] {
+			if !references(stmt.expr, contract.params[len(contract.params)-1].name) {
 				return fmt.Errorf("expression in return statement of clause \"%s\" must be the contract Value parameter", clause.name)
 			}
 		}
@@ -366,11 +266,11 @@ func typeCheckClause(contract *contract, clause *clause) error {
 	return nil
 }
 
-func typeCheckExpr(expr expression) error {
+func typeCheckExpr(expr expression, env environ) error {
 	switch e := expr.(type) {
 	case *binaryExpr:
-		lType := e.left.typ()
-		rType := e.right.typ()
+		lType := e.left.typ(env)
+		rType := e.right.typ(env)
 
 		if e.op.left != "" && lType != e.op.left {
 			return fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
@@ -390,8 +290,8 @@ func typeCheckExpr(expr expression) error {
 		}
 
 	case *unaryExpr:
-		if e.op.operand != "" && e.expr.typ() != e.op.operand {
-			return fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(), e.op.operand)
+		if e.op.operand != "" && e.expr.typ(env) != e.op.operand {
+			return fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(env), e.op.operand)
 		}
 
 	case *call:
@@ -403,8 +303,8 @@ func typeCheckExpr(expr expression) error {
 			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", b.name, len(e.args), len(b.args))
 		}
 		for i, actual := range e.args {
-			if b.args[i] != "" && actual.typ() != b.args[i] {
-				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, b.name, actual.typ(), b.args[i])
+			if b.args[i] != "" && actual.typ(env) != b.args[i] {
+				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, b.name, actual.typ(env), b.args[i])
 			}
 		}
 	}
