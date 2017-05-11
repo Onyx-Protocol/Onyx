@@ -10,7 +10,7 @@ const ClauseSelect = (props: { contractId: string, clauses: TemplateClause[],
                                setClauseIndex: (number)=>undefined, spendIndex: number }) => {
   return (
     <section>
-      <h4>Select Clause</h4>
+      <h4>Clause</h4>
       <select className="form-control" value={props.spendIndex} onChange={(e) => props.setClauseIndex(e.target.value)}>
         {props.clauses.map((clause, i) => <option key={clause.name} value={i}>{clause.name}</option>)}
       </select>
@@ -20,7 +20,7 @@ const ClauseSelect = (props: { contractId: string, clauses: TemplateClause[],
 
 export default connect(
   (state) => ({ 
-    spendIndex: getSpendContractSelectedClauseIndex(state), 
+    spendIndex: getSpendContractSelectedClauseIndex(state),
     clauses: getSpendContract(state).template.clauses,
     contractId: getSpendContractId(state)
   }),

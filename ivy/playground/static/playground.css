@@ -18,15 +18,6 @@
   margin-bottom: 0;
 }
 
-.table.contracts>thead>tr>th {
-  width: 25%;
-}
-
-.table.contracts>tbody>tr a {
-  width: 25%;
-  color: #00BFAA;
-}
-
 .table>tbody>tr>td {
   line-height: 34px;
   padding: 20px 8px;
@@ -140,6 +131,10 @@ pre.wrap {
 
 .contracts-table td:last-of-type {
   width: 10%;
+}
+
+.contracts-table tbody a {
+  color: #00BFAA;
 }
 
 
