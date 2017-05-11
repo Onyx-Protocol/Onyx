@@ -126,8 +126,10 @@ pre.wrap {
 }
 
 code {
-  color: #8c8c8c;
-  background-color: #ececec;
+  color: #999999;
+  background-color: transparent ;
+  border: 1px solid #ececec;
+  padding: 5px 7px;
 }
 
 .contracts-table th {
