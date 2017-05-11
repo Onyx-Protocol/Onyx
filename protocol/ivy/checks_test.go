@@ -6,18 +6,18 @@ func TestRequireAllParamsUsedInClauses(t *testing.T) {
 	clauses := []*clause{
 		&clause{
 			statements: []statement{
-				&verifyStatement{expr: &varRef{name: "foo"}},
+				&verifyStatement{expr: varRef("foo")},
 				&verifyStatement{
 					expr: &binaryExpr{
-						left:  &varRef{name: "foo"},
-						right: &varRef{name: "bar"},
+						left:  varRef("foo"),
+						right: varRef("bar"),
 					},
 				},
 				&outputStatement{
 					call: &call{
-						fn: &varRef{name: "foo"},
+						fn: varRef("foo"),
 						args: []expression{
-							&varRef{name: "baz"},
+							varRef("baz"),
 						},
 					},
 				},
@@ -25,18 +25,18 @@ func TestRequireAllParamsUsedInClauses(t *testing.T) {
 		},
 		&clause{
 			statements: []statement{
-				&verifyStatement{expr: &varRef{name: "foo"}},
+				&verifyStatement{expr: varRef("foo")},
 				&verifyStatement{
 					expr: &binaryExpr{
-						left:  &varRef{name: "foo"},
-						right: &varRef{name: "plugh"},
+						left:  varRef("foo"),
+						right: varRef("plugh"),
 					},
 				},
 				&outputStatement{
 					call: &call{
-						fn: &varRef{name: "foo"},
+						fn: varRef("foo"),
 						args: []expression{
-							&varRef{name: "xyzzy"},
+							varRef("xyzzy"),
 						},
 					},
 				},

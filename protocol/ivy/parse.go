@@ -250,7 +250,7 @@ func parseExpr4(p *parser) expression {
 		return listExpr(elts)
 	}
 	name := consumeIdentifier(p)
-	return &varRef{name: name}
+	return varRef(name)
 }
 
 func parseArgs(p *parser) []expression {

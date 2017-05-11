@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/davecgh/go-spew/spew"
+
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/vm"
@@ -101,13 +103,13 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 			switch s := stmt.(type) {
 			case *outputStatement:
 				valueInfo := ValueInfo{
-					Name: s.call.args[0].(*varRef).name,
+					Name: s.call.args[0].String(),
 				}
-				if s.param != nil {
-					valueInfo.AssetAmount = s.param.name
+				if s.assetAmount != nil {
+					valueInfo.AssetAmount = s.assetAmount.String()
 				}
 				switch f := s.call.fn.(type) {
-				case *varRef:
+				case varRef:
 					valueInfo.Program = f.String()
 				case *propRef:
 					valueInfo.Program = f.String()
@@ -289,11 +291,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 		env[p.name] = envEntry{t: p.typ, r: roleClauseParam}
 	}
 
-	err := decorateRefs(contract, clause)
-	if err != nil {
-		return err
-	}
-	err = decorateOutputs(contract, clause)
+	err := decorateOutputs(contract, clause, env)
 	if err != nil {
 		return err
 	}
@@ -301,7 +299,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 	if err != nil {
 		return err
 	}
-	err = typeCheckClause(contract, clause)
+	err = typeCheckClause(contract, clause, env)
 	if err != nil {
 		return err
 	}
@@ -321,22 +319,20 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 				// statement's CHECKOUTPUT.
 				continue
 			}
-			err = compileExpr(b, stack, contract, clause, stmt.expr)
+			err = compileExpr(b, stack, contract, clause, env, stmt.expr)
 			if err != nil {
 				return errors.Wrapf(err, "in verify statement in clause \"%s\"", clause.name)
 			}
 			b.addOp(vm.OP_VERIFY)
 
 			// special-casing "verify before(expr)" and "verify after(expr)"
-			if c, ok := stmt.expr.(*call); ok {
-				if v, ok := c.fn.(*varRef); ok && len(c.args) == 1 {
-					if v.builtin != nil {
-						switch v.builtin.name {
-						case "before":
-							clause.maxtimes = append(clause.maxtimes, c.args[0].String())
-						case "after":
-							clause.mintimes = append(clause.mintimes, c.args[0].String())
-						}
+			if c, ok := stmt.expr.(*call); ok && len(c.args) == 1 {
+				if b := referencedBuiltin(c.fn); b != nil {
+					switch b.name {
+					case "before":
+						clause.maxtimes = append(clause.maxtimes, c.args[0].String())
+					case "after":
+						clause.mintimes = append(clause.mintimes, c.args[0].String())
 					}
 				}
 			}
@@ -353,8 +349,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 			b.addData(nil)
 			ostack = append(ostack, stackEntry("''"))
 
-			p := stmt.param
-			if p == nil {
+			if stmt.assetAmount == nil {
 				// amount
 				b.addOp(vm.OP_AMOUNT)
 				ostack = append(ostack, stackEntry("<amount>"))
@@ -364,40 +359,23 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 				ostack = append(ostack, stackEntry("<asset>"))
 			} else {
 				// amount
-				// TODO(bobg): this is a bit of a hack; need a cleaner way to
-				// introduce new stack references
 				r := &propRef{
-					expr: &varRef{
-						name: stmt.param.name,
-					},
+					expr:     stmt.assetAmount,
 					property: "amount",
 				}
-				err := decorateRefsInExpr(contract, clause, r)
+				err = compileExpr(b, ostack, contract, clause, env, r)
 				if err != nil {
 					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
-				err = compileExpr(b, ostack, contract, clause, r)
-				if err != nil {
-					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
-				}
-				ostack = append(ostack, stackEntry(stmt.param.name+".amount"))
+				ostack = append(ostack, stackEntry(stmt.assetAmount.String()+".amount"))
 
 				// asset
-				r = &propRef{
-					expr: &varRef{
-						name: stmt.param.name,
-					},
-					property: "asset",
-				}
-				err = decorateRefsInExpr(contract, clause, r)
+				r.property = "asset"
+				err = compileExpr(b, ostack, contract, clause, env, r)
 				if err != nil {
 					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 				}
-				err = compileExpr(b, ostack, contract, clause, r)
-				if err != nil {
-					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
-				}
-				ostack = append(ostack, stackEntry(stmt.param.name+".asset"))
+				ostack = append(ostack, stackEntry(stmt.assetAmount.String()+".asset"))
 			}
 
 			// version
@@ -405,7 +383,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 			ostack = append(ostack, stackEntry("1"))
 
 			// prog
-			err = compileExpr(b, ostack, contract, clause, stmt.call.fn)
+			err = compileExpr(b, ostack, contract, clause, env, stmt.call.fn)
 			if err != nil {
 				return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 			}
@@ -424,18 +402,18 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 	return nil
 }
 
-func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, expr expression) error {
-	err := typeCheckExpr(expr)
+func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env environ, expr expression) error {
+	err := typeCheckExpr(expr, env)
 	if err != nil {
 		return err
 	}
 	switch e := expr.(type) {
 	case *binaryExpr:
-		err = compileExpr(b, stack, contract, clause, e.left)
+		err = compileExpr(b, stack, contract, clause, env, e.left)
 		if err != nil {
 			return errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
 		}
-		err = compileExpr(b, append(stack, stackEntry(e.left.String())), contract, clause, e.right)
+		err = compileExpr(b, append(stack, stackEntry(e.left.String())), contract, clause, env, e.right)
 		if err != nil {
 			return errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
 		}
@@ -446,7 +424,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		b.addRawBytes(ops)
 
 	case *unaryExpr:
-		err = compileExpr(b, stack, contract, clause, e.expr)
+		err = compileExpr(b, stack, contract, clause, env, e.expr)
 		if err != nil {
 			return errors.Wrapf(err, "in \"%s\" expression", e.op.op)
 		}
@@ -470,7 +448,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			if len(e.args) != 2 {
 				// xxx err
 			}
-			newEntries, err := compileArg(b, stack, contract, clause, e.args[1])
+			newEntries, err := compileArg(b, stack, contract, clause, env, e.args[1])
 			if err != nil {
 				return err
 			}
@@ -483,7 +461,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			b.addOp(vm.OP_TXSIGHASH) // stack: [... sigM ... sig1 txsighash]
 			newEntries = append(newEntries, stackEntry("<txsighash>"))
 
-			_, err = compileArg(b, append(stack, newEntries...), contract, clause, e.args[0])
+			_, err = compileArg(b, append(stack, newEntries...), contract, clause, env, e.args[0])
 			if err != nil {
 				return err
 			}
@@ -498,7 +476,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 
 		for i := len(e.args) - 1; i >= 0; i-- {
 			a := e.args[i]
-			newEntries, err := compileArg(b, stack, contract, clause, a)
+			newEntries, err := compileArg(b, stack, contract, clause, env, a)
 			if err != nil {
 				return errors.Wrapf(err, "compiling argument %d in call expression", i)
 			}
@@ -510,7 +488,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		}
 		b.addRawBytes(ops)
 
-	case *varRef:
+	case varRef:
 		return compileRef(b, stack, e)
 
 	case *propRef:
@@ -540,13 +518,13 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	return nil
 }
 
-func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, expr expression) ([]stackEntry, error) {
+func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, env environ, expr expression) ([]stackEntry, error) {
 	var newEntries []stackEntry
 
 	if list, ok := expr.(listExpr); ok {
 		for i := 0; i < len(list); i++ {
 			elt := list[len(list)-i-1]
-			err := compileExpr(b, stack, contract, clause, elt)
+			err := compileExpr(b, stack, contract, clause, env, elt)
 			if err != nil {
 				return nil, err
 			}
@@ -559,7 +537,7 @@ func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clau
 		return newEntries, nil
 	}
 
-	err := compileExpr(b, stack, contract, clause, expr)
+	err := compileExpr(b, stack, contract, clause, env, expr)
 	if err != nil {
 		return nil, err
 	}
@@ -567,6 +545,8 @@ func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clau
 }
 
 func compileRef(b *builder, stack []stackEntry, ref expression) error {
+	spew.Config.DisableMethods = true
+	fmt.Printf("* compileRef(%s), stack is\n%s", ref, spew.Sdump(stack))
 	for depth := 0; depth < len(stack); depth++ {
 		if stack[len(stack)-depth-1].matches(ref) {
 			switch depth {
