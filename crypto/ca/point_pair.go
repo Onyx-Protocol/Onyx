@@ -75,17 +75,17 @@ func (z *PointPair) ConstTimeEqual(x *PointPair) bool {
 	return subtle.ConstantTimeCompare(xe[:], ze[:]) == 1
 }
 
-// Bytes returns binary representation of a point pair (64-byte slice)
+// Bytes returns binary representation of a point pair (64-byte slice).
 func (z *PointPair) Bytes() []byte {
 	return append(p.Point1.Bytes(), p.Point2.Bytes()...)
 }
 
-// String returns hex representation of a point pair
+// String returns hex representation of a point pair.
 func (z *PointPair) String() string {
 	return hex.EncodeToString(p.Bytes())
 }
 
-// MarshalBinary encodes the receiver into a binary form and returns the result (32-byte slice).
+// MarshalBinary encodes the point pair into a binary form and returns the result (32-byte slice).
 func (z *PointPair) MarshalBinary() ([]byte, error) {
 	return z.Bytes(), nil
 }
@@ -105,7 +105,7 @@ func (z *PointPair) UnmarshalBinary(data []byte) error {
 	return err
 }
 
-// WriteTo writes 32-byte encoding of a point.
+// WriteTo writes 32-byte encoding of a point pair.
 func (z *PointPair) WriteTo(w io.Writer) (n int64, err error) {
 	n1, err := z.Point1.WriteTo(w)
 	if err != nil {
