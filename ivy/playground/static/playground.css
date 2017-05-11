@@ -125,11 +125,15 @@ pre.wrap {
   line-height: 24px;
 }
 
-.contracts-table td {
+.contracts-table th {
   width: 30%;
 }
 
-.contracts-table td:last-of-type {
+.contracts-table th:first-of-type {
+  width: 20%;
+}
+
+.contracts-table th:last-of-type {
   width: 10%;
 }
 

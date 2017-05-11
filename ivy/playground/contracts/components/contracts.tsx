@@ -11,7 +11,7 @@ function shortenHash(hash: string) {
   if (hash.length < 43) {
     return hash
   } else {
-    return hash.slice(0, 42) + "..."
+    return hash.slice(0, 30) + "..."
   }
 }
 
@@ -58,9 +58,9 @@ function SpentContracts(props: { spentContractIds: string[] }) {
       <table className="table contracts-table">
         <thead>
           <tr>
-            <th width="30%">Template</th>
-            <th width="30%">Program</th>
-            <th width="30%">Spending Transaction</th>
+            <th>Template</th>
+            <th>Program</th>
+            <th>Spending Transaction</th>
             <th className="table-spaceholder"></th>
           </tr>
         </thead>
@@ -77,7 +77,7 @@ function ContractRowUnconnected(props: { contractId: string, contract: Contract 
   return (
     <tr>
       <td>{ contract.template.name }</td>
-      <td><pre className="codeblock program">{ shortenHash(contract.controlProgram) }</pre></td>
+      <td><code>{ shortenHash(contract.controlProgram) }</code></td>
       <td><a href={"/dashboard/transactions/" + contract.id} target="_blank">{ shortenHash(contract.id) }</a></td>
       <td><SpendButton contractId={contract.id} /></td>
     </tr>
@@ -95,7 +95,7 @@ function SpentContractRowUnconnected(props: { contractId: string, contract: Cont
   return (
     <tr>
       <td>{ contract.template.name }</td>
-      <td><pre className="codeblock program">{ shortenHash(contract.controlProgram) }</pre></td>
+      <td><code>{ shortenHash(contract.controlProgram) }</code></td>
       <td><a href={"/dashboard/transactions/" + contract.id} target="_blank">{ shortenHash(contract.id) }</a></td>
       <td />
     </tr>
