@@ -10,8 +10,8 @@ For updates to subpackages, see below:
 - [Node.js SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/node/CHANGELOG.md)
 - [Ruby SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/ruby/CHANGELOG.md)
 
-<a name="1.2rc2"></a>
-## 1.2rc2 (May 4, 2017)
+<a name="1.2.0"></a>
+## 1.2.0 (May 4, 2017)
 
 ### Breaking changes
 
@@ -75,6 +75,11 @@ To learn more, see the [Authentication and Authorization guide](../learn-more/au
 #### Tag updating
 
 Account and asset tags can now be updated via the dashboard and SDKs. To learn more, see examples for [accounts](../build-applications/accounts.md#update-tags-on-existing-accounts) and [assets](../build-applications/assets.md#update-tags-on-existing-assets).
+
+<a name="1.2rc2"></a>
+## 1.2rc2 (May 4, 2017)
+
+Pre-release version.
 
 ## 1.2rc1
 
