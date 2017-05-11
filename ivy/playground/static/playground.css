@@ -52,7 +52,10 @@
 .input-group select.with-addon {
   -webkit-appearance: none;
   -webkit-border-left-radius: 0px !important;
+}
 
+input[type="datetime-local"] {
+  width:300px;
 }
 
 select {
