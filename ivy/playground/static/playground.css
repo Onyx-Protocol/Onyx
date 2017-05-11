@@ -122,6 +122,15 @@ pre.wrap {
   line-height: 24px;
 }
 
+td {
+  width: 30%;
+}
+
+td:last-of-type {
+  width: 10%;
+}
+
+
 /*Styles*/
 
 .navbar-brand img {

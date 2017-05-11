@@ -33,8 +33,8 @@ function UnspentContracts(props: { contractIds: string[] }) {
       <thead><tr>
         <th>Template</th>
         <th>Program</th>
-        <th>Funding Transaction ID</th>
-        <th></th>
+        <th>Creation Transaction</th>
+        <th className="table-spaceholder"></th>
       </tr></thead>
       <tbody>
       { props.contractIds.map((id) => <ContractRow key={id} contractId={id} />) }
@@ -47,9 +47,10 @@ function SpentContracts(props: { spentContractIds: string[] }) {
   return <Section name="Spent Contracts" >
   <table className="table">
     <thead><tr>
-      <th>Template</th>
-      <th>ID</th>
-      <th></th>
+      <th width="30%">Template</th>
+      <th width="30%">Program</th>
+      <th width="30%">Spending Transaction</th>
+      <th className="table-spaceholder"></th>
     </tr></thead>
     <tbody>
     { props.spentContractIds.map((id) => <SpentContractRow key={id} contractId={id} />) }
@@ -80,6 +81,7 @@ function SpentContractRowUnconnected(props: { contractId: string, contract: Cont
   let contract = props.contract
   return <tr>
     <td>{ contract.template.name }</td>
+    <td>{ shortenHash(contract.controlProgram) }</td>
     <td>{ shortenHash(contract.id) }</td>
   </tr>
 }
@@ -91,5 +93,5 @@ const SpentContractRow = connect(
 )(SpentContractRowUnconnected)
 
 function SpendButton(props: {contractId: string} ) {
-  return <Link to={prefixRoute("/spend/" + props.contractId)} ><button className="btn btn-primary">Spend</button></Link>
+  return <Link to={prefixRoute("/spend/" + props.contractId)} ><button className="btn btn-primary pull-right">Spend</button></Link>
 }
