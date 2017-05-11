@@ -18,6 +18,15 @@
   margin-bottom: 0;
 }
 
+.table.contracts>thead>tr>th {
+  width: 25%;
+}
+
+.table.contracts>tbody>tr a {
+  width: 25%;
+  color: #00BFAA;
+}
+
 .table>tbody>tr>td {
   line-height: 34px;
   padding: 20px 8px;
@@ -196,6 +205,10 @@ section h4 {
 
 .type-label {
   font-style: italic;
+}
+
+.codeblock.program {
+  padding: 5px;
 }
 
 /*React Component Overrides*/
