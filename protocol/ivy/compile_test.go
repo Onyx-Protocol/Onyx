@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"chain/protocol/vm"
 )
 
 const trivialLock = `
@@ -43,7 +45,7 @@ contract LockToOutput(address: Program) locks locked {
 `
 
 const tradeOffer = `
-contract TradeOffer(requestedAmount: Amount, requestedAsset: Asset, sellerProgram: Program, sellerKey: PublicKey) locks offered {
+contract TradeOffer(requestedAsset: Asset, requestedAmount: Amount, sellerProgram: Program, sellerKey: PublicKey) locks offered {
   clause trade() requires payment: requestedAmount of requestedAsset {
     lock payment with sellerProgram
     unlock offered
@@ -69,7 +71,7 @@ contract EscrowedTransfer(agent: PublicKey, sender: Program, recipient: Program)
 `
 
 const collateralizedLoan = `
-contract CollateralizedLoan(balanceAmount: Amount, balanceAsset: Asset, deadline: Time, lender: Program, borrower: Program) locks collateral {
+contract CollateralizedLoan(balanceAsset: Asset, balanceAmount: Amount, deadline: Time, lender: Program, borrower: Program) locks collateral {
   clause repay() requires payment: balanceAmount of balanceAsset {
     lock payment with lender
     lock collateral with borrower
@@ -191,11 +193,11 @@ func TestCompile(t *testing.T) {
 				Name:    "TradeOffer",
 				Program: mustDecodeHex("547a6413000000000070515779c1632300000054795479ae7cac690000c3c2515779c1"),
 				Params: []ContractParam{{
-					Name: "requestedAmount",
-					Typ:  "Amount",
-				}, {
 					Name: "requestedAsset",
 					Typ:  "Asset",
+				}, {
+					Name: "requestedAmount",
+					Typ:  "Amount",
 				}, {
 					Name: "sellerProgram",
 					Typ:  "Program",
@@ -205,10 +207,7 @@ func TestCompile(t *testing.T) {
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "trade",
-					Args: []ClauseArg{{
-						Name: "payment",
-						Typ:  "Value",
-					}},
+					Args: []ClauseArg{},
 					Values: []ValueInfo{{
 						Name:    "payment",
 						Program: "sellerProgram",
@@ -284,11 +283,11 @@ func TestCompile(t *testing.T) {
 				Name:    "CollateralizedLoan",
 				Program: mustDecodeHex("557a641c000000000070515879c1695100c3c2515979c163290000005279c59f690000c3c2515879c1"),
 				Params: []ContractParam{{
-					Name: "balanceAmount",
-					Typ:  "Amount",
-				}, {
 					Name: "balanceAsset",
 					Typ:  "Asset",
+				}, {
+					Name: "balanceAmount",
+					Typ:  "Amount",
 				}, {
 					Name: "deadline",
 					Typ:  "Time",
@@ -298,16 +297,10 @@ func TestCompile(t *testing.T) {
 				}, {
 					Name: "borrower",
 					Typ:  "Program",
-				}, {
-					Name: "collateral",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "repay",
-					Args: []ClauseArg{{
-						Name: "payment",
-						Typ:  "Value",
-					}},
+					Args: []ClauseArg{},
 					Values: []ValueInfo{
 						{
 							Name:    "payment",
@@ -345,9 +338,11 @@ func TestCompile(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(got, c.want) {
+				gotProg, _ := vm.Disassemble(got.Program)
+				wantProg, _ := vm.Disassemble(c.want.Program)
 				gotJSON, _ := json.Marshal(got)
 				wantJSON, _ := json.Marshal(c.want)
-				t.Errorf("got %s\nwant %s", string(gotJSON), wantJSON)
+				t.Errorf("got %s [prog: %s]\nwant %s [prog: %s]", string(gotJSON), gotProg, wantJSON, wantProg)
 			}
 		})
 	}
