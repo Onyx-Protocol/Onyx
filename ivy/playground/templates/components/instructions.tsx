@@ -14,9 +14,9 @@ const Instructions = ({ opcodes }) => {
   return (
     <div className="panel-body inner">
       <h1>Compiled</h1>
-      <div className="codeblock instructions">
+      <pre className="wrap">
         { opcodes }
-      </div>
+      </pre>
     </div>
   )
 }
