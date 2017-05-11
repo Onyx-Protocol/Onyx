@@ -8,11 +8,11 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(spend())
   }
 })
-const SpendFooter = (props: {enabled: boolean, handleSpendClick: (e)=>undefined} ) => {
+const SpendButton = (props: {enabled: boolean, handleSpendClick: (e)=>undefined} ) => {
   return <button className="btn btn-primary" disabled={!props.enabled} onClick={props.handleSpendClick}>Spend</button>
 }
 
 export default connect(
   (state) => ({ enabled: areSpendInputsValid(state) }),
   mapDispatchToProps
-)(SpendFooter)
+)(SpendButton)
