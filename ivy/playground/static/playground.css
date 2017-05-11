@@ -75,7 +75,11 @@ select:hover {
 }
 
 .btn {
-  letter-spacing: .5;
+  border-radius: 3px;
+}
+
+.btn-lg {
+  font-size: 16px;
 }
 
 .btn-primary {
@@ -184,4 +188,16 @@ section h4 {
 
 #root {
   padding-bottom: 30px;
+}
+
+/*Ace Editor Overrides*/
+
+.ace-monokai {
+  background-color: #20252d !important;
+}
+
+.ace_gutter {
+  background-color: #000 !important;
+  opacity: .2;
+  color: #fff !important;
 }
