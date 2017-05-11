@@ -15,10 +15,10 @@ const mapDispatchToProps = (dispatch) => ({
 })
 
 const Seed = ({ handleClick, disable }) => {
-  let jsx = (<a href="#" onClick={handleClick}>Seed</a>)
+  let jsx = (<li><a href="#" onClick={handleClick}>Seed</a></li>)
   if (disable) {
     handleClick = () => {}
-    jsx = (<a className='disabled' data-for="seedButtonTooltip" data-tip="Chain Core already has accounts and assets created." href="#" onClick={handleClick}>Seed</a>)
+    jsx = (<li className='disabled'><a data-for="seedButtonTooltip" data-tip="Chain Core already has accounts and assets created." href="#" onClick={handleClick}>Seed</a></li>)
   }
   return jsx
 }

@@ -176,11 +176,6 @@ section h4 {
   font-style: italic;
 }
 
-.navbar-inverse .navbar-nav > li > a.disabled:hover {
-  color: #9d9d9d;
-}
-
-
 /*React Component Overrides*/
 
 .__react_component_tooltip {
