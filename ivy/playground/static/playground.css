@@ -128,6 +128,12 @@ pre.wrap {
   height: 30px;
 }
 
+.navbar .divider-vertical {
+    height: 20px;
+    margin: 15px 9px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+}
+
 section h4 {
   margin-top: 40px;
   margin-bottom: 20px;
