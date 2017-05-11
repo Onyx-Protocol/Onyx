@@ -10,7 +10,7 @@
 }
 
 .container {
-  max-width: 1200px
+  max-width: 1200px;
 }
 
 .table {
@@ -185,4 +185,8 @@ section h4 {
 
 .__react_component_tooltip {
   z-index: 9999 !important
+}
+
+#root {
+  padding-bottom: 30px;
 }
