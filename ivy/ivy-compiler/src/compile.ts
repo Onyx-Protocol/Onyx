@@ -57,21 +57,25 @@ import {
   assemble
 } from './cvm/assemble'
 
-export function compileContractParameters(source: string) { // this is all that the playground currently needs
+function compileAst(source: string) {
   let parsed = parser.parse(source)
   let refChecked = referenceCheck(parsed)
-  let ast = typeCheckContract(refChecked)
-  let contractParameters = ast.parameters.map(toContractParameter)
-  return contractParameters
+  return typeCheckContract(refChecked)
+}
+
+export function compileContractParameters(source: string) {
+  let ast = compileAst(source)
+  return ast.parameters.map(toContractParameter)
+}
+
+export function compileTemplateClauses(source: string) {
+  let ast = compileAst(source)
+  return ast.clauses.map(toTemplateClause)
 }
 
 export function compileTemplate(source: string): Template|CompilerError {
   try {
-    let parsed = parser.parse(source)
-    // console.log("parsed: ", parsed)
-    let refChecked = referenceCheck(parsed)
-    // console.log("refChecked: ", refChecked)
-    let ast = typeCheckContract(refChecked)
+    let ast = compileAst(source)
     // console.log("ast: ", ast)
     let templateClauses = ast.clauses.map(toTemplateClause)
     let desugared = desugarContract(ast)

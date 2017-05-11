@@ -54,11 +54,10 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
     }
     case SET_COMPILED: {
       let compiled = action.result
-      if (compiled.error) { 
+      if (compiled.error && compiled.source == state.source) { 
         // the JS compiler may be less strict than the Go compiler
         // so this should make sure the contractParameters and inputMap are not rendered
-        // the Create section was generated synchronously and this is asynchronous
-        // so this shouldn't be a race condition
+        // I think this won't be a race condition
         return {
           ...state,
           inputMap: undefined,

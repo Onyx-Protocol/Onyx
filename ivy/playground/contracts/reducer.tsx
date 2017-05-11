@@ -10,8 +10,8 @@ import { createSelector } from 'reselect'
 import { CREATE_CONTRACT, UPDATE_CLAUSE_INPUT, UPDATE_INPUT,
          SET_CLAUSE_INDEX, SPEND_CONTRACT } from './actions'
 import { addDefaultInput, getPublicKeys } from '../inputs/data'
-import { Item as Contract } from './types'
-import { ContractParameter } from 'ivy-compiler'
+import { Contract as Contract } from './types'
+import { ContractParameter, compileTemplateClauses } from 'ivy-compiler'
 
 export const INITIAL_STATE: ContractsState = {
   itemMap: {},
@@ -49,7 +49,8 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       let clauseNames = template.clauses.map(clause => clause.name)
       let clauseParameterIds = {}
       let inputs: Input[] = []
-      for (let clause of template.clauses) {
+      let templateClauses = compileTemplateClauses(action.template.source) // these have better type inference
+      for (let clause of templateClauses) {
         clauseParameterIds[clause.name] = clause.parameters.map(param => "clauseParameters." + clause.name + "." + param.identifier)
         for (let parameter of clause.parameters) {
           addParameterInput(inputs, parameter.valueType, "clauseParameters." + clause.name + "." + parameter.identifier)
@@ -87,8 +88,6 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
           ...state.itemMap,
           [contractId]: contract
         },
-        inputMap: generateInputMap(action.template.contractParameters),
-        showErrors: false
       }
     case UPDATE_CLAUSE_INPUT: {
       // gotta find a way to make this logic shorter

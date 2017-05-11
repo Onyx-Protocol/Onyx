@@ -47,7 +47,8 @@ Return
 // need to handle precedence
 
 Expression1 "expression"
-  = ComparisonExpression
+  = ListLiteral // slightly hackish
+  / ComparisonExpression
   / Expression2
 
 Expression2
@@ -65,8 +66,7 @@ Expression4
   / "(" exp:Expression1 ")" { return exp }
 
 Literal
-  = ListLiteral
-  / IntegerLiteral
+  = IntegerLiteral
   / BooleanLiteral
 
 ComparisonExpression // not associative
