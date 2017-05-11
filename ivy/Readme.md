@@ -10,8 +10,7 @@ $ open http://localhost:8080/
 
 ### Bundle playround into cored:
 ```
-$ yarn build
+$ brew install yarn
 $ go install chain/cmd/gobundle
-$ gobundle -package ivy playground/public/ > ../generated/ivy/ivy.go
-$ gofmt -w ../generated/ivy/ivy.go
+$ yarn run bundle
 ```
