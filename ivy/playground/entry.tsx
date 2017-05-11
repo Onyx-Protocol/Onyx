@@ -27,7 +27,7 @@ import { prefixRoute } from './util'
 require('./static/playground.css')
 
 // Set favicon
-const faviconPath = require('!!file?name=favicon.ico!./static/images/favicon.png')
+const faviconPath = require('!!url?name=favicon.ico!./static/images/favicon.png')
 const favicon = document.createElement('link')
 favicon.type = 'image/png'
 favicon.rel = 'shortcut icon'
