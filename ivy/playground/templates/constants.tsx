@@ -17,6 +17,14 @@ export const LOCK_WITH_PUBLIC_KEY = `contract LockWithPublicKey(publicKey: Publi
   }
 }`
 
+export const LOCK_WITH_PUBLIC_KEY_HASH = `contract LockWithPublicKeyHash(pubKeyHash: Hash, locked: Value) {
+  clause unlock(pubKey: PublicKey, sig: Signature) {
+    verify sha3(pubKey) == pubKeyHash
+    verify checkTxSig(pubKey, sig)
+    return locked
+  }
+}`
+
 export const LOCK_WITH_MULTISIG = `contract LockWithMultiSig(
   publicKey1: PublicKey, 
   publicKey2: PublicKey, 
@@ -96,6 +104,7 @@ export const REVEAL_FACTORS = `contract RevealFactors(product: Integer, value: V
 const itemMap = {
   TrivialLock: TRIVIAL_LOCK,
   LockWithPublicKey: LOCK_WITH_PUBLIC_KEY,
+  LockWithPublicKeyHash: LOCK_WITH_PUBLIC_KEY_HASH,
   LockWithMultiSig: LOCK_WITH_MULTISIG,
   TradeOffer: TRADE_OFFER,
   EscrowedTransfer: ESCROWED_TRANSFER,
@@ -107,6 +116,7 @@ const itemMap = {
 export const idList = [
   "TrivialLock",
   "LockWithPublicKey",
+  "LockWithPublicKeyHash",
   "LockWithMultiSig",
   "TradeOffer",
   "EscrowedTransfer",

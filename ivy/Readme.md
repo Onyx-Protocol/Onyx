@@ -1,15 +1,27 @@
 ## Ivy
 
-### Run playground:
+To build, bundle, and develop with the playground, we recommend using [yarn](https://yarnpkg.com/en/):
+
 ```
 $ brew install yarn
+```
+
+### Install Chain Core with necessary tags
+
+```
+$ go install -tags "localhost_auth http_ok" chain/cmd/cored
+```
+
+### Run playground in development mode:
+
+```
 $ yarn install
 $ yarn start
 $ open http://localhost:8080/
+$ cored
 ```
 
-### Bundle playround into cored:
+### Bundle changes to playround into cored:
 ```
-$ brew install yarn
 $ yarn run bundle
 ```
