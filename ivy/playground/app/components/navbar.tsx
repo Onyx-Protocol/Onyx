@@ -19,10 +19,15 @@ export default function Navbar() {
         </div>
         <ReactTooltip id="seedButtonTooltip" place="bottom" type="error" effect="solid"/>
         <ul className="nav navbar-nav navbar-right">
-          <li><Link to={prefixRoute('/')}>Create</Link></li>
-          <li><Link to={prefixRoute('/spend')}>Spend</Link></li>
-          <li><Seed /></li>
-          <li><Reset /></li>
+          <li><Link to={prefixRoute('/')}>Create Contract</Link></li>
+          <li><Link to={prefixRoute('/spend')}>Spend Contract</Link></li>
+          <li className="dropdown">
+            <a href="#" className="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Setup <span className="caret"></span></a>
+            <ul className="dropdown-menu">
+              <li><Reset /></li>
+              <li><Seed /></li>
+            </ul>
+          </li>
         </ul>
       </div>
     </nav>

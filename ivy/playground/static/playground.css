@@ -179,3 +179,10 @@ section h4 {
 .navbar-inverse .navbar-nav > li > a.disabled:hover {
   color: #9d9d9d;
 }
+
+
+/*React Component Overrides*/
+
+.__react_component_tooltip {
+  z-index: 9999 !important
+}
