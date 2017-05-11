@@ -6,7 +6,8 @@
   "scripts": {
     "build": "NODE_ENV=production webpack",
     "start": "webpack-dev-server --content-base playground/public --inline --hot",
-    "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.config.js ./test/*.js"
+    "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.config.js ./test/*.js",
+    "bundle": "yarn build && gobundle -package ivy playground/public/ > ../generated/ivy/ivy.go && gofmt -w ../generated/ivy/ivy.go"
   },
   "author": "",
   "license": "Apache-2.0",
