@@ -29,9 +29,7 @@ import {
 
 let Promise = require('prfun')
 
-import {
-  crypto
-} from 'bcoin'
+import * as crypto from 'crypto'
 
 import {
   client
@@ -40,6 +38,8 @@ import {
 import {
   sha3_256
 } from 'js-sha3'
+
+import { sha256 } from './utils'
 
 import * as app from '../app/types'
 import { SpendFromAccount } from '../transactions/types'
@@ -96,7 +96,7 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
       let childData = getData(getChild(input), inputsById)
       if (typeof childData === "number") throw "should not generate hash of a number"
       switch(input.hashType.hashFunction) {
-        case "sha256": return crypto.sha256(childData)
+        case "sha256": return sha256(childData)
         case "sha3": return Buffer.from(sha3_256(childData), "hex")
         default: throw "unexpected hash function"
       }
