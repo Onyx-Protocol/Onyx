@@ -4,105 +4,98 @@ import { compileTemplate } from 'ivy-compiler'
 
 export const NAME = 'templates'
 
-export const TRIVIAL_LOCK =`contract TrivialLock(locked: Value) {
-  clause unlock() {
-    return locked
+export const TRIVIAL_LOCK =`contract TrivialLock() locks value {
+  clause spend() {
+    unlock value
   }
 }`
 
-export const LOCK_WITH_PUBLIC_KEY = `contract LockWithPublicKey(publicKey: PublicKey, locked: Value) {
-  clause unlock(sig: Signature) {
+export const LOCK_WITH_PUBLIC_KEY = `contract LockWithPublicKey(publicKey: PublicKey) locks value {
+  clause spend(sig: Signature) {
     verify checkTxSig(publicKey, sig)
-    return locked
+    unlock value
   }
 }`
 
-export const LOCK_WITH_PUBLIC_KEY_HASH = `contract LockWithPublicKeyHash(pubKeyHash: Hash, locked: Value) {
-  clause unlock(pubKey: PublicKey, sig: Signature) {
+export const LOCK_WITH_PUBLIC_KEY_HASH = `contract LockWithPublicKeyHash(pubKeyHash: Hash) locks value {
+  clause spend(pubKey: PublicKey, sig: Signature) {
     verify sha3(pubKey) == pubKeyHash
     verify checkTxSig(pubKey, sig)
-    return locked
+    unlock value
   }
 }`
 
 export const LOCK_WITH_MULTISIG = `contract LockWithMultiSig(
-  publicKey1: PublicKey, 
-  publicKey2: PublicKey, 
-  publicKey3: PublicKey,
-  locked: Value) {
-  clause unlock(sig1: Signature, sig2: Signature) {
+  publicKey1: PublicKey,
+  publicKey2: PublicKey,
+  publicKey3: PublicKey) locks value {
+  clause spend(sig1: Signature, sig2: Signature) {
     verify checkTxMultiSig([publicKey1, publicKey2, publicKey3], [sig1, sig2])
-    return locked
+    unlock value
   }
 }`
 
 export const TRADE_OFFER = `contract TradeOffer(
-  requested: AssetAmount,
+  asset: Asset,
+  amountRequested: Amount,
   sellerProgram: Program,
-  sellerKey: PublicKey,
-  offered: Value
-) {
-  clause trade(payment: Value) {
-    verify payment.assetAmount == requested
-    output sellerProgram(payment)
-    return offered
+  sellerKey: PublicKey) locks offered {
+  clause trade() requires payment: amountRequested of asset {
+    lock payment with sellerProgram
+    unlock offered
   }
   clause cancel(sellerSig: Signature) {
     verify checkTxSig(sellerKey, sellerSig)
-    output sellerProgram(offered)
+    lock offered with sellerProgram
   }
 }`
 
 export const ESCROWED_TRANSFER = `contract EscrowedTransfer(
   agent: PublicKey,
   sender: Program,
-  recipient: Program,
-  value: Value
-) {
+  recipient: Program) locks value {
   clause approve(sig: Signature) {
     verify checkTxSig(agent, sig)
-    output recipient(value)
+    lock value with recipient
   }
   clause reject(sig: Signature) {
     verify checkTxSig(agent, sig)
-    output sender(value)
+    lock value with sender
   }
 }`
 
 export const COLLATERALIZED_LOAN = `contract CollateralizedLoan(
-  balance: AssetAmount,
+  asset: Asset,
+  amountLoaned: Amount,
   deadline: Time,
   lender: Program,
-  borrower: Program,
-  collateral: Value
-) {
-  clause repay(payment: Value) {
-    verify payment.assetAmount == balance
-    output lender(payment)
-    output borrower(collateral)
+  borrower: Program
+) locks collateral {
+  clause repay() requires payment: amountLoaned of asset {
+    lock payment with lender
+    lock collateral with borrower
   }
   clause default() {
     verify after(deadline)
-    output lender(collateral)
+    lock collateral with lender
   }
 }`
 
-export const REVEAL_PREIMAGE = `contract RevealPreimage(hash: Hash, value: Value) {
+export const REVEAL_PREIMAGE = `contract RevealPreimage(hash: Hash) locks value {
   clause reveal(string: String) {
     verify sha3(string) == hash
-    return value
+    unlock value
   }
 }`
 
-export const REVEAL_FACTORS = `contract RevealFactors(product: Integer, value: Value) {
+export const REVEAL_FACTORS = `contract RevealFactors(product: Integer) locks value {
   clause reveal(factor1: Integer, factor2: Integer) {
     verify factor1 * factor2 == product
-    return value
+    unlock value
   }
 }`
 
 const itemMap = {
-  TrivialLock: TRIVIAL_LOCK,
   LockWithPublicKey: LOCK_WITH_PUBLIC_KEY,
   LockWithPublicKeyHash: LOCK_WITH_PUBLIC_KEY_HASH,
   LockWithMultiSig: LOCK_WITH_MULTISIG,
@@ -110,26 +103,27 @@ const itemMap = {
   EscrowedTransfer: ESCROWED_TRANSFER,
   CollateralizedLoan: COLLATERALIZED_LOAN,
   RevealPreimage: REVEAL_PREIMAGE,
-  RevealFactors: REVEAL_FACTORS
+  RevealFactors: REVEAL_FACTORS,
+  TrivialLock: TRIVIAL_LOCK
 }
 
 export const idList = [
-  "TrivialLock",
   "LockWithPublicKey",
   "LockWithPublicKeyHash",
   "LockWithMultiSig",
   "TradeOffer",
   "EscrowedTransfer",
   "CollateralizedLoan",
-  "RevealPreimage"
+  "RevealPreimage",
+  "TrivialLock"
 ]
 
 const selected = idList[0]
 const source = itemMap[selected].source
 
-export const INITIAL_STATE: TemplateState = { 
-  itemMap, 
-  idList, 
+export const INITIAL_STATE: TemplateState = {
+  itemMap,
+  idList,
   source: '',
   inputMap: {},
   compiled: undefined
