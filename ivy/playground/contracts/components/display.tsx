@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 import { getSpendContract } from '../selectors'
 
 export const Display = (props: { source: string }) => {
-  return <pre>{props.source}</pre>
+  return <pre className="codeblock">{props.source}</pre>
 }
 
 export const DisplaySpendContract = connect(
