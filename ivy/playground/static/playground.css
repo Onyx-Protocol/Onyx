@@ -125,6 +125,11 @@ pre.wrap {
   line-height: 24px;
 }
 
+code {
+  color: #8c8c8c;
+  background-color: #ececec;
+}
+
 .contracts-table th {
   width: 30%;
 }
