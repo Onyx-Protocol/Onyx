@@ -46,15 +46,17 @@ func parse(buf []byte) (c *contract, err error) {
 
 // parse functions
 
-// contract name(p1, p2: t1, p3: t2) { ... }
+// contract name(p1, p2: t1, p3: t2) locks value { ... }
 func parseContract(p *parser) *contract {
 	consumeKeyword(p, "contract")
 	name := consumeIdentifier(p)
 	params := parseParams(p)
+	consumeKeyword(p, "locks")
+	value := consumeIdentifier(p)
 	consumeTok(p, "{")
 	clauses := parseClauses(p)
 	consumeTok(p, "}")
-	return &contract{name, params, clauses}
+	return &contract{name, params, clauses, value}
 }
 
 // (p1, p2: t1, p3: t2)
@@ -105,13 +107,40 @@ func parseParamsType(p *parser) []*param {
 }
 
 func parseClause(p *parser) *clause {
+	var c clause
 	consumeKeyword(p, "clause")
-	name := consumeIdentifier(p)
-	params := parseParams(p)
+	c.name = consumeIdentifier(p)
+	c.params = parseParams(p)
+	if peekKeyword(p) == "requires" {
+		consumeKeyword(p, "requires")
+		c.reqs = parseClauseRequirements(p)
+	}
 	consumeTok(p, "{")
-	statements := parseStatements(p)
+	c.statements = parseStatements(p)
 	consumeTok(p, "}")
-	return &clause{name: name, params: params, statements: statements}
+	return &c
+}
+
+func parseClauseRequirements(p *parser) []*clauseRequirement {
+	var result []*clauseRequirement
+	first := true
+	for {
+		switch {
+		case first:
+			first = false
+		case peekTok(p, ","):
+			consumeTok(p, ",")
+		default:
+			return result
+		}
+		var req clauseRequirement
+		req.name = consumeIdentifier(p)
+		consumeTok(p, ":")
+		req.amountExpr = parseExpr(p)
+		consumeKeyword(p, "of")
+		req.assetExpr = parseExpr(p)
+		result = append(result, &req)
+	}
 }
 
 func parseStatements(p *parser) []statement {
@@ -127,10 +156,10 @@ func parseStatement(p *parser) statement {
 	switch peekKeyword(p) {
 	case "verify":
 		return parseVerifyStmt(p)
-	case "output":
-		return parseOutputStmt(p)
-	case "return":
-		return parseReturnStmt(p)
+	case "lock":
+		return parseLockStmt(p)
+	case "unlock":
+		return parseUnlockStmt(p)
 	}
 	panic(parseErr(p.buf, p.pos, "unknown keyword \"%s\"", peekKeyword(p)))
 }
@@ -141,20 +170,18 @@ func parseVerifyStmt(p *parser) *verifyStatement {
 	return &verifyStatement{expr: expr}
 }
 
-func parseOutputStmt(p *parser) *outputStatement {
-	consumeKeyword(p, "output")
-	c := parseExpr(p)
-	callExpr, ok := c.(*call)
-	if !ok {
-		p.errorf("expected call expression, got %T", c)
-	}
-	return &outputStatement{call: callExpr}
+func parseLockStmt(p *parser) *lockStatement {
+	consumeKeyword(p, "lock")
+	locked := parseExpr(p)
+	consumeKeyword(p, "with")
+	program := parseExpr(p)
+	return &lockStatement{locked: locked, program: program}
 }
 
-func parseReturnStmt(p *parser) *returnStatement {
-	consumeKeyword(p, "return")
+func parseUnlockStmt(p *parser) *unlockStatement {
+	consumeKeyword(p, "unlock")
 	expr := parseExpr(p)
-	return &returnStatement{expr: expr}
+	return &unlockStatement{expr}
 }
 
 func parseExpr(p *parser) expression {
@@ -217,11 +244,6 @@ func parseExpr3(p *parser) expression {
 	if peekTok(p, "(") {
 		args := parseArgs(p)
 		return &call{fn: e, args: args}
-	}
-	if peekTok(p, ".") {
-		consumeTok(p, ".")
-		prop := consumeIdentifier(p)
-		return &propRef{expr: e, property: prop}
 	}
 	return e
 }
@@ -286,6 +308,7 @@ func peekTok(p *parser, token string) bool {
 
 var keywords = []string{
 	"contract", "clause", "verify", "output", "return",
+	"locks", "requires", "of", "lock", "with", "unlock",
 }
 
 func consumeKeyword(p *parser, keyword string) {

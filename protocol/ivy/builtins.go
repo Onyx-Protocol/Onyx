@@ -77,12 +77,3 @@ var unaryOps = []unaryOp{
 
 	{"~", "INVERT", "", ""},
 }
-
-// properties[type] is a map from property names to their types
-var properties = make(map[typeDesc]map[string]typeDesc)
-
-func init() {
-	properties[valueType] = map[string]typeDesc{
-		"assetAmount": assetAmountType,
-	}
-}

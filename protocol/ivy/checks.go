@@ -1,9 +1,22 @@
 package ivy
 
-import (
-	"fmt"
-	"reflect"
-)
+import "fmt"
+
+func prohibitValueParams(contract *contract) error {
+	for _, p := range contract.params {
+		if p.typ == valueType {
+			return fmt.Errorf("Value-typed contract parameter \"%s\" must appear in a \"locks\" clause", p.name)
+		}
+	}
+	for _, c := range contract.clauses {
+		for _, p := range c.params {
+			if p.typ == valueType {
+				return fmt.Errorf("Value-typed parameter \"%s\" of clause \"%s\" must appear in a \"requires\" clause", p.name, c.name)
+			}
+		}
+	}
+	return nil
+}
 
 func requireAllParamsUsedInClauses(params []*param, clauses []*clause) error {
 	for _, p := range params {
@@ -25,19 +38,25 @@ func requireAllParamsUsedInClauses(params []*param, clauses []*clause) error {
 func requireAllParamsUsedInClause(params []*param, clause *clause) error {
 	for _, p := range params {
 		used := false
-		var e expression
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {
 			case *verifyStatement:
-				e = s.expr
-			case *outputStatement:
-				e = s.call
-			case *returnStatement:
-				e = s.expr
+				used = references(s.expr, p.name)
+			case *lockStatement:
+				used = references(s.locked, p.name) || references(s.program, p.name)
+			case *unlockStatement:
+				used = references(s.expr, p.name)
 			}
-			if references(e, p.name) {
-				used = true
+			if used {
 				break
+			}
+		}
+		if !used {
+			for _, r := range clause.reqs {
+				if references(r.amountExpr, p.name) || references(r.assetExpr, p.name) {
+					used = true
+					break
+				}
 			}
 		}
 		if !used {
@@ -63,8 +82,6 @@ func references(expr expression, name string) bool {
 			}
 		}
 		return false
-	case *propRef:
-		return references(e.expr, name)
 	case varRef:
 		return string(e) == name
 	case listExpr:
@@ -78,31 +95,13 @@ func references(expr expression, name string) bool {
 	return false
 }
 
-func requireValueParam(contract *contract) error {
-	if len(contract.params) == 0 {
-		return fmt.Errorf("must have at least one contract parameter")
-	}
-	if t := contract.params[len(contract.params)-1].typ; t != "Value" {
-		return fmt.Errorf("final contract parameter has type \"%s\" but should be Value", t)
-	}
-	for i := 0; i < len(contract.params)-1; i++ {
-		if contract.params[i].typ == "Value" {
-			return fmt.Errorf("contract parameter %d has type Value, but only the final parameter may", i)
-		}
-	}
-	return nil
-}
-
 func requireAllValuesDisposedOnce(contract *contract, clause *clause) error {
-	err := paramDisposedOnce(contract.params[len(contract.params)-1], clause)
+	err := valueDisposedOnce(contract.value, clause)
 	if err != nil {
 		return err
 	}
-	for _, p := range clause.params {
-		if p.typ != "Value" {
-			continue
-		}
-		err = paramDisposedOnce(p, clause)
+	for _, req := range clause.reqs {
+		err = valueDisposedOnce(req.name, clause)
 		if err != nil {
 			return err
 		}
@@ -110,27 +109,27 @@ func requireAllValuesDisposedOnce(contract *contract, clause *clause) error {
 	return nil
 }
 
-func paramDisposedOnce(p *param, clause *clause) error {
+func valueDisposedOnce(name string, clause *clause) error {
 	var count int
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
-		case *returnStatement:
-			if references(stmt.expr, p.name) {
+		case *unlockStatement:
+			if references(stmt.expr, name) {
 				count++
 			}
-		case *outputStatement:
-			if len(stmt.call.args) == 1 && references(stmt.call.args[0], p.name) {
+		case *lockStatement:
+			if references(stmt.locked, name) {
 				count++
 			}
 		}
 	}
 	switch count {
 	case 0:
-		return fmt.Errorf("value parameter \"%s\" not disposed in clause \"%s\"", p.name, clause.name)
+		return fmt.Errorf("value \"%s\" not disposed in clause \"%s\"", name, clause.name)
 	case 1:
 		return nil
 	default:
-		return fmt.Errorf("value parameter \"%s\" disposed multiple times in clause \"%s\"", p.name, clause.name)
+		return fmt.Errorf("value \"%s\" disposed multiple times in clause \"%s\"", name, clause.name)
 	}
 }
 
@@ -145,121 +144,42 @@ func referencedBuiltin(expr expression) *builtin {
 	return nil
 }
 
-func decorateOutputs(contract *contract, clause *clause, env environ) error {
-	for _, s := range clause.statements {
-		stmt, ok := s.(*outputStatement)
-		if !ok {
-			continue
-		}
-		if t := stmt.call.fn.typ(env); t != progType {
-			return fmt.Errorf("type of function (%s) in output statement of clause \"%s\" is \"%s\", must be %s", stmt.call.fn, clause.name, t, progType)
-		}
-		if len(stmt.call.args) != 1 {
-			return fmt.Errorf("not yet supported: zero or multiple arguments in call to \"%s\" in output statement of clause \"%s\"", stmt.call.fn, clause.name)
-		}
-		valueExpr := stmt.call.args[0]
-		if t := valueExpr.typ(env); t != "Value" {
-			return fmt.Errorf("not yet supported: argument of non-Value type \"%s\" passed to \"%s\" in output statement of clause \"%s\"", t, stmt.call.fn, clause.name)
-		}
-		if valueVar, ok := valueExpr.(varRef); ok {
-			if entry, ok := env[string(valueVar)]; ok {
-				if entry.r == roleContractParam {
-					// Contract value doesn't have to be matched against an
-					// AssetAmount
-					continue
-				}
-			}
-		}
-		// Look for a verify statement matching valueExpr to an
-		// assetamount.
-		found := false
-		for _, s2 := range clause.statements {
-			v, ok := s2.(*verifyStatement)
-			if !ok {
-				continue
-			}
-			if v.associatedOutput != nil {
-				// This verify is already associated with a different output
-				// statement.
-				continue
-			}
-			e, ok := v.expr.(*binaryExpr)
-			if !ok {
-				continue
-			}
-			if e.op.op != "==" {
-				continue
-			}
-
-			// Check that e.left is the value param + ".assetAmount" and e.right is an
-			// assetamount param, or vice versa.
-			var other expression
-			check := func(e expression) bool {
-				if prop, ok := e.(*propRef); ok {
-					return reflect.DeepEqual(prop.expr, valueExpr) && prop.property == "assetAmount"
-				}
-				return false
-			}
-
-			if check(e.left) {
-				other = e.right
-			} else if check(e.right) {
-				other = e.left
-			} else {
-				continue
-			}
-			if other.typ(env) != "AssetAmount" {
-				continue
-			}
-			v.associatedOutput = stmt
-			stmt.assetAmount = other
-			found = true
-			break
-		}
-		if !found {
-			return fmt.Errorf("Value expression \"%s\" is in an output statement in clause \"%s\" but not checked in a verify statement", valueExpr, clause.name)
-		}
-	}
-	return nil
-}
-
 func assignIndexes(clause *clause) {
 	var nextIndex int64
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
-		case *outputStatement:
+		case *lockStatement:
 			stmt.index = nextIndex
 			nextIndex++
 
-		case *returnStatement:
+		case *unlockStatement:
 			nextIndex++
 		}
 	}
 }
 
 func typeCheckClause(contract *contract, clause *clause, env environ) error {
-	for i, s := range clause.statements {
+	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *verifyStatement:
-			if stmt.associatedOutput != nil {
-				// This verify is associated with an output. It doesn't get
-				// compiled; instead it contributes its terms to the output
-				// statement's CHECKOUTPUT.
-				continue
-			}
-			if t := stmt.expr.typ(env); t != "Boolean" {
+			if t := stmt.expr.typ(env); t != boolType {
 				return fmt.Errorf("expression in verify statement in clause \"%s\" has type \"%s\", must be Boolean", clause.name, t)
 			}
 
-		case *returnStatement:
-			if i != len(clause.statements)-1 {
-				return fmt.Errorf("return must be the final statement of clause \"%s\"", clause.name)
+		case *lockStatement:
+			if t := stmt.locked.typ(env); t != valueType {
+				return fmt.Errorf("expression in lock statement in clause \"%s\" has type \"%s\", must be Value", clause.name, t)
 			}
-			if t := stmt.expr.typ(env); t != "Value" {
-				return fmt.Errorf("expression \"%s\" in return statement of clause \"%s\" has type \"%s\", must be Value", stmt.expr, clause.name, t)
+			if t := stmt.program.typ(env); t != progType {
+				return fmt.Errorf("program in lock statement in clause \"%s\" has type \"%s\", must be Program", clause.name, t)
 			}
-			if !references(stmt.expr, contract.params[len(contract.params)-1].name) {
-				return fmt.Errorf("expression in return statement of clause \"%s\" must be the contract Value parameter", clause.name)
+
+		case *unlockStatement:
+			if t := stmt.expr.typ(env); t != valueType {
+				return fmt.Errorf("expression \"%s\" in unlock statement of clause \"%s\" has type \"%s\", must be Value", stmt.expr, clause.name, t)
+			}
+			if stmt.expr.String() != contract.value {
+				return fmt.Errorf("expression in unlock statement of clause \"%s\" must be the contract value", clause.name)
 			}
 		}
 	}

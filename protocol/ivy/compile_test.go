@@ -9,87 +9,74 @@ import (
 )
 
 const trivialLock = `
-contract TrivialLock(locked: Value) {
-  clause unlock() {
-    return locked
+contract TrivialLock() locks locked {
+  clause trivialUnlock() {
+    unlock locked
   }
 }
 `
 
 const lockWithPublicKey = `
-contract LockWithPublicKey(publicKey: PublicKey, locked: Value) {
-  clause unlock(sig: Signature) {
+contract LockWithPublicKey(publicKey: PublicKey) locks locked {
+  clause unlockWithSig(sig: Signature) {
     verify checkTxSig(publicKey, sig)
-    return locked
+    unlock locked
   }
 }
 `
 
 const lockWith2of3Keys = `
-contract LockWith2of3Keys(pubkey1, pubkey2, pubkey3: PublicKey, locked: Value) {
-  clause unlock(sig1, sig2: Signature) {
+contract LockWith3Keys(pubkey1, pubkey2, pubkey3: PublicKey) locks locked {
+  clause unlockWith2Sigs(sig1, sig2: Signature) {
     verify checkTxMultiSig([pubkey1, pubkey2, pubkey3], [sig1, sig2])
-    return locked
+    unlock locked
   }
 }
 `
 
 const lockToOutput = `
-contract LockToOutput(address: Program, locked: Value) {
-  clause unlock() {
-    output address(locked)
+contract LockToOutput(address: Program) locks locked {
+  clause relock() {
+    lock locked with address
   }
 }
 `
 
 const tradeOffer = `
-contract TradeOffer(requested: AssetAmount, sellerProgram: Program, sellerKey: PublicKey, offered: Value) {
-  clause trade(payment: Value) {
-    verify payment.assetAmount == requested
-    output sellerProgram(payment)
-    return offered
+contract TradeOffer(requestedAmount: Amount, requestedAsset: Asset, sellerProgram: Program, sellerKey: PublicKey) locks offered {
+  clause trade() requires payment: requestedAmount of requestedAsset {
+    lock payment with sellerProgram
+    unlock offered
   }
   clause cancel(sellerSig: Signature) {
     verify checkTxSig(sellerKey, sellerSig)
-    output sellerProgram(offered)
+    lock offered with sellerProgram
   }
 }
 `
 
 const escrowedTransfer = `
-contract EscrowedTransfer(
-  agent: PublicKey,
-  sender: Program,
-  recipient: Program,
-  value: Value
-) {
+contract EscrowedTransfer(agent: PublicKey, sender: Program, recipient: Program) locks value {
   clause approve(sig: Signature) {
     verify checkTxSig(agent, sig)
-    output recipient(value)
+    lock value with recipient
   }
   clause reject(sig: Signature) {
     verify checkTxSig(agent, sig)
-    output sender(value)
+    lock value with sender
   }
 }
 `
 
 const collateralizedLoan = `
-contract CollateralizedLoan(
-  balance: AssetAmount,
-  deadline: Time,
-  lender: Program,
-  borrower: Program,
-  collateral: Value
-) {
-  clause repay(payment: Value) {
-    verify payment.assetAmount == balance
-    output lender(payment)
-    output borrower(collateral)
+contract CollateralizedLoan(balanceAmount: Amount, balanceAsset: Asset, deadline: Time, lender: Program, borrower: Program) locks collateral {
+  clause repay() requires payment: balanceAmount of balanceAsset {
+    lock payment with lender
+    lock collateral with borrower
   }
   clause default() {
     verify after(deadline)
-    output lender(collateral)
+    lock collateral with lender
   }
 }
 `
@@ -106,12 +93,9 @@ func TestCompile(t *testing.T) {
 			CompileResult{
 				Name:    "TrivialLock",
 				Program: mustDecodeHex("51"),
-				Params: []ContractParam{{
-					Name: "locked",
-					Typ:  "Value",
-				}},
+				Params:  []ContractParam{},
 				Clauses: []ClauseInfo{{
-					Name: "unlock",
+					Name: "trivialUnlock",
 					Args: []ClauseArg{},
 					Values: []ValueInfo{{
 						Name: "locked",
@@ -130,12 +114,9 @@ func TestCompile(t *testing.T) {
 				Params: []ContractParam{{
 					Name: "publicKey",
 					Typ:  "PublicKey",
-				}, {
-					Name: "locked",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
-					Name: "unlock",
+					Name: "unlockWithSig",
 					Args: []ClauseArg{{
 						Name: "sig",
 						Typ:  "Signature",
@@ -152,7 +133,7 @@ func TestCompile(t *testing.T) {
 			"LockWith2of3Keys",
 			lockWith2of3Keys,
 			CompileResult{
-				Name:    "LockWith2of3Keys",
+				Name:    "LockWith3Keys",
 				Program: mustDecodeHex("54795479526bae557955795579536c7cad"),
 				Params: []ContractParam{{
 					Name: "pubkey1",
@@ -163,12 +144,9 @@ func TestCompile(t *testing.T) {
 				}, {
 					Name: "pubkey3",
 					Typ:  "PublicKey",
-				}, {
-					Name: "locked",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
-					Name: "unlock",
+					Name: "unlockWith2Sigs",
 					Args: []ClauseArg{{
 						Name: "sig1",
 						Typ:  "Signature",
@@ -193,12 +171,9 @@ func TestCompile(t *testing.T) {
 				Params: []ContractParam{{
 					Name: "address",
 					Typ:  "Program",
-				}, {
-					Name: "locked",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
-					Name: "unlock",
+					Name: "relock",
 					Args: []ClauseArg{},
 					Values: []ValueInfo{{
 						Name:    "locked",
@@ -216,17 +191,17 @@ func TestCompile(t *testing.T) {
 				Name:    "TradeOffer",
 				Program: mustDecodeHex("547a6413000000000070515779c1632300000054795479ae7cac690000c3c2515779c1"),
 				Params: []ContractParam{{
-					Name: "requested",
-					Typ:  "AssetAmount",
+					Name: "requestedAmount",
+					Typ:  "Amount",
+				}, {
+					Name: "requestedAsset",
+					Typ:  "Asset",
 				}, {
 					Name: "sellerProgram",
 					Typ:  "Program",
 				}, {
 					Name: "sellerKey",
 					Typ:  "PublicKey",
-				}, {
-					Name: "offered",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "trade",
@@ -235,9 +210,10 @@ func TestCompile(t *testing.T) {
 						Typ:  "Value",
 					}},
 					Values: []ValueInfo{{
-						Name:        "payment",
-						Program:     "sellerProgram",
-						AssetAmount: "requested",
+						Name:    "payment",
+						Program: "sellerProgram",
+						Asset:   "requestedAsset",
+						Amount:  "requestedAmount",
 					}, {
 						Name: "offered",
 					}},
@@ -273,9 +249,6 @@ func TestCompile(t *testing.T) {
 				}, {
 					Name: "recipient",
 					Typ:  "Program",
-				}, {
-					Name: "value",
-					Typ:  "Value",
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "approve",
@@ -311,8 +284,11 @@ func TestCompile(t *testing.T) {
 				Name:    "CollateralizedLoan",
 				Program: mustDecodeHex("557a641c000000000070515879c1695100c3c2515979c163290000005279c59f690000c3c2515879c1"),
 				Params: []ContractParam{{
-					Name: "balance",
-					Typ:  "AssetAmount",
+					Name: "balanceAmount",
+					Typ:  "Amount",
+				}, {
+					Name: "balanceAsset",
+					Typ:  "Asset",
 				}, {
 					Name: "deadline",
 					Typ:  "Time",
@@ -334,9 +310,10 @@ func TestCompile(t *testing.T) {
 					}},
 					Values: []ValueInfo{
 						{
-							Name:        "payment",
-							Program:     "lender",
-							AssetAmount: "balance",
+							Name:    "payment",
+							Program: "lender",
+							Asset:   "balanceAsset",
+							Amount:  "balanceAmount",
 						},
 						{
 							Name:    "collateral",
