@@ -24,8 +24,9 @@ export default function Navbar() {
           <li className="dropdown">
             <a href="#" className="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Setup <span className="caret"></span></a>
             <ul className="dropdown-menu">
-              <li><Reset /></li>
-              <li><Seed /></li>
+              {/* Reset and Seed return <li> elements */}
+              <Reset />
+              <Seed />
             </ul>
           </li>
         </ul>

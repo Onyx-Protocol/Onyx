@@ -10,7 +10,7 @@ const mapDispatchToProps = (dispatch) => ({
 })
 
 const Reset = ({ handleClick }) => {
-  return <a href="#" onClick={handleClick}>Reset</a>
+  return <li><a href="#" onClick={handleClick}>Reset</a></li>
 }
 
 export default connect(
