@@ -66,7 +66,7 @@ func (p *Point) MarshalText() ([]byte, error) {
 func (p *Point) UnmarshalText(b []byte) error {
 	var buf [32]byte
 	if len(b) != hex.EncodedLen(len(buf)) {
-		return fmt.Errorf("ecmath.Point.UnmarshalJSON got input with wrong length %d", len(b))
+		return fmt.Errorf("ecmath.Point.UnmarshalText got input with wrong length %d", len(b))
 	}
 	_, err := hex.Decode(buf[:], b)
 	if err != nil {
