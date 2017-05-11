@@ -433,7 +433,7 @@ function checkMultiSigArgumentCounts(contract: RawContract) {
     switch (node.type) {
       case "instructionExpression": {
         // check checkMultiSig argument counts
-        if (node.instruction == "checkMultiSig") {
+        if (node.instruction == "checkTxMultiSig") {
           let pubKeys = node.args[0] as ListLiteral
           let sigs = node.args[1] as ListLiteral
           if (sigs.values.length > pubKeys.values.length) {

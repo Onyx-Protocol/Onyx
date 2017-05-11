@@ -1,4 +1,4 @@
-export { compileTemplate, compileContractParameters } from './compile'
+export { compileTemplate, compileContractParameters, compileTemplateClauses } from './compile'
 
 export { Template, TemplateClause, CompilerError } from './template'
 
