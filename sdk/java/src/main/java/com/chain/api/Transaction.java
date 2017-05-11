@@ -990,12 +990,12 @@ public class Transaction {
      * Hex-encoded serialization of a transaction to add to the current template.
      */
     @SerializedName("base_transaction")
-    private String baseTransaction;
+    protected String baseTransaction;
 
     /**
      * List of actions in a transaction.
      */
-    private List<Action> actions;
+    protected List<Action> actions;
 
     /**
      * A time duration in milliseconds. If the transaction is not fully
@@ -1003,7 +1003,7 @@ public class Transaction {
      * blockchain. Additionally, any outputs reserved when building this
      * transaction will remain reserved for this duration.
      */
-    private long ttl;
+    protected long ttl;
 
     /**
      * Builds a single transaction template.
