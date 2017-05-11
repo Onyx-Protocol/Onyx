@@ -40,7 +40,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       return {
         ...state,
         idList: state.idList.filter(id => id !== action.id),
-        spentIdList: [...state.spentIdList, action.id]
+        spentIdList: [action.id, ...state.spentIdList]
       }
     case CREATE_CONTRACT: // reset keys etc. this is safe (the action already has this stuff)
       let controlProgram = action.controlProgram
@@ -83,7 +83,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       let contractId = contract.id
       return {
         ...state,
-        idList: [...state.idList, contract.id],
+        idList: [contract.id, ...state.idList],
         itemMap: {
           ...state.itemMap,
           [contractId]: contract
