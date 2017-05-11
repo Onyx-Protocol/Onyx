@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"os"
 
 	"chain/errors"
 )
@@ -38,7 +39,7 @@ var ErrFalseVMResult = errors.New("false VM result")
 
 // TraceOut - if non-nil - will receive trace output during
 // execution.
-var TraceOut io.Writer
+var TraceOut io.Writer = os.Stdout
 
 func Verify(context *Context) (err error) {
 	defer func() {
