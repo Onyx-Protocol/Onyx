@@ -58,6 +58,12 @@ input[type="datetime-local"] {
   width:300px;
 }
 
+input[type="text"]:disabled {
+  background: #f5f5f5;
+  box-shadow: none;
+  width: 200px;
+}
+
 select {
   -webkit-appearance: none;
   -webkit-border-left-radius: 0px !important;
