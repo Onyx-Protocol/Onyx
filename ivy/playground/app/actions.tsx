@@ -35,7 +35,7 @@ export const seed = () => {
 
       const createEntities = [
         client.assets.create({
-          alias: 'Silver',
+          alias: 'USD',
           rootXpubs: [keys[0].xpub],
           quorum: 1,
         }),
@@ -79,13 +79,13 @@ export const seed = () => {
         })
 
         builder.issue({
-          assetAlias: 'Silver',
+          assetAlias: 'USD',
           amount: 10000
         })
 
         builder.controlWithAccount({
           accountAlias: 'Bob',
-          assetAlias: 'Silver',
+          assetAlias: 'USD',
           amount: 10000
         })
       })
