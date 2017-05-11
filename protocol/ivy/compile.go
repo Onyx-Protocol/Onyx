@@ -6,8 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/davecgh/go-spew/spew"
-
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/vm"
@@ -545,8 +543,6 @@ func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clau
 }
 
 func compileRef(b *builder, stack []stackEntry, ref expression) error {
-	spew.Config.DisableMethods = true
-	fmt.Printf("* compileRef(%s), stack is\n%s", ref, spew.Sdump(stack))
 	for depth := 0; depth < len(stack); depth++ {
 		if stack[len(stack)-depth-1].matches(ref) {
 			switch depth {
