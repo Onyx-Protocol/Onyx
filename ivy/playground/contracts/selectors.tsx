@@ -7,7 +7,7 @@ import * as app from '../app/types'
 import { client, signer } from '../util'
 
 import {
-  Item as Contract,
+  Contract,
   ItemMap,
   ContractsState,
 } from './types'

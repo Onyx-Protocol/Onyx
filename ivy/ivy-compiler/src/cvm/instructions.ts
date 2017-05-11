@@ -29,7 +29,7 @@ export function isArithmeticOperator(str: string): str is ArithmeticOperator {
 export type FunctionName = "checkTxSig"|"sha256"|"sha3"|
                            "min"|"max"|"abs"|
                            "size"|"after"|"before"|"tx.sighash"|
-                           "checkMultiSig"
+                           "checkTxMultiSig"
 
 export type Opcode = String // for now
 
@@ -56,7 +56,7 @@ export function getOpcodes(instruction: Instruction): Opcode[] {
     case "before":     return ["MAXTIME", "LESSTHANOREQUAL"]
     case "after":      return ["MINTIME", "GREATERTHANOREQUAL"]
     case "tx.sighash":    return ["TXSIGHASH"]
-    case "checkMultiSig": return ["CHECKMULTISIG"] // will get special treatment
+    case "checkTxMultiSig": return ["CHECKMULTISIG"] // will get special treatment
     case "negate":        return ["NEGATE"]
     case "!":             return ["NOT"]
     case "+":             return ["ADD"]
@@ -103,7 +103,7 @@ export function getTypeSignature(instruction: Instruction): TypeSignature {
       return createTypeSignature(["Time"], "Boolean")
     case "tx.sighash":
       return createTypeSignature([], "String")
-    case "checkMultiSig":
+    case "checkTxMultiSig":
       return createTypeSignature([{ type: "listType", elementType: "PublicKey" }, 
                                   { type: "listType", elementType: "Signature" }],
                                  "Boolean")

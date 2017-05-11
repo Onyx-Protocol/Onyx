@@ -1,4 +1,3 @@
-import { compileContractParameters } from '../../ivy-compiler/src';
 import { createSelector } from 'reselect'
 
 import * as app from '../app/types'

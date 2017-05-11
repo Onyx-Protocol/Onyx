@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
 import Section from '../../app/components/section'
-import { Item as Contract } from '../types'
+import { Contract } from '../types'
 import { Template, TemplateClause } from 'ivy-compiler'
 
 import DocumentTitle from 'react-document-title'

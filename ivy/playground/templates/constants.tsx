@@ -17,9 +17,14 @@ export const LOCK_WITH_PUBLIC_KEY = `contract LockWithPublicKey(publicKey: Publi
   }
 }`
 
-export const LOCK_TO_OUTPUT =`contract LockToOutput(program: Program, locked: Value) {
-  clause unlock() {
-    output program(locked)
+export const LOCK_WITH_MULTISIG = `contract LockWithMultiSig(
+  publicKey1: PublicKey, 
+  publicKey2: PublicKey, 
+  publicKey3: PublicKey,
+  locked: Value) {
+  clause unlock(sig1: Signature, sig2: Signature) {
+    verify checkTxMultiSig([publicKey1, publicKey2, publicKey3], [sig1, sig2])
+    return locked
   }
 }`
 
@@ -91,7 +96,7 @@ export const REVEAL_FACTORS = `contract RevealFactors(product: Integer, value: V
 const itemMap = {
   TrivialLock: TRIVIAL_LOCK,
   LockWithPublicKey: LOCK_WITH_PUBLIC_KEY,
-  LockToOutput: LOCK_TO_OUTPUT,
+  LockWithMultiSig: LOCK_WITH_MULTISIG,
   TradeOffer: TRADE_OFFER,
   EscrowedTransfer: ESCROWED_TRANSFER,
   CollateralizedLoan: COLLATERALIZED_LOAN,
@@ -102,7 +107,7 @@ const itemMap = {
 export const idList = [
   "TrivialLock",
   "LockWithPublicKey",
-  "LockToOutput",
+  "LockWithMultiSig",
   "TradeOffer",
   "EscrowedTransfer",
   "CollateralizedLoan",
