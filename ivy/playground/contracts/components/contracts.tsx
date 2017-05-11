@@ -31,8 +31,8 @@ function UnspentContracts(props: { contractIds: string[] }) {
   return <Section name="Unspent Contracts" >
     <table className="table">
       <thead><tr>
-        <th>Contract Type</th>
-        <th>Control Program</th>
+        <th>Template</th>
+        <th>Program</th>
         <th>Funding Transaction ID</th>
         <th></th>
       </tr></thead>
@@ -47,7 +47,7 @@ function SpentContracts(props: { spentContractIds: string[] }) {
   return <Section name="Spent Contracts" >
   <table className="table">
     <thead><tr>
-      <th>Contract Type</th>
+      <th>Template</th>
       <th>ID</th>
       <th></th>
     </tr></thead>
@@ -85,7 +85,7 @@ function SpentContractRowUnconnected(props: { contractId: string, contract: Cont
 }
 
 const SpentContractRow = connect(
-  (state, ownProps: { contractId: string }) => { 
+  (state, ownProps: { contractId: string }) => {
     return { contract: getContract(state, ownProps.contractId) }
   }
 )(SpentContractRowUnconnected)
