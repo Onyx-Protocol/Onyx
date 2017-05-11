@@ -37,7 +37,6 @@ function GeneratePublicKeyWidget(props: { input: GeneratePublicKeyInput, compute
 
 function ValueWidget(props: { input: ValueInput }) {
   return <div>
-    {getWidget(props.input.name + ".accountAliasInput")}
     {getWidget(props.input.name + ".assetAmountInput")}
   </div>
 }
@@ -51,7 +50,12 @@ function AssetAmountWidget(props: { input: AssetAmountInput }) {
 
 function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
                                               assetMap: {[s: string]: any}}) {
-  return <pre>{props.assetMap[props.input.value].alias}</pre>
+  return <div className="form-group">
+    <div className="input-group">
+      <div className="input-group-addon">Asset</div>
+      <input type="text" className="form-control" value={props.assetMap[props.input.value].alias} disabled />
+    </div>
+  </div>
 }
 
 let AssetAliasWidget = connect(
@@ -66,6 +70,16 @@ function AccountAliasWidgetUnconnected(props: { input: AccountAliasInput,
 let AccountAliasWidget = connect(
   (state) => ({ accountMap: getAccountMap(state) })
 )(AccountAliasWidgetUnconnected)
+
+
+function AmountWidget(props: { input: Input }) {
+return <div className="form-group">
+  <div className="input-group">
+    <div className="input-group-addon">Amount</div>
+    <input type="text" className="form-control" value={props.input.value} disabled />
+  </div>
+</div>
+}
 
 function TextWidget(props: { input: Input }) {
   return <div><pre>{props.input.value}</pre></div>
@@ -125,8 +139,7 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
     case "accountAliasInput":
     case "assetAliasInput":
     case "providePrivateKeyInput":
-    case "amountInput":
-      return TextWidget
+    case "amountInput": return AmountWidget
     default: return ParameterWidget
   }
 }
