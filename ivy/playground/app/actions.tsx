@@ -4,15 +4,17 @@ import accounts from '../accounts'
 import assets from '../assets'
 import templates from '../templates'
 import { selectTemplate } from '../contracts/actions'
-import { load } from '../templates/actions'
 import { RESET } from './constants'
 import { client, signer } from '../util'
 
-export const reset = (dispatch, getState) => {
-  dispatch({ type: RESET })
-  dispatch(load("TrivialLock"))
-  dispatch(accounts.actions.fetch())
-  dispatch(assets.actions.fetch())
+export const reset = () => {
+  return (dispatch, getState) => {
+    const selected = templates.selectors.getSelected(getState())
+    dispatch({ type: RESET })
+    dispatch(templates.actions.load(selected))
+    dispatch(accounts.actions.fetch())
+    dispatch(assets.actions.fetch())
+  }
 }
 
 export const SEED = "app/SEED"
