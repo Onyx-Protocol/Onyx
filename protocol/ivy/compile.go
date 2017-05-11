@@ -381,12 +381,14 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 				if err != nil {
 					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
 				}
+				ostack = append(ostack, stackEntry(req.amountExpr.String()))
 
 				// asset
 				err = compileExpr(b, ostack, contract, clause, env, req.assetExpr)
 				if err != nil {
 					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
 				}
+				ostack = append(ostack, stackEntry(req.assetExpr.String()))
 			}
 
 			// version
