@@ -24,7 +24,13 @@ export const load = (selected: string) => {
 export const fetchCompiled = (source: string) => {
   return (dispatch, getState) => {
     return client.ivy.compile({ contract: source }).then(
-      (compiled: CompilerResult) => dispatch({type: SET_COMPILED, result: compiled})
+      (compiled: CompilerResult) => dispatch({
+        type: SET_COMPILED, 
+        result: {
+          ...compiled,
+          source: source // because error results have source: ""
+        }
+      })
     ).catch((e) => {throw e})
   }
 }
