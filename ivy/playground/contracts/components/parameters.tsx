@@ -15,8 +15,6 @@ import { getParameterIdentifier, getInputContext } from '../../inputs/data'
 import { getSpendInputMap, getClauseParameterIds } from '../selectors'
 import { getInputMap } from '../../templates/selectors'
 import { updateClauseInput } from '../actions'
-/* import { getAssetAliasesById, getAssetIds } from '../assets' */
-/* import { getAccountAliasesById, getAccountIds } from '../accounts' */
 import accounts from '../../accounts'
 import { Item as Account } from '../../accounts/types'
 
@@ -26,8 +24,6 @@ import { Item as Asset } from '../../assets/types'
 import { updateInput } from '../actions'
 import { getParameterIds } from '../../templates/selectors'
 import { validateInput, computeDataForInput, getChild } from '../../inputs/data'
-// import { getSpendParameterIds, getSpending, getSignatureData } from '../spend'
-// import { updateClauseInput } from '../contracts'
 import app from '../../app'
 
 
@@ -274,8 +270,7 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
 function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
   let input = inputsById[id]
   if (input === undefined) throw "bad input ID: " + id
-  if (input.type === "generatePublicKeyInput" ||
-      input.type === "generateHashInput" ||
+  if (input.type === "generateHashInput" ||
       input.type === "generateStringInput") {
     try {
       let computedValue = computeDataForInput(id, inputsById)
@@ -284,7 +279,9 @@ function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
         computedValue: computedValue
       }
     } catch(e) {
-      console.log(e)
+      return {
+        input: input
+      }
     }
   }
   if (input.type === "generateSignatureInput") {
