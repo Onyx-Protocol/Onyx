@@ -1,8 +1,6 @@
 import { client } from '../util'
 import { getItemMap, getIdList, getCompiled, getContractParameters } from './selectors'
 import { Template, ItemMap, CompilerResult } from './types'
-import { TRIVIAL_LOCK, LOCK_WITH_PUBLIC_KEY, LOCK_TO_OUTPUT, TRADE_OFFER, ESCROWED_TRANSFER,
-         COLLATERALIZED_LOAN, REVEAL_PREIMAGE, REVEAL_FACTORS } from './constants'
 import { ContractParameter, TemplateClause, ClauseParameter } from 'ivy-compiler'
 
 export const SET_INITIAL_TEMPLATES = 'templates/SET_TEMPLATES'

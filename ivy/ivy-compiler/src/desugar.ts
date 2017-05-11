@@ -301,7 +301,7 @@ export function desugarContract(rawContract: RawContract): Contract {
             args: args
           }
         }
-        case "checkMultiSig":
+        case "checkTxMultiSig":
           // deconstruct the lists
           // and add the dummy 0 value
           let pubKeys = node.args[0] as ListLiteral
