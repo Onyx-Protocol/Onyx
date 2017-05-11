@@ -23,8 +23,8 @@ export default function Spend(props: { contract: Contract }) {
             <section>
               <h4>Contract Template</h4>
               <DisplaySpendContract />
-              <SpendInputs />
             </section>
+            <SpendInputs />
           </div>
         </Section>
         <Section name="Spending Details">
