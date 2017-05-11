@@ -3,6 +3,9 @@ package ca
 import (
 	"chain/crypto/ed25519/ecmath"
 	"crypto/subtle"
+	"encoding/hex"
+	"fmt"
+	"io"
 )
 
 // PointPair is an ordered pair of points on the ed25519 curve.
@@ -70,6 +73,77 @@ func (z *PointPair) ConstTimeEqual(x *PointPair) bool {
 	xe := x.Encode()
 	ze := z.Encode()
 	return subtle.ConstantTimeCompare(xe[:], ze[:]) == 1
+}
+
+// Bytes returns binary representation of a point pair (64-byte slice)
+func (z *PointPair) Bytes() []byte {
+	return append(p.Point1.Bytes(), p.Point2.Bytes()...)
+}
+
+// String returns hex representation of a point pair
+func (z *PointPair) String() string {
+	return hex.EncodeToString(p.Bytes())
+}
+
+// MarshalBinary encodes the receiver into a binary form and returns the result (32-byte slice).
+func (z *PointPair) MarshalBinary() ([]byte, error) {
+	return z.Bytes(), nil
+}
+
+// UnmarshalBinary decodes a point pair for a given slice.
+// Returns error if the slice is not 32-byte long or the encoding is invalid.
+func (z *PointPair) UnmarshalBinary(data []byte) error {
+	if len(data) != 64 {
+		return fmt.Errorf("invalid size of the encoded ca.PointPair: %d bytes (must be 64)", len(data))
+	}
+	var err error
+	err = z.Point1.UnmarshalBinary(data[0:32])
+	if err != nil {
+		return err
+	}
+	err = z.Point2.UnmarshalBinary(data[32:64])
+	return err
+}
+
+// WriteTo writes 32-byte encoding of a point.
+func (z *PointPair) WriteTo(w io.Writer) (n int64, err error) {
+	n1, err := z.Point1.WriteTo(w)
+	if err != nil {
+		return n1, err
+	}
+	n2, err := z.Point2.WriteTo(w)
+	return n1 + n2, err
+}
+
+// ReadFrom attempts to read 32 bytes and decode a point pair.
+func (z *PointPair) ReadFrom(r io.Reader) (n int64, err error) {
+	n1, err := z.Point1.ReadFrom(r)
+	if err != nil {
+		return n1, err
+	}
+	n2, err := z.Point2.ReadFrom(r)
+	return n1 + n2, err
+}
+
+// MarshalText returns a hex-encoded point pair.
+func (z *PointPair) MarshalText() ([]byte, error) {
+	b1, _ := z.Point1.MarshalText()
+	b2, _ := z.Point2.MarshalText()
+	return append(b1, b2...), nil
+}
+
+// UnmarshalText decodes a point pair from a hex-encoded buffer.
+func (z *PointPair) UnmarshalText(data []byte) error {
+	if len(data) != hex.EncodedLen(64) {
+		return fmt.Errorf("ca.PointPair.UnmarshalText got input with wrong length %d", len(b))
+	}
+	var err error
+	err = z.Point1.UnmarshalText(data[0:hex.EncodedLen(32)])
+	if err != nil {
+		return err
+	}
+	err = z.Point2.UnmarshalText(data[hex.EncodedLen(32):hex.EncodedLen(64)])
+	return err
 }
 
 func init() {
