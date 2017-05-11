@@ -45,8 +45,8 @@ func (verifyStatement) iamaStatement() {}
 type outputStatement struct {
 	call *call
 
-	// The AssetAmount parameter against which the value is checked
-	param *param
+	// The AssetAmount expression against which the value is checked
+	assetAmount expression
 
 	// Added as a decoration, used by CHECKOUTPUT
 	index int64
@@ -62,7 +62,7 @@ func (returnStatement) iamaStatement() {}
 
 type expression interface {
 	String() string
-	typ() typeDesc
+	typ(environ) typeDesc
 }
 
 type binaryExpr struct {
@@ -74,7 +74,7 @@ func (e binaryExpr) String() string {
 	return fmt.Sprintf("(%s %s %s)", e.left, e.op.op, e.right)
 }
 
-func (e binaryExpr) typ() typeDesc {
+func (e binaryExpr) typ(environ) typeDesc {
 	return e.op.result
 }
 
@@ -87,7 +87,7 @@ func (e unaryExpr) String() string {
 	return fmt.Sprintf("%s%s", e.op.op, e.expr)
 }
 
-func (e unaryExpr) typ() typeDesc {
+func (e unaryExpr) typ(environ) typeDesc {
 	return e.op.result
 }
 
@@ -104,11 +104,11 @@ func (e call) String() string {
 	return fmt.Sprintf("%s(%s)", e.fn, strings.Join(argStrs, ", "))
 }
 
-func (e call) typ() typeDesc {
+func (e call) typ(env environ) typeDesc {
 	if b := referencedBuiltin(e.fn); b != nil {
 		return b.result
 	}
-	if e.fn.typ() == predType {
+	if e.fn.typ(env) == predType {
 		return boolType
 	}
 	return nilType
@@ -123,8 +123,8 @@ func (p propRef) String() string {
 	return fmt.Sprintf("%s.%s", p.expr, p.property)
 }
 
-func (e propRef) typ() typeDesc {
-	t := e.expr.typ()
+func (e propRef) typ(env environ) typeDesc {
+	t := e.expr.typ(env)
 	m := properties[t]
 	if m != nil {
 		return m[e.property]
@@ -132,26 +132,14 @@ func (e propRef) typ() typeDesc {
 	return ""
 }
 
-type varRef struct {
-	name string
-
-	// decorations
-	param   *param
-	builtin *builtin
-}
+type varRef string
 
 func (v varRef) String() string {
-	return v.name
+	return string(v)
 }
 
-func (e varRef) typ() typeDesc {
-	if e.param != nil {
-		return e.param.typ
-	}
-	if e.builtin != nil {
-		// xxx
-	}
-	return ""
+func (e varRef) typ(env environ) typeDesc {
+	return env[string(e)].t
 }
 
 type bytesLiteral []byte
@@ -160,7 +148,7 @@ func (e bytesLiteral) String() string {
 	return "0x" + hex.EncodeToString([]byte(e))
 }
 
-func (bytesLiteral) typ() typeDesc {
+func (bytesLiteral) typ(environ) typeDesc {
 	return "String"
 }
 
@@ -170,7 +158,7 @@ func (e integerLiteral) String() string {
 	return strconv.FormatInt(int64(e), 10)
 }
 
-func (integerLiteral) typ() typeDesc {
+func (integerLiteral) typ(environ) typeDesc {
 	return "Integer"
 }
 
@@ -183,7 +171,7 @@ func (e booleanLiteral) String() string {
 	return "false"
 }
 
-func (booleanLiteral) typ() typeDesc {
+func (booleanLiteral) typ(environ) typeDesc {
 	return "Boolean"
 }
 
@@ -197,6 +185,6 @@ func (e listExpr) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(elts, ", "))
 }
 
-func (listExpr) typ() typeDesc {
+func (listExpr) typ(environ) typeDesc {
 	return "List"
 }
