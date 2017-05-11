@@ -42,9 +42,10 @@ type (
 	}
 
 	ValueInfo struct {
-		Name        string `json:"name"`
-		Program     string `json:"program,omitempty"`
-		AssetAmount string `json:"asset_amount,omitempty"`
+		Name    string `json:"name"`
+		Program string `json:"program,omitempty"`
+		Asset   string `json:"asset,omitempty"`
+		Amount  string `json:"amount,omitempty"`
 	}
 )
 
@@ -99,22 +100,23 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		}
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {
-			case *outputStatement:
+			case *lockStatement:
 				valueInfo := ValueInfo{
-					Name: s.call.args[0].String(),
+					Name:    s.locked.String(),
+					Program: s.program.String(),
 				}
-				if s.assetAmount != nil {
-					valueInfo.AssetAmount = s.assetAmount.String()
-				}
-				switch f := s.call.fn.(type) {
-				case varRef:
-					valueInfo.Program = f.String()
-				case *propRef:
-					valueInfo.Program = f.String()
+				if s.locked.String() != c.value {
+					for _, r := range clause.reqs {
+						if s.locked.String() == r.name {
+							valueInfo.Asset = r.assetExpr.String()
+							valueInfo.Amount = r.amountExpr.String()
+							break
+						}
+					}
 				}
 				info.Values = append(info.Values, valueInfo)
-			case *returnStatement:
-				valueInfo := ValueInfo{Name: c.params[len(c.params)-1].name}
+			case *unlockStatement:
+				valueInfo := ValueInfo{Name: c.value}
 				info.Values = append(info.Values, valueInfo)
 			}
 		}
@@ -137,8 +139,10 @@ const (
 	roleBuiltin
 	roleContract
 	roleContractParam
+	roleContractValue
 	roleClause
 	roleClauseParam
+	roleClauseValue
 )
 
 var roleDesc = map[role]string{
@@ -146,8 +150,10 @@ var roleDesc = map[role]string{
 	roleBuiltin:       "built-in function",
 	roleContract:      "contract",
 	roleContractParam: "contract parameter",
+	roleContractValue: "contract value",
 	roleClause:        "clause",
 	roleClauseParam:   "clause parameter",
+	roleClauseValue:   "clause value",
 }
 
 func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
@@ -172,6 +178,10 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 		}
 		env[p.name] = envEntry{t: p.typ, r: roleContractParam}
 	}
+	if entry, ok := env[contract.value]; ok {
+		return nil, fmt.Errorf("contract value \"%s\" conflicts with %s", contract.value, entry)
+	}
+	env[contract.value] = envEntry{t: valueType, r: roleContractValue}
 	for _, c := range contract.clauses {
 		if entry, ok := env[c.name]; ok {
 			return nil, fmt.Errorf("clause \"%s\" conflicts with %s", c.name, roleDesc[entry.r])
@@ -179,7 +189,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 		env[c.name] = envEntry{t: nilType, r: roleClause}
 	}
 
-	err := requireValueParam(contract)
+	err := prohibitValueParams(contract)
 	if err != nil {
 		return nil, err
 	}
@@ -288,12 +298,14 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 		}
 		env[p.name] = envEntry{t: p.typ, r: roleClauseParam}
 	}
-
-	err := decorateOutputs(contract, clause, env)
-	if err != nil {
-		return err
+	for _, req := range clause.reqs {
+		if entry, ok := env[req.name]; ok {
+			return fmt.Errorf("clause value \"%s\" conflicts with %s", req.name, roleDesc[entry.r])
+		}
+		env[req.name] = envEntry{t: valueType, r: roleClauseValue}
 	}
-	err = requireAllValuesDisposedOnce(contract, clause)
+
+	err := requireAllValuesDisposedOnce(contract, clause)
 	if err != nil {
 		return err
 	}
@@ -311,19 +323,13 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *verifyStatement:
-			if stmt.associatedOutput != nil {
-				// This verify is associated with an output. It doesn't get
-				// compiled; instead it contributes its terms to the output
-				// statement's CHECKOUTPUT.
-				continue
-			}
 			err = compileExpr(b, stack, contract, clause, env, stmt.expr)
 			if err != nil {
 				return errors.Wrapf(err, "in verify statement in clause \"%s\"", clause.name)
 			}
 			b.addOp(vm.OP_VERIFY)
 
-			// special-casing "verify before(expr)" and "verify after(expr)"
+			// special-case detection of "verify before(expr)" and "verify after(expr)"
 			if c, ok := stmt.expr.(*call); ok && len(c.args) == 1 {
 				if b := referencedBuiltin(c.fn); b != nil {
 					switch b.name {
@@ -335,7 +341,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 				}
 			}
 
-		case *outputStatement:
+		case *lockStatement:
 			// index
 			b.addInt64(stmt.index)
 
@@ -347,7 +353,10 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 			b.addData(nil)
 			ostack = append(ostack, stackEntry("''"))
 
-			if stmt.assetAmount == nil {
+			// TODO: permit more complex expressions for locked,
+			// like "lock x+y with foo" (?)
+
+			if stmt.locked.String() == contract.value {
 				// amount
 				b.addOp(vm.OP_AMOUNT)
 				ostack = append(ostack, stackEntry("<amount>"))
@@ -356,24 +365,28 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 				b.addOp(vm.OP_ASSET)
 				ostack = append(ostack, stackEntry("<asset>"))
 			} else {
+				var req *clauseRequirement
+				for _, r := range clause.reqs {
+					if stmt.locked.String() == r.name {
+						req = r
+						break
+					}
+				}
+				if req == nil {
+					return fmt.Errorf("unknown value \"%s\" in lock statement in clause \"%s\"", stmt.locked, clause.name)
+				}
+
 				// amount
-				r := &propRef{
-					expr:     stmt.assetAmount,
-					property: "amount",
-				}
-				err = compileExpr(b, ostack, contract, clause, env, r)
+				err = compileExpr(b, ostack, contract, clause, env, req.amountExpr)
 				if err != nil {
-					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
+					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
 				}
-				ostack = append(ostack, stackEntry(stmt.assetAmount.String()+".amount"))
 
 				// asset
-				r.property = "asset"
-				err = compileExpr(b, ostack, contract, clause, env, r)
+				err = compileExpr(b, ostack, contract, clause, env, req.assetExpr)
 				if err != nil {
-					return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
+					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
 				}
-				ostack = append(ostack, stackEntry(stmt.assetAmount.String()+".asset"))
 			}
 
 			// version
@@ -381,7 +394,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 			ostack = append(ostack, stackEntry("1"))
 
 			// prog
-			err = compileExpr(b, ostack, contract, clause, env, stmt.call.fn)
+			err = compileExpr(b, ostack, contract, clause, env, stmt.program)
 			if err != nil {
 				return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
 			}
@@ -389,7 +402,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 			b.addOp(vm.OP_CHECKOUTPUT)
 			b.addOp(vm.OP_VERIFY)
 
-		case *returnStatement:
+		case *unlockStatement:
 			if len(clause.statements) == 1 {
 				// This is the only statement in the clause, make sure TRUE is
 				// on the stack.
@@ -487,9 +500,6 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		b.addRawBytes(ops)
 
 	case varRef:
-		return compileRef(b, stack, e)
-
-	case *propRef:
 		return compileRef(b, stack, e)
 
 	case integerLiteral:

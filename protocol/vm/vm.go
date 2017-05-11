@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"strings"
 	"os"
+	"strings"
 
 	"chain/errors"
 )

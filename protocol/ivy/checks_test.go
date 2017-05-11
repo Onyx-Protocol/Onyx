@@ -13,13 +13,9 @@ func TestRequireAllParamsUsedInClauses(t *testing.T) {
 						right: varRef("bar"),
 					},
 				},
-				&outputStatement{
-					call: &call{
-						fn: varRef("foo"),
-						args: []expression{
-							varRef("baz"),
-						},
-					},
+				&lockStatement{
+					locked:  varRef("baz"),
+					program: varRef("foo"),
 				},
 			},
 		},
@@ -32,13 +28,9 @@ func TestRequireAllParamsUsedInClauses(t *testing.T) {
 						right: varRef("plugh"),
 					},
 				},
-				&outputStatement{
-					call: &call{
-						fn: varRef("foo"),
-						args: []expression{
-							varRef("xyzzy"),
-						},
-					},
+				&lockStatement{
+					locked:  varRef("xyzzy"),
+					program: varRef("foo"),
 				},
 			},
 		},
@@ -70,53 +62,6 @@ func TestRequireAllParamsUsedInClauses(t *testing.T) {
 				params = append(params, &param{name: p})
 			}
 			err := requireAllParamsUsedInClauses(params, clauses)
-			if err == nil && c.want == "" {
-				return
-			}
-			if err == nil {
-				t.Errorf("got err==nil, want %s", c.want)
-				return
-			}
-			if err.Error() != c.want {
-				t.Errorf("got %s, want %s", err, c.want)
-			}
-		})
-	}
-}
-
-func TestRequireValueParam(t *testing.T) {
-	cases := []struct {
-		name string
-		inp  string
-		want string
-	}{
-		{
-			name: "zero params",
-			inp:  "contract foo() {}",
-			want: "must have at least one contract parameter",
-		},
-		{
-			name: "one non-Value param",
-			inp:  "contract foo(x: Integer) {}",
-			want: "final contract parameter has type \"Integer\" but should be Value",
-		},
-		{
-			name: "two Value params",
-			inp:  "contract foo(x: Value, y: Value) {}",
-			want: "contract parameter 0 has type Value, but only the final parameter may",
-		},
-		{
-			name: "ok",
-			inp:  "contract foo(x: Integer, y: Value) {}",
-		},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			parsed, err := parse([]byte(c.inp))
-			if err != nil {
-				t.Fatal(err)
-			}
-			err = requireValueParam(parsed)
 			if err == nil && c.want == "" {
 				return
 			}
