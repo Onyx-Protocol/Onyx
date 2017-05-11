@@ -4,7 +4,6 @@ import { SET_INITIAL_TEMPLATES, SET_SOURCE,
          SAVE_TEMPLATE, SET_COMPILED } from './actions'
 import { UPDATE_INPUT } from '../contracts/actions'
 import { INITIAL_STATE } from './constants'
-import { generateInputMap } from '../contracts/reducer'
 
 export default function reducer(state: TemplateState = INITIAL_STATE, action): TemplateState {
   switch (action.type) {
@@ -23,19 +22,14 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
         }
       }
     case SET_SOURCE: {
-      let source = action.source
-      let contractParameters: undefined | ContractParameter[] = undefined
-      try {
-        contractParameters = compileContractParameters(source)
-      } catch(e) {
-        console.log("typecheck error", e) // the Go compiler is responsible for returning the error that actually gets presented
-      }
-      const inputMap = contractParameters ? generateInputMap(contractParameters) : undefined
+      const source = action.source
+      const contractParameters = action.contractParameters
+      const inputMap = action.inputMap
       return {
         ...state,
-        source: source,
-        inputMap: inputMap,
-        contractParameters: contractParameters
+        source,
+        inputMap,
+        contractParameters
       }
     }
     case SAVE_TEMPLATE: {
@@ -53,8 +47,9 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
       }
     }
     case SET_COMPILED: {
-      let compiled = action.result
-      if (compiled.error && compiled.source == state.source) { 
+      const compiled = action.compiled
+      const error = compiled.error
+      if (error !== undefined && compiled.source == state.source) {
         // the JS compiler may be less strict than the Go compiler
         // so this should make sure the contractParameters and inputMap are not rendered
         // I think this won't be a race condition
@@ -69,7 +64,7 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
         // the JS compiler should never be STRICTER than the Go compiler
         throw "compilation should never succeed if typechecking fails"
       }
-      return { 
+      return {
         ...state,
         compiled
       }
