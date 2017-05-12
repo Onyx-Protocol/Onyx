@@ -19,15 +19,7 @@ export const load = (selected: string) => {
 
 export const fetchCompiled = (source: string) => {
   return (dispatch, getState) => {
-    return client.ivy.compile({ contract: source }).then((res) => {
-      let compiled
-      if (res.error === "") {
-        compiled = mapServerTemplate(res)
-      }
-      compiled = {...compiled, error: res.error, value: res.value }
-      if (compiled.instructions) {
-        compiled.opcodes = compiled.instructions.join(' ')
-      }
+    return client.ivy.compile({ contract: source }).then((compiled) => {
       let type = SET_COMPILED
       dispatch({ type, compiled })
     }).catch((e) => {throw e})

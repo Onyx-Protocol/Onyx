@@ -13,7 +13,7 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
          ProgramInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
 import { getParameterIdentifier, getInputContext } from '../../inputs/data'
 import { getSpendInputMap, getClauseParameterIds } from '../selectors'
-import { getInputMap } from '../../templates/selectors'
+import { getInputMap, getContractValueId } from '../../templates/selectors'
 import { updateClauseInput } from '../actions'
 import accounts from '../../accounts'
 import { Item as Account } from '../../accounts/types'
@@ -159,17 +159,10 @@ function TimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
 
 function ValueWidget(props: { input: ValueInput, handleChange: (e)=>undefined }) {
   return <div>
-    {getWidget(props.input.name + ".accountAliasInput")}
-    {getWidget(props.input.name + ".assetAmountInput")}
+    {getWidget(props.input.name + ".accountInput")}
+    {getWidget(props.input.name + ".assetInput")}
+    {getWidget(props.input.name + ".amountInput")}
   </div>
-}
-
-function AssetWidget(props: { input: AssetInput, handleChange: (e)=>undefined }) {
-  return (
-    <div>
-      {getWidget(props.input.name + ".assetAliasInput")}
-    </div>
-  )
 }
 
 function ProgramWidget(props: { input: ProgramInput, handleChange: (e)=>undefined }) {
@@ -257,10 +250,10 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
     case "timestampTimeInput": return TimestampTimeWidget
     case "programInput": return ProgramWidget
     case "valueInput": return ValueWidget
-    case "accountAliasInput": return AccountAliasWidget
-    case "assetInput": return AssetWidget
+    case "accountInput": return AccountAliasWidget
+    case "assetInput": return AssetAliasWidget
     case "amountInput": return AmountWidget
-    case "assetAliasInput": return AssetAliasWidget
+    case "assetInput": return AssetAliasWidget
     case "amountInput": return AmountWidget
     case "amountInput": return AmountWidget
     case "programInput": return ProgramWidget
@@ -303,8 +296,9 @@ function mapStateToSpendInputProps(state, ownProps: { id: string }) {
 }
 
 function mapStateToContractInputProps(state, ownProps: { id: string }) {
-  let inputsById = getInputMap(state)
-  return inputsById && mapToInputProps(state, inputsById, ownProps.id)
+  let inputMap = getInputMap(state)
+  if (inputMap === undefined) throw "inputMap should not be undefined when contract inputs are being rendered"
+  return mapToInputProps(state, inputMap, ownProps.id)
 }
 
 function mapDispatchToContractInputProps(dispatch, ownProps: { id: string }) {
@@ -327,7 +321,7 @@ export function getWidget(id: string): JSX.Element {
   let inputContext = id.split(".").shift() as InputContext
   let type = id.split(".").pop() as InputType
   let widgetTypeConnected
-  if (inputContext === "contractParameters") {
+  if (inputContext === "contractParameters" || inputContext === "contractValue") {
     widgetTypeConnected = connect(
       mapStateToContractInputProps,
       mapDispatchToContractInputProps
@@ -382,3 +376,21 @@ export const ContractParameters = connect(
 export const ClauseParameters = connect(
   (state) => ({ parameterIds: getClauseParameterIds(state) })
 )(ClauseParametersUnconnected)
+
+function mapStateToContractValueProps(state) {
+  return {
+    valueId: getContractValueId(state)
+  }
+}
+
+function ContractValueUnconnected(props: { valueId: string }) {
+  return <section style={{wordBreak: 'break-all'}}>
+    <h4>Contract Value</h4>
+    <form className="form">
+    <div className="argument">{getWidget(props.valueId)}</div>
+  </form></section>
+}
+
+export const ContractValue = connect(
+  mapStateToContractValueProps
+)(ContractValueUnconnected)

@@ -256,7 +256,7 @@ export const getClauseReturnAction = createSelector(
     if (returnStatement === undefined) {
       return undefined
     }
-    const returnInput = spendInputMap["transactionDetails.accountAliasInput"]
+    const returnInput = spendInputMap["transactionDetails.accountInput"]
     return {
         type: "controlWithAccount",
         accountId: returnInput.value,
@@ -317,9 +317,9 @@ export const getClauseValues = createSelector(
       .filter(param => param.valueType === "Value")
       .map(param => {
         let clauseParameterPrefix = "clauseParameters." + clause.name + "." + param.identifier
-        let accountInput = spendInputMap[clauseParameterPrefix + ".valueInput.accountAliasInput"]
-        let assetInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetAmountInput.assetAliasInput"]
-        let amountInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetAmountInput.amountInput"]
+        let accountInput = spendInputMap[clauseParameterPrefix + ".valueInput.accountInput"]
+        let assetInput = spendInputMap[clauseParameterPrefix + ".valueInput.assetInput"]
+        let amountInput = spendInputMap[clauseParameterPrefix + ".valueInput.amountInput"]
         if (accountInput === undefined) throw "accountInput for clause Value parameter surprisingly undefined"
         if (assetInput === undefined) throw "assetInput for clause Value parameter surprisingly undefined"
         if (assetInput === undefined) throw "assetInput for clause Value parameter surprisingly undefined"
@@ -343,7 +343,7 @@ export const areSpendInputsValid = createSelector(
     const invalid = paramIdList.filter(id => {
       return !isValidInput(id, spendInputMap)
     })
-    return (invalid.length === 0) && (spendTemplateClause.returnStatement === undefined || isValidInput('transactionDetails.accountAliasInput', spendInputMap))
+    return (invalid.length === 0) && (spendTemplateClause.returnStatement === undefined || isValidInput('transactionDetails.accountInput', spendInputMap))
   }
 )
 
@@ -363,20 +363,20 @@ export const getClauseOutputActions = createSelector(
       }
 
       let amountInput
-      let assetAliasInput
+      let assetInput
       if (clauseOutput.assetAmountParam === undefined) {
         const valueIdentifier = clauseOutput.contract.value.identifier
-        assetAliasInput = inputMap["contractParameters." + valueIdentifier + ".valueInput.assetAmountInput.assetAliasInput"]
+        assetInput = inputMap["contractParameters." + valueIdentifier + ".valueInput.assetAmountInput.assetInput"]
         amountInput = inputMap["contractParameters." + valueIdentifier + ".valueInput.assetAmountInput.amountInput"]
       } else {
         let assetAmountParam = clauseOutput.assetAmountParam
         amountInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.amountInput"]
-        assetAliasInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.assetAliasInput"]
+        assetInput = inputMap["contractParameters." + assetAmountParam + ".assetAmountInput.assetInput"]
       }
 
       let action: ControlWithReceiver = {
         type: "controlWithReceiver",
-        assetId: assetAliasInput.value,
+        assetId: assetInput.value,
         amount: parseInt(amountInput.value, 10),
         receiver
       }

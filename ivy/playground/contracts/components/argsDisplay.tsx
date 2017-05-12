@@ -37,13 +37,14 @@ function GeneratePublicKeyWidget(props: { input: GeneratePublicKeyInput, compute
 
 function ValueWidget(props: { input: ValueInput }) {
   return <div>
-    {getWidget(props.input.name + ".assetAmountInput")}
+    {getWidget(props.input.name + ".assetInput")}
+    {getWidget(props.input.name + ".amountInput")}
   </div>
 }
 
 function AssetWidget(props: { input: AssetInput }) {
   return <div>
-    {getWidget(props.input.name + ".assetAliasInput")}
+    {getWidget(props.input.name + ".assetInput")}
   </div>
 }
 
@@ -131,8 +132,8 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
     case "valueInput": return ValueWidget
     case "assetInput": return AssetWidget
     case "amountInput": return AmountWidget
-    case "accountAliasInput": return AccountAliasWidget
-    case "assetAliasInput": return AssetAliasWidget
+    case "accountInput": return AccountAliasWidget
+    case "assetInput": return AssetAliasWidget
     case "programInput":
     case "publicKeyInput": return ComputedWidget
     case "numberInput":
@@ -142,8 +143,8 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
     case "provideHashInput":
     case "generatePrivateKeyInput":
     case "providePrivateKeyInput":
-    case "accountAliasInput":
-    case "assetAliasInput":
+    case "accountInput":
+    case "assetInput":
     case "providePrivateKeyInput":
     case "amountInput": return AmountWidget
     default: return ParameterWidget

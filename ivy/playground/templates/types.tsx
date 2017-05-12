@@ -5,7 +5,7 @@ import { InputMap } from '../inputs/types'
 export { Template }
 export type ItemMap = { [s: string]: string }
 
-export type ParameterType = {
+export type Param = {
   name: string,
   type: string
 }
@@ -19,7 +19,7 @@ export type ValueInfo = {
 
 export type ClauseInfo = {
   name: string,
-  args: ParameterType[],
+  args: Param[],
   valueInfo: ValueInfo[]
 }
 
@@ -29,7 +29,7 @@ export type CompilerResult = {
   program: string,
   opcodes: string,
   error: string,
-  params: ParameterType[],
+  params: Param[],
   value: string,
   clauseInfo: ClauseInfo[]
 }
@@ -40,6 +40,5 @@ export type TemplateState = {
   source: string,
   inputMap?: InputMap,
   compiled?: CompilerResult,
-  contractParameters?: ContractParameter[]
 }
 

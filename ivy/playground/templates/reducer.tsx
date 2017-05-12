@@ -44,14 +44,12 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
       }
     }
     case SET_COMPILED: {
-      const compiled = action.compiled
+      const compiled: CompilerResult = action.compiled
       const error = compiled.error
-      const contractParameters = compiled.contractParameters
-      const inputMap = contractParameters ? generateInputMap(contractParameters, compiled.value) : undefined
+      const inputMap = compiled.params && generateInputMap(compiled.params, compiled.value)
       return {
         ...state,
         compiled,
-        contractParameters,
         inputMap
       }
     }
