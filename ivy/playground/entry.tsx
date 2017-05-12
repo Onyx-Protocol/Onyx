@@ -14,10 +14,10 @@ import { load } from './templates/actions'
 
 import accounts from './accounts'
 import assets from './assets'
-import Create from './templates/components/create'
 
-import Contracts from './contracts/components/contracts'
-import Spend from './contracts/components/spend'
+import LockedValue from './contracts/components/lockedValue'
+import Lock from './templates/components/lock'
+import Unlock from './contracts/components/unlock'
 
 import { idList } from './templates/constants'
 
@@ -45,7 +45,7 @@ const store = createStore(
   composeEnhancers(applyMiddleware(thunk), applyMiddleware(routerMiddleware(history)), persistState())
 )
 
-store.dispatch(reset)
+store.dispatch(reset())
 store.dispatch(load(idList[0]))
 store.dispatch(assets.actions.fetch())
 store.dispatch(accounts.actions.fetch())
@@ -54,9 +54,9 @@ render(
     <DocumentTitle title='Ivy Playground'>
     <ConnectedRouter history={history}>
       <app.components.Root>
-       <Route exact={true} path={prefixRoute('/')} component={Create} />
-       <Route exact path={prefixRoute('/spend')}  component={Contracts} />
-       <Route path={prefixRoute('/spend/:contractId')} component={Spend} />
+       <Route exact={true} path={prefixRoute('/')} component={Lock} />
+       <Route exact path={prefixRoute('/unlock')}  component={LockedValue} />
+       <Route path={prefixRoute('/unlock/:contractId')} component={Unlock} />
       </app.components.Root>
     </ConnectedRouter>
     </DocumentTitle>
