@@ -480,6 +480,28 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
 
+		// type-checking
+		if len(e.args) != len(bi.args) {
+			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", bi.name, len(e.args), len(bi.args))
+		}
+		switch bi.name {
+		case "sha3", "sha256":
+			// special-case until we have parameterized types (if we ever do)
+			switch e.args[0].typ(env) {
+			case strType, pubkeyType:
+				// ok
+			default:
+				return fmt.Errorf("argument 0 to \"%s\" has type \"%s\", must be \"String\" or \"PublicKey\"", bi.name, e.args[0].typ(env))
+			}
+
+		default:
+			for i, actual := range e.args {
+				if bi.args[i] != "" && actual.typ(env) != bi.args[i] {
+					return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
+				}
+			}
+		}
+
 		// WARNING WARNING WOOP WOOP
 		// special-case hack
 		// WARNING WARNING WOOP WOOP
