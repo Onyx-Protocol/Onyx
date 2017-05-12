@@ -385,7 +385,6 @@ function mapStateToContractValueProps(state) {
 
 function ContractValueUnconnected(props: { valueId: string }) {
   return <section style={{wordBreak: 'break-all'}}>
-    <h4>Contract Value</h4>
     <form className="form">
     <div className="argument">{getWidget(props.valueId)}</div>
   </form></section>
