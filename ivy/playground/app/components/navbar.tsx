@@ -19,8 +19,8 @@ export default function Navbar() {
         </div>
         <ReactTooltip id="seedButtonTooltip" place="bottom" type="error" effect="solid"/>
         <ul className="nav navbar-nav navbar-right">
-          <li><Link to={prefixRoute('/')}>Create Contract</Link></li>
-          <li><Link to={prefixRoute('/spend')}>Spend Contract</Link></li>
+          <li><Link to={prefixRoute('/')}>Lock Value</Link></li>
+          <li><Link to={prefixRoute('/unlock')}>Unlock Value</Link></li>
           <li className="divider-vertical"></li>
           <li><a href="https://chain.com/docs" target="_blank">Docs</a></li>
           <li className="dropdown">

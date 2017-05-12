@@ -55,8 +55,8 @@ render(
     <ConnectedRouter history={history}>
       <app.components.Root>
        <Route exact={true} path={prefixRoute('/')} component={Create} />
-       <Route exact path={prefixRoute('/spend')}  component={Contracts} />
-       <Route path={prefixRoute('/spend/:contractId')} component={Spend} />
+       <Route exact path={prefixRoute('/unlock')}  component={Contracts} />
+       <Route path={prefixRoute('/unlock/:contractId')} component={Spend} />
       </app.components.Root>
     </ConnectedRouter>
     </DocumentTitle>

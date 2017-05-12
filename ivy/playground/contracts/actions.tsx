@@ -113,7 +113,14 @@ export const create = () => {
             inputMap,
             utxo
           })
+<<<<<<< Updated upstream
           dispatch(push(prefixRoute('/spend')))
+=======
+          dispatch(push(prefixRoute('/unlock')))
+          dispatch({
+            type: SET_SOURCE, source
+          })
+>>>>>>> Stashed changes
         })
       })
     }).catch(err => {
@@ -153,7 +160,7 @@ export const spend = () => {
         type: SPEND_CONTRACT,
         id: contract.id
       })
-      dispatch(push(prefixRoute('/spend')))
+      dispatch(push(prefixRoute('/unlock')))
     })
   }
 }
