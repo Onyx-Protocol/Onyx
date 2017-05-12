@@ -30,11 +30,11 @@ export const LOCK_WITH_MULTISIG = `contract LockWithMultiSig(
 }`
 
 export const TRADE_OFFER = `contract TradeOffer(
-  asset: Asset,
-  amountRequested: Amount,
+  requestedAsset: Asset,
+  requestedAmount: Amount,
   sellerProgram: Program,
   sellerKey: PublicKey) locks offered {
-  clause trade() requires payment: amountRequested of asset {
+  clause trade() requires payment: requestedAmount of requestedAsset {
     lock payment with sellerProgram
     unlock offered
   }
