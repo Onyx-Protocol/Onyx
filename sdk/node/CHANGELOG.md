@@ -5,7 +5,7 @@ This changelog is for the 1.2 branch of the Node.js SDK. Older versions:
 - [1.1](https://github.com/chain/chain/blob//1.1-stable/sdk/node/CHANGELOG.md)
 - [1.0](https://github.com/chain/chain/blob/1.0-stable/sdk/node/CHANGELOG.md)
 
-## 1.2.0 (May 12, 2017)
+## 1.2.1 (May 12, 2017)
 
 This is a *minor version* release that includes breaking changes and new features. Before upgrading your SDK, please review a [a full summary of what's new in Chain Core 1.2](https://chain.com/docs/1.2/core/reference/changelog#1.2.0).
 
@@ -46,6 +46,10 @@ The `client.authorizationGrants` interface allows you to programmatically regist
 The SDK now features flexible TLS configuration, allowing you to accept server certificates outside of the public X.509 PKI, and to authenticate requests to Chain Core using client X.509 certificates.
 
 See the [documentation](https://chain.com/docs/1.2/core/learn-more/mutual-tls-auth) for specific instructions.
+
+## 1.2.0
+
+Unpublished version.
 
 ## 1.2.0-rc.2 (May 4, 2017)
 
