@@ -11,7 +11,7 @@ For updates to subpackages, see below:
 - [Ruby SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/ruby/CHANGELOG.md)
 
 <a name="1.2.0"></a>
-## 1.2.0 (May 4, 2017)
+## 1.2.0 (May 12, 2017)
 
 ### Breaking changes
 
