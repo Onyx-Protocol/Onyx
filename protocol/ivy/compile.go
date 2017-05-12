@@ -82,7 +82,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		Value:   c.value,
 	}
 	for _, param := range c.params {
-		result.Params = append(result.Params, ContractParam{Name: param.name, Typ: string(param.typ)})
+		result.Params = append(result.Params, ContractParam{Name: param.name, Typ: string(param.bestType())})
 	}
 
 	for _, clause := range c.clauses {
@@ -103,7 +103,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		// TODO(bobg): this could just be info.Args = clause.params, if we
 		// rejigger the types and exports.
 		for _, p := range clause.params {
-			info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: string(p.typ)})
+			info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: string(p.bestType())})
 		}
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {
@@ -423,13 +423,36 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 }
 
 func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env environ, expr expression) error {
-	err := typeCheckExpr(expr, env)
-	if err != nil {
-		return err
-	}
 	switch e := expr.(type) {
 	case *binaryExpr:
-		err = compileExpr(b, stack, contract, clause, env, e.left)
+		lType := e.left.typ(env)
+		if e.op.left != "" && lType != e.op.left {
+			return fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
+		}
+
+		rType := e.right.typ(env)
+		if e.op.right != "" && rType != e.op.right {
+			return fmt.Errorf("in \"%s\", right operand has type \"%s\", must be \"%s\"", e, rType, e.op.right)
+		}
+
+		switch e.op.op {
+		case "==", "!=":
+			if lType != rType {
+				// Maybe one is Hash and the other is (more-specific-Hash subtype).
+				if lType == hashType && isHashSubtype(rType) {
+					propagateType(contract, clause, env, rType, e.left)
+				} else if rType == hashType && isHashSubtype(lType) {
+					propagateType(contract, clause, env, lType, e.right)
+				} else {
+					return fmt.Errorf("type mismatch in \"%s\": left operand has type \"%s\", right operand has type \"%s\"", e, lType, rType)
+				}
+			}
+			if lType == "Boolean" {
+				return fmt.Errorf("in \"%s\": using \"%s\" on Boolean values not allowed", e, e.op.op)
+			}
+		}
+
+		err := compileExpr(b, stack, contract, clause, env, e.left)
 		if err != nil {
 			return errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
 		}
@@ -444,7 +467,10 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		b.addRawBytes(ops)
 
 	case *unaryExpr:
-		err = compileExpr(b, stack, contract, clause, env, e.expr)
+		if e.op.operand != "" && e.expr.typ(env) != e.op.operand {
+			return fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(env), e.op.operand)
+		}
+		err := compileExpr(b, stack, contract, clause, env, e.expr)
 		if err != nil {
 			return errors.Wrapf(err, "in \"%s\" expression", e.op.op)
 		}
@@ -467,7 +493,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 				b.addData(nil)
 				stack = append(stack, stackEntry("<program>"))
 				for i := len(e.args) - 1; i >= 0; i-- {
-					err = compileExpr(b, stack, contract, clause, env, e.args[i])
+					err := compileExpr(b, stack, contract, clause, env, e.args[i])
 					if err != nil {
 						return errors.Wrap(err, "compiling contract call")
 					}
@@ -478,6 +504,16 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 				return nil
 			}
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
+		}
+
+		// type-checking
+		if len(e.args) != len(bi.args) {
+			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", bi.name, len(e.args), len(bi.args))
+		}
+		for i, actual := range e.args {
+			if bi.args[i] != "" && actual.typ(env) != bi.args[i] {
+				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
+			}
 		}
 
 		// WARNING WARNING WOOP WOOP
