@@ -8,7 +8,7 @@ import CreateButton from './createbutton'
 
 import { getSource, getContractParameters, getCompiled } from '../selectors'
 
-import { ContractParameters } from '../../contracts/components/parameters'
+import { ContractParameters, ContractValue } from '../../contracts/components/parameters'
 
 import Editor from './editor'
 
@@ -27,6 +27,11 @@ const Create = ({ source, instantiable }) => {
   if (instantiable) {
     instantiate = (
       <div>
+        <app.components.Section name="Contract Value">
+          <div className="form-wrapper">
+            <ContractValue />
+          </div>
+        </app.components.Section>
         <app.components.Section name="Contract Arguments">
           <div className="form-wrapper">
             <ContractParameters />

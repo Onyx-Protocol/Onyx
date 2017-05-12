@@ -71,7 +71,7 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
     case "providePublicKeyInput":
     case "provideHashInput":
     case "provideSignatureInput":
-    case "assetAliasInput": {
+    case "assetInput": {
       return Buffer.from(input.value, 'hex')
     }
     // case "generatePublicKeyInput": {
@@ -122,7 +122,8 @@ export const getInputContext = (input: Input): InputContext => {
 
 export const getParameterIdentifier = (input: ParameterInput): string => {
   switch (getInputContext(input)) {
-    case "contractParameters": return input.name.split(".")[1]
+    case "contractParameters":
+    case "contractValue": return input.name.split(".")[1]
     case "clauseParameters": return input.name.split(".")[2]
     default:
       throw "unexpected input for getParameterIdentifier: " + input.name
@@ -206,10 +207,11 @@ export const isValidInput = (id: string, inputMap: InputMap): boolean => {
     case "signatureInput":
       return isValidInput(getChild(input), inputMap)
     case "assetInput":
-      return isValidInput(input.name + ".assetAliasInput", inputMap)
+      return isValidInput(input.name + ".assetInput", inputMap)
     case "valueInput":
-      return isValidInput(input.name + ".accountAliasInput", inputMap) &&
-             isValidInput(input.name + ".assetAmountInput", inputMap)
+      return isValidInput(input.name + ".accountInput", inputMap) &&
+             isValidInput(input.name + ".assetInput", inputMap) &&
+             isValidInput(input.name + ".amountInput", inputMap)
     default: return validateInput(input)
   }
 }
@@ -233,7 +235,7 @@ export const validateInput = (input: Input): boolean => {
       return (input.value === "generateHashInput" ||
               input.value === "provideHashInput")
     case "publicKeyInput":
-      return (input.value === "accountAliasInput")
+      return (input.value === "accountInput")
     case "generatePublicKeyInput":
       return (input.value === "generatePrivateKeyInput" ||
               input.value === "providePrivateKeyInput")
@@ -245,7 +247,7 @@ export const validateInput = (input: Input): boolean => {
     case "generateSignatureInput":
       return (input.value === "providePrivateKeyInput")
     case "programInput":
-      return (input.value === "accountAliasInput")
+      return (input.value === "accountInput")
     case "provideStringInput":
       return validateHex(input.value)
     case "provideHashInput":
@@ -277,8 +279,8 @@ export const validateInput = (input: Input): boolean => {
       if (isNaN(numberValue)) return false
       if (numberValue < 0) return false
       return true
-    case "accountAliasInput":
-    case "assetAliasInput":
+    case "accountInput":
+    case "assetInput":
       return (input.value !== "")
     case "valueInput":
       // TODO(dan)
@@ -364,7 +366,7 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
     case "generatePublicKeyInput":
       return "generatePrivateKeyInput"
     case "publicKeyInput":
-      return "accountAliasInput"
+      return "accountInput"
       // return "generatePublicKeyInput"
     case "signatureInput":
       return "choosePublicKeyInput"
@@ -372,13 +374,13 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
     case "generateSignatureInput":
       return "providePrivateKeyInput"
     case "programInput":
-      return "accountAliasInput"    
+      return "accountInput"    
     case "booleanInput":
       return "false"
     case "timeInput":
       return "timestampTimeInput"
-    case "accountAliasInput":
-    case "assetAliasInput":
+    case "accountInput":
+    case "assetInput":
       return ""
     case "valueInput":
     case "assetInput":
@@ -424,7 +426,7 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
     case "hashInput":
       return "provideHashInput"
     case "publicKeyInput":
-      return "accountAliasInput"
+      return "accountInput"
       // return "providePublicKeyInput"
     case "signatureInput":
       return "choosePublicKeyInput"
@@ -437,9 +439,9 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
     case "timeInput":
       return "blockheightTimeInput"
     case "programInput":
-      return "accountAliasInput"
-    case "accountAliasInput":
-    case "assetAliasInput":
+      return "accountInput"
+    case "accountInput":
+    case "assetInput":
     case "valueInput":
     case "assetInput":
     case "amountInput":
@@ -468,7 +470,7 @@ export function getPromiseData(inputId: string, inputsById: {[s: string]: Input}
   let input = inputsById[inputId]
   switch (input.type) {
     case "programInput": {
-      let accountId = inputsById[input.name + ".accountAliasInput"].value
+      let accountId = inputsById[input.name + ".accountInput"].value
       return client.accounts.createReceiver({ accountId }).then((receiver) => {
         let programInput: ProgramInput = {
           ...input as ProgramInput,
@@ -478,7 +480,7 @@ export function getPromiseData(inputId: string, inputsById: {[s: string]: Input}
       })
     }
     case "publicKeyInput": {
-      let accountId = inputsById[input.name + ".accountAliasInput"].value
+      let accountId = inputsById[input.name + ".accountInput"].value
       return client.accounts.createPubkey({ accountId }).then((publicKey) => {
         let publicKeyInput: PublicKeyInput = {
           ...input as PublicKeyInput,
@@ -499,6 +501,7 @@ export function getDefaultValue(inputType, name): string {
   switch (getInputNameContext(name)) {
     case "clauseParameters": return getDefaultClauseParameterValue(inputType)
     case "contractParameters": return getDefaultContractParameterValue(inputType)
+    case "contractValue": return getDefaultContractParameterValue(inputType)
     case "transactionDetails": return getDefaultTransactionDetailValue(inputType)
   }
 }
@@ -531,7 +534,7 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
       return
     }
     case "publicKeyInput": {
-      addDefaultInput(inputs, "accountAliasInput", name)
+      addDefaultInput(inputs, "accountInput", name)
       // addDefaultInput(inputs, "generatePublicKeyInput", name)
       // addDefaultInput(inputs, "providePublicKeyInput", name)
       return
@@ -553,21 +556,13 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
       return
     }
     case "valueInput": {
-      addDefaultInput(inputs, "accountAliasInput", name)
+      addDefaultInput(inputs, "accountInput", name)
       addDefaultInput(inputs, "assetInput", name)
       addDefaultInput(inputs, "amountInput", name)
       return
     }
-    // case "amountInput": {
-    //   addDefaultInput(inputs, "amountInput", name)
-    //   return
-    // }
-    case "assetInput": {
-      addDefaultInput(inputs, "assetAliasInput", name)
-      return
-    }
     case "programInput": {
-      addDefaultInput(inputs, "accountAliasInput", name)
+      addDefaultInput(inputs, "accountInput", name)
       return
     }
     default:

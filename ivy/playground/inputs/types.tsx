@@ -23,12 +23,12 @@ export type InputType = "parameterInput" | "stringInput" | "generateStringInput"
   "hashInput" | "generateHashInput" | "provideHashInput" | "publicKeyInput" | "generatePublicKeyInput" |
   "providePublicKeyInput" | "generatePrivateKeyInput" | "providePrivateKeyInput" | "numberInput" | "booleanInput" |
   "timeInput" | "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "programInput" |
-  "valueInput" | "accountAliasInput" | "assetAliasInput" | "programInput" | "assetInput" | "amountInput" | "choosePublicKeyInput"
+  "valueInput" | "accountInput" | "assetInput" | "programInput" | "assetInput" | "amountInput" | "choosePublicKeyInput"
 
 export type PrimaryInputType = "stringInput" | "hashInput" | "publicKeyInput" | "numberInput" | "booleanInput" |
   "timeInput" | "signatureInput" | "valueInput" | "programInput" | "assetInput" | "amountInput"
 
-export type InputContext = "contractParameters"|"clauseParameters"|"transactionDetails"
+export type InputContext = "contractParameters"|"clauseParameters"|"contractValue"|"transactionDetails"
 
 export type InputMap = {[s: string]: Input}
 
@@ -88,7 +88,7 @@ export type KeyData = {
 
 export type PublicKeyInput = {
   type: "publicKeyInput",
-  value: "accountAliasInput", //"providePublicKeyInput"|"generatePublicKeyInput",
+  value: "accountInput", //"providePublicKeyInput"|"generatePublicKeyInput",
   name: string,
   computedData?: string,
   keyData?: KeyData
@@ -176,13 +176,13 @@ export type ValueInput = {
 }
 
 export type AccountAliasInput = {
-  type: "accountAliasInput",
+  type: "accountInput",
   value: string,
   name: string
 }
 
 export type AssetAliasInput = {
-  type: "assetAliasInput",
+  type: "assetInput",
   value: string,
   name: string
 }
@@ -195,7 +195,7 @@ export type AmountInput = {
 
 export type ProgramInput = {
   type: "programInput",
-  value: string, // for now just "accountAliasInput"
+  value: string, // for now just "accountInput"
   name: string
   computedData?: string
 }
