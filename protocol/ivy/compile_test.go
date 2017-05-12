@@ -83,6 +83,15 @@ contract CollateralizedLoan(balanceAsset: Asset, balanceAmount: Amount, deadline
 }
 `
 
+const revealPreimage = `
+contract RevealPreimage(hash: Hash) locks value {
+  clause reveal(string: String) {
+    verify sha3(string) == hash
+    unlock value
+  }
+}
+`
+
 const priceChanger = `
 contract PriceChanger(askAmount: Amount, askAsset: Asset, sellerKey: PublicKey, sellerProg: Program) locks offered {
   clause changePrice(newAmount: Amount, newAsset: Asset, sig: Signature) {
@@ -346,6 +355,36 @@ func TestCompile(t *testing.T) {
 					},
 					Mintimes: []string{"deadline"},
 					Maxtimes: []string{},
+				}},
+			},
+		},
+		{
+			"RevealPreimage",
+			revealPreimage,
+			CompileResult{
+				Name:    "RevealPreimage",
+				Program: mustDecodeHex("78aa7887"),
+				Value:   "value",
+				Params: []ContractParam{{
+					Name: "hash",
+					Typ:  "Sha3(String)",
+				}},
+				Clauses: []ClauseInfo{{
+					Name: "reveal",
+					Args: []ClauseArg{{
+						Name: "string",
+						Typ:  "String",
+					}},
+					Values: []ValueInfo{{
+						Name: "value",
+					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
+					HashCalls: []hashCall{{
+						HashType: "sha3",
+						Arg:      "string",
+						ArgType:  "String",
+					}},
 				}},
 			},
 		},
