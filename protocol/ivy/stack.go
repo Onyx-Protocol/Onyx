@@ -2,8 +2,8 @@ package ivy
 
 type stackEntry string
 
-func (s stackEntry) matches(expr expression) bool {
-	return string(s) == expr.String()
+func (s stackEntry) matches(name string) bool {
+	return string(s) == name
 }
 
 func addParamsToStack(stack []stackEntry, params []*param) []stackEntry {
