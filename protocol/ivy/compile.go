@@ -400,7 +400,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 			// prog
 			err = compileExpr(b, ostack, contract, clause, env, stmt.program)
 			if err != nil {
-				return errors.Wrapf(err, "in output statement in clause \"%s\"", clause.name)
+				return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
 			}
 
 			b.addOp(vm.OP_CHECKOUTPUT)
@@ -452,6 +452,26 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	case *call:
 		bi := referencedBuiltin(e.fn)
 		if bi == nil {
+			if e.fn.typ(env) == contractType {
+				if e.fn.String() != contract.name {
+					return fmt.Errorf("calling other contracts not yet supported")
+				}
+				// xxx typecheck args
+				b.addInt64(int64(len(e.args)))
+				stack = append(stack, stackEntry("<arg count>"))
+				b.addData(nil)
+				stack = append(stack, stackEntry("<program>"))
+				for i := len(e.args) - 1; i >= 0; i-- {
+					err = compileExpr(b, stack, contract, clause, env, e.args[i])
+					if err != nil {
+						return errors.Wrap(err, "compiling contract call")
+					}
+					b.addOp(vm.OP_CATPUSHDATA)
+				}
+				b.addInt64(0)
+				b.addOp(vm.OP_CHECKPREDICATE)
+				return nil
+			}
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
 

@@ -111,6 +111,9 @@ func (e call) typ(env environ) typeDesc {
 	if e.fn.typ(env) == predType {
 		return boolType
 	}
+	if e.fn.typ(env) == contractType {
+		return progType
+	}
 	return nilType
 }
 
