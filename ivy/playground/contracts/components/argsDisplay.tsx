@@ -11,6 +11,7 @@ import { getChild, getParameterIdentifier, getGenerateStringInputValue, computeD
 import { typeToString } from 'ivy-compiler'
 import { getItemMap as getAssetMap } from '../../assets/selectors'
 import { getItemMap as getAccountMap } from '../../accounts/selectors'
+import { getContractValueId } from '../../templates/selectors'
 
 import { getSpendContractParameterSelector, getSpendParameterIds } from '../selectors'
 
@@ -151,6 +152,24 @@ function getWidget(id: string): JSX.Element {
   }
   return React.createElement(widgetTypeConnected, { key: "connect(" + id + ")", id: id })
 }
+
+function mapStateToContractValueProps(state) {
+  return {
+    valueId: getContractValueId(state)
+  }
+}
+
+function ContractValueUnconnected(props: { valueId: string }) {
+  return <section style={{wordBreak: 'break-all'}}>
+    <h4>Contract Value</h4>
+    <form className="form">
+    <div className="argument">{getWidget(props.valueId)}</div>
+  </form></section>
+}
+
+export const ContractValue = connect(
+  mapStateToContractValueProps
+)(ContractValueUnconnected)
 
 function SpendInputsUnconnected(props: { spendInputIds: string[] }) {
   if (props.spendInputIds.length === 0) return <div />

@@ -26,9 +26,9 @@ type Props = {
 
 const CreateButton = ({ createability, handleClick }: Props) => {
   let td = createability.createable ?
-    <td><button className="btn btn-primary btn-lg" onClick={handleClick}>Create Contract</button></td>
+    <td><button className="btn btn-primary btn-lg" onClick={handleClick}>Lock Value</button></td>
   :
-    <td data-for="createButtonTooltip" data-tip={createability.error}><button className="btn btn-primary btn-lg" disabled={true}>Create Contract</button></td>
+    <td data-for="createButtonTooltip" data-tip={createability.error}><button className="btn btn-primary btn-lg" disabled={true}>Lock Value</button></td>
   return <div><ReactTooltip id="createButtonTooltip" type="error" effect="solid"/><table><tbody><tr>{td}</tr></tbody></table></div>
 }
 

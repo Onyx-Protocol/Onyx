@@ -4,7 +4,7 @@ import DocumentTitle from 'react-document-title'
 
 import app from '../../app'
 import { Template } from '../types'
-import CreateButton from './createbutton'
+import LockButton from './lockButton'
 
 import { getSource, getContractParameters, getCompiled } from '../selectors'
 
@@ -12,7 +12,7 @@ import { ContractParameters, ContractValue } from '../../contracts/components/pa
 
 import Editor from './editor'
 
-import { Display } from '../../contracts/components/display' 
+import { Display } from '../../contracts/components/display'
 
 const mapStateToProps = (state) => {
   const source = getSource(state)
@@ -22,7 +22,7 @@ const mapStateToProps = (state) => {
   return { source, instantiable }
 }
 
-const Create = ({ source, instantiable }) => {
+const Lock = ({ source, instantiable }) => {
   let instantiate
   if (instantiable) {
     instantiate = (
@@ -37,14 +37,14 @@ const Create = ({ source, instantiable }) => {
             <ContractParameters />
           </div>
         </app.components.Section>
-        <CreateButton />
+        <LockButton />
       </div>
     )
   } else {
     instantiate = ( <div /> )
   }
   return (
-    <DocumentTitle title='Create Contract'>
+    <DocumentTitle title='Lock Value'>
       <div>
         <Editor />
         {instantiate}
@@ -55,5 +55,4 @@ const Create = ({ source, instantiable }) => {
 
 export default connect(
   mapStateToProps,
-)(Create)
-
+)(Lock)

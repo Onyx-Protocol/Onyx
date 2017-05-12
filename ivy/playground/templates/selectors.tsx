@@ -161,7 +161,7 @@ export const getSelected = createSelector(
   getCompiled,
   getItemMap,
   (compiled, itemMap) => {
-    if (compiled === undefined || 
+    if (compiled === undefined ||
         itemMap[compiled.name] === undefined) {
       return ""
     } else {
