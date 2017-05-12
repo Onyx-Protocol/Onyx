@@ -11,7 +11,7 @@ import { DisplaySpendContract } from './display'
 import Return from './return'
 import ClauseSelect from './clauseselect'
 import { getSpendContractId } from '../selectors'
-import { ClauseParameters, getWidget } from './parameters'
+import { ClauseValue, ClauseParameters, getWidget } from './parameters'
 
 export default function Spend(props: { contract: Contract }) {
   let contract = props.contract
@@ -30,6 +30,7 @@ export default function Spend(props: { contract: Contract }) {
         <Section name="Spending Details">
           <div className="form-wrapper">
             <ClauseSelect />
+            <ClauseValue />
             <ClauseParameters />
             <Return />
           </div>
