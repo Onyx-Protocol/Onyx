@@ -12,7 +12,7 @@ const Return = (props: { clause: TemplateClause }) => {
   } else {
     return (
       <section>
-        <h4>Return Destination</h4>
+        <h4>Unlocked Value Destination</h4>
         {getWidget("transactionDetails.accountInput")}
       </section>
     )
