@@ -21,10 +21,13 @@ export const INITIAL_STATE: ContractsState = {
   selectedClauseIndex: 0,
 }
 
-export function generateInputMap(contractParameters: ContractParameter[]): InputMap {
+export function generateInputMap(contractParameters: ContractParameter[], valueParam: string): InputMap {
   let inputs: Input[] = []
   for (let parameter of contractParameters) {
     addParameterInput(inputs, parameter.valueType, "contractParameters." + parameter.identifier)
+  }
+  if (valueParam !== "") {
+    addParameterInput(inputs, "Value", "contractParameters." + valueParam)
   }
 
   let inputMap = {}

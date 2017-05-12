@@ -341,10 +341,6 @@ export function typeCheckExpression(expression: Expression, scope: Scope): Type 
     case "literal":
       return expression.literalType
     case "variable":
-      // TODO(bobg): undo this hack
-      if (expression.identifier.endsWith(".assetAmount")) {
-        return "AssetAmount"
-      }
       return scope.getVariable(expression)
     case "listLiteral":
       if (expression.values.length === 0) {

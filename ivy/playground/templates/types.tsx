@@ -13,7 +13,8 @@ export type ParameterType = {
 export type ValueInfo = {
   name: string,
   program?: string,
-  assetAmount?: string
+  asset?: string,
+  amount?: string
 }
 
 export type ClauseInfo = {
@@ -29,6 +30,7 @@ export type CompilerResult = {
   opcodes: string,
   error: string,
   params: ParameterType[],
+  value: string,
   clauseInfo: ClauseInfo[]
 }
 

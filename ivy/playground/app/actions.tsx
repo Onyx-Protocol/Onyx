@@ -9,7 +9,10 @@ import { client, signer } from '../util'
 
 export const reset = () => {
   return (dispatch, getState) => {
-    const selected = templates.selectors.getSelected(getState())
+    let selected = templates.selectors.getSelected(getState())
+    if ( selected === "") {
+      selected = "LockWithPublicKey"
+    }
     dispatch({ type: RESET })
     dispatch(templates.actions.load(selected))
     dispatch(accounts.actions.fetch())
