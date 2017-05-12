@@ -42,20 +42,7 @@ function ValueWidget(props: { input: ValueInput }) {
   </div>
 }
 
-function AssetWidget(props: { input: AssetInput }) {
-  return <div>
-    {getWidget(props.input.name + ".assetInput")}
-  </div>
-}
-
-// function AmountWidget(props: { input: AmountInput }) {
-//   return <div>
-//     {getWidget(props.input.name + ".amountInput")}
-//   </div>
-// }
-
-function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
-                                              assetMap: {[s: string]: any}}) {
+function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput, assetMap: {[s: string]: any}}) {
   return <div className="form-group">
     <div className="input-group">
       <div className="input-group-addon">Asset</div>
@@ -68,15 +55,13 @@ let AssetAliasWidget = connect(
   (state) => ({ assetMap: getAssetMap(state) })
 )(AssetAliasWidgetUnconnected)
 
-function AccountAliasWidgetUnconnected(props: { input: AccountAliasInput,
-                                              accountMap: {[s: string]: any}}) {
+function AccountAliasWidgetUnconnected(props: { input: AccountAliasInput, accountMap: {[s: string]: any}}) {
   return <pre>{props.accountMap[props.input.value].alias}</pre>
 }
 
 let AccountAliasWidget = connect(
   (state) => ({ accountMap: getAccountMap(state) })
 )(AccountAliasWidgetUnconnected)
-
 
 function AmountWidget(props: { input: Input }) {
 return <div className="form-group">
@@ -130,7 +115,6 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
     case "timestampTimeInput": return TimestampTimeWidget
     case "generateStringInput": return GenerateStringWidget
     case "valueInput": return ValueWidget
-    case "assetInput": return AssetWidget
     case "amountInput": return AmountWidget
     case "accountInput": return AccountAliasWidget
     case "assetInput": return AssetAliasWidget
@@ -144,7 +128,6 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
     case "generatePrivateKeyInput":
     case "providePrivateKeyInput":
     case "accountInput":
-    case "assetInput":
     case "providePrivateKeyInput":
     case "amountInput": return AmountWidget
     default: return ParameterWidget
