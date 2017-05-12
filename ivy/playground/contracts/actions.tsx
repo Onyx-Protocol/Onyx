@@ -113,7 +113,7 @@ export const create = () => {
             inputMap,
             utxo
           })
-          dispatch(push(prefixRoute('/spend')))
+          dispatch(push(prefixRoute('/unlock')))
         })
       })
     }).catch(err => {
@@ -154,9 +154,10 @@ export const spend = () => {
     createSpendingTx(actions, witness, mintimes, maxtimes).then((result) => {
       dispatch({
         type: SPEND_CONTRACT,
-        id: contract.id
+        id: contract.id,
+        lockTxid: result.id
       })
-      dispatch(push(prefixRoute('/spend')))
+      dispatch(push(prefixRoute('/unlock')))
     })
   }
 }
