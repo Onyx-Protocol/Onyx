@@ -6,8 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/davecgh/go-spew/spew"
-
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/vm"
