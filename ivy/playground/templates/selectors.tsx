@@ -110,8 +110,8 @@ export const getContractValue = createSelector(
       if (input.type === "valueInput") {
         let inputName = input.name
         let accountId = inputMap[inputName + ".accountAliasInput"].value
-        let assetId = inputMap[inputName + ".assetAmountInput.assetAliasInput"].value
-        let amount = parseInt(inputMap[inputName + ".assetAmountInput.amountInput"].value, 10)
+        let assetId = inputMap[inputName + ".assetInput.assetAliasInput"].value
+        let amount = parseInt(inputMap[inputName + ".amountInput"].value, 10)
         if (isNaN(amount) || amount < 0 || !accountId || !assetId) {
           return []
         }

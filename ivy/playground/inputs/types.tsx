@@ -13,7 +13,7 @@ export type Input = ParameterInput | StringInput | HashInput | PublicKeyInput | 
   ProvidePrivateKeyInput | TimestampTimeInput |
   SignatureInput | GenerateSignatureInput | ProvideSignatureInput | ProgramInput | 
   ValueInput | AccountAliasInput | AssetAliasInput | AmountInput |
-  ProgramInput | AssetAmountInput | ChoosePublicKeyInput
+  ProgramInput | AssetInput | ChoosePublicKeyInput
 
 export type ComplexInput = StringInput | HashInput | GenerateHashInput | PublicKeyInput | TimeInput |
   ParameterInput | GeneratePublicKeyInput | SignatureInput | GenerateSignatureInput | ProgramInput |
@@ -23,11 +23,10 @@ export type InputType = "parameterInput" | "stringInput" | "generateStringInput"
   "hashInput" | "generateHashInput" | "provideHashInput" | "publicKeyInput" | "generatePublicKeyInput" |
   "providePublicKeyInput" | "generatePrivateKeyInput" | "providePrivateKeyInput" | "numberInput" | "booleanInput" |
   "timeInput" | "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "programInput" |
-  "valueInput" | "accountAliasInput" |
-  "assetAliasInput" | "amountInput" | "programInput" | "assetAmountInput" | "choosePublicKeyInput"
+  "valueInput" | "accountAliasInput" | "assetAliasInput" | "programInput" | "assetInput" | "amountInput" | "choosePublicKeyInput"
 
 export type PrimaryInputType = "stringInput" | "hashInput" | "publicKeyInput" | "numberInput" | "booleanInput" |
-  "timeInput" | "signatureInput" | "valueInput" | "programInput" | "assetAmountInput"
+  "timeInput" | "signatureInput" | "valueInput" | "programInput" | "assetInput" | "amountInput"
 
 export type InputContext = "contractParameters"|"clauseParameters"|"transactionDetails"
 
@@ -89,7 +88,7 @@ export type KeyData = {
 
 export type PublicKeyInput = {
   type: "publicKeyInput",
-  value: "accountAliasInput",//"providePublicKeyInput"|"generatePublicKeyInput",
+  value: "accountAliasInput", //"providePublicKeyInput"|"generatePublicKeyInput",
   name: string,
   computedData?: string,
   keyData?: KeyData
@@ -201,8 +200,8 @@ export type ProgramInput = {
   computedData?: string
 }
 
-export type AssetAmountInput = {
-  type: "assetAmountInput",
+export type AssetInput = {
+  type: "assetInput",
   value: string,
   name: string
 }

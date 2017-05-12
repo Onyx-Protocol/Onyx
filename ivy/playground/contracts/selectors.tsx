@@ -209,7 +209,8 @@ export const getClauseWitnessComponents = createSelector(
           signer.addKey(keymap.rootXpub, client.mockHsm.signerConnection)
           return
         }
-        case "AssetAmount": // TODO
+        case "Asset": // TODO
+        case "Amount": // TODO
         default: {
           let val = dataToArgString(getData(clauseParameterPrefix, spendInputMap))
           witness.push({

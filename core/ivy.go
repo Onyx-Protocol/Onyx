@@ -19,6 +19,7 @@ type (
 		Source  string              `json:"source"`
 		Program chainjson.HexBytes  `json:"program"`
 		Params  []ivy.ContractParam `json:"params"`
+		Value   string              `json:"value"`
 		Clauses []ivy.ClauseInfo    `json:"clause_info"`
 		Opcodes string              `json:"opcodes"`
 		Error   string              `json:"error"`
@@ -32,6 +33,7 @@ func compileIvy(req compileReq) (compileResp, error) {
 		resp.Name = compiled.Name
 		resp.Source = req.Contract
 		resp.Params = compiled.Params
+		resp.Value = compiled.Value
 		resp.Program = compiled.Program
 		resp.Clauses = compiled.Clauses
 		resp.Opcodes, err = vm.Disassemble(resp.Program)
