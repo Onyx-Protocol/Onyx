@@ -338,6 +338,12 @@ export function getWidget(id: string): JSX.Element {
   </div>
 }
 
+function mapStateToContractParametersProps(state) {
+  return {
+    parameterIds: getParameterIds(state)
+  }
+}
+
 function ContractParametersUnconnected(props: { parameterIds: string[] }) {
   if (props.parameterIds.length === 0) return <div />
   let parameterInputs = props.parameterIds.map((id) => {
@@ -352,11 +358,9 @@ function ContractParametersUnconnected(props: { parameterIds: string[] }) {
   )
 }
 
-function mapStateToContractParametersProps(state) {
-  return {
-    parameterIds: getParameterIds(state)
-  }
-}
+export const ContractParameters = connect(
+  mapStateToContractParametersProps
+)(ContractParametersUnconnected)
 
 function ClauseParametersUnconnected(props: { parameterIds: string[] }) {
   if (props.parameterIds.length === 0) return <div />
@@ -370,10 +374,6 @@ function ClauseParametersUnconnected(props: { parameterIds: string[] }) {
   </form></section>
 }
 
-export const ContractParameters = connect(
-  mapStateToContractParametersProps
-)(ContractParametersUnconnected)
-
 export const ClauseParameters = connect(
   (state) => ({ parameterIds: getClauseParameterIds(state) })
 )(ClauseParametersUnconnected)
@@ -386,7 +386,7 @@ function mapStateToClauseValueProps(state) {
 
 function ClauseValueUnconnected(props: { valueId: string }) {
   if (props.valueId === undefined) {
-    return <div></div>
+    return <div />
   } else {
     return (
       <section style={{wordBreak: 'break-all'}}>
@@ -410,10 +410,16 @@ function mapStateToContractValueProps(state) {
 }
 
 function ContractValueUnconnected(props: { valueId: string }) {
-  return <section style={{wordBreak: 'break-all'}}>
-    <form className="form">
-    <div className="argument">{getWidget(props.valueId)}</div>
-  </form></section>
+  if (props.valueId === undefined) {
+    return <div></div>
+  }
+  return (
+    <section style={{wordBreak: 'break-all'}}>
+      <form className="form">
+        <div className="argument">{getWidget(props.valueId)}</div>
+      </form>
+    </section>
+  )
 }
 
 export const ContractValue = connect(
