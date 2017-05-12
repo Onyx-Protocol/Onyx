@@ -13,7 +13,7 @@ const Return = (props: { clause: TemplateClause }) => {
     return (
       <section>
         <h4>Return Destination</h4>
-        {getWidget("transactionDetails.accountAliasInput")}
+        {getWidget("transactionDetails.accountInput")}
       </section>
     )
   }

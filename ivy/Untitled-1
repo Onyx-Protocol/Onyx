@@ -1,0 +1,54 @@
+contract TradeOffer(
+  requestedAsset: AssetID,
+  requestedAmount: Amount
+  sellerProgram: Program,
+  sellerKey: PublicKey,
+  offered: Value
+) {
+  clause trade(payment: Value) {
+    let desired, change = split(payment)
+    output sellerProgram(desired: requestedAmount of requestedAsset)
+    return change
+  }
+  clause cancel(sellerSig: Signature) {
+    verify checkTxSig(sellerKey, sellerSig)
+    output sellerProgram(offered)
+  }
+}
+
+contract PayToSignedPredicate(publicKey: PublicKey, locked: Value) {
+  clause provideSignedPredicate(sig: Signature, predicate: Predicate, args: Arguments) {
+    verify predicate(args...)
+    unlock lockedValue
+  }
+} 
+
+predicate PaysValueToProgram(program: Program, assetID: AssetID, amount: Integer, value: Value) {
+  verify value.assetID == assetID
+  verify value.amount == amount
+  lock value with program
+}
+
+let alicePredicate = PaysValuetoProgram(aliceProgram, apples, ) // partially applied. the Predicate still expects a Value parameter
+let sig = aliceKey.sign(alicePredicate)
+
+
+
+
+
+
+contract TradeOffer(
+  requestedAsset: AssetID,
+  requestedAmount: Amount,
+  sellerAccount: Contract,
+  sellerKey: PublicKey
+) locks offered {
+  clause trade() requires payment1: requestedAmount of requestedAsset {
+    lock payment to sellerAccount
+    unlock offered
+  }
+  clause cancel(sellerSig: Signature) {
+    verify checkTxSig(sellerKey, sellerSig)
+    lock offered to sellerAccount
+  }
+}

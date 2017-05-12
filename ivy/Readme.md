@@ -15,10 +15,16 @@ $ go install -tags "localhost_auth http_ok" chain/cmd/cored
 ### Run playground in development mode:
 
 ```
+$ cored
+```
+
+```
 $ yarn install
 $ yarn start
+```
+
+```
 $ open http://localhost:8080/
-$ cored
 ```
 
 ### Bundle changes to playround into cored:
