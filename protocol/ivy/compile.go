@@ -132,71 +132,40 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	return result, nil
 }
 
-type (
-	environ  map[string]envEntry
-	envEntry struct {
-		t typeDesc
-		r role
-	}
-	role int
-)
-
-const (
-	roleKeyword role = 1 + iota
-	roleBuiltin
-	roleContract
-	roleContractParam
-	roleContractValue
-	roleClause
-	roleClauseParam
-	roleClauseValue
-)
-
-var roleDesc = map[role]string{
-	roleKeyword:       "keyword",
-	roleBuiltin:       "built-in function",
-	roleContract:      "contract",
-	roleContractParam: "contract parameter",
-	roleContractValue: "contract value",
-	roleClause:        "clause",
-	roleClauseParam:   "clause parameter",
-	roleClauseValue:   "clause value",
-}
-
 func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	if len(contract.clauses) == 0 {
 		return nil, fmt.Errorf("empty contract")
 	}
 
-	env := make(environ)
+	env := newEnviron(nil)
 	for _, k := range keywords {
-		env[k] = envEntry{t: nilType, r: roleKeyword}
+		env.add(k, nilType, roleKeyword)
 	}
 	for _, b := range builtins {
-		env[b.name] = envEntry{t: nilType, r: roleBuiltin}
+		env.add(b.name, nilType, roleBuiltin)
 	}
-	if entry, ok := env[contract.name]; ok {
-		return nil, fmt.Errorf("contract name \"%s\" conflicts with %s", contract.name, entry)
+	err := env.add(contract.name, contractType, roleContract)
+	if err != nil {
+		return nil, err
 	}
-	env[contract.name] = envEntry{t: contractType, r: roleContract}
 	for _, p := range contract.params {
-		if entry, ok := env[p.name]; ok {
-			return nil, fmt.Errorf("contract parameter \"%s\" conflicts with %s", p.name, roleDesc[entry.r])
+		err = env.add(p.name, p.typ, roleContractParam)
+		if err != nil {
+			return nil, err
 		}
-		env[p.name] = envEntry{t: p.typ, r: roleContractParam}
 	}
-	if entry, ok := env[contract.value]; ok {
-		return nil, fmt.Errorf("contract value \"%s\" conflicts with %s", contract.value, entry)
+	err = env.add(contract.value, valueType, roleContractValue)
+	if err != nil {
+		return nil, err
 	}
-	env[contract.value] = envEntry{t: valueType, r: roleContractValue}
 	for _, c := range contract.clauses {
-		if entry, ok := env[c.name]; ok {
-			return nil, fmt.Errorf("clause \"%s\" conflicts with %s", c.name, roleDesc[entry.r])
+		err = env.add(c.name, nilType, roleClause)
+		if err != nil {
+			return nil, err
 		}
-		env[c.name] = envEntry{t: nilType, r: roleClause}
 	}
 
-	err := prohibitValueParams(contract)
+	err = prohibitValueParams(contract)
 	if err != nil {
 		return nil, err
 	}
@@ -293,23 +262,20 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	return b.build()
 }
 
-func compileClause(b *builder, contractStack []stackEntry, contract *contract, outerEnv environ, clause *clause) error {
+func compileClause(b *builder, contractStack []stackEntry, contract *contract, env *environ, clause *clause) error {
 	// copy env to leave outerEnv unchanged
-	env := make(environ)
-	for k, v := range outerEnv {
-		env[k] = v
-	}
+	env = newEnviron(env)
 	for _, p := range clause.params {
-		if entry, ok := env[p.name]; ok {
-			return fmt.Errorf("clause parameter \"%s\" conflicts with %s", p.name, roleDesc[entry.r])
+		err := env.add(p.name, p.typ, roleClauseParam)
+		if err != nil {
+			return err
 		}
-		env[p.name] = envEntry{t: p.typ, r: roleClauseParam}
 	}
 	for _, req := range clause.reqs {
-		if entry, ok := env[req.name]; ok {
-			return fmt.Errorf("clause value \"%s\" conflicts with %s", req.name, roleDesc[entry.r])
+		err := env.add(req.name, valueType, roleClauseValue)
+		if err != nil {
+			return err
 		}
-		env[req.name] = envEntry{t: valueType, r: roleClauseValue}
 	}
 
 	err := requireAllValuesDisposedOnce(contract, clause)
@@ -422,7 +388,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 	return nil
 }
 
-func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env environ, expr expression) error {
+func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, expr expression) error {
 	switch e := expr.(type) {
 	case *binaryExpr:
 		lType := e.left.typ(env)
@@ -439,6 +405,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		case "==", "!=":
 			if lType != rType {
 				// Maybe one is Hash and the other is (more-specific-Hash subtype).
+				// TODO(bobg): generalize this mechanism
 				if lType == hashType && isHashSubtype(rType) {
 					propagateType(contract, clause, env, rType, e.left)
 				} else if rType == hashType && isHashSubtype(lType) {
@@ -597,7 +564,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	return nil
 }
 
-func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, env environ, expr expression) ([]stackEntry, error) {
+func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, expr expression) ([]stackEntry, error) {
 	var newEntries []stackEntry
 
 	if list, ok := expr.(listExpr); ok {
