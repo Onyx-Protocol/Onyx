@@ -83,6 +83,19 @@ contract CollateralizedLoan(balanceAsset: Asset, balanceAmount: Amount, deadline
 }
 `
 
+const priceChanger = `
+contract PriceChanger(askAmount: Amount, askAsset: Asset, sellerKey: PublicKey, sellerProg: Program) locks offered {
+  clause changePrice(newAmount: Amount, newAsset: Asset, sig: Signature) {
+    verify checkTxSig(sellerKey, sig)
+    lock offered with PriceChanger(newAmount, newAsset, sellerKey, sellerProg)
+  }
+  clause redeem() requires payment: askAmount of askAsset {
+    lock payment with sellerProg
+    unlock offered
+  }
+}
+`
+
 func TestCompile(t *testing.T) {
 	cases := []struct {
 		name     string
