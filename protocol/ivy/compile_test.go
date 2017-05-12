@@ -496,7 +496,7 @@ func TestCompile(t *testing.T) {
 			priceChanger,
 			CompileResult{
 				Name:    "PriceChanger",
-				Program: mustDecodeHex("557a643000000057795479ae7cac690000c3c251005a79895979895c79895b798956798955890278c089c1633a000000000053795579515979c1"),
+				Program: mustDecodeHex("557a643000000057795379ae7cac690000c3c251005979895879895c79895b79895a798955890278c089c1633a000000000052795479515879c1"),
 				Value:   "offered",
 				Params: []ContractParam{{
 					Name: "askAmount",
