@@ -113,28 +113,6 @@ func (e call) String() string {
 
 func (e call) typ(env environ) typeDesc {
 	if b := referencedBuiltin(e.fn); b != nil {
-		switch b.name { // special-case
-		case "sha3":
-			if len(e.args) == 1 {
-				switch e.args[0].typ(env) {
-				case strType:
-					return sha3StrHashType
-				case pubkeyType:
-					return sha3PubkeyHashType
-				}
-			}
-
-		case "sha256":
-			if len(e.args) == 1 {
-				switch e.args[0].typ(env) {
-				case strType:
-					return sha256StrHashType
-				case pubkeyType:
-					return sha256PubkeyHashType
-				}
-			}
-		}
-
 		return b.result
 	}
 	if e.fn.typ(env) == predType {
