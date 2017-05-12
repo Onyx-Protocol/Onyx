@@ -33,7 +33,7 @@ import * as crypto from 'crypto'
 
 import {
   client
-} from '../util'
+} from '../core'
 
 import {
   sha3_256
@@ -42,7 +42,6 @@ import {
 import { sha256 } from './utils'
 
 import * as app from '../app/types'
-import { SpendFromAccount } from '../transactions/types'
 import { MIN_TIMESTAMP, MAX_NUMBER, MIN_NUMBER, MAX_UINT32, MAX_UINT16 } from './constants'
 import templates from '../templates'
 

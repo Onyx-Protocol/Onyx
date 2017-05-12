@@ -4,7 +4,7 @@ import { Template } from '../templates/types'
 
 import * as app from '../app/types'
 
-import { client, signer } from '../util'
+import { client, signer } from '../core'
 
 import {
   Contract,
@@ -37,7 +37,7 @@ import {
   RawTxSignatureWitness,
   SpendFromAccount,
   WitnessComponent
-} from '../transactions/types';
+} from '../core/types';
 
 import {
   getItemMap as getTemplateMap

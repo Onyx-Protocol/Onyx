@@ -1,8 +1,12 @@
+// external imports
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import ReactTooltip from 'react-tooltip'
 
-import { prefixRoute } from '../../util'
+// ivy imports
+import { prefixRoute } from '../../core'
+
+// internal imports
 import Reset from './reset'
 import Seed from './seed'
 

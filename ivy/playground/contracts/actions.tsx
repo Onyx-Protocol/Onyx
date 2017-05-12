@@ -30,6 +30,13 @@ import {
 import { getPromisedInputMap } from '../inputs/data'
 
 import {
+  client,
+  prefixRoute,
+  createLockingTx,
+  createUnlockingTx
+} from '../core'
+
+import {
   WitnessComponent,
   KeyId,
   DataWitness,
@@ -39,9 +46,7 @@ import {
   ControlWithAccount,
   ControlWithReceiver,
   Action
-} from '../transactions/types'
-import { createFundingTx, createSpendingTx } from '../transactions'
-import { client, prefixRoute } from '../util'
+} from '../core/types'
 
 
 export const SELECT_TEMPLATE = 'contracts/SELECT_TEMPLATE'
@@ -104,7 +109,7 @@ export const create = () => {
         }
         let template = mapServerTemplate(contract)
         let actions: Action[] = [spendFromAccount, controlWithReceiver]
-        return createFundingTx(actions).then(utxo => {
+        return createLockingTx(actions).then(utxo => {
           dispatch({
             type: CREATE_CONTRACT,
             controlProgram,
@@ -151,7 +156,7 @@ export const spend = () => {
     const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
     const mintimes = getClauseMintimes(getState())
     const maxtimes = getClauseMaxtimes(getState())
-    createSpendingTx(actions, witness, mintimes, maxtimes).then((result) => {
+    createUnlockingTx(actions, witness, mintimes, maxtimes).then((result) => {
       dispatch({
         type: SPEND_CONTRACT,
         id: contract.id,

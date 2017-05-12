@@ -21,7 +21,7 @@ import Unlock from './contracts/components/unlock'
 
 import { idList } from './templates/constants'
 
-import { prefixRoute } from './util'
+import { prefixRoute } from './core'
 
 // Import css
 require('./static/playground.css')
