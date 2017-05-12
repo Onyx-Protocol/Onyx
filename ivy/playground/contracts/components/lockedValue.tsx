@@ -5,7 +5,7 @@ import { Contract } from '../types'
 import { getIdList as getContractIds, getItem as getContract, getSpentIdList as getSpentContractIds } from '../selectors'
 import { connect } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { prefixRoute } from '../../util'
+import { prefixRoute } from '../../core'
 import { getItemMap as getAssetMap } from '../../assets/selectors'
 
 function shortenHash(hash: string) {

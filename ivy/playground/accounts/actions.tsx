@@ -1,4 +1,4 @@
-import { client } from '../util'
+import { client } from '../core'
 import { FETCH } from './constants'
 
 export const fetch = () => {
