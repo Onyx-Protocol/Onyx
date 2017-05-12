@@ -1,11 +1,14 @@
+// external imports
 import * as React from 'react'
 
+// ivy imports
 import accounts from '../accounts'
 import assets from '../assets'
 import templates from '../templates'
-import { selectTemplate } from '../contracts/actions'
-import { RESET } from './constants'
+import contracts from '../contracts'
 import { client, signer } from '../util'
+
+export const RESET: string = "app/RESET"
 
 export const reset = () => {
   return (dispatch, getState) => {
@@ -20,7 +23,7 @@ export const reset = () => {
   }
 }
 
-export const SEED = "app/SEED"
+export const SEED: string = "app/SEED"
 
 export const seed = () => {
   return (dispatch, getState) => {
