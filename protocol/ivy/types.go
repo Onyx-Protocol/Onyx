@@ -55,27 +55,24 @@ func isHashSubtype(t typeDesc) bool {
 	return false
 }
 
-func propagateType(contract *contract, clause *clause, env environ, t typeDesc, e expression) {
+func propagateType(contract *contract, clause *clause, env *environ, t typeDesc, e expression) {
 	v, ok := e.(varRef)
 	if !ok {
 		return
 	}
-	for _, p := range contract.params {
-		if p.name == string(v) {
-			p.inferredType = t
-			if entry, ok := env[string(v)]; ok {
-				entry.t = t
+	if entry := env.lookup(string(v)); entry != nil {
+		entry.t = t
+		for _, p := range contract.params {
+			if p.name == string(v) {
+				p.inferredType = t
+				return
 			}
-			return
 		}
-	}
-	for _, p := range clause.params {
-		if p.name == string(v) {
-			p.inferredType = t
-			if entry, ok := env[string(v)]; ok {
-				entry.t = t
+		for _, p := range clause.params {
+			if p.name == string(v) {
+				p.inferredType = t
+				return
 			}
-			return
 		}
 	}
 }
