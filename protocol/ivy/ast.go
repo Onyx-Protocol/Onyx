@@ -79,7 +79,7 @@ func (unlockStatement) iamaStatement() {}
 
 type expression interface {
 	String() string
-	typ(environ) typeDesc
+	typ(*environ) typeDesc
 }
 
 type binaryExpr struct {
@@ -91,7 +91,7 @@ func (e binaryExpr) String() string {
 	return fmt.Sprintf("(%s %s %s)", e.left, e.op.op, e.right)
 }
 
-func (e binaryExpr) typ(environ) typeDesc {
+func (e binaryExpr) typ(*environ) typeDesc {
 	return e.op.result
 }
 
@@ -104,7 +104,7 @@ func (e unaryExpr) String() string {
 	return fmt.Sprintf("%s%s", e.op.op, e.expr)
 }
 
-func (e unaryExpr) typ(environ) typeDesc {
+func (e unaryExpr) typ(*environ) typeDesc {
 	return e.op.result
 }
 
@@ -121,7 +121,7 @@ func (e call) String() string {
 	return fmt.Sprintf("%s(%s)", e.fn, strings.Join(argStrs, ", "))
 }
 
-func (e call) typ(env environ) typeDesc {
+func (e call) typ(env *environ) typeDesc {
 	if b := referencedBuiltin(e.fn); b != nil {
 		switch b.name {
 		case "sha3":
@@ -162,8 +162,11 @@ func (v varRef) String() string {
 	return string(v)
 }
 
-func (e varRef) typ(env environ) typeDesc {
-	return env[string(e)].t
+func (e varRef) typ(env *environ) typeDesc {
+	if entry := env.lookup(string(e)); entry != nil {
+		return entry.t
+	}
+	return nilType
 }
 
 type bytesLiteral []byte
@@ -172,7 +175,7 @@ func (e bytesLiteral) String() string {
 	return "0x" + hex.EncodeToString([]byte(e))
 }
 
-func (bytesLiteral) typ(environ) typeDesc {
+func (bytesLiteral) typ(*environ) typeDesc {
 	return "String"
 }
 
@@ -182,7 +185,7 @@ func (e integerLiteral) String() string {
 	return strconv.FormatInt(int64(e), 10)
 }
 
-func (integerLiteral) typ(environ) typeDesc {
+func (integerLiteral) typ(*environ) typeDesc {
 	return "Integer"
 }
 
@@ -195,7 +198,7 @@ func (e booleanLiteral) String() string {
 	return "false"
 }
 
-func (booleanLiteral) typ(environ) typeDesc {
+func (booleanLiteral) typ(*environ) typeDesc {
 	return "Boolean"
 }
 
@@ -209,6 +212,6 @@ func (e listExpr) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(elts, ", "))
 }
 
-func (listExpr) typ(environ) typeDesc {
+func (listExpr) typ(*environ) typeDesc {
 	return "List"
 }

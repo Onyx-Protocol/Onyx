@@ -158,7 +158,7 @@ func assignIndexes(clause *clause) {
 	}
 }
 
-func typeCheckClause(contract *contract, clause *clause, env environ) error {
+func typeCheckClause(contract *contract, clause *clause, env *environ) error {
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *verifyStatement:
