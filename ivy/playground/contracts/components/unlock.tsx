@@ -29,7 +29,7 @@ export default function Unlock(props: { contract: Contract }) {
             <SpendInputs />
           </div>
         </Section>
-        <Section name="Spending Details">
+        <Section name="Unlocking Details">
           <div className="form-wrapper">
             <ClauseSelect />
             <ClauseValue />
