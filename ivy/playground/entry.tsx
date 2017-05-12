@@ -1,5 +1,5 @@
+// external imports
 import * as React from 'react';
-import app from './app'
 import { render } from 'react-dom';
 import { applyMiddleware, compose, createStore } from 'redux'
 import { Provider } from 'react-redux';
@@ -9,19 +9,18 @@ import createHistory from 'history/createBrowserHistory'
 import DocumentTitle from 'react-document-title'
 import persistState from 'redux-localstorage'
 import thunk from 'redux-thunk'
-import { reset } from './app/actions'
-import { load } from './templates/actions'
 
+// ivy imports
+import app from './app'
 import accounts from './accounts'
 import assets from './assets'
+import templates from './templates'
+import { prefixRoute } from './core'
 
+// TODO(boymanjor): Handle these imports after in a better way
 import LockedValue from './contracts/components/lockedValue'
 import Lock from './templates/components/lock'
 import Unlock from './contracts/components/unlock'
-
-import { idList } from './templates/constants'
-
-import { prefixRoute } from './core'
 
 // Import css
 require('./static/playground.css')
@@ -45,8 +44,8 @@ const store = createStore(
   composeEnhancers(applyMiddleware(thunk), applyMiddleware(routerMiddleware(history)), persistState())
 )
 
-// store.dispatch(reset())
-store.dispatch(load(idList[0]))
+store.dispatch(app.actions.reset())
+store.dispatch(templates.actions.load(templates.constants.idList[0]))
 store.dispatch(assets.actions.fetch())
 store.dispatch(accounts.actions.fetch())
 render(
