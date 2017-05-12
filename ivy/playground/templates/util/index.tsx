@@ -41,7 +41,8 @@ export const mapServerTemplate = (tpl): Template => {
             identifier: output.name
           },
         },
-        assetAmountParam: output.assetAmount,
+        asset: output.asset,
+        amount: output.amount,
         index: idx
       }
     })

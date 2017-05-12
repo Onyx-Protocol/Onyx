@@ -14,6 +14,7 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
 import { getParameterIdentifier, getInputContext } from '../../inputs/data'
 import { getSpendInputMap, getClauseParameterIds } from '../selectors'
 import { getInputMap, getContractValueId } from '../../templates/selectors'
+import { getClauseValueId } from '../../contracts/selectors'
 import { updateClauseInput } from '../actions'
 import accounts from '../../accounts'
 import { Item as Account } from '../../accounts/types'
@@ -376,6 +377,31 @@ export const ContractParameters = connect(
 export const ClauseParameters = connect(
   (state) => ({ parameterIds: getClauseParameterIds(state) })
 )(ClauseParametersUnconnected)
+
+function mapStateToClauseValueProps(state) {
+  return {
+    valueId: getClauseValueId(state)
+  }
+}
+
+function ClauseValueUnconnected(props: { valueId: string }) {
+  if (props.valueId === undefined) {
+    return <div></div>
+  } else {
+    return (
+      <section style={{wordBreak: 'break-all'}}>
+        <h4>Required Value</h4>
+        <form className="form">
+          <div className="argument">{getWidget(props.valueId)}</div>
+        </form>
+      </section>
+    )
+  }
+}
+
+export const ClauseValue = connect(
+  mapStateToClauseValueProps
+)(ClauseValueUnconnected)
 
 function mapStateToContractValueProps(state) {
   return {

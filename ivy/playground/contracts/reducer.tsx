@@ -58,10 +58,17 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         for (let parameter of clause.parameters) {
           addParameterInput(inputs, parameter.valueType, "clauseParameters." + clause.name + "." + parameter.identifier)
         }
+
+        for (const output of clause.outputs) {
+          const inputName = "contractValue." + output.contract.value.identifier
+          if (action.inputMap[inputName]) {
+            // This is the locked value.
+            // Do not add it to the spendInputMap.
+            continue
+          }
+          addParameterInput(inputs, "Value", "clauseValue." + clause.name + "." + output.contract.value.identifier)
+        }
       }
-      // addDefaultInput(inputs, "addressInput", "transactionDetails")
-      // addDefaultInput(inputs, "mintimeInput", "transactionDetails")
-      // addDefaultInput(inputs, "maxtimeInput", "transactionDetails")
       addDefaultInput(inputs, "accountInput", "transactionDetails") // return destination. not always used
       let spendInputMap = {}
       let keyMap = getPublicKeys(action.inputMap)

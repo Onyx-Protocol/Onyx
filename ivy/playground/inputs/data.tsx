@@ -125,6 +125,7 @@ export const getParameterIdentifier = (input: ParameterInput): string => {
     case "contractParameters":
     case "contractValue": return input.name.split(".")[1]
     case "clauseParameters": return input.name.split(".")[2]
+    case "clauseValue": return input.name.split(".")[2]
     default:
       throw "unexpected input for getParameterIdentifier: " + input.name
   }
@@ -196,7 +197,6 @@ export const getInputType = (type: ClauseParameterType): PrimaryInputType => {
 
 export const isValidInput = (id: string, inputMap: InputMap): boolean => {
   const input = inputMap[id]
-  console.log(id, input, inputMap)
   switch (input.type) {
     case "parameterInput":
     case "stringInput":
@@ -501,6 +501,7 @@ export function getDefaultValue(inputType, name): string {
     case "clauseParameters": return getDefaultClauseParameterValue(inputType)
     case "contractParameters": return getDefaultContractParameterValue(inputType)
     case "contractValue": return getDefaultContractParameterValue(inputType)
+    case "clauseValue": return getDefaultClauseParameterValue(inputType)
     case "transactionDetails": return getDefaultTransactionDetailValue(inputType)
   }
 }
