@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/davecgh/go-spew/spew"
+
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/vm"
@@ -35,6 +37,10 @@ type (
 
 		// Maxtimes is the stringified form of "x" for any "verify before(x)" in the clause
 		Maxtimes []string `json:"maxtimes"`
+
+		// Records each call to a hash function and the type of the
+		// argument passed in
+		HashCalls []hashCall `json:"hash_calls"`
 	}
 
 	ClauseArg struct {
@@ -83,10 +89,11 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 
 	for _, clause := range c.clauses {
 		info := ClauseInfo{
-			Name:     clause.name,
-			Args:     []ClauseArg{},
-			Mintimes: clause.mintimes,
-			Maxtimes: clause.maxtimes,
+			Name:      clause.name,
+			Args:      []ClauseArg{},
+			Mintimes:  clause.mintimes,
+			Maxtimes:  clause.maxtimes,
+			HashCalls: clause.hashCalls,
 		}
 		if info.Mintimes == nil {
 			info.Mintimes = []string{}
@@ -331,7 +338,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, o
 			}
 			b.addOp(vm.OP_VERIFY)
 
-			// special-case detection of "verify before(expr)" and "verify after(expr)"
+			// special-case reporting of certain function calls
 			if c, ok := stmt.expr.(*call); ok && len(c.args) == 1 {
 				if b := referencedBuiltin(c.fn); b != nil {
 					switch b.name {
@@ -522,6 +529,12 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			return errors.Wrap(err, "assembling bytecode in call expression")
 		}
 		b.addRawBytes(ops)
+
+		// special-case reporting
+		switch bi.name {
+		case "sha3", "sha256":
+			clause.hashCalls = append(clause.hashCalls, hashCall{bi.name, e.args[0].String(), string(e.args[0].typ(env))})
+		}
 
 	case varRef:
 		return compileRef(b, stack, e)

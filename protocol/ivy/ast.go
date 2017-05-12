@@ -27,6 +27,13 @@ type clause struct {
 
 	// decorations
 	mintimes, maxtimes []string
+	hashCalls          []hashCall
+}
+
+type hashCall struct {
+	HashType string `json:"hash_type"`
+	Arg      string `json:"arg"`
+	ArgType  string `json:"arg_type"`
 }
 
 type clauseRequirement struct {

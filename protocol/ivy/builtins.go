@@ -8,8 +8,8 @@ type builtin struct {
 }
 
 var builtins = []builtin{
-	{"sha3", "SHA3", []typeDesc{strType}, hashType},
-	{"sha256", "SHA256", []typeDesc{strType}, hashType},
+	{"sha3", "SHA3", []typeDesc{nilType}, hashType},
+	{"sha256", "SHA256", []typeDesc{nilType}, hashType},
 	{"size", "SIZE SWAP DROP", []typeDesc{nilType}, intType},
 	{"abs", "ABS", []typeDesc{intType}, intType},
 	{"min", "MIN", []typeDesc{intType, intType}, intType},
