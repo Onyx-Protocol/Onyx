@@ -144,7 +144,8 @@ export const isPrimaryInputType = (str: string): str is PrimaryInputType => {
     case "signatureInput":
     case "valueInput":
     case "programInput":
-    case "assetAmountInput":
+    case "assetInput":
+    case "amountInput":
       return true
     default:
       return false
@@ -185,7 +186,8 @@ export const getInputType = (type: ClauseParameterType): PrimaryInputType => {
     case "Signature": return "signatureInput"
     case "Value": return "valueInput"
     case "Program": return "programInput"
-    case "AssetAmount": return "assetAmountInput"
+    case "Asset": return "assetInput"
+    case "Amount": return "amountInput"
     default:
       throw "can't yet get input type for " + type
   }
@@ -203,9 +205,8 @@ export const isValidInput = (id: string, inputMap: InputMap): boolean => {
     case "programInput":
     case "signatureInput":
       return isValidInput(getChild(input), inputMap)
-    case "assetAmountInput":
-      return isValidInput(input.name + ".assetAliasInput", inputMap) &&
-             isValidInput(input.name + ".amountInput", inputMap)
+    case "assetInput":
+      return isValidInput(input.name + ".assetAliasInput", inputMap)
     case "valueInput":
       return isValidInput(input.name + ".accountAliasInput", inputMap) &&
              isValidInput(input.name + ".assetAmountInput", inputMap)
@@ -270,7 +271,6 @@ export const validateInput = (input: Input): boolean => {
       return (numberValue >= MIN_NUMBER && 
           numberValue <= MAX_NUMBER)
     case "timestampTimeInput":
-      console.log("validating '" + input.value + "'")
       return (input.value !== "")
     case "amountInput":
       numberValue = parseInt(input.value, 10)
@@ -280,7 +280,6 @@ export const validateInput = (input: Input): boolean => {
     case "accountAliasInput":
     case "assetAliasInput":
       return (input.value !== "")
-    case "assetAmountInput":
     case "valueInput":
       // TODO(dan)
       return true
@@ -382,10 +381,11 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
     case "assetAliasInput":
       return ""
     case "valueInput":
-    case "assetAmountInput":
-      return "" // TODO(dan)
+    case "assetInput":
     case "amountInput":
-      return ""
+      return "" // TODO(dan)
+//    case "amountInput":
+//      return ""
     case "choosePublicKeyInput":
     case "generatePrivateKeyInput":
       throw inputType + ' should not be allowed'
@@ -441,7 +441,7 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
     case "accountAliasInput":
     case "assetAliasInput":
     case "valueInput":
-    case "assetAmountInput":
+    case "assetInput":
     case "amountInput":
     case "choosePublicKeyInput":
       return "" // TODO?: dan
@@ -546,8 +546,6 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
     }
     case "signatureInput": {
       addDefaultInput(inputs, "choosePublicKeyInput", name)
-      // addDefaultInput(inputs, "generateSignatureInput", name)
-      // addDefaultInput(inputs, "provideSignatureInput", name)
       return
     }
     case "generateSignatureInput": {
@@ -556,12 +554,16 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
     }
     case "valueInput": {
       addDefaultInput(inputs, "accountAliasInput", name)
-      addDefaultInput(inputs, "assetAmountInput", name)
+      addDefaultInput(inputs, "assetInput", name)
+      addDefaultInput(inputs, "amountInput", name)
       return
     }
-    case "assetAmountInput": {
+    // case "amountInput": {
+    //   addDefaultInput(inputs, "amountInput", name)
+    //   return
+    // }
+    case "assetInput": {
       addDefaultInput(inputs, "assetAliasInput", name)
-      addDefaultInput(inputs, "amountInput", name)
       return
     }
     case "programInput": {

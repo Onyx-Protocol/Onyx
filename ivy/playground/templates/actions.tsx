@@ -18,7 +18,6 @@ export const load = (selected: string) => {
   }
 }
 
-
 export const fetchCompiled = (source: string) => {
   return (dispatch, getState) => {
     return client.ivy.compile({ contract: source }).then((res) => {
@@ -39,7 +38,7 @@ export const fetchCompiled = (source: string) => {
 
       type = SET_SOURCE
       const contractParameters = compiled.contractParameters
-      const inputMap = contractParameters ? generateInputMap(contractParameters) : undefined
+      const inputMap = contractParameters ? generateInputMap(contractParameters, res.value) : undefined
       dispatch({ type, source, contractParameters, inputMap })
     }).catch((e) => {throw e})
   }

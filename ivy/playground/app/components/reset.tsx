@@ -5,7 +5,7 @@ import { reset } from '../actions'
 const mapStateToProps = undefined
 const mapDispatchToProps = (dispatch) => ({
   handleClick() {
-    dispatch(reset)
+    dispatch(reset())
   }
 })
 
