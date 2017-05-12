@@ -28,7 +28,7 @@ export type InputType = "parameterInput" | "stringInput" | "generateStringInput"
 export type PrimaryInputType = "stringInput" | "hashInput" | "publicKeyInput" | "numberInput" | "booleanInput" |
   "timeInput" | "signatureInput" | "valueInput" | "programInput" | "assetInput" | "amountInput"
 
-export type InputContext = "contractParameters"|"clauseParameters"|"contractValue"|"transactionDetails"
+export type InputContext = "contractParameters"|"clauseParameters"|"clauseValue"|"contractValue"|"transactionDetails"
 
 export type InputMap = {[s: string]: Input}
 

@@ -12,7 +12,7 @@ import {
   getClauseWitnessComponents,
   getSpendContractSelectedClauseIndex,
   getClauseOutputActions,
-  getClauseValues,
+  getClauseValue,
   getClauseReturnAction,
   getClauseMintimes,
   getClauseMaxtimes
@@ -136,8 +136,11 @@ export const spend = () => {
     }
 
     const clauseOutputActions: Action[] = getClauseOutputActions(state)
-    const clauseValues = getClauseValues(state)
-    const actions: Action[] = [spendContractAction, ...clauseOutputActions, ...clauseValues]
+    const actions: Action[] = [spendContractAction, ...clauseOutputActions]
+    const clauseValue = getClauseValue(state)
+    if (clauseValue !== undefined) {
+      actions.push(clauseValue)
+    }
     const returnAction = getClauseReturnAction(state)
     if (returnAction !== undefined) {
       actions.push(returnAction)

@@ -97,6 +97,8 @@ export type Output = {
   type: "output",
   location: Location,
   contract: ContractExpression,
+  asset?: string,
+  amount?: string,
   assetAmountParam?: string,
   index?: number
 }
