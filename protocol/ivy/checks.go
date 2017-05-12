@@ -215,7 +215,18 @@ func typeCheckExpr(expr expression, env environ) error {
 		}
 
 	case *call:
-		// handled in compileExpr
+		b := referencedBuiltin(e.fn)
+		if b == nil {
+			return fmt.Errorf("unknown function \"%s\"", e.fn)
+		}
+		if len(e.args) != len(b.args) {
+			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", b.name, len(e.args), len(b.args))
+		}
+		for i, actual := range e.args {
+			if b.args[i] != "" && actual.typ(env) != b.args[i] {
+				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, b.name, actual.typ(env), b.args[i])
+			}
+		}
 	}
 	return nil
 }
