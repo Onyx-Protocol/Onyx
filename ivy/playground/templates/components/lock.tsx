@@ -27,7 +27,7 @@ const Lock = ({ source, instantiable }) => {
   if (instantiable) {
     instantiate = (
       <div>
-        <app.components.Section name="Contract Value">
+        <app.components.Section name="Value to Lock">
           <div className="form-wrapper">
             <ContractValue />
           </div>
