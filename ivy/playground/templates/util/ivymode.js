@@ -84,7 +84,7 @@ var oop = acequire("../lib/oop");
 var DocCommentHighlightRules = acequire("./doc_comment_highlight_rules").DocCommentHighlightRules;
 var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
 var identifierRe = "[a-zA-Z\\$_\u00a1-\uffff][a-zA-Z\\d\\$_\u00a1-\uffff]*\\b";
-var typeRe = "PublicKey|Signature|String|Integer|Hash|Time|Boolean|Program|AssetID|Amount"
+var typeRe = "PublicKey|Signature|String|Integer|Hash|Time|Boolean|Program|Asset|Amount"
 
 var IvyHighlightRules = function(options) {
     var keywordMapper = this.createKeywordMapper({
