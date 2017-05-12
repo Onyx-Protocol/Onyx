@@ -39,11 +39,13 @@ import {
   sha3_256
 } from 'js-sha3'
 
-import { sha256 } from './utils'
-
 import * as app from '../app/types'
 import { MIN_TIMESTAMP, MAX_NUMBER, MIN_NUMBER, MAX_UINT32, MAX_UINT16 } from './constants'
 import templates from '../templates'
+
+export function sha256(buf: Buffer): Buffer {
+  return crypto.createHash('sha256').update(buf).digest()
+}
 
 export const computeDataForInput = (id: string, inputMap: InputMap): string => {
   let data = getData(id, inputMap)
