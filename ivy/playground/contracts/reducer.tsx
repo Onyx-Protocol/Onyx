@@ -40,12 +40,21 @@ export function generateInputMap(contractParameters: Param[], valueParam: string
 
 export default function reducer(state: ContractsState = INITIAL_STATE, action): ContractsState {
   switch (action.type) {
-    case SPEND_CONTRACT:
+    case SPEND_CONTRACT: {
+      const contract = state.itemMap[action.id]
       return {
         ...state,
+        itemMap: {
+          ...state.itemMap,
+          [action.id]: {
+            ...contract,
+            lockTxid: action.lockTxid
+          }
+        },
         idList: state.idList.filter(id => id !== action.id),
         spentIdList: [action.id, ...state.spentIdList]
       }
+    }
     case CREATE_CONTRACT: // reset keys etc. this is safe (the action already has this stuff)
       let controlProgram = action.controlProgram
       let hash = action.utxo.transactionId
@@ -81,6 +90,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       let contract: Contract = {
         template: action.template,
         id: hash,
+        lockTxid: '',
         outputId: action.utxo.id,
         assetId: action.utxo.assetId,
         amount: action.utxo.amount,
@@ -138,7 +148,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       if (path[1] === "ivy") {
         path.shift()
       }
-      if (path.length > 2 && path[1] === "spend") {
+      if (path.length > 2 && path[1] === "unlock") {
         return {
           ...state,
           spendContractId: path[2],

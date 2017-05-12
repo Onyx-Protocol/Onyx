@@ -3,8 +3,11 @@ import { Input, InputMap } from '../inputs/types'
 import { Template } from '../templates/types'
 
 export type Contract = {
-  // funding tx id
+  // lock txid
   id: string,
+
+  // unlock txid
+  lockTxid: string,
 
   // output id of the contract
   outputId: string,

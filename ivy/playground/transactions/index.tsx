@@ -41,7 +41,7 @@ export function createFundingTx(actions: Action[]): Promise<Object> {
   })
 }
 
-export const createSpendingTx = (actions: Action[], witness: WitnessComponent[], mintimes, maxtimes): Promise<Object> => {
+export const createSpendingTx = (actions: Action[], witness: WitnessComponent[], mintimes, maxtimes): Promise<{id: string}> => {
   return client.transactions.build(builder => {
     actions.forEach(action => {
       switch (action.type) {
