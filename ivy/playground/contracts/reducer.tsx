@@ -11,7 +11,8 @@ import { CREATE_CONTRACT, UPDATE_CLAUSE_INPUT, UPDATE_INPUT,
          SET_CLAUSE_INDEX, SPEND_CONTRACT } from './actions'
 import { addDefaultInput, getPublicKeys } from '../inputs/data'
 import { Contract as Contract } from './types'
-import { ContractParameter, compileTemplateClauses } from 'ivy-compiler'
+import { ClauseParameterType } from 'ivy-compiler'
+import { Param } from '../templates/types'
 
 export const INITIAL_STATE: ContractsState = {
   itemMap: {},
@@ -21,13 +22,13 @@ export const INITIAL_STATE: ContractsState = {
   selectedClauseIndex: 0,
 }
 
-export function generateInputMap(contractParameters: ContractParameter[], valueParam: string): InputMap {
+export function generateInputMap(contractParameters: Param[], valueParam: string): InputMap {
   let inputs: Input[] = []
   for (let parameter of contractParameters) {
-    addParameterInput(inputs, parameter.valueType, "contractParameters." + parameter.identifier)
+    addParameterInput(inputs, parameter.type as ClauseParameterType, "contractParameters." + parameter.name)
   }
   if (valueParam !== "") {
-    addParameterInput(inputs, "Value", "contractParameters." + valueParam)
+    addParameterInput(inputs, "Value", "contractValue." + valueParam)
   }
 
   let inputMap = {}
@@ -52,8 +53,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       let clauseNames = template.clauses.map(clause => clause.name)
       let clauseParameterIds = {}
       let inputs: Input[] = []
-      let templateClauses = compileTemplateClauses(action.template.source) // these have better type inference
-      for (let clause of templateClauses) {
+      for (let clause of template.clauses) {
         clauseParameterIds[clause.name] = clause.parameters.map(param => "clauseParameters." + clause.name + "." + param.identifier)
         for (let parameter of clause.parameters) {
           addParameterInput(inputs, parameter.valueType, "clauseParameters." + clause.name + "." + parameter.identifier)
@@ -62,7 +62,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       // addDefaultInput(inputs, "addressInput", "transactionDetails")
       // addDefaultInput(inputs, "mintimeInput", "transactionDetails")
       // addDefaultInput(inputs, "maxtimeInput", "transactionDetails")
-      addDefaultInput(inputs, "accountAliasInput", "transactionDetails") // return destination. not always used
+      addDefaultInput(inputs, "accountInput", "transactionDetails") // return destination. not always used
       let spendInputMap = {}
       let keyMap = getPublicKeys(action.inputMap)
       for (let input of inputs) {

@@ -20,11 +20,6 @@ export const getItemMap = createSelector(
   (state: TemplateState): ItemMap => state.itemMap
 )
 
-export const getContractParameters = createSelector(
-  getTemplateState,
-  (state: TemplateState) => state.contractParameters
-)
-
 export const getIdList = createSelector(
   getTemplateState,
   state => state.idList
@@ -59,6 +54,11 @@ export const getCompiled = createSelector(
   (state) => state.compiled
 )
 
+export const getContractParameters = createSelector(
+  getCompiled,
+  (compiled) => compiled && compiled.params
+)
+
 export const getOpcodes = createSelector(
   getCompiled,
   (compiled) => compiled && compiled.opcodes
@@ -68,7 +68,7 @@ export const getParameterIdList = createSelector(
   getContractParameters,
   (contractParameters) => {
     return contractParameters && contractParameters
-      .map(param => "contractParameters." + param.identifier)
+      .map(param => "contractParameters." + param.name)
   }
 )
 
@@ -76,8 +76,8 @@ export const getDataParameterIdList = createSelector(
   getContractParameters,
   (contractParameters) => {
     return contractParameters && contractParameters
-      .filter(param => param.valueType !== "Value" )
-      .map(param => "contractParameters." + param.identifier)
+      .filter(param => param.type !== "Value" )
+      .map(param => "contractParameters." + param.name)
   }
 )
 
@@ -85,7 +85,7 @@ export const getParameterIds = createSelector(
   getContractParameters,
   (contractParameters) => {
     return contractParameters && contractParameters
-      .map(param => "contractParameters." + param.identifier)
+      .map(param => "contractParameters." + param.name)
   }
 )
 
@@ -101,6 +101,11 @@ export const areInputsValid = createSelector(
   }
 )
 
+export const getContractValueId = createSelector(
+  getCompiled,
+  (compiled) => compiled && ("contractValue." + compiled.value)
+)
+
 export const getContractValue = createSelector(
   getInputMap,
   getInputList,
@@ -109,8 +114,8 @@ export const getContractValue = createSelector(
     inputList.forEach(input => {
       if (input.type === "valueInput") {
         let inputName = input.name
-        let accountId = inputMap[inputName + ".accountAliasInput"].value
-        let assetId = inputMap[inputName + ".assetInput.assetAliasInput"].value
+        let accountId = inputMap[inputName + ".accountInput"].value
+        let assetId = inputMap[inputName + ".assetInput"].value
         let amount = parseInt(inputMap[inputName + ".amountInput"].value, 10)
         if (isNaN(amount) || amount < 0 || !accountId || !assetId) {
           return []
@@ -134,13 +139,7 @@ export const getParameterData = (state, inputMap) => {
   try {
     let parameterData: (number|Buffer)[] = []
     for (let id of parameterIds) {
-      if (inputMap[id].value === "assetAmountInput") {
-        let name = inputMap[id].name
-        parameterData.push(getData(name + ".assetAmountInput.assetAliasInput", inputMap))
-        parameterData.push(getData(name + ".assetAmountInput.amountInput", inputMap))
-      } else {
-        parameterData.push(getData(id, inputMap))
-      }
+      parameterData.push(getData(id, inputMap))
     }
     return parameterData.reverse()
   } catch (e) {
@@ -153,8 +152,8 @@ export const getDataParameterIds = createSelector(
   getContractParameters,
   (contractParameters) => {
     return contractParameters && contractParameters
-      .filter(param => param.valueType !== "Value" )
-      .map(param => "contractParameters." + param.identifier)
+      .filter(param => param.type !== "Value" )
+      .map(param => "contractParameters." + param.name)
   }
 )
 
