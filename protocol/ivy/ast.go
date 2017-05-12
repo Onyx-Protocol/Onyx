@@ -17,6 +17,16 @@ type contract struct {
 type param struct {
 	name string
 	typ  typeDesc
+
+	// decoration
+	inferredType typeDesc
+}
+
+func (p param) bestType() typeDesc {
+	if p.inferredType != nilType {
+		return p.inferredType
+	}
+	return p.typ
 }
 
 type clause struct {
@@ -113,6 +123,28 @@ func (e call) String() string {
 
 func (e call) typ(env environ) typeDesc {
 	if b := referencedBuiltin(e.fn); b != nil {
+		switch b.name {
+		case "sha3":
+			if len(e.args) == 1 {
+				switch e.args[0].typ(env) {
+				case strType:
+					return sha3StrType
+				case pubkeyType:
+					return sha3PubkeyType
+				}
+			}
+
+		case "sha256":
+			if len(e.args) == 1 {
+				switch e.args[0].typ(env) {
+				case strType:
+					return sha256StrType
+				case pubkeyType:
+					return sha256PubkeyType
+				}
+			}
+		}
+
 		return b.result
 	}
 	if e.fn.typ(env) == predType {
