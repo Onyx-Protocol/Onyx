@@ -18,7 +18,7 @@ To perform cross-core transfers, you should use receivers instead of control pro
 - Receivers are created via the following pattern:
 
     ```
-    client.accounts.create_receiver(account_id: '...')
+    client.accounts.createReceiver(accountId: '...').then(...)
     ```
 
     This differs slightly to the removed `client.control_programs.create()` pattern.
