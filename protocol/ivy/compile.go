@@ -67,7 +67,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "parse error")
 	}
-	prog, err := compileContract(c, args)
+	prog, err := compileContract(c)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
@@ -158,7 +158,13 @@ var roleDesc = map[role]string{
 	roleClauseValue:   "clause value",
 }
 
-func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
+// A name for the stack item representing the compiled, uninstantiated
+// contract body on the stack.  Must not be a legal Ivy identifier.
+const quineName = "<quine>"
+
+// Produces an uninstantiated contract body, which must be embedded
+// with arguments and quined to become a control program.
+func compileContract(contract *contract) ([]byte, error) {
 	if len(contract.clauses) == 0 {
 		return nil, fmt.Errorf("empty contract")
 	}
@@ -201,22 +207,9 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	}
 
 	stack := addParamsToStack(nil, contract.params)
+	stack = append(stack, stackEntry(quineName))
 
 	b := newBuilder()
-	for _, a := range args {
-		switch {
-		case a.B != nil:
-			var n int64
-			if *a.B {
-				n = 1
-			}
-			b.addInt64(n)
-		case a.I != nil:
-			b.addInt64(*a.I)
-		case a.S != nil:
-			b.addData(*a.S)
-		}
-	}
 
 	if len(contract.clauses) == 1 {
 		err = compileClause(b, stack, contract, env, contract.clauses[0])
@@ -456,11 +449,13 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 				if e.fn.String() != contract.name {
 					return fmt.Errorf("calling other contracts not yet supported")
 				}
+
 				// xxx typecheck args
-				b.addInt64(int64(len(e.args)))
-				stack = append(stack, stackEntry("<arg count>"))
+
+				// build the control program for this contract with its new
+				// params
 				b.addData(nil)
-				stack = append(stack, stackEntry("<program>"))
+				stack = append(stack, stackEntry(e.String()))
 				for i := len(e.args) - 1; i >= 0; i-- {
 					err = compileExpr(b, stack, contract, clause, env, e.args[i])
 					if err != nil {
@@ -468,11 +463,29 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 					}
 					b.addOp(vm.OP_CATPUSHDATA)
 				}
-				b.addInt64(0)
-				b.addOp(vm.OP_CHECKPREDICATE)
+				err = compileRef(b, stack, quineName)
+				if err != nil {
+					return errors.Wrap(err, "compiling contract call")
+				}
+				b.addOp(vm.OP_CATPUSHDATA)
+				b.addInt64(int64(1 + len(e.args)))
+				b.addOp(vm.OP_CATPUSHDATA)
+				b.addData([]byte{byte(vm.OP_OVER), byte(vm.OP_CHECKPREDICATE)})
+				b.addOp(vm.OP_CATPUSHDATA)
+
 				return nil
 			}
 			return fmt.Errorf("unknown function \"%s\"", e.fn)
+		}
+
+		// typecheck args
+		if len(e.args) != len(bi.args) {
+			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", bi.name, len(e.args), len(bi.args))
+		}
+		for i, actual := range e.args {
+			if bi.args[i] != "" && actual.typ(env) != bi.args[i] {
+				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
+			}
 		}
 
 		// WARNING WARNING WOOP WOOP
@@ -524,7 +537,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		b.addRawBytes(ops)
 
 	case varRef:
-		return compileRef(b, stack, e)
+		return compileRef(b, stack, string(e))
 
 	case integerLiteral:
 		b.addInt64(int64(e))
@@ -576,9 +589,9 @@ func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clau
 	return []stackEntry{stackEntry(expr.String())}, nil
 }
 
-func compileRef(b *builder, stack []stackEntry, ref expression) error {
+func compileRef(b *builder, stack []stackEntry, name string) error {
 	for depth := 0; depth < len(stack); depth++ {
-		if stack[len(stack)-depth-1].matches(ref) {
+		if stack[len(stack)-depth-1].matches(name) {
 			switch depth {
 			case 0:
 				b.addOp(vm.OP_DUP)
@@ -591,7 +604,7 @@ func compileRef(b *builder, stack []stackEntry, ref expression) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("undefined reference \"%s\"", ref)
+	return fmt.Errorf("undefined reference \"%s\"", name)
 }
 
 func (a *ContractArg) UnmarshalJSON(b []byte) error {
