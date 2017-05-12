@@ -7,7 +7,7 @@ This changelog is for the 1.2 branch of the Node.js SDK. Older versions:
 
 ## 1.2.0 (May 12, 2017)
 
-This is a _minor version_ release that includes breaking changes and new features.
+This is a _minor version_ release that includes breaking changes and new features. Before upgrading your SDK, please review a [a full summary of what's new in Chain Core 1.2](https://chain.com/docs/1.2/core/reference/changelog#1.2.0).
 
 ### Breaking changes
 
