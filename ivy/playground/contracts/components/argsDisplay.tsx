@@ -6,7 +6,7 @@ import { Input, ParameterInput, NumberInput, BooleanInput, StringInput,
          TimeInput, TimestampTimeInput,
          PublicKeyInput, GeneratePublicKeyInput, ProvidePublicKeyInput, GenerateHashInput,
          ProvideHashInput, InputType, ComplexInput, ValueInput,
-         AssetAliasInput, AccountAliasInput, AssetAmountInput, AmountInput, ProgramInput } from '../../inputs/types'
+         AssetAliasInput, AccountAliasInput, AssetInput, AmountInput, ProgramInput } from '../../inputs/types'
 import { getChild, getParameterIdentifier, getGenerateStringInputValue, computeDataForInput } from '../../inputs/data'
 import { typeToString } from 'ivy-compiler'
 import { getItemMap as getAssetMap } from '../../assets/selectors'
@@ -41,12 +41,17 @@ function ValueWidget(props: { input: ValueInput }) {
   </div>
 }
 
-function AssetAmountWidget(props: { input: AssetAmountInput }) {
+function AssetWidget(props: { input: AssetInput }) {
   return <div>
     {getWidget(props.input.name + ".assetAliasInput")}
-    {getWidget(props.input.name + ".amountInput")}
   </div>
 }
+
+// function AmountWidget(props: { input: AmountInput }) {
+//   return <div>
+//     {getWidget(props.input.name + ".amountInput")}
+//   </div>
+// }
 
 function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
                                               assetMap: {[s: string]: any}}) {
@@ -124,7 +129,8 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
     case "timestampTimeInput": return TimestampTimeWidget
     case "generateStringInput": return GenerateStringWidget
     case "valueInput": return ValueWidget
-    case "assetAmountInput": return AssetAmountWidget
+    case "assetInput": return AssetWidget
+    case "amountInput": return AmountWidget
     case "accountAliasInput": return AccountAliasWidget
     case "assetAliasInput": return AssetAliasWidget
     case "programInput":
