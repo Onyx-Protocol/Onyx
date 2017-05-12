@@ -6,7 +6,7 @@ import accounts from '../accounts'
 import assets from '../assets'
 import templates from '../templates'
 import contracts from '../contracts'
-import { client, signer } from '../util'
+import { client, signer } from '../core'
 
 export const RESET: string = "app/RESET"
 

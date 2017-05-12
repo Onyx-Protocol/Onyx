@@ -1,15 +1,33 @@
-import {
-  client,
-  signer
-} from '../util'
+// external imports
+const chain = require('chain-sdk')
 
-import {
-  Action,
-  DataWitness,
-  WitnessComponent
-} from './types'
+// internal imports
+import * as types from './types'
 
-export function createFundingTx(actions: Action[]): Promise<Object> {
+let apiHost: string
+const isProd: boolean = process.env.NODE_ENV === 'production'
+if (isProd) {
+  apiHost = window.location.origin
+} else {
+  apiHost = process.env.API_URL || 'http://localhost:8080/api'
+}
+
+// Prefixes the redux router route during production builds.
+export const prefixRoute = (route: string): string => {
+  if (isProd) {
+    return "/ivy" + route
+  }
+  return route
+}
+
+export const client = new chain.Client({
+  url: apiHost
+})
+
+export const signer = new chain.HsmSigner()
+
+// Uses the ivy contract to lock value.
+export const createLockingTx = (actions: types.Action[]): Promise<Object> => {
   return client.transactions.build(builder => {
     actions.forEach(action => {
       switch (action.type) {
@@ -41,7 +59,11 @@ export function createFundingTx(actions: Action[]): Promise<Object> {
   })
 }
 
-export const createSpendingTx = (actions: Action[], witness: WitnessComponent[], mintimes, maxtimes): Promise<{id: string}> => {
+// Satisfies created contract and transfers value.
+export const createUnlockingTx = (actions: types.Action[],
+                               witness: types.WitnessComponent[],
+                               mintimes,
+                               maxtimes): Promise<{id: string}> => {
   return client.transactions.build(builder => {
     actions.forEach(action => {
       switch (action.type) {
@@ -107,7 +129,7 @@ export const createSpendingTx = (actions: Action[], witness: WitnessComponent[],
             return {
               type: "data",
               value: component.signatures[0]
-            } as DataWitness
+            } as types.DataWitness
           default:
             return component
         }

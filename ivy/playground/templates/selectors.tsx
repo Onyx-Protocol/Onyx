@@ -5,7 +5,7 @@ import { TemplateState, Template, ItemMap } from './types'
 import { Input, InputMap } from '../inputs/types'
 import { compileTemplate } from 'ivy-compiler'
 import { mapServerTemplate } from './util'
-import { SpendFromAccount } from '../transactions/types'
+import { SpendFromAccount } from '../core/types'
 import { isValidInput, getData } from '../inputs/data'
 
 export const getTemplateState = (state: app.AppState): TemplateState => state.templates
