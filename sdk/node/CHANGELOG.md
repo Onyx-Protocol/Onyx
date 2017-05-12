@@ -21,7 +21,7 @@ To perform cross-core transfers, you should use receivers instead of control pro
     client.accounts.createReceiver(accountId: '...').then(...)
     ```
 
-    This differs slightly to the removed `client.control_programs.create()` pattern.
+    This differs slightly to the removed `client.controlPrograms.create()` pattern.
 - When performing cross-core transfers, counterparties should not exchange raw control program strings. Instead, they should use `JSON.stringify(receiver)` to serialize recevier objects, and then exchange the serialized receivers. See the [documentation](https://chain.com/docs/1.2/core/build-applications/transaction-basics#between-two-chain-cores) for examples.
 
 Note that control programs still exist at the protocol level, and are exposed in transaction outputs in their raw form. However, they are no longer first-class objects in our SDK interfaces.
