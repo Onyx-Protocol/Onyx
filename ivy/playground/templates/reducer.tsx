@@ -4,6 +4,7 @@ import { SET_INITIAL_TEMPLATES, SET_SOURCE,
          SAVE_TEMPLATE, SET_COMPILED } from './actions'
 import { UPDATE_INPUT } from '../contracts/actions'
 import { INITIAL_STATE } from './constants'
+import { generateInputMap } from '../contracts/reducer'
 
 export default function reducer(state: TemplateState = INITIAL_STATE, action): TemplateState {
   switch (action.type) {
@@ -23,13 +24,9 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
       }
     case SET_SOURCE: {
       const source = action.source
-      const contractParameters = action.contractParameters
-      const inputMap = action.inputMap
       return {
         ...state,
         source,
-        inputMap,
-        contractParameters
       }
     }
     case SAVE_TEMPLATE: {
@@ -49,24 +46,13 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
     case SET_COMPILED: {
       const compiled = action.compiled
       const error = compiled.error
-      if (error !== undefined && compiled.source == state.source) {
-        // the JS compiler may be less strict than the Go compiler
-        // so this should make sure the contractParameters and inputMap are not rendered
-        // I think this won't be a race condition
-        return {
-          ...state,
-          inputMap: undefined,
-          contractParameters: undefined,
-          compiled
-        }
-      }
-      if (state.itemMap === undefined) {
-        // the JS compiler should never be STRICTER than the Go compiler
-        throw "compilation should never succeed if typechecking fails"
-      }
+      const contractParameters = compiled.contractParameters
+      const inputMap = contractParameters ? generateInputMap(contractParameters, compiled.value) : undefined
       return {
         ...state,
-        compiled
+        compiled,
+        contractParameters,
+        inputMap
       }
     }
     default:
