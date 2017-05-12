@@ -1,5 +1,9 @@
 # Chain Core for Mac changelog
 
+## 1.2.0 (May 12, 2017)
+
+* Update to Chain Core [1.2.0](https://chain.com/docs/1.2/core/reference/changelog#1.2.0)
+
 ## 1.2.0.rc2 (May 3, 2017)
 
 * This is a pre-release version

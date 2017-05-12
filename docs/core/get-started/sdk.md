@@ -19,7 +19,7 @@ The Java SDK is available via [Maven](https://search.maven.org/#search%7Cga%7C1%
   <dependency>
     <groupId>com.chain</groupId>
     <artifactId>chain-sdk-java</artifactId>
-    <version>1.2.0rc2</version>
+    <version>1.2.0</version>
   </dependency>
 </dependencies>
 ```
@@ -27,10 +27,10 @@ The Java SDK is available via [Maven](https://search.maven.org/#search%7Cga%7C1%
 **Gradle** users should add the following to `build.gradle`:
 
 ```
-compile 'com.chain:chain-sdk-java:1.2.0rc2'
+compile 'com.chain:chain-sdk-java:1.2.0'
 ```
 
-You can also [download the JAR](https://search.maven.org/remotecontent?filepath=com/chain/chain-sdk-java/1.2.0rc2/chain-sdk-java-1.2.0rc2.jar) as a binary.
+You can also [download the JAR](https://search.maven.org/remotecontent?filepath=com/chain/chain-sdk-java/1.2.0/chain-sdk-java-1.2.0.jar) as a binary.
 
 ## Node.js
 
@@ -41,7 +41,7 @@ To install, add the `chain-sdk` NPM module to your `package.json`, using a tilde
 ```
 {
   "dependencies": {
-    "chain-sdk": "~1.2.0-rc.2"
+    "chain-sdk": "~1.2.0"
   }
 }
 ```
@@ -53,5 +53,5 @@ The Ruby SDK is available [via Rubygems](https://rubygems.org/gems/chain-sdk). R
 To install, add the following to your `Gemfile`:
 
 ```
-gem 'chain-sdk', '~> 1.2.0.rc2', require: 'chain'
+gem 'chain-sdk', '~> 1.2.0', require: 'chain'
 ```

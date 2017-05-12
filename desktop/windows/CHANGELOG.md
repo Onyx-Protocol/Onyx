@@ -1,5 +1,9 @@
 # Chain Core for Windows changelog
 
+## 1.2.2
+
+* Update to Chain Core [1.2.0](https://chain.com/docs/1.2/core/reference/changelog#1.2.0)
+
 ## 1.2.1
 
 * This is a pre-release version
