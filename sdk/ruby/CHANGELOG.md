@@ -44,7 +44,7 @@ The `Chain::AuthorizationGrant` class allows you to programmatically register cr
 
 #### TLS configuration
 
-The SDK now features flexible TLS configuration, allowing you to accept server certificates outside of the main X.509 PKI, and to authenticate requests to Chain Core using client X.509 certificates.
+The SDK now features flexible TLS configuration, allowing you to accept server certificates outside of the public X.509 PKI, and to authenticate requests to Chain Core using client X.509 certificates.
 
 See the [documentation](https://chain.com/docs/1.2/core/learn-more/mutual-tls-auth) for specific instructions.
 

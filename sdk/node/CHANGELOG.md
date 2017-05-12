@@ -35,6 +35,18 @@ With Chain Core 1.2, the deprecated tuple identifier has been removed. This has 
 - Transaction inputs no longer contain a `spentOutput` property. Use `spentOutputId` instead.
 - The `spendUnspentOutput` transaction builder method no longer accepts the `transactionId` and `position` parameters. Use `outputId` instead. See the [documentation](https://chain.com/docs/1.2/core/build-applications/unspent-outputs#spend-unspent-outputs) for examples.
 
+### New features
+
+#### Authentication and authorization
+
+The `client.authorizationGrants` interface allows you to programmatically register credentials that have well-scoped access to different parts of the Chain Core API. See the [documentation](https://chain.com/docs/1.2/core/learn-more/authentication-and-authorization) for code samples, as well as a detailed introduction to authentication and authorization in Chain Core.
+
+#### TLS configuration
+
+The SDK now features flexible TLS configuration, allowing you to accept server certificates outside of the public X.509 PKI, and to authenticate requests to Chain Core using client X.509 certificates.
+
+See the [documentation](https://chain.com/docs/1.2/core/learn-more/mutual-tls-auth) for specific instructions.
+
 ## 1.2.0-rc.2 (May 4, 2017)
 
 Pre-release version.
