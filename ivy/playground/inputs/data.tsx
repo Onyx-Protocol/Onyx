@@ -196,6 +196,7 @@ export const getInputType = (type: ClauseParameterType): PrimaryInputType => {
 
 export const isValidInput = (id: string, inputMap: InputMap): boolean => {
   const input = inputMap[id]
+  console.log(id, input, inputMap)
   switch (input.type) {
     case "parameterInput":
     case "stringInput":
@@ -206,8 +207,8 @@ export const isValidInput = (id: string, inputMap: InputMap): boolean => {
     case "programInput":
     case "signatureInput":
       return isValidInput(getChild(input), inputMap)
-    case "assetInput":
-      return isValidInput(input.name + ".assetInput", inputMap)
+    //case "assetInput":
+    //  return isValidInput(input.name + ".assetInput", inputMap)
     case "valueInput":
       return isValidInput(input.name + ".accountInput", inputMap) &&
              isValidInput(input.name + ".assetInput", inputMap) &&
@@ -385,9 +386,7 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
     case "valueInput":
     case "assetInput":
     case "amountInput":
-      return "" // TODO(dan)
-//    case "amountInput":
-//      return ""
+      return ""
     case "choosePublicKeyInput":
     case "generatePrivateKeyInput":
       throw inputType + ' should not be allowed'
@@ -535,8 +534,6 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
     }
     case "publicKeyInput": {
       addDefaultInput(inputs, "accountInput", name)
-      // addDefaultInput(inputs, "generatePublicKeyInput", name)
-      // addDefaultInput(inputs, "providePublicKeyInput", name)
       return
     }
     case "generatePublicKeyInput": {
