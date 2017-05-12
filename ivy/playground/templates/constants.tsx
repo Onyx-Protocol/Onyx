@@ -4,12 +4,6 @@ import { compileTemplate } from 'ivy-compiler'
 
 export const NAME = 'templates'
 
-export const TRIVIAL_LOCK =`contract TrivialLock() locks value {
-  clause spend() {
-    unlock value
-  }
-}`
-
 export const LOCK_WITH_PUBLIC_KEY = `contract LockWithPublicKey(publicKey: PublicKey) locks value {
   clause spend(sig: Signature) {
     verify checkTxSig(publicKey, sig)
@@ -104,7 +98,6 @@ const itemMap = {
   CollateralizedLoan: COLLATERALIZED_LOAN,
   RevealPreimage: REVEAL_PREIMAGE,
   RevealFactors: REVEAL_FACTORS,
-  TrivialLock: TRIVIAL_LOCK
 }
 
 export const idList = [
@@ -115,7 +108,6 @@ export const idList = [
   "EscrowedTransfer",
   "CollateralizedLoan",
   "RevealPreimage",
-  "TrivialLock"
 ]
 
 const selected = idList[0]
