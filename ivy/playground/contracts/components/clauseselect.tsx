@@ -19,7 +19,7 @@ const ClauseSelect = (props: { contractId: string, clauses: TemplateClause[],
 }
 
 export default connect(
-  (state) => ({ 
+  (state) => ({
     spendIndex: getSpendContractSelectedClauseIndex(state),
     clauses: getSpendContract(state).template.clauses,
     contractId: getSpendContractId(state)

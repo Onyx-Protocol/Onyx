@@ -2,9 +2,9 @@ import * as React from 'react'
 import { connect } from 'react-redux'
 
 import { getCompiled } from '../selectors'
-import { CompilerResult } from '../types'
+import { Template } from '../types'
 
-const ErrorAlert = (props: { compiled: CompilerResult }) => {
+const ErrorAlert = (props: { compiled: Template }) => {
   return (
     <div className="panel-body inner">
       <h1>Compiled</h1>

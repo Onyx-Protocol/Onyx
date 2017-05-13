@@ -1,5 +1,5 @@
 import { compileContractParameters, ContractParameter } from 'ivy-compiler';
-import { TemplateState, CompilerResult } from './types'
+import { TemplateState, Template } from './types'
 import { SET_INITIAL_TEMPLATES, SET_SOURCE, 
          SAVE_TEMPLATE, SET_COMPILED } from './actions'
 import { UPDATE_INPUT } from '../contracts/actions'
@@ -44,7 +44,7 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
       }
     }
     case SET_COMPILED: {
-      const compiled: CompilerResult = action.compiled
+      const compiled: Template = action.compiled
       if (compiled.error !== '') {
         return {
           ...state,

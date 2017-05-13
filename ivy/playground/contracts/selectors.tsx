@@ -1,6 +1,6 @@
 import { SPEND_CONTRACT } from './actions';
 import { createSelector } from 'reselect'
-import { Template } from '../templates/types'
+import { OldTemplate } from '../templates/types'
 
 import * as app from '../app/types'
 
