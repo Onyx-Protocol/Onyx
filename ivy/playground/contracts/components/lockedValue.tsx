@@ -12,7 +12,7 @@ function shortenHash(hash: string) {
   if (hash.length < 9) {
     return hash
   } else {
-    return hash.slice(0, 8) + "..."
+    return hash.slice(0, 25) + "..."
   }
 }
 
@@ -33,7 +33,7 @@ export default connect(
 
 
 const UnlockButton = (props: {contractId: string} ) => {
-  return <Link to={prefixRoute("/unlock/" + props.contractId)} ><button className="btn btn-primary pull-right">Unlock</button></Link>
+  return <Link to={prefixRoute("/unlock/" + props.contractId)} ><button className="btn btn-primary">Unlock</button></Link>
 }
 
 function LockedValue(props: { contractIds: string[] }) {
@@ -47,7 +47,7 @@ function LockedValue(props: { contractIds: string[] }) {
             <th>Amount</th>
             <th>Contract Template</th>
             <th>Lock Transaction</th>
-            <th className="table-spaceholder"></th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -71,7 +71,7 @@ const LockedValueRowUnconnected = (props: { asset, contractId: string, contract:
       <td>{ contract.amount }</td>
       <td>{ contract.template.name }</td>
       <td><a href={"/dashboard/transactions/" + contract.id} target="_blank">{ shortenHash(contract.id) }</a></td>
-      <td><UnlockButton contractId={contract.id} /></td>
+      <td className="td-button"><UnlockButton contractId={contract.id} /></td>
     </tr>
   )
 }
