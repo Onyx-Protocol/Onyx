@@ -52,14 +52,16 @@ type clauseRequirement struct {
 }
 
 type statement interface {
-	iamaStatement()
+	countVarRefs(map[string]int)
 }
 
 type verifyStatement struct {
 	expr expression
 }
 
-func (verifyStatement) iamaStatement() {}
+func (s verifyStatement) countVarRefs(counts map[string]int) {
+	s.expr.countVarRefs(counts)
+}
 
 type lockStatement struct {
 	locked  expression
@@ -69,17 +71,23 @@ type lockStatement struct {
 	index int64
 }
 
-func (lockStatement) iamaStatement() {}
+func (s lockStatement) countVarRefs(counts map[string]int) {
+	s.locked.countVarRefs(counts)
+	s.program.countVarRefs(counts)
+}
 
 type unlockStatement struct {
 	expr expression
 }
 
-func (unlockStatement) iamaStatement() {}
+func (s unlockStatement) countVarRefs(counts map[string]int) {
+	s.expr.countVarRefs(counts)
+}
 
 type expression interface {
 	String() string
 	typ(*environ) typeDesc
+	countVarRefs(map[string]int)
 }
 
 type binaryExpr struct {
@@ -95,6 +103,11 @@ func (e binaryExpr) typ(*environ) typeDesc {
 	return e.op.result
 }
 
+func (e binaryExpr) countVarRefs(counts map[string]int) {
+	e.left.countVarRefs(counts)
+	e.right.countVarRefs(counts)
+}
+
 type unaryExpr struct {
 	op   *unaryOp
 	expr expression
@@ -106,6 +119,10 @@ func (e unaryExpr) String() string {
 
 func (e unaryExpr) typ(*environ) typeDesc {
 	return e.op.result
+}
+
+func (e unaryExpr) countVarRefs(counts map[string]int) {
+	e.expr.countVarRefs(counts)
 }
 
 type call struct {
@@ -156,6 +173,13 @@ func (e call) typ(env *environ) typeDesc {
 	return nilType
 }
 
+func (e call) countVarRefs(counts map[string]int) {
+	e.fn.countVarRefs(counts)
+	for _, a := range e.args {
+		a.countVarRefs(counts)
+	}
+}
+
 type varRef string
 
 func (v varRef) String() string {
@@ -169,6 +193,10 @@ func (e varRef) typ(env *environ) typeDesc {
 	return nilType
 }
 
+func (e varRef) countVarRefs(counts map[string]int) {
+	counts[string(e)]++
+}
+
 type bytesLiteral []byte
 
 func (e bytesLiteral) String() string {
@@ -179,6 +207,8 @@ func (bytesLiteral) typ(*environ) typeDesc {
 	return "String"
 }
 
+func (bytesLiteral) countVarRefs(map[string]int) {}
+
 type integerLiteral int64
 
 func (e integerLiteral) String() string {
@@ -188,6 +218,8 @@ func (e integerLiteral) String() string {
 func (integerLiteral) typ(*environ) typeDesc {
 	return "Integer"
 }
+
+func (integerLiteral) countVarRefs(map[string]int) {}
 
 type booleanLiteral bool
 
@@ -202,6 +234,8 @@ func (booleanLiteral) typ(*environ) typeDesc {
 	return "Boolean"
 }
 
+func (booleanLiteral) countVarRefs(map[string]int) {}
+
 type listExpr []expression
 
 func (e listExpr) String() string {
@@ -214,4 +248,10 @@ func (e listExpr) String() string {
 
 func (listExpr) typ(*environ) typeDesc {
 	return "List"
+}
+
+func (e listExpr) countVarRefs(counts map[string]int) {
+	for _, elt := range e {
+		elt.countVarRefs(counts)
+	}
 }
