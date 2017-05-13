@@ -16,15 +16,14 @@ import {
   BugError
 } from '../errors'
 
-export type ContractParameterHash =
-  { type: "hashType",
-    inputType: ContractParameterType,
-    hashFunction: HashFunction
-  }
+export type ContractParameterHash = {
+  type: "hashType",
+  inputType: ContractParameterType,
+  hashFunction: HashFunction
+}
 
-export type ContractParameterType = "PublicKey" | "String" | "Integer" |
-                                    "Time" | "Boolean" | "Program" |
-                                    "Asset" | "Amount" | "Value" | ContractParameterHash
+export type ContractParameterType = "PublicKey" | "String" | "Integer" | "Time" | "Boolean" |
+                                    "Program" | "Asset" | "Amount" | "Value" | ContractParameterHash
 
 export type ContractParameter = {
   type: "contractParameter",

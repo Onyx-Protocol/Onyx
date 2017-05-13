@@ -1,5 +1,10 @@
+// ivy imports
 import { client } from '../core'
+import { generateInputMap } from '../contracts/selectors'
+
+// internal imports
 import { getSourceMap } from './selectors'
+import { CompiledTemplate } from './types'
 
 export const loadTemplate = (selected: string) => {
   return (dispatch, getState) => {
@@ -26,9 +31,17 @@ export const FETCH_COMPILED = 'templates/FETCH_COMPILED'
 
 export const fetchCompiled = (source: string) => {
   return (dispatch, getState) => {
-    return client.ivy.compile({ contract: source }).then((compiled) => {
-      let type = FETCH_COMPILED
-      dispatch({ type, compiled })
+    return client.ivy.compile({ contract: source }).then((result) => {
+      const type = FETCH_COMPILED
+      const format = (tpl: CompiledTemplate) => {
+        if (tpl.error !== '') {
+          tpl.clauseInfo = tpl.params = []
+        }
+        return tpl
+      }
+      const compiled = format(result)
+      const inputMap = generateInputMap(compiled)
+      dispatch({ type, compiled, inputMap })
     }).catch((e) => {throw e})
   }
 }
