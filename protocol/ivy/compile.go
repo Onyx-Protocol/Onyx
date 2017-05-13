@@ -1,10 +1,12 @@
 package ivy
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strconv"
 
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -293,14 +295,26 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 	assignIndexes(clause)
 	stack := addParamsToStack(nil, clause.params)
 	stack = append(stack, contractStack...)
+
+	// a count of the number of times each variable is referenced
+	counts := make(map[string]int)
+	for _, req := range clause.reqs {
+		req.assetExpr.countVarRefs(counts)
+		req.amountExpr.countVarRefs(counts)
+	}
+	for _, s := range clause.statements {
+		s.countVarRefs(counts)
+	}
+
 	for _, s := range clause.statements {
 		switch stmt := s.(type) {
 		case *verifyStatement:
-			err = compileExpr(b, stack, contract, clause, env, stmt.expr)
+			stack, err = compileExpr(b, stack, contract, clause, env, counts, stmt.expr)
 			if err != nil {
 				return errors.Wrapf(err, "in verify statement in clause \"%s\"", clause.name)
 			}
 			b.addOp(vm.OP_VERIFY)
+			stack = stack[:len(stack)-1]
 
 			// special-case reporting of certain function calls
 			if c, ok := stmt.expr.(*call); ok && len(c.args) == 1 {
@@ -317,14 +331,11 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 		case *lockStatement:
 			// index
 			b.addInt64(stmt.index)
-
-			// copy of stack allows stack itself to remain unchanged in the
-			// next iteration of the statements loop
-			ostack := append(stack, stackEntry(fmt.Sprintf("%d", stmt.index)))
+			stack = append(stack, stackEntry(strconv.FormatInt(stmt.index, 10)))
 
 			// refdatahash
 			b.addData(nil)
-			ostack = append(ostack, stackEntry("''"))
+			stack = append(stack, stackEntry("''"))
 
 			// TODO: permit more complex expressions for locked,
 			// like "lock x+y with foo" (?)
@@ -332,11 +343,11 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 			if stmt.locked.String() == contract.value {
 				// amount
 				b.addOp(vm.OP_AMOUNT)
-				ostack = append(ostack, stackEntry("<amount>"))
+				stack = append(stack, stackEntry("<amount>"))
 
 				// asset
 				b.addOp(vm.OP_ASSET)
-				ostack = append(ostack, stackEntry("<asset>"))
+				stack = append(stack, stackEntry("<asset>"))
 			} else {
 				var req *clauseRequirement
 				for _, r := range clause.reqs {
@@ -350,32 +361,32 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 				}
 
 				// amount
-				err = compileExpr(b, ostack, contract, clause, env, req.amountExpr)
+				stack, err = compileExpr(b, stack, contract, clause, env, counts, req.amountExpr)
 				if err != nil {
 					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
 				}
-				ostack = append(ostack, stackEntry(req.amountExpr.String()))
 
 				// asset
-				err = compileExpr(b, ostack, contract, clause, env, req.assetExpr)
+				stack, err = compileExpr(b, stack, contract, clause, env, counts, req.assetExpr)
 				if err != nil {
 					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
 				}
-				ostack = append(ostack, stackEntry(req.assetExpr.String()))
 			}
 
 			// version
 			b.addInt64(1)
-			ostack = append(ostack, stackEntry("1"))
+			stack = append(stack, stackEntry("1"))
 
 			// prog
-			err = compileExpr(b, ostack, contract, clause, env, stmt.program)
+			stack, err = compileExpr(b, stack, contract, clause, env, counts, stmt.program)
 			if err != nil {
 				return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
 			}
 
 			b.addOp(vm.OP_CHECKOUTPUT)
 			b.addOp(vm.OP_VERIFY)
+
+			stack = stack[:len(stack)-6]
 
 		case *unlockStatement:
 			if len(clause.statements) == 1 {
@@ -388,17 +399,17 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 	return nil
 }
 
-func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, expr expression) error {
+func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, error) {
 	switch e := expr.(type) {
 	case *binaryExpr:
 		lType := e.left.typ(env)
 		if e.op.left != "" && lType != e.op.left {
-			return fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
+			return nil, fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
 		}
 
 		rType := e.right.typ(env)
 		if e.op.right != "" && rType != e.op.right {
-			return fmt.Errorf("in \"%s\", right operand has type \"%s\", must be \"%s\"", e, rType, e.op.right)
+			return nil, fmt.Errorf("in \"%s\", right operand has type \"%s\", must be \"%s\"", e, rType, e.op.right)
 		}
 
 		switch e.op.op {
@@ -411,77 +422,69 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 				} else if rType == hashType && isHashSubtype(lType) {
 					propagateType(contract, clause, env, lType, e.right)
 				} else {
-					return fmt.Errorf("type mismatch in \"%s\": left operand has type \"%s\", right operand has type \"%s\"", e, lType, rType)
+					return nil, fmt.Errorf("type mismatch in \"%s\": left operand has type \"%s\", right operand has type \"%s\"", e, lType, rType)
 				}
 			}
 			if lType == "Boolean" {
-				return fmt.Errorf("in \"%s\": using \"%s\" on Boolean values not allowed", e, e.op.op)
+				return nil, fmt.Errorf("in \"%s\": using \"%s\" on Boolean values not allowed", e, e.op.op)
 			}
 		}
 
-		err := compileExpr(b, stack, contract, clause, env, e.left)
+		stack, err := compileExpr(b, stack, contract, clause, env, counts, e.left)
 		if err != nil {
-			return errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
+			return nil, errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
 		}
-		err = compileExpr(b, append(stack, stackEntry(e.left.String())), contract, clause, env, e.right)
+		stack, err = compileExpr(b, stack, contract, clause, env, counts, e.right)
 		if err != nil {
-			return errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
+			return nil, errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
 		}
 		ops, err := vm.Assemble(e.op.opcodes)
 		if err != nil {
-			return errors.Wrapf(err, "assembling bytecode in \"%s\" expression", e.op.op)
+			return nil, errors.Wrapf(err, "assembling bytecode in \"%s\" expression", e.op.op)
 		}
 		b.addRawBytes(ops)
+		stack = append(stack[:len(stack)-2], stackEntry(e.String()))
 
 	case *unaryExpr:
 		if e.op.operand != "" && e.expr.typ(env) != e.op.operand {
-			return fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(env), e.op.operand)
+			return nil, fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(env), e.op.operand)
 		}
-		err := compileExpr(b, stack, contract, clause, env, e.expr)
+		var err error
+		stack, err = compileExpr(b, stack, contract, clause, env, counts, e.expr)
 		if err != nil {
-			return errors.Wrapf(err, "in \"%s\" expression", e.op.op)
+			return nil, errors.Wrapf(err, "in \"%s\" expression", e.op.op)
 		}
 		ops, err := vm.Assemble(e.op.opcodes)
 		if err != nil {
-			return errors.Wrapf(err, "assembling bytecode in \"%s\" expression", e.op.op)
+			return nil, errors.Wrapf(err, "assembling bytecode in \"%s\" expression", e.op.op)
 		}
 		b.addRawBytes(ops)
+		stack = append(stack[:len(stack)-1], stackEntry(e.String()))
 
 	case *call:
 		bi := referencedBuiltin(e.fn)
 		if bi == nil {
 			if e.fn.typ(env) == contractType {
 				if e.fn.String() != contract.name {
-					return fmt.Errorf("calling other contracts not yet supported")
+					return nil, fmt.Errorf("calling other contracts not yet supported")
 				}
-				// xxx typecheck args
-				b.addInt64(int64(len(e.args)))
-				stack = append(stack, stackEntry("<arg count>"))
-				b.addData(nil)
-				stack = append(stack, stackEntry("<program>"))
-				for i := len(e.args) - 1; i >= 0; i-- {
-					err := compileExpr(b, stack, contract, clause, env, e.args[i])
-					if err != nil {
-						return errors.Wrap(err, "compiling contract call")
-					}
-					b.addOp(vm.OP_CATPUSHDATA)
-				}
-				b.addInt64(0)
-				b.addOp(vm.OP_CHECKPREDICATE)
-				return nil
+				// xxx TODO contract composition
+				return nil, nil
 			}
-			return fmt.Errorf("unknown function \"%s\"", e.fn)
+			return nil, fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
 
 		// type-checking
 		if len(e.args) != len(bi.args) {
-			return fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", bi.name, len(e.args), len(bi.args))
+			return nil, fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", bi.name, len(e.args), len(bi.args))
 		}
 		for i, actual := range e.args {
 			if bi.args[i] != "" && actual.typ(env) != bi.args[i] {
-				return fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
+				return nil, fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
 			}
 		}
+
+		origStackLen := len(stack)
 
 		// WARNING WARNING WOOP WOOP
 		// special-case hack
@@ -491,43 +494,47 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			if len(e.args) != 2 {
 				// xxx err
 			}
-			newEntries, err := compileArg(b, stack, contract, clause, env, e.args[1])
+
+			var err error
+
+			stack, err = compileArg(b, stack, contract, clause, env, counts, e.args[1])
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			// stack: [... sigM ... sig1 M]
 
 			b.addOp(vm.OP_TOALTSTACK) // stack: [... sigM ... sig1]
-			newEntries = newEntries[:len(newEntries)-1]
+			stack = stack[:len(stack)-1]
 
 			b.addOp(vm.OP_TXSIGHASH) // stack: [... sigM ... sig1 txsighash]
-			newEntries = append(newEntries, stackEntry("<txsighash>"))
+			stack = append(stack, stackEntry("<txsighash>"))
 
-			_, err = compileArg(b, append(stack, newEntries...), contract, clause, env, e.args[0])
+			stack, err = compileArg(b, stack, contract, clause, env, counts, e.args[0])
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			// stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 N]
 
 			b.addOp(vm.OP_FROMALTSTACK) // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 N M]
 			b.addOp(vm.OP_SWAP)         // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 M N]
+
 			b.addOp(vm.OP_CHECKMULTISIG)
-			return nil
+			return append(stack[:origStackLen], stackEntry(e.String())), nil
 		}
 
 		for i := len(e.args) - 1; i >= 0; i-- {
 			a := e.args[i]
-			newEntries, err := compileArg(b, stack, contract, clause, env, a)
+			var err error
+			stack, err = compileArg(b, stack, contract, clause, env, counts, a)
 			if err != nil {
-				return errors.Wrapf(err, "compiling argument %d in call expression", i)
+				return nil, errors.Wrapf(err, "compiling argument %d in call expression", i)
 			}
-			stack = append(stack, newEntries...)
 		}
 		ops, err := vm.Assemble(bi.opcodes)
 		if err != nil {
-			return errors.Wrap(err, "assembling bytecode in call expression")
+			return nil, errors.Wrap(err, "assembling bytecode in call expression")
 		}
 		b.addRawBytes(ops)
 
@@ -537,21 +544,33 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			clause.hashCalls = append(clause.hashCalls, hashCall{bi.name, e.args[0].String(), string(e.args[0].typ(env))})
 		}
 
+		stack = append(stack[:origStackLen], stackEntry(e.String()))
+
 	case varRef:
-		return compileRef(b, stack, e)
+		return compileRef(b, stack, counts, e)
 
 	case integerLiteral:
 		b.addInt64(int64(e))
+		stack = append(stack, stackEntry(strconv.FormatInt(int64(e), 10)))
 
 	case bytesLiteral:
 		b.addData([]byte(e))
+		s := hex.EncodeToString([]byte(e))
+		if s == "" {
+			s = "''"
+		}
+		stack = append(stack, stackEntry(s))
 
 	case booleanLiteral:
+		var s string
 		if e {
 			b.addOp(vm.OP_TRUE)
+			s = "true"
 		} else {
 			b.addOp(vm.OP_FALSE)
+			s = "false"
 		}
+		stack = append(stack, stackEntry(s))
 
 	case listExpr:
 		// Lists are excluded here because they disobey the invariant of
@@ -559,53 +578,72 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		// exactly one. (A list pushes its items and its length on the
 		// stack.) But they're OK as function-call arguments because the
 		// function (presumably) consumes all the stack items added.
-		return fmt.Errorf("encountered list outside of function-call context")
+		return nil, fmt.Errorf("encountered list outside of function-call context")
 	}
-	return nil
+	return stack, nil
 }
 
-func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, expr expression) ([]stackEntry, error) {
-	var newEntries []stackEntry
-
+func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, error) {
 	if list, ok := expr.(listExpr); ok {
 		for i := 0; i < len(list); i++ {
 			elt := list[len(list)-i-1]
-			err := compileExpr(b, stack, contract, clause, env, elt)
+			var err error
+			stack, err = compileExpr(b, stack, contract, clause, env, counts, elt)
 			if err != nil {
 				return nil, err
 			}
-			newEntry := stackEntry(elt.String())
-			newEntries = append(newEntries, newEntry)
-			stack = append(stack, newEntry)
 		}
 		b.addInt64(int64(len(list)))
-		newEntries = append(newEntries, stackEntry(fmt.Sprintf("%d", len(list))))
-		return newEntries, nil
+		stack = append(stack, stackEntry(strconv.FormatInt(int64(len(list)), 10)))
+		return stack, nil
 	}
-
-	err := compileExpr(b, stack, contract, clause, env, expr)
-	if err != nil {
-		return nil, err
-	}
-	return []stackEntry{stackEntry(expr.String())}, nil
+	return compileExpr(b, stack, contract, clause, env, counts, expr)
 }
 
-func compileRef(b *builder, stack []stackEntry, ref expression) error {
+func compileRef(b *builder, stack []stackEntry, counts map[string]int, ref varRef) ([]stackEntry, error) {
 	for depth := 0; depth < len(stack); depth++ {
 		if stack[len(stack)-depth-1].matches(ref) {
+			fmt.Printf("* compileRef(%s), counts is %v\n", ref, counts)
+
+			var isFinal bool
+			if count, ok := counts[string(ref)]; ok && count > 0 {
+				count--
+				counts[string(ref)] = count
+				isFinal = count == 0
+			}
+
 			switch depth {
 			case 0:
-				b.addOp(vm.OP_DUP)
+				if !isFinal {
+					b.addOp(vm.OP_DUP)
+					stack = append(stack, stackEntry(ref.String()))
+				}
 			case 1:
-				b.addOp(vm.OP_OVER)
+				if isFinal {
+					b.addOp(vm.OP_SWAP)
+					stack[len(stack)-2], stack[len(stack)-1] = stack[len(stack)-1], stack[len(stack)-2]
+				} else {
+					b.addOp(vm.OP_OVER)
+					stack = append(stack, stack[len(stack)-2])
+				}
 			default:
 				b.addInt64(int64(depth))
-				b.addOp(vm.OP_PICK)
+				if isFinal {
+					b.addOp(vm.OP_ROLL)
+					entry := stack[len(stack)-depth-1]
+					pre := stack[:len(stack)-depth-1]
+					post := stack[len(stack)-depth:]
+					stack = append(pre, post...)
+					stack = append(stack, entry)
+				} else {
+					b.addOp(vm.OP_PICK)
+					stack = append(stack, stack[len(stack)-depth-1])
+				}
 			}
-			return nil
+			return stack, nil
 		}
 	}
-	return fmt.Errorf("undefined reference \"%s\"", ref)
+	return nil, fmt.Errorf("undefined reference \"%s\"", ref)
 }
 
 func (a *ContractArg) UnmarshalJSON(b []byte) error {
