@@ -2,7 +2,7 @@ import { Template as OldTemplate, ContractParameter } from 'ivy-compiler'
 
 import { InputMap } from '../inputs/types'
 
-export type TemplateMap = { [s: string]: string }
+export type SourceMap = { [s: string]: string }
 
 export type Param = {
   name: string,
@@ -43,7 +43,7 @@ export type Template = {
 }
 
 export type TemplateState = {
-  itemMap: TemplateMap,
+  sourceMap: SourceMap,
   idList: string[],
   source: string,
   inputMap?: InputMap,

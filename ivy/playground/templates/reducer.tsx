@@ -1,10 +1,17 @@
 import { compileContractParameters, ContractParameter } from 'ivy-compiler';
 import { TemplateState, Template } from './types'
-import { SET_INITIAL_TEMPLATES, SET_SOURCE, 
-         SAVE_TEMPLATE, SET_COMPILED } from './actions'
+import { SET_SOURCE, SAVE_TEMPLATE, FETCH_COMPILED } from './actions'
 import { UPDATE_INPUT } from '../contracts/actions'
-import { INITIAL_STATE } from './constants'
+import { INITIAL_SOURCE_MAP, INITIAL_ID_LIST } from './constants'
 import { generateInputMap } from '../contracts/reducer'
+
+const INITIAL_STATE: TemplateState = {
+  sourceMap: INITIAL_SOURCE_MAP,
+  idList: INITIAL_ID_LIST,
+  source: '',
+  inputMap: undefined,
+  compiled: undefined
+}
 
 export default function reducer(state: TemplateState = INITIAL_STATE, action): TemplateState {
   switch (action.type) {
@@ -33,17 +40,17 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
       let compiled = state.compiled
       if ((compiled === undefined) || 
           (compiled.error !== "") || 
-          (state.itemMap[compiled.name] !== undefined)) return state // this shouldn't happen
+          (state.sourceMap[compiled.name] !== undefined)) return state // this shouldn't happen
       return {
         ...state,
         idList: [...state.idList, compiled.name],
-        itemMap: {
-          ...state.itemMap,
+        sourceMap: {
+          ...state.sourceMap,
           [compiled.name]: compiled.source
         }
       }
     }
-    case SET_COMPILED: {
+    case FETCH_COMPILED: {
       const compiled: Template = action.compiled
       if (compiled.error !== '') {
         return {

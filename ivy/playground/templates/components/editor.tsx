@@ -1,16 +1,18 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
+import ReactTooltip from 'react-tooltip'
 
-require('../util/ivymode.js')
-import app from '../../app'
+// internal imports
 import Ace from './ace'
 import ErrorAlert from './errorAlert'
-import Load from './load'
-import Save from './save'
+import LoadTemplate from './loadTemplate'
+import SaveTemplate from './saveTemplate'
 import Instructions from './instructions'
 import { getCompiled, getSource } from '../selectors'
 
-import ReactTooltip from 'react-tooltip'
+// Handles syntax highlighting
+require('../util/ivymode.js')
 
 const mapStateToProps = (state) => {
   return {
@@ -26,10 +28,14 @@ const Editor = ({ compiled, source }) => {
       <div className="panel panel-default">
         <div className="panel-heading clearfix">
           <h1 className="panel-title pull-left">Contract Template</h1>
-          <table className="pull-right"><tbody><tr>
-            <td style={{width: 300, paddingRight: 10}}><Load /></td>
-            <Save />{/* Save returns a <td> element */}
-          </tr></tbody></table>
+          <table className="pull-right">
+            <tbody>
+              <tr>
+                <td style={{width: 300, paddingRight: 10}}><LoadTemplate /></td>
+                <SaveTemplate />{/* SaveTemplate returns a <td> element */}
+              </tr>
+            </tbody>
+          </table>
         </div>
         <Ace source={source} />
         { compiled && compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Instructions />}

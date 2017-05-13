@@ -17,14 +17,12 @@ import {
   getClauseMintimes,
   getClauseMaxtimes
 } from './selectors';
+
 import {
+  getSource,
   getContractValue,
   getInputMap,
   getParameterData,
-} from '../templates/selectors'
-
-import {
-  getSource
 } from '../templates/selectors'
 
 import { getPromisedInputMap } from '../inputs/data'
@@ -54,7 +52,6 @@ export const SET_CLAUSE_INDEX = 'contracts/SET_CLAUSE_INDEX'
 export const SPEND = 'contracts/SPEND'
 export const SHOW_ERRORS = 'contracts/SHOW_ERRORS'
 
-import { getItemMap as getTemplateMap } from '../templates/selectors'
 import { getSpendContract } from './selectors'
 
 import { InputMap } from '../inputs/types'
@@ -171,17 +168,6 @@ export const setClauseIndex = (selectedClauseIndex: number) => {
   return {
     type: SET_CLAUSE_INDEX,
     selectedClauseIndex: selectedClauseIndex
-  }
-}
-
-export const selectTemplate = (templateId: string) => {
-  return(dispatch, getState) => {
-    let templateMap = getTemplateMap(getState())
-    dispatch({
-      type: SELECT_TEMPLATE,
-      template: templateMap[templateId],
-      templateId
-    })
   }
 }
 

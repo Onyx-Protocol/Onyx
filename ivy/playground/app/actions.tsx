@@ -12,12 +12,12 @@ export const RESET: string = "app/RESET"
 
 export const reset = () => {
   return (dispatch, getState) => {
-    let selected = templates.selectors.getSelected(getState())
+    let selected = templates.selectors.getSelectedTemplate(getState())
     if ( selected === "") {
       selected = "LockWithPublicKey"
     }
     dispatch({ type: RESET })
-    dispatch(templates.actions.load(selected))
+    dispatch(templates.actions.loadTemplate(selected))
     dispatch(accounts.actions.fetch())
     dispatch(assets.actions.fetch())
   }
