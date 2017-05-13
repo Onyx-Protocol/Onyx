@@ -1,15 +1,19 @@
-import { SPEND_CONTRACT } from './actions';
+// external imports
 import { createSelector } from 'reselect'
-import { OldTemplate } from '../templates/types'
 
-import * as app from '../app/types'
-
+// ivy imports
+import { AppState } from '../app/types'
+import { CompiledTemplate } from '../templates/types'
 import { client, signer } from '../core'
 
+// internal imports
+import { SPEND_CONTRACT } from './actions';
+
 import {
+  ClauseParameterType,
   Contract,
-  ItemMap,
   ContractsState,
+  ItemMap,
 } from './types'
 
 import {
@@ -21,7 +25,8 @@ import {
 
 import {
   isValidInput,
-  getData
+  getData,
+  addParameterInput,
 } from '../inputs/data'
 
 import {
@@ -45,7 +50,7 @@ import {
 
 import templates from '../templates'
 
-export const getState = (state: app.AppState): ContractsState => state.contracts
+export const getState = (state: AppState): ContractsState => state.contracts
 
 export const getIdList = createSelector(
   getState,
@@ -62,7 +67,7 @@ export const getItemMap = createSelector(
   (state: ContractsState) => state.itemMap
 )
 
-export const getItem = (state: app.AppState, contractId: string) => {
+export const getItem = (state: AppState, contractId: string) => {
   let itemMap = getItemMap(state)
   return itemMap[contractId]
 }
@@ -394,3 +399,19 @@ export const getClauseOutputActions = createSelector(
     })
   }
 )
+
+export const generateInputMap = (compiled: CompiledTemplate): InputMap => {
+  let inputs: Input[] = []
+  for (const param of compiled.params) {
+    addParameterInput(inputs, param.type as ClauseParameterType, "contractParameters." + param.name)
+  }
+  if (compiled.value !== "") {
+    addParameterInput(inputs, "Value", "contractValue." + compiled.value)
+  }
+
+  const inputMap = {}
+  for (let input of inputs) {
+    inputMap[input.name] = input
+  }
+  return inputMap
+}

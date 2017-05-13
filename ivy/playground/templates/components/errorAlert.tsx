@@ -1,10 +1,12 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
 
+// internal imports
 import { getCompiled } from '../selectors'
-import { Template } from '../types'
+import { CompiledTemplate } from '../types'
 
-const ErrorAlert = (props: { compiled: Template }) => {
+const ErrorAlert = (props: { compiled: CompiledTemplate }) => {
   return (
     <div className="panel-body inner">
       <h1>Compiled</h1>

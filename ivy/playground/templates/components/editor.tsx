@@ -8,7 +8,7 @@ import Ace from './ace'
 import ErrorAlert from './errorAlert'
 import LoadTemplate from './loadTemplate'
 import SaveTemplate from './saveTemplate'
-import Instructions from './instructions'
+import Opcodes from './opcodes'
 import { getCompiled, getSource } from '../selectors'
 
 // Handles syntax highlighting
@@ -38,7 +38,7 @@ const Editor = ({ compiled, source }) => {
           </table>
         </div>
         <Ace source={source} />
-        { compiled && compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Instructions />}
+        { compiled && compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Opcodes />}
       </div>
     </div>
   )
