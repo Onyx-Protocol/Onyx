@@ -603,8 +603,6 @@ func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clau
 func compileRef(b *builder, stack []stackEntry, counts map[string]int, ref varRef) ([]stackEntry, error) {
 	for depth := 0; depth < len(stack); depth++ {
 		if stack[len(stack)-depth-1].matches(ref) {
-			fmt.Printf("* compileRef(%s), counts is %v\n", ref, counts)
-
 			var isFinal bool
 			if count, ok := counts[string(ref)]; ok && count > 0 {
 				count--
