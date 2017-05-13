@@ -22,6 +22,14 @@ h1,h2,h3,h4,h5 {
   max-width: 1200px;
 }
 
+tr:last-of-type td {
+  padding-bottom: 0 !important;
+}
+
+.table>thead>tr>th {
+  border: none;
+}
+
 .table {
   font-size: 14px;
   margin-bottom: 0;
@@ -202,11 +210,6 @@ code {
 .contracts-table tbody a {
   color: #00BFAA;
 }
-
-/*.contracts-table .td-button {
-    padding-left: 0;
-}*/
-
 
 /*Styles*/
 
