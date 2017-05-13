@@ -10,7 +10,7 @@ const logo = require('../../static/images/logo.png')
 
 export default function Navbar() {
   return (
-    <nav className="navbar navbar-inverse navbar-static-top">
+    <nav className="navbar navbar-inverse navbar-static-top navbar-fixed-top">
       <div className="container fixedcontainer">
         <div className="navbar-header">
           <a className="navbar-brand" href={prefixRoute('/')}>
