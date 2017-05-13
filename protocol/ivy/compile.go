@@ -520,7 +520,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			b.addOp(vm.OP_FROMALTSTACK) // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 N M]
 			stack = append(stack, altElt)
 
-			b.addOp(vm.OP_SWAP)         // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 M N]
+			b.addOp(vm.OP_SWAP) // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 M N]
 			stack[len(stack)-2], stack[len(stack)-1] = stack[len(stack)-1], stack[len(stack)-2]
 
 			b.addOp(vm.OP_CHECKMULTISIG)
