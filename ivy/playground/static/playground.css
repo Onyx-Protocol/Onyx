@@ -3,6 +3,7 @@
 .navbar {
   background: #20252D;
   border: 0;
+  margin-bottom: 30px;
 }
 
 .navbar-brand {
@@ -21,6 +22,10 @@
 .table>tbody>tr>td {
   line-height: 34px;
   padding: 20px 8px;
+}
+
+.panel-default {
+  margin-bottom: 30px;
 }
 
 .panel-heading {
