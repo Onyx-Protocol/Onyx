@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
 
-import app from '../../app'
 import { getOpcodes } from '../selectors'
 
 const mapStateToProps = (state) => {
@@ -10,7 +9,7 @@ const mapStateToProps = (state) => {
   return { opcodes }
 }
 
-const Instructions = ({ opcodes }) => {
+const Opcodes = ({ opcodes }) => {
   return (
     <div className="panel-body inner">
       <h1>Compiled</h1>
@@ -23,4 +22,4 @@ const Instructions = ({ opcodes }) => {
 
 export default connect(
   mapStateToProps,
-)(Instructions)
+)(Opcodes)

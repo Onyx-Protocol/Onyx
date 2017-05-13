@@ -1,9 +1,9 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
 import DocumentTitle from 'react-document-title'
 
-import app from '../../app'
-import { Template } from '../types'
+import Section from '../../app/components/section'
 import LockButton from './lockButton'
 
 import { getSource, getContractParameters, getCompiled } from '../selectors'
@@ -26,16 +26,16 @@ const Lock = ({ source, instantiable }) => {
   if (instantiable) {
     instantiate = (
       <div>
-        <app.components.Section name="Value to Lock">
+        <Section name="Value to Lock">
           <div className="form-wrapper">
             <ContractValue />
           </div>
-        </app.components.Section>
-        <app.components.Section name="Contract Arguments">
+        </Section>
+        <Section name="Contract Arguments">
           <div className="form-wrapper">
             <ContractParameters />
           </div>
-        </app.components.Section>
+        </Section>
         <LockButton />
       </div>
     )

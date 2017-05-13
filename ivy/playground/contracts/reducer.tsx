@@ -22,22 +22,6 @@ export const INITIAL_STATE: ContractsState = {
   selectedClauseIndex: 0,
 }
 
-export function generateInputMap(contractParameters: Param[], valueParam: string): InputMap {
-  let inputs: Input[] = []
-  for (let parameter of contractParameters) {
-    addParameterInput(inputs, parameter.type as ClauseParameterType, "contractParameters." + parameter.name)
-  }
-  if (valueParam !== "") {
-    addParameterInput(inputs, "Value", "contractValue." + valueParam)
-  }
-
-  let inputMap = {}
-  for (let input of inputs) {
-    inputMap[input.name] = input
-  }
-  return inputMap
-}
-
 export default function reducer(state: ContractsState = INITIAL_STATE, action): ContractsState {
   switch (action.type) {
     case SPEND_CONTRACT: {

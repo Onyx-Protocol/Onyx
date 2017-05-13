@@ -31,7 +31,7 @@ export type ClauseInfo = {
   valueInfo: ValueInfo[]
 }
 
-export type Template = {
+export type CompiledTemplate = {
   name: string,
   source: string,
   program: string,
@@ -47,7 +47,7 @@ export type TemplateState = {
   idList: string[],
   source: string,
   inputMap?: InputMap,
-  compiled?: Template,
+  compiled?: CompiledTemplate,
 }
 
 export { OldTemplate }
