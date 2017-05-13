@@ -1,7 +1,7 @@
 import { ContractsState } from './types'
 import { SELECT_TEMPLATE } from './actions'
 import { getParameterIdList } from '../templates/selectors'
-import { Template } from '../templates/types'
+import { OldTemplate } from '../templates/types'
 import { Input, InputMap } from '../inputs/types'
 import { getInputMap } from '../templates/selectors'
 import { addParameterInput } from '../inputs/data'
@@ -58,7 +58,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
     case CREATE_CONTRACT: // reset keys etc. this is safe (the action already has this stuff)
       let controlProgram = action.controlProgram
       let hash = action.utxo.transactionId
-      let template: Template = action.template
+      let template: OldTemplate = action.template
       let clauseNames = template.clauses.map(clause => clause.name)
       let clauseParameterIds = {}
       let inputs: Input[] = []

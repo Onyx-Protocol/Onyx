@@ -1,10 +1,8 @@
 import { createSelector } from 'reselect'
 
 import * as app from '../app/types'
-import { TemplateState, Template, ItemMap } from './types'
+import { TemplateState, Template, TemplateMap } from './types'
 import { Input, InputMap } from '../inputs/types'
-import { compileTemplate } from 'ivy-compiler'
-import { mapServerTemplate } from './util'
 import { SpendFromAccount } from '../core/types'
 import { isValidInput, getData } from '../inputs/data'
 
@@ -17,7 +15,7 @@ export const getSource = createSelector(
 
 export const getItemMap = createSelector(
   getTemplateState,
-  (state: TemplateState): ItemMap => state.itemMap
+  (state: TemplateState): TemplateMap => state.itemMap
 )
 
 export const getIdList = createSelector(
