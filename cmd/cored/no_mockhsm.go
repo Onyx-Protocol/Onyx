@@ -5,14 +5,9 @@ package main
 import (
 	"chain/core"
 	"chain/core/blocksigner"
-	"chain/core/config"
 	"chain/database/pg"
 	"errors"
 )
-
-func init() {
-	config.BuildConfig.MockHSM = false
-}
 
 func enableMockHSM(pg.DB) []core.RunOption {
 	return nil
