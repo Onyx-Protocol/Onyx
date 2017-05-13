@@ -1,13 +1,31 @@
 import * as React from 'react'
+// external imports
 import { connect } from 'react-redux'
-import { getSaveability } from '../selectors'
-import { saveTemplate } from '../actions'
 
-function SaveUnconnected({ reset, saveability }) {
+// internal imports
+import { saveTemplate } from '../actions'
+import { getSaveability } from '../selectors'
+
+const mapStateToProps = (state) => {
+  let saveability = getSaveability(state)
+  return {
+    saveability
+  }
+}
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    handleClick() {
+      dispatch(saveTemplate())
+    }
+  }
+}
+
+const SaveTemplate = ({ handleClick, saveability }) => {
   if (saveability.saveable) {
     return (
       <td>
-        <button className="btn btn-primary" onClick={reset}>
+        <button className="btn btn-primary" onClick={handleClick}>
           <span className="glyphicon glyphicon-floppy-disk"></span>
           Save
         </button>
@@ -25,24 +43,7 @@ function SaveUnconnected({ reset, saveability }) {
   }
 }
 
-function mapStateToSaveProps(state) {
-  let saveability = getSaveability(state)
-  return {
-    saveability
-  }
-}
-
-function mapDispatchToSaveProps(dispatch) {
-  return {
-    reset: () => {
-      dispatch(saveTemplate())
-    }
-  }
-}
-
-const Save = connect(
-  mapStateToSaveProps,
-  mapDispatchToSaveProps
-)(SaveUnconnected)
-
-export default Save
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(SaveTemplate)
