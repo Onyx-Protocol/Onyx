@@ -314,3 +314,11 @@ section h4 {
   color: #fff !important;
   border-radius: 0 0 2px 2px;
 }
+
+.ace_type, .ace_storage {
+  color: #00BFAA !important;
+}
+
+.ace_function, .ace_variable, .ace_language {
+  color: #BFD472 !important;
+}
