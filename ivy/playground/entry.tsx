@@ -1,6 +1,6 @@
 // external imports
-import * as React from 'react';
-import { render } from 'react-dom';
+import * as React from 'react'
+import { render } from 'react-dom'
 import { applyMiddleware, compose, createStore } from 'redux'
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router, Route } from 'react-router-dom'
@@ -17,7 +17,7 @@ import assets from './assets'
 import templates from './templates'
 import { prefixRoute } from './core'
 
-// TODO(boymanjor): Handle these imports after in a better way
+// TODO(boymanjor): Handle these imports in a better way
 import LockedValue from './contracts/components/lockedValue'
 import Lock from './templates/components/lock'
 import Unlock from './contracts/components/unlock'
@@ -36,7 +36,7 @@ document.getElementsByTagName('head')[0].appendChild(favicon)
 interface ExtensionWindow extends Window {
   __REDUX_DEVTOOLS_EXTENSION_COMPOSE__: any
 }
-const composeEnhancers = (window as ExtensionWindow).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+const composeEnhancers = (window as ExtensionWindow).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose
 
 const history = createHistory()
 const store = createStore(
@@ -45,7 +45,7 @@ const store = createStore(
 )
 
 store.dispatch(app.actions.reset())
-store.dispatch(templates.actions.load(templates.constants.idList[0]))
+store.dispatch(templates.actions.loadTemplate(templates.constants.INITIAL_ID_LIST[0]))
 store.dispatch(assets.actions.fetch())
 store.dispatch(accounts.actions.fetch())
 render(

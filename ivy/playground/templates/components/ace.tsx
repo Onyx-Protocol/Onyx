@@ -1,10 +1,11 @@
+// external imports
 import * as React from 'react'
-import { connect } from 'react-redux'
-
-import AceEditor from 'react-ace'
 import * as Brace from 'brace'
+import { connect } from 'react-redux'
+import AceEditor from 'react-ace'
 import 'brace/theme/monokai'
 
+// internal imports
 import { setSource } from '../actions'
 
 const mapStateToProps = undefined
