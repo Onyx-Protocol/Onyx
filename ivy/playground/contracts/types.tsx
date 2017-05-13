@@ -1,6 +1,6 @@
 import { Input, InputMap } from '../inputs/types'
 
-import { Template } from '../templates/types'
+import { OldTemplate } from '../templates/types'
 
 export type Contract = {
   // lock txid
@@ -17,7 +17,7 @@ export type Contract = {
   amount: number,
 
   // contract template
-  template: Template,
+  template: OldTemplate,
 
   controlProgram: string,
 

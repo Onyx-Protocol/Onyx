@@ -1,8 +1,8 @@
-import { compileTemplate, ContractParameter, ClauseParameter, TemplateClause } from 'ivy-compiler'
+import { ContractParameter, ClauseParameter, TemplateClause } from 'ivy-compiler'
 
-import { Template, CompilerResult } from '../types'
+import { OldTemplate } from '../types'
 
-export const mapServerTemplate = (tpl): Template => {
+export const mapServerTemplate = (tpl): OldTemplate => {
   const clauses: TemplateClause[] = tpl.clauseInfo.map(clause => {
     const parameters: ClauseParameter[] = clause.args.map(param => ({
       type: "clauseParameter",
@@ -70,5 +70,5 @@ export const mapServerTemplate = (tpl): Template => {
     source: tpl.source,
     contractParameters,
     clauses
-  } as Template
+  } as OldTemplate
 }

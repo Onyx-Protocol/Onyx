@@ -1,6 +1,5 @@
 import { client } from '../core'
 import { getItemMap, getIdList, getCompiled, getContractParameters } from './selectors'
-import { Template, ItemMap, CompilerResult } from './types'
 import { ContractParameter, TemplateClause, ClauseParameter } from 'ivy-compiler'
 import { mapServerTemplate } from './util'
 

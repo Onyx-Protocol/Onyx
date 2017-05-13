@@ -1,5 +1,5 @@
 import { client } from '../core'
-import { Template, ItemMap, TemplateState } from './types'
+import { TemplateState } from './types'
 import { compileTemplate } from 'ivy-compiler'
 
 export const NAME = 'templates'
