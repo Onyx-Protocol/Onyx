@@ -470,11 +470,6 @@ ALTER TABLE ONLY accounts
 
 
 ALTER TABLE ONLY account_utxos
-    ADD CONSTRAINT account_utxos_output_id_key UNIQUE (output_id);
-
-
-
-ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_pkey PRIMARY KEY (output_id);
 
 
@@ -640,19 +635,11 @@ CREATE INDEX annotated_txs_data_idx ON annotated_txs USING gin (data jsonb_path_
 
 
 
-CREATE INDEX assets_sort_id ON assets USING btree (sort_id);
-
-
-
 CREATE INDEX query_blocks_timestamp_idx ON query_blocks USING btree ("timestamp");
 
 
 
 CREATE UNIQUE INDEX signed_blocks_block_height_idx ON signed_blocks USING btree (block_height);
-
-
-
-CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 
 
 
@@ -666,3 +653,4 @@ insert into migrations (filename, hash) values ('2017-03-09.0.core.account-utxos
 insert into migrations (filename, hash) values ('2017-04-13.0.query.block-transactions-count.sql', '7cb17e05596dbfdf75e347e43ccab110e393f41ea86f70697e59cf0c32c3a564');
 insert into migrations (filename, hash) values ('2017-04-17.0.core.null-token-type.sql', '185942cec464c12a2573f19ae386153389328f8e282af071024706e105e37eeb');
 insert into migrations (filename, hash) values ('2017-04-27.0.generator.pending-block-height.sql', 'bfe4fe5eec143e4367a91fd952cb5e3879f1c311f649ec13bfe95b202e94d4ec');
+insert into migrations (filename, hash) values ('2017-05-08.0.core.drop-redundant-indexes.sql', '5140e53b287b058c57ddf361d61cff3d3d1cbc3259a9de413b11574a71d09bec');
