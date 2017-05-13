@@ -16,7 +16,7 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 	if x.Addr == "" {
 		return errMissingAddr
 	}
-	err := a.raftDB.AddAllowedMember(ctx, x.Addr)
+	err := a.sdb.AddAllowedMember(ctx, x.Addr)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -50,6 +50,6 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		Protected: true,
 	}
 
-	_, err = authz.StoreGrant(ctx, a.raftDB, grant, GrantPrefix)
+	_, err = authz.StoreGrant(ctx, a.sdb, grant, GrantPrefix)
 	return errors.Wrap(err)
 }

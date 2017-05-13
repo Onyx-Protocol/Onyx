@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/golang/protobuf/proto"
-
+	"chain/database/sinkdb"
 	"chain/errors"
 	"chain/net/http/authz"
 	"chain/net/http/httpjson"
@@ -87,7 +86,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		Policy:    x.Policy,
 		Protected: false, // grants created through the createGrant RPC cannot be protected
 	}
-	g, err := authz.StoreGrant(ctx, a.raftDB, params, GrantPrefix)
+	g, err := authz.StoreGrant(ctx, a.sdb, params, GrantPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -114,19 +113,15 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 	for _, p := range Policies {
 		// perhaps could denormalize the data in storage to speed this up,
 		// but for now assume a small number of grants
-		data, err := a.raftDB.Get(ctx, GrantPrefix+p)
+		var grantList authz.GrantList
+		ok, err := a.sdb.Get(ctx, GrantPrefix+p, &grantList)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		if data == nil {
+		if !ok {
 			continue
 		}
 
-		grantList := new(authz.GrantList)
-		err = proto.Unmarshal(data, grantList)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
 		for _, g := range grantList.Grants {
 			var data map[string]interface{}
 			err = json.Unmarshal(g.GuardData, &data)
@@ -159,24 +154,15 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 		return errors.Wrap(err)
 	}
 
-	data, err := a.raftDB.Get(ctx, GrantPrefix+x.Policy)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	// If there's nothing to delete, return success
-	if data == nil {
-		return nil
-	}
-
 	toDelete := authz.Grant{
 		GuardType: x.GuardType,
 		GuardData: guardData,
 		Protected: x.Protected, // should always be false
 	}
 
-	grantList := new(authz.GrantList)
-	err = proto.Unmarshal(data, grantList)
-	if err != nil {
+	var grantList authz.GrantList
+	found, err := a.sdb.Get(ctx, GrantPrefix+x.Policy, &grantList)
+	if err != nil || !found {
 		return errors.Wrap(err)
 	}
 
@@ -193,11 +179,7 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 	}
 
 	gList := &authz.GrantList{Grants: keep}
-	val, err := proto.Marshal(gList)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	err = a.raftDB.Set(ctx, GrantPrefix+x.Policy, val)
+	err = a.sdb.Exec(ctx, sinkdb.Set(GrantPrefix+x.Policy, gList))
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -210,13 +192,8 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 // protected.
 func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error {
 	for _, p := range Policies {
-		data, err := a.raftDB.Get(ctx, GrantPrefix+p)
-		if err != nil {
-			return errors.Wrap(err)
-		}
-
-		grantList := new(authz.GrantList)
-		err = proto.Unmarshal(data, grantList)
+		var grantList authz.GrantList
+		_, err := a.sdb.Get(ctx, GrantPrefix+p, &grantList)
 		if err != nil {
 			return errors.Wrap(err)
 		}
@@ -244,11 +221,7 @@ func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error
 		}
 
 		gList := &authz.GrantList{Grants: keep}
-		val, err := proto.Marshal(gList)
-		if err != nil {
-			return errors.Wrap(err)
-		}
-		err = a.raftDB.Set(ctx, GrantPrefix+p, val)
+		err = a.sdb.Exec(ctx, sinkdb.Set(GrantPrefix+p, gList))
 		if err != nil {
 			return errors.Wrap(err)
 		}

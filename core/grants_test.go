@@ -9,7 +9,7 @@ import (
 
 	"chain/core/accesstoken"
 	"chain/database/pg/pgtest"
-	"chain/database/raft"
+	"chain/database/sinkdb"
 )
 
 func TestCreatGrantValidation(t *testing.T) {
@@ -34,14 +34,14 @@ func TestCreatGrantValidation(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	raftDB, err := raft.Start("", raftDir, "", new(http.Client), false)
+	sdb, err := sinkdb.Open("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	api := &API{
 		mux:          http.NewServeMux(),
-		raftDB:       raftDB,
+		sdb:          sdb,
 		accessTokens: accessTokens,
 	}
 
@@ -163,14 +163,14 @@ func TestDeleteGrants(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	raftDB, err := raft.Start("", raftDir, "", new(http.Client), false)
+	sdb, err := sinkdb.Open("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	api := &API{
 		mux:          http.NewServeMux(),
-		raftDB:       raftDB,
+		sdb:          sdb,
 		accessTokens: accessTokens,
 	}
 
@@ -280,14 +280,14 @@ func TestDeleteGrantsByAccessToken(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	raftDB, err := raft.Start("", raftDir, "", new(http.Client), false)
+	sdb, err := sinkdb.Open("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	api := &API{
 		mux:          http.NewServeMux(),
-		raftDB:       raftDB,
+		sdb:          sdb,
 		accessTokens: accessTokens,
 	}
 

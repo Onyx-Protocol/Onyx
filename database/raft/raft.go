@@ -1,5 +1,4 @@
-// Package raft provides a simple key-value store coordinated
-// across a raft cluster.
+// Package raft provides raft coordination.
 package raft
 
 import (
@@ -27,7 +26,6 @@ import (
 	"github.com/coreos/etcd/wal"
 	"github.com/coreos/etcd/wal/walpb"
 
-	"chain/database/raft/state"
 	"chain/errors"
 	"chain/log"
 )
@@ -55,7 +53,7 @@ const (
 
 var crcTable = crc32.MakeTable(crc32.Castagnoli)
 
-// Service holds the key-value data and performs raft coordination.
+// Service performs raft coordination.
 type Service struct {
 	// config
 	dir     string
@@ -83,12 +81,26 @@ type Service struct {
 	// The actual replicated data set.
 	stateMu   sync.Mutex
 	stateCond sync.Cond
-	state     *state.State
+	state     State
 	confState raftpb.ConfState
 	done      bool
 
 	// Current log position, accessed only from runUpdates goroutine
 	snapIndex uint64
+}
+
+type State interface {
+	AppliedIndex() uint64
+	Apply(data []byte, index uint64) (satisfied bool, err error)
+	Snapshot() (data []byte, index uint64, err error)
+	RestoreSnapshot(data []byte, index uint64) error
+	SetPeerAddr(id uint64, addr string)
+	GetPeerAddr(id uint64) (addr string)
+	RemovePeerAddr(id uint64)
+	IsAllowedMember(addr string) bool
+	NextNodeID() (id, version uint64)
+	EmptyWrite() (instruction []byte)
+	IncrementNextNodeID(oldID uint64, index uint64) (instruction []byte)
 }
 
 // rctxReq is a "read context" request.
@@ -112,11 +124,6 @@ type proposal struct {
 type nodeJoin struct {
 	ID   uint64
 	Snap []byte
-}
-
-// Getter gets a value from a key-value store.
-type Getter interface {
-	Get(key string) (value []byte)
 }
 
 // Start starts the raft algorithm.
@@ -149,7 +156,7 @@ type Getter interface {
 //
 // The returned *Service will use httpClient for outbound
 // connections to peers.
-func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*Service, error) {
+func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool, state State) (*Service, error) {
 	// TODO(tessr): configure raft service using run options
 	ctx := context.Background()
 
@@ -164,7 +171,7 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*S
 		dir:         dir,
 		mux:         http.NewServeMux(),
 		raftStorage: raft.NewMemoryStorage(),
-		state:       state.New(),
+		state:       state,
 		donec:       make(chan struct{}),
 		rctxReq:     make(chan rctxReq),
 		wctxReq:     make(chan wctxReq),
@@ -204,7 +211,7 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*S
 		ElectionTick:    electionTick,
 		HeartbeatTick:   heartbeatTick,
 		Storage:         sv.raftStorage,
-		Applied:         sv.state.AppliedIndex(),
+		Applied:         state.AppliedIndex(),
 		MaxSizePerMsg:   4096,
 		MaxInflightMsgs: 256,
 		Logger:          &raft.DefaultLogger{Logger: stdlog.New(ioutil.Discard, "", 0)},
@@ -372,7 +379,9 @@ func runTicks(rn raft.Node) {
 	}
 }
 
-func (sv *Service) exec(ctx context.Context, instruction []byte) error {
+// Exec proposes the provided instruction and waits for it to be
+// satisfied.
+func (sv *Service) Exec(ctx context.Context, instruction []byte) error {
 	prop := proposal{Wctx: randID(), Instruction: instruction}
 	data, err := json.Marshal(prop)
 	if err != nil {
@@ -408,31 +417,6 @@ func (sv *Service) exec(ctx context.Context, instruction []byte) error {
 	}
 }
 
-// Set sets a value in the key-value storage.
-// If successful, it returns after the value is committed to
-// the raft log.
-// TODO (ameets): possibly RawNode in future to know whether Proposal worked or not
-func (sv *Service) Set(ctx context.Context, key string, val []byte) error {
-	b := state.Set(key, val)
-	return sv.exec(ctx, b)
-}
-
-// Insert inserts a value into key-value storage.
-// It will fail if there's already a value stored at the given key.
-// If successful, it returns after the value is committed to the raft log.
-func (sv *Service) Insert(ctx context.Context, key string, val []byte) error {
-	b := state.Insert(key, val)
-	return sv.exec(ctx, b)
-}
-
-// Delete deletes a value in the key-value storage.
-// if successful, it returns after the value is deleted from the raft log.
-// TODO (ameets): is RawNode possible/applicable?
-func (sv *Service) Delete(ctx context.Context, key string) error {
-	b := state.Delete(key)
-	return sv.exec(ctx, b)
-}
-
 func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 	// lock state via mutex to pull nextID val, then call increment
 	err := ErrUnsatisfied
@@ -442,31 +426,29 @@ func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 		nextID, index = sv.state.NextNodeID()
 		log.Printf(ctx, "raft: attempting to allocate nodeID %d at version %d", nextID, index)
 		sv.stateMu.Unlock()
-		b := state.IncrementNextNodeID(nextID, index)
-		err = sv.exec(ctx, b)
+		b := sv.state.IncrementNextNodeID(nextID, index)
+		err = sv.Exec(ctx, b)
 	}
 	return nextID, err //caller should check for error b/c value of nextID is untrustworthy in that case
 }
 
-// Get gets a value from the key-value store.
-// It is linearizable; that is, if a
-// Set happens before a Get,
-// the Get will observe the effects of the Set.
-// (There is still no guarantee an intervening
-// Set won't have changed the value again, but it is
+// RequestRead requests a linearizable read. Upon successful return,
+// the caller is guaranteed that a read from the Service's state will
+// be linearizable; this is, if a Set happens before a Get, the Get
+// will observe the effects of the Set. (There is still no guarantee
+// an intervening Set won't have changed the value again, but it is
 // guaranteed not to read stale data.)
-// This can be slow; for faster but possibly stale reads, see Stale.
-func (sv *Service) Get(ctx context.Context, key string) ([]byte, error) {
+func (sv *Service) RequestRead(ctx context.Context) error {
 	for {
-		resp, err := sv.get(ctx, key)
+		err := sv.linearizeRead(ctx)
 		if isTimeout(err) {
 			continue
 		}
-		return resp, err
+		return err
 	}
 }
 
-func (sv *Service) get(ctx context.Context, key string) ([]byte, error) {
+func (sv *Service) linearizeRead(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, electionTick*tickDur)
 	defer cancel()
 	// TODO (ameets)[WIP] possibly refactor, maybe read while holding the lock?
@@ -475,9 +457,9 @@ func (sv *Service) get(ctx context.Context, key string) ([]byte, error) {
 	select {
 	case sv.rctxReq <- req:
 	case <-sv.donec:
-		return nil, errors.New("raft shutdown")
+		return errors.New("raft shutdown")
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return ctx.Err()
 	}
 	err := sv.raftNode.ReadIndex(ctx, rctx)
 	if err != nil {
@@ -490,7 +472,7 @@ func (sv *Service) get(ctx context.Context, key string) ([]byte, error) {
 		case <-sv.donec:
 		case <-ctx.Done():
 		}
-		return nil, err
+		return err
 	}
 	// Reads piggyback on writes, so if there's no write traffic, this will never
 	// complete. To prevent this, we can send an arbitrary write to Raft if we
@@ -499,7 +481,7 @@ func (sv *Service) get(ctx context.Context, key string) ([]byte, error) {
 	go func() {
 		select {
 		case <-time.After(dummyWriteTimeout):
-			err := sv.Set(ctx, "/dummyWrite", []byte(""))
+			err := sv.Exec(ctx, sv.state.EmptyWrite())
 			if err != nil {
 				return // ok to ignore this error, it will retry
 			}
@@ -513,14 +495,14 @@ func (sv *Service) get(ctx context.Context, key string) ([]byte, error) {
 	case idx := <-req.index:
 		ok := sv.wait(idx)
 		if !ok {
-			return nil, errors.New("raft shutdown")
+			return errors.New("raft shutdown")
 		}
 	case <-sv.donec:
-		return nil, errors.New("raft shutdown")
+		return errors.New("raft shutdown")
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return ctx.Err()
 	}
-	return sv.Stale().Get(key), nil
+	return nil
 }
 
 func (sv *Service) wait(index uint64) bool {
@@ -530,17 +512,6 @@ func (sv *Service) wait(index uint64) bool {
 		sv.stateCond.Wait()
 	}
 	return sv.state.AppliedIndex() >= index //if false killed b/c of done signal
-}
-
-// Stale returns an object that reads
-// directly from local memory, returning (possibly) stale data.
-// Calls to sv.Get are linearizable,
-// which requires them to go through the raft protocol.
-// The stale getter skips this, so it is much faster,
-// but it can only be used in situations that don't require
-// linearizability.
-func (sv *Service) Stale() Getter {
-	return (*staleGetter)(sv)
 }
 
 // ServeHTTP responds to raft consensus messages at /raft/x,
@@ -580,7 +551,14 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !sv.isAllowedMember(req.Context(), x.Addr) {
+	// request a read so that we can perform a linerizable read of
+	// the membership list.
+	err = sv.RequestRead(req.Context())
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	if !sv.state.IsAllowedMember(x.Addr) {
 		http.Error(w, "this address is not allowed. please add this address to the allowed member list", 400)
 		return
 	}
@@ -932,14 +910,6 @@ func (sv *Service) redo(f func() error) {
 		}
 		time.Sleep(100*time.Millisecond + time.Millisecond<<n)
 	}
-}
-
-type staleGetter Service
-
-func (g *staleGetter) Get(key string) []byte {
-	g.stateMu.Lock()
-	defer g.stateMu.Unlock()
-	return g.state.Get(key)
 }
 
 func isTimeout(err error) bool {

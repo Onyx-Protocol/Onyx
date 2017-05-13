@@ -32,7 +32,7 @@ import (
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
-	"chain/database/raft"
+	"chain/database/sinkdb"
 	"chain/database/sqlutil"
 	"chain/encoding/json"
 	"chain/env"
@@ -79,7 +79,7 @@ var (
 
 	// By default, a core is not able to reset its data.
 	// This feature can be turned on with the reset build tag.
-	resetIfAllowedAndRequested = func(pg.DB, *raft.Service) {}
+	resetIfAllowedAndRequested = func(pg.DB, *sinkdb.DB) {}
 )
 
 func init() {
@@ -164,7 +164,7 @@ func main() {
 	}
 
 	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
-	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, httpClient, tlsConfig != nil)
+	sdb, err := sinkdb.Open(*listenAddr, raftDir, *bootURL, httpClient, tlsConfig != nil)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -203,11 +203,11 @@ func main() {
 	var coreHandler waitHandler
 	coreHandler.wg.Add(1)
 	mux := http.NewServeMux()
-	mux.Handle("/raft/", raftDB)
+	mux.Handle("/raft/", sdb.RaftService())
 	mux.Handle("/", &coreHandler)
 
 	var handler http.Handler = mux
-	handler = core.AuthHandler(handler, raftDB, accessTokens, tlsConfig)
+	handler = core.AuthHandler(handler, sdb, accessTokens, tlsConfig)
 	handler = core.RedirectHandler(handler)
 	handler = reqid.Handler(handler)
 
@@ -234,9 +234,9 @@ func main() {
 		err := server.Serve(listener)
 		chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "Serve"))
 	}()
-	resetIfAllowedAndRequested(db, raftDB)
+	resetIfAllowedAndRequested(db, sdb)
 
-	conf, err := config.Load(ctx, db, raftDB)
+	conf, err := config.Load(ctx, db, sdb)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -259,13 +259,13 @@ func main() {
 
 	var h http.Handler
 	if conf != nil {
-		h = launchConfiguredCore(ctx, raftDB, db, conf, processID, httpClient, core.UseTLS(tlsConfig))
+		h = launchConfiguredCore(ctx, sdb, db, conf, processID, httpClient, core.UseTLS(tlsConfig))
 	} else {
 		var opts []core.RunOption
 		opts = append(opts, core.UseTLS(tlsConfig))
 		opts = append(opts, enableMockHSM(db)...)
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, raftDB, *listenAddr, opts...)
+		h = core.RunUnconfigured(ctx, db, sdb, *listenAddr, opts...)
 	}
 	coreHandler.Set(h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
@@ -294,7 +294,7 @@ func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
 	return ln, c, nil
 }
 
-func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string, httpClient *http.Client, opts ...core.RunOption) http.Handler {
+func launchConfiguredCore(ctx context.Context, sdb *sinkdb.DB, db *sql.DB, conf *config.Config, processID string, httpClient *http.Client, opts ...core.RunOption) http.Handler {
 	// Initialize the protocol.Chain.
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
@@ -359,7 +359,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 
 	// Start up the Core. This will start up the various Core subsystems,
 	// and begin leader election.
-	api, err := core.Run(ctx, conf, db, *dbURL, raftDB, c, store, *listenAddr, opts...)
+	api, err := core.Run(ctx, conf, db, *dbURL, sdb, c, store, *listenAddr, opts...)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}

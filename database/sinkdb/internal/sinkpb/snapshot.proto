@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package statepb;
+package sinkpb;
 
 message Snapshot {
 	map<string, uint64> version = 1;

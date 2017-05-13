@@ -15,7 +15,7 @@ import (
 	"chain/core"
 	"chain/core/config"
 	"chain/database/pg"
-	"chain/database/raft"
+	"chain/database/sinkdb"
 	"chain/errors"
 )
 
@@ -27,7 +27,7 @@ var (
 // ResetBlockchain deletes all blockchain data, resulting in an
 // unconfigured core. It does not delete access tokens or mockhsm
 // keys.
-func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
+func ResetBlockchain(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 	if !config.BuildConfig.Reset {
 		// Shouldn't ever happen; This package shouldn't even be
 		// included in binaries built without the reset tag.
@@ -52,9 +52,9 @@ func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	}
 
 	// Config "table" now lives in raft, and it needs to be deleted too
-	err = rDB.Delete(ctx, "/core/config")
+	err = sdb.Exec(ctx, sinkdb.Delete("/core/config"))
 	if err != nil {
-		return errors.Wrap(err, "could not delete config from RaftDB")
+		return errors.Wrap(err, "could not delete config from sinkdb")
 	}
 
 	const q = `TRUNCATE %s RESTART IDENTITY;`
@@ -63,23 +63,23 @@ func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 }
 
 // ResetEverything deletes all of a Core's data.
-func ResetEverything(ctx context.Context, db pg.DB, rDB *raft.Service) error {
+func ResetEverything(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 	if !config.BuildConfig.Reset {
 		// Shouldn't ever happen; This package shouldn't even be
 		// included in binaries built without the reset tag.
 		panic("reset called on reset disabled binary")
 	}
 
-	err := ResetBlockchain(ctx, db, rDB)
+	err := ResetBlockchain(ctx, db, sdb)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
-	// Delete all grants in raft storage
+	// Delete all grants in sinkdb
 	for _, p := range core.Policies {
-		err = rDB.Delete(ctx, core.GrantPrefix+p)
+		err = sdb.Exec(ctx, sinkdb.Delete(core.GrantPrefix+p))
 		if err != nil {
-			return errors.Wrapf(err, "could not delete grants for policy %s from RaftDB", p)
+			return errors.Wrapf(err, "could not delete grants for policy %s from sinkdb", p)
 		}
 	}
 
