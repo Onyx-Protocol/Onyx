@@ -34,7 +34,7 @@ h1,h2,h3,h4,h5 {
 
 .panel-default {
   margin-bottom: 30px;
-  border-radius: 0px;
+  border-radius: 2px;
 }
 
 .panel-default>.panel-heading {
@@ -63,6 +63,10 @@ h1,h2,h3,h4,h5 {
 
 .form-inline input {
   margin-right: 10px;
+}
+
+.form-control, .input-group-addon {
+  border-radius: 2px;
 }
 
 .input-group select.with-addon {
@@ -100,7 +104,7 @@ select:hover {
 }
 
 .btn {
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .btn-lg {
@@ -139,6 +143,7 @@ select:hover {
 
 pre {
   padding: 15px;
+  border-radius: 2px;
 }
 
 pre.wrap {
@@ -269,6 +274,10 @@ section h4 {
 
 /*Ace Editor Overrides*/
 
+.ace_editor {
+  border-radius: 2px;
+}
+
 .ace-monokai {
   background-color: #20252d !important;
 }
@@ -277,4 +286,5 @@ section h4 {
   background-color: #000 !important;
   opacity: .2;
   color: #fff !important;
+  border-radius: 0 0 2px 2px;
 }
