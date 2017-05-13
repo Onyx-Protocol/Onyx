@@ -37,7 +37,7 @@ const UnlockButton = (props: {contractId: string} ) => {
 }
 
 function LockedValue(props: { contractIds: string[] }) {
-  let content = <div>No Locked Value</div>
+  let content = <div className="table-placeholder">No Locked Value</div>
   if (props.contractIds.length > 0) {
     content = (
       <table className="table contracts-table">
@@ -88,7 +88,7 @@ const LockedValueRow = connect(
 )(LockedValueRowUnconnected)
 
 const History = (props: { spentContractIds: string[] }) => {
-  let content = <div>No History</div>
+  let content = <div className="table-placeholder">No History</div>
   if (props.spentContractIds.length > 0) {
     content = (
       <table className="table contracts-table">
