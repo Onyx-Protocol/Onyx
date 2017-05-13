@@ -314,6 +314,15 @@ section h4 {
   opacity: .2;
   color: #fff !important;
   border-radius: 0 0 2px 2px;
+  padding-top: 15px;
+}
+
+.ace_gutter-active-line {
+  margin-top: 15px;
+}
+
+.ace_content {
+  padding: 15px;
 }
 
 .ace_type, .ace_storage {
