@@ -1,5 +1,13 @@
 /*Boostrap Overrides*/
 
+body {
+  color: #20252d;
+}
+
+h1,h2,h3,h4,h5 {
+  color: #20252d;
+}
+
 .navbar {
   background: #20252D;
   border: 0;
@@ -29,12 +37,14 @@
   border-radius: 0px;
 }
 
-.panel-heading {
+.panel-default>.panel-heading {
   background-image: none !important;
+  color: #20252d;
 }
 
 .panel-title {
   line-height: 34px;
+  color: #20252d;
 }
 
 .panel-body.inner {
