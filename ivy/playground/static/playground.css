@@ -143,6 +143,13 @@ code {
   padding: 5px 7px;
 }
 
+.table-placeholder {
+  padding: 40px;
+  text-align: center;
+  color: #ccc;
+  font-size: 16px;
+}
+
 .contracts-table {
   table-layout: fixed;
 }
