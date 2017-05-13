@@ -1,6 +1,6 @@
 import { ContractsState } from './types'
 import { SELECT_TEMPLATE } from './actions'
-import { getParameterIdList } from '../templates/selectors'
+import { getParameterIds } from '../templates/selectors'
 import { OldTemplate } from '../templates/types'
 import { Input, InputMap } from '../inputs/types'
 import { getInputMap } from '../templates/selectors'
@@ -163,8 +163,8 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
 
 export const getParameterInputs = createSelector(
   getInputMap,
-  getParameterIdList,
-  (inputMap, parameterIdList) => {
-    return inputMap && parameterIdList && parameterIdList.map(id => inputMap[id])
+  getParameterIds,
+  (inputMap, parameterIds) => {
+    return inputMap && parameterIds && parameterIds.map(id => inputMap[id])
   }
 )

@@ -40,7 +40,7 @@ import {
 } from '../core/types';
 
 import {
-  getItemMap as getTemplateMap
+  getSourceMap
 } from '../templates/selectors'
 
 import templates from '../templates'

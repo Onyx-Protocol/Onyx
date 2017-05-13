@@ -1,32 +1,36 @@
+// external imports
 import { createSelector } from 'reselect'
 
-import * as app from '../app/types'
-import { TemplateState, Template, TemplateMap } from './types'
+// ivy imports
+import { AppState } from '../app/types'
 import { Input, InputMap } from '../inputs/types'
 import { SpendFromAccount } from '../core/types'
 import { isValidInput, getData } from '../inputs/data'
 
-export const getTemplateState = (state: app.AppState): TemplateState => state.templates
+// internal imports
+import { TemplateState, SourceMap } from './types'
+
+export const getTemplateState = (state: AppState): TemplateState => state.templates
+
+export const getSourceMap = createSelector(
+  getTemplateState,
+  (state: TemplateState): SourceMap => state.sourceMap
+)
 
 export const getSource = createSelector(
   getTemplateState,
   (state: TemplateState): string => state.source
 )
 
-export const getItemMap = createSelector(
-  getTemplateState,
-  (state: TemplateState): TemplateMap => state.itemMap
-)
-
-export const getIdList = createSelector(
+export const getTemplateIds = createSelector(
   getTemplateState,
   state => state.idList
 )
 
-export const getItem = (id: string) => {
+export const getTemplate = (id: string) => {
   return createSelector(
-    getItemMap,
-    itemMap => itemMap[id]
+    getSourceMap,
+    sourceMap => sourceMap[id]
   )
 }
 
@@ -37,7 +41,7 @@ export const getInputMap = createSelector(
 
 export const getInputList = createSelector(
   getInputMap,
-  inputMap => {
+  (inputMap) => {
     if (inputMap === undefined) return undefined
     let inputList: Input[] = []
     for (const id in inputMap) {
@@ -52,30 +56,23 @@ export const getCompiled = createSelector(
   (state) => state.compiled
 )
 
-export const getContractParameters = createSelector(
+ export const getContractParameters = createSelector(
   getCompiled,
-  (compiled) => compiled && compiled.params
+  (compiled) => {
+    if (compiled === undefined) {
+      return compiled
+    }
+    return compiled.params
+  }
 )
 
 export const getOpcodes = createSelector(
   getCompiled,
-  (compiled) => compiled && compiled.opcodes
-)
-
-export const getParameterIdList = createSelector(
-  getContractParameters,
-  (contractParameters) => {
-    return contractParameters && contractParameters
-      .map(param => "contractParameters." + param.name)
-  }
-)
-
-export const getDataParameterIdList = createSelector(
-  getContractParameters,
-  (contractParameters) => {
-    return contractParameters && contractParameters
-      .filter(param => param.type !== "Value" )
-      .map(param => "contractParameters." + param.name)
+  (compiled) => {
+    if (compiled === undefined) {
+      return compiled
+    }
+    return compiled.opcodes
   }
 )
 
@@ -90,9 +87,9 @@ export const getParameterIds = createSelector(
 export const areInputsValid = createSelector(
   getInputMap,
   getParameterIds,
-  (inputMap, paramIdList) => {
-    if (inputMap === undefined || paramIdList === undefined) return false
-    const invalid = paramIdList.filter(id => {
+  (inputMap, parameterIds) => {
+    if (inputMap === undefined || parameterIds === undefined) return false
+    const invalid = parameterIds.filter(id => {
       return !isValidInput(id, inputMap)
     })
     return invalid.length === 0
@@ -146,7 +143,7 @@ export const getParameterData = (state, inputMap) => {
   }
 }
 
-export const getDataParameterIds = createSelector(
+const getDataParameterIds = createSelector(
   getContractParameters,
   (contractParameters) => {
     return contractParameters && contractParameters
@@ -155,12 +152,12 @@ export const getDataParameterIds = createSelector(
   }
 )
 
-export const getSelected = createSelector(
+export const getSelectedTemplate = createSelector(
   getCompiled,
-  getItemMap,
-  (compiled, itemMap) => {
+  getSourceMap,
+  (compiled, sourceMap) => {
     if (compiled === undefined ||
-        itemMap[compiled.name] === undefined) {
+        sourceMap[compiled.name] === undefined) {
       return ""
     } else {
       return compiled.name
@@ -170,8 +167,8 @@ export const getSelected = createSelector(
 
 export const getSaveability = createSelector(
   getCompiled,
-  getItemMap,
-  (compiled, itemMap) => {
+  getSourceMap,
+  (compiled, sourceMap) => {
     if (compiled === undefined) return {
       saveable: false,
       error: "Contract template has not been compiled."
@@ -181,7 +178,7 @@ export const getSaveability = createSelector(
       error: "Contract template is not valid Ivy."
     }
     let name = compiled.name
-    if (itemMap[name] !== undefined) return {
+    if (sourceMap[name] !== undefined) return {
       saveable: false,
       error: "There is already a contract template saved with that name."
     }
@@ -194,11 +191,11 @@ export const getSaveability = createSelector(
 
 export const getCreateability = createSelector(
   getSource,
-  getItemMap,
+  getSourceMap,
   getCompiled,
-  getContractValue,
   areInputsValid,
-  (source, itemMap, compiled, inputsAreValid, contractValue) => {
+  getContractValue,
+  (source, sourceMap, compiled, inputsAreValid, contractValue) => {
     if (compiled === undefined) return {
       createable: false,
       error: "Contract template has not been compiled."
@@ -212,7 +209,7 @@ export const getCreateability = createSelector(
       error: "One or more arguments to the contract are invalid."
     }
     let name = compiled.name
-    let savedSource = itemMap[name]
+    let savedSource = sourceMap[name]
     if (savedSource === undefined) return {
       createable: false,
       error: "Contract template must be saved before it can be instantiated."

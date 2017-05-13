@@ -1,8 +1,4 @@
-import { client } from '../core'
-import { TemplateState } from './types'
-import { compileTemplate } from 'ivy-compiler'
-
-export const NAME = 'templates'
+// Predefined contract templates
 
 export const LOCK_WITH_PUBLIC_KEY = `contract LockWithPublicKey(publicKey: PublicKey) locks value {
   clause spend(sig: Signature) {
@@ -85,7 +81,7 @@ export const REVEAL_FACTORS = `contract RevealFactors(product: Integer) locks va
   }
 }`
 
-const itemMap = {
+export const INITIAL_SOURCE_MAP = {
   LockWithPublicKey: LOCK_WITH_PUBLIC_KEY,
   LockWithPublicKeyHash: LOCK_WITH_PUBLIC_KEY_HASH,
   LockWithMultiSig: LOCK_WITH_MULTISIG,
@@ -96,7 +92,7 @@ const itemMap = {
   RevealFactors: REVEAL_FACTORS,
 }
 
-export const idList = [
+export const INITIAL_ID_LIST = [
   "LockWithPublicKey",
   "LockWithPublicKeyHash",
   "LockWithMultiSig",
@@ -105,14 +101,3 @@ export const idList = [
   "CollateralizedLoan",
   "RevealPreimage",
 ]
-
-const selected = idList[0]
-const source = itemMap[selected].source
-
-export const INITIAL_STATE: TemplateState = {
-  itemMap,
-  idList,
-  source: '',
-  inputMap: {},
-  compiled: undefined
-}

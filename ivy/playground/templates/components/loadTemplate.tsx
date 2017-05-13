@@ -1,24 +1,27 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
 
-import * as app from '../../app/types'
-import { load } from '../actions'
-import { getIdList, getTemplateState, getSelected } from '../selectors'
-import { TemplateState } from '../types'
+// ivy imports
+import { AppState } from '../../app/types'
 
-const mapStateToProps = (state: app.AppState) => {
+// internal imports
+import { loadTemplate } from '../actions'
+import { getTemplateIds } from '../selectors'
+
+const mapStateToProps = (state: AppState) => {
   return {
-    idList: getIdList(state),
+    idList: getTemplateIds(state),
   }
 }
 
 const mapDispatchToProps = (dispatch) => ({
   handleChange: (id: string): void => {
-    dispatch(load(id))
+    dispatch(loadTemplate(id))
   }
 })
 
-const Load = ({ idList, selected, handleChange }) => {
+const LoadTemplate = ({ idList, selected, handleChange }) => {
   const options = idList.map(id => {
     return <option key={id} value={id}>{id}</option>
   })
@@ -33,4 +36,4 @@ const Load = ({ idList, selected, handleChange }) => {
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(Load)
+)(LoadTemplate)

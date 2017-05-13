@@ -3,7 +3,7 @@ import Display from './display'
 import Editor from './editor'
 import ErrorAlert from './errorAlert'
 import Instructions from './instructions'
-import Load from './load'
-import Save from './save'
+import LoadTemplate from './loadTemplate'
+import SaveTemplate from './saveTemplate'
 
-export default { Ace, Display, Editor, ErrorAlert, Instructions, Load, Save }
+export default { Ace, Display, Editor, ErrorAlert, Instructions, LoadTemplate, SaveTemplate }
