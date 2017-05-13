@@ -220,5 +220,42 @@ func (b *Builder) optimize() {
 			b.items = append(b.items[:len(b.items)-len(o.before)], o.after...)
 			looping = true
 		}
+		if !looping {
+			// a few extra optimizations here that don't fit the static
+			// patterns in "optimizations" above
+			if len(b.items) >= 3 && b.items[len(b.items)-3] == int64Item(1) && b.items[len(b.items)-1] == opItem(vm.OP_ADD) {
+				// 1 <x> ADD => <x> 1ADD
+				addend := b.items[len(b.items)-2]
+				b.items = b.items[:len(b.items)-3]
+				b.items = append(b.items, addend)
+				b.items = append(b.items, opItem(vm.OP_1ADD))
+				looping = true
+				continue
+			}
+			if len(b.items) >= 2 && b.items[len(b.items)-2] == opItem(vm.OP_SWAP) {
+				if op, ok := b.items[len(b.items)-1].(opItem); ok {
+					switch vm.Op(op) {
+					case vm.OP_EQUAL, vm.OP_ADD, vm.OP_BOOLAND, vm.OP_BOOLOR, vm.OP_MIN, vm.OP_MAX:
+						// SWAP <op> => <op> (where <op> is commutative)
+						b.items = b.items[:len(b.items)-2]
+						b.items = append(b.items, op)
+						looping = true
+						continue
+					}
+				}
+			}
+			if len(b.items) >= 4 && b.items[len(b.items)-4] == opItem(vm.OP_DUP) && b.items[len(b.items)-3] == int64Item(2) && b.items[len(b.items)-2] == opItem(vm.OP_PICK) {
+				if op, ok := b.items[len(b.items)-1].(opItem); ok {
+					switch vm.Op(op) {
+					case vm.OP_EQUAL, vm.OP_ADD, vm.OP_BOOLAND, vm.OP_BOOLOR, vm.OP_MIN, vm.OP_MAX:
+						// DUP 2 PICK <op> => 2DUP <op> (where <op> is commutative)
+						b.items = b.items[:len(b.items)-4]
+						b.items = append(b.items, opItem(vm.OP_2DUP), op)
+						looping = true
+						continue
+					}
+				}
+			}
+		}
 	}
 }
