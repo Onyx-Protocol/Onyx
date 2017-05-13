@@ -135,7 +135,7 @@ func TestCompile(t *testing.T) {
 			lockWithPublicKey,
 			CompileResult{
 				Name:    "LockWithPublicKey",
-				Program: mustDecodeHex("6eae7cac"),
+				Program: mustDecodeHex("ae7cac"),
 				Value:   "locked",
 				Params: []ContractParam{{
 					Name: "publicKey",
@@ -160,7 +160,7 @@ func TestCompile(t *testing.T) {
 			lockWith2of3Keys,
 			CompileResult{
 				Name:    "LockWith3Keys",
-				Program: mustDecodeHex("54795479526bae557955795579536c7cad"),
+				Program: mustDecodeHex("547a547a526bae71557a536c7cad"),
 				Value:   "locked",
 				Params: []ContractParam{{
 					Name: "pubkey1",
@@ -194,7 +194,7 @@ func TestCompile(t *testing.T) {
 			lockToOutput,
 			CompileResult{
 				Name:    "LockToOutput",
-				Program: mustDecodeHex("0000c3c2515579c1"),
+				Program: mustDecodeHex("0000c3c251557ac1"),
 				Value:   "locked",
 				Params: []ContractParam{{
 					Name: "address",
@@ -217,7 +217,7 @@ func TestCompile(t *testing.T) {
 			tradeOffer,
 			CompileResult{
 				Name:    "TradeOffer",
-				Program: mustDecodeHex("547a6413000000000070515779c1632300000054795479ae7cac690000c3c2515779c1"),
+				Program: mustDecodeHex("547a641300000000007251557ac16323000000547a547aae7cac690000c3c251597ac1"),
 				Value:   "offered",
 				Params: []ContractParam{{
 					Name: "requestedAsset",
@@ -265,7 +265,7 @@ func TestCompile(t *testing.T) {
 			escrowedTransfer,
 			CompileResult{
 				Name:    "EscrowedTransfer",
-				Program: mustDecodeHex("537a641b000000537978ae7cac690000c3c2515779c1632a000000537978ae7cac690000c3c2515679c1"),
+				Program: mustDecodeHex("537a641b000000537a7cae7cac690000c3c251587ac1632a000000537a7cae7cac690000c3c251577ac1"),
 				Value:   "value",
 				Params: []ContractParam{{
 					Name: "agent",
@@ -309,7 +309,7 @@ func TestCompile(t *testing.T) {
 			collateralizedLoan,
 			CompileResult{
 				Name:    "CollateralizedLoan",
-				Program: mustDecodeHex("557a641c000000000070515879c1695100c3c2515979c163290000005279c59f690000c3c2515879c1"),
+				Program: mustDecodeHex("557a641c00000000007251567ac1695100c3c251567ac163280000007bc59f690000c3c251587ac1"),
 				Value:   "collateral",
 				Params: []ContractParam{{
 					Name: "balanceAsset",
@@ -363,7 +363,7 @@ func TestCompile(t *testing.T) {
 			revealPreimage,
 			CompileResult{
 				Name:    "RevealPreimage",
-				Program: mustDecodeHex("78aa7887"),
+				Program: mustDecodeHex("7caa7b87"),
 				Value:   "value",
 				Params: []ContractParam{{
 					Name: "hash",
