@@ -73,7 +73,7 @@ func main() {
 
 		// The struct doesn't have the hash, so calculate it and print it
 		// before pretty printing the header.
-		fmt.Printf("Block Hash: %s\n", bh.Hash())
+		fmt.Printf("Block Hash: %x\n", bh.Hash().Bytes())
 		prettyPrint(bh)
 	case "block":
 		b := make([]byte, len(data)/2)
@@ -90,7 +90,7 @@ func main() {
 
 		// The struct doesn't have the hash, so calculate it and print it
 		// before pretty printing the block
-		fmt.Printf("Block Hash: %s\n", block.Hash())
+		fmt.Printf("Block Hash: %x\n", block.Hash().Bytes())
 		prettyPrint(block)
 	case "script":
 		b := make([]byte, len(data)/2)

@@ -73,7 +73,7 @@ func TestRootHashBug(t *testing.T) {
 		t.Fatal(err)
 	}
 	if tr.RootHash() == before {
-		t.Errorf("before and after root hash is %s", before)
+		t.Errorf("before and after root hash is %s", before.String())
 	}
 }
 
@@ -114,7 +114,7 @@ func TestLeafVsInternalNodes(t *testing.T) {
 	}
 
 	if tr1.RootHash() == tr0.RootHash() {
-		t.Errorf("tr0 and tr1 have matching root hashes: %s", tr1.RootHash())
+		t.Errorf("tr0 and tr1 have matching root hashes: %x", tr1.RootHash().Bytes())
 	}
 }
 
@@ -220,7 +220,7 @@ func TestInsert(t *testing.T) {
 		root: &node{key: bools("11111111"), hash: hashPtr(hashForLeaf(bits("11111111"))), isLeaf: true},
 	}
 	if !testutil.DeepEqual(tr.root, want.root) {
-		log.Printf("want hash? %s", hashForLeaf(bits("11111111")))
+		log.Printf("want hash? %x", hashForLeaf(bits("11111111")).Bytes())
 		t.Log("insert into empty tree")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}

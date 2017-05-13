@@ -51,8 +51,8 @@ func (c *Chain) Recover(ctx context.Context) (*legacy.Block, *state.Snapshot, er
 			return nil, nil, errors.Wrap(err, "applying block")
 		}
 		if b.AssetsMerkleRoot != snapshot.Tree.RootHash() {
-			return nil, nil, fmt.Errorf("block %d has state root %s; snapshot has root %s",
-				b.Height, b.AssetsMerkleRoot, snapshot.Tree.RootHash())
+			return nil, nil, fmt.Errorf("block %d has state root %x; snapshot has root %x",
+				b.Height, b.AssetsMerkleRoot.Bytes(), snapshot.Tree.RootHash().Bytes())
 		}
 	}
 	if b != nil {
