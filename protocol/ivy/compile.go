@@ -484,8 +484,6 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			}
 		}
 
-		origStackLen := len(stack)
-
 		// WARNING WARNING WOOP WOOP
 		// special-case hack
 		// WARNING WARNING WOOP WOOP
@@ -496,8 +494,9 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			}
 
 			var err error
+			var k1, k2 int
 
-			stack, err = compileArg(b, stack, contract, clause, env, counts, e.args[1])
+			stack, k1, err = compileArg(b, stack, contract, clause, env, counts, e.args[1])
 			if err != nil {
 				return nil, err
 			}
@@ -505,12 +504,13 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			// stack: [... sigM ... sig1 M]
 
 			b.addOp(vm.OP_TOALTSTACK) // stack: [... sigM ... sig1]
+			altElt := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 
 			b.addOp(vm.OP_TXSIGHASH) // stack: [... sigM ... sig1 txsighash]
 			stack = append(stack, stackEntry("<txsighash>"))
 
-			stack, err = compileArg(b, stack, contract, clause, env, counts, e.args[0])
+			stack, k2, err = compileArg(b, stack, contract, clause, env, counts, e.args[0])
 			if err != nil {
 				return nil, err
 			}
@@ -518,33 +518,43 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			// stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 N]
 
 			b.addOp(vm.OP_FROMALTSTACK) // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 N M]
+			stack = append(stack, altElt)
+
 			b.addOp(vm.OP_SWAP)         // stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 M N]
+			stack[len(stack)-2], stack[len(stack)-1] = stack[len(stack)-1], stack[len(stack)-2]
 
 			b.addOp(vm.OP_CHECKMULTISIG)
-			return append(stack[:origStackLen], stackEntry(e.String())), nil
+			stack = stack[:len(stack)-k1-k2-1]
+			stack = append(stack, stackEntry(e.String()))
+
+			return stack, nil
 		}
+
+		var k int
 
 		for i := len(e.args) - 1; i >= 0; i-- {
 			a := e.args[i]
+			var k2 int
 			var err error
-			stack, err = compileArg(b, stack, contract, clause, env, counts, a)
+			stack, k2, err = compileArg(b, stack, contract, clause, env, counts, a)
 			if err != nil {
 				return nil, errors.Wrapf(err, "compiling argument %d in call expression", i)
 			}
+			k += k2
 		}
 		ops, err := vm.Assemble(bi.opcodes)
 		if err != nil {
 			return nil, errors.Wrap(err, "assembling bytecode in call expression")
 		}
 		b.addRawBytes(ops)
+		stack = stack[:len(stack)-k]
+		stack = append(stack, stackEntry(e.String()))
 
 		// special-case reporting
 		switch bi.name {
 		case "sha3", "sha256":
 			clause.hashCalls = append(clause.hashCalls, hashCall{bi.name, e.args[0].String(), string(e.args[0].typ(env))})
 		}
-
-		stack = append(stack[:origStackLen], stackEntry(e.String()))
 
 	case varRef:
 		return compileRef(b, stack, counts, e)
@@ -583,21 +593,26 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	return stack, nil
 }
 
-func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, error) {
+func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, int, error) {
+	var n int
 	if list, ok := expr.(listExpr); ok {
 		for i := 0; i < len(list); i++ {
 			elt := list[len(list)-i-1]
 			var err error
 			stack, err = compileExpr(b, stack, contract, clause, env, counts, elt)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
+			n++
 		}
 		b.addInt64(int64(len(list)))
 		stack = append(stack, stackEntry(strconv.FormatInt(int64(len(list)), 10)))
-		return stack, nil
+		n++
+		return stack, n, nil
 	}
-	return compileExpr(b, stack, contract, clause, env, counts, expr)
+	var err error
+	stack, err = compileExpr(b, stack, contract, clause, env, counts, expr)
+	return stack, 1, err
 }
 
 func compileRef(b *builder, stack []stackEntry, counts map[string]int, ref varRef) ([]stackEntry, error) {
