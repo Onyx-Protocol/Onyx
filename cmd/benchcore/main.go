@@ -27,6 +27,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
 	_ "github.com/lib/pq"
@@ -48,9 +49,10 @@ var (
 	schemaPath = os.Getenv("CHAIN") + "/core/schema.sql"
 	sdkDir     = os.Getenv("CHAIN") + "/sdk/java"
 
-	awsConfig = &aws.Config{Region: aws.String("us-east-1")}
-	ec2client = ec2.New(awsConfig)
-	elbclient = elb.New(awsConfig)
+	region    = "us-east-1" // TODO(kr): figure out how to not hard code this
+	awsSess   = session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
+	ec2client = ec2.New(awsSess)
+	elbclient = elb.New(awsSess)
 
 	sshConfig = &ssh.ClientConfig{
 		User: "ubuntu",
@@ -305,7 +307,7 @@ func doDelete() {
 	}
 	for _, res := range desc.Reservations {
 		for _, inst := range res.Instances {
-			killInstanceIDs = append(killInstanceIDs, inst.InstanceID)
+			killInstanceIDs = append(killInstanceIDs, inst.InstanceId)
 		}
 	}
 
@@ -380,7 +382,7 @@ func mustBuildJAR() []byte {
 
 func cleanup() {
 	if len(killInstanceIDs) > 0 {
-		_, err := ec2client.TerminateInstances(&ec2.TerminateInstancesInput{InstanceIDs: killInstanceIDs})
+		_, err := ec2client.TerminateInstances(&ec2.TerminateInstancesInput{InstanceIds: killInstanceIDs})
 		if err != nil {
 			log.Println(err)
 		}
@@ -508,17 +510,17 @@ func makeEC2(role string, conf instanceConfig, inst *instance, wg *sync.WaitGrou
 	retry(func() (err error) {
 		resv, err = ec2client.RunInstances(&ec2.RunInstancesInput{
 			ClientToken:  &runtoken,
-			ImageID:      &ami,
+			ImageId:      &ami,
 			InstanceType: &typ,
 			KeyName:      &key,
 			MinCount:     &n,
 			MaxCount:     &n,
-			SubnetID:     &subnetID,
+			SubnetId:     &subnetID,
 		})
 		return err
 	})
 
-	inst.id = *resv.Instances[0].InstanceID
+	inst.id = *resv.Instances[0].InstanceId
 
 	retry(func() error {
 		_, err := ec2client.CreateTags(&ec2.CreateTagsInput{
@@ -536,7 +538,7 @@ func makeEC2(role string, conf instanceConfig, inst *instance, wg *sync.WaitGrou
 	var desc *ec2.DescribeInstancesOutput
 	retry(func() (err error) {
 		desc, err = ec2client.DescribeInstances(&ec2.DescribeInstancesInput{
-			InstanceIDs: []*string{&inst.id},
+			InstanceIds: []*string{&inst.id},
 		})
 		if err != nil {
 			return err
@@ -556,12 +558,12 @@ func makeEC2(role string, conf instanceConfig, inst *instance, wg *sync.WaitGrou
 			}
 			return fmt.Errorf("instance %s state %s (%s)", inst.id, *state.Name, reason)
 		}
-		if info.PrivateIPAddress == nil || info.PublicIPAddress == nil {
+		if info.PrivateIpAddress == nil || info.PublicIpAddress == nil {
 			return errRetry
 		}
 
-		inst.privAddr = *info.PrivateIPAddress
-		inst.addr = *info.PublicIPAddress
+		inst.privAddr = *info.PrivateIpAddress
+		inst.addr = *info.PublicIpAddress
 		return nil
 	})
 
