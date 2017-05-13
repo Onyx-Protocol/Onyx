@@ -333,7 +333,7 @@ export function getWidget(id: string): JSX.Element {
       mapDispatchToSpendInputProps
     )(getWidgetType(type))
   }
-  return <div key={"container(" + id + ")"}>
+  return <div className="widget-wrapper" key={"container(" + id + ")"}>
     {React.createElement(widgetTypeConnected, { key: "connect(" + id + ")", id: id })}
   </div>
 }

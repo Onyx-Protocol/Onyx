@@ -20,7 +20,7 @@ export default function Unlock(props: { contract: Contract }) {
     <DocumentTitle title="Unlock Value">
       <div>
         <Section name="Contract Summary">
-          <div className="form-wrapper">
+          <div className="form-wrapper with-subsections">
             <section>
               <h4>Contract Template</h4>
               <DisplaySpendContract />
@@ -30,7 +30,7 @@ export default function Unlock(props: { contract: Contract }) {
           </div>
         </Section>
         <Section name="Unlocking Details">
-          <div className="form-wrapper">
+          <div className="form-wrapper with-subsections">
             <ClauseSelect />
             <ClauseValue />
             <ClauseParameters />
