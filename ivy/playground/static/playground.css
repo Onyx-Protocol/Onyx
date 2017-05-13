@@ -26,6 +26,7 @@
 
 .panel-default {
   margin-bottom: 30px;
+  border-radius: 0px;
 }
 
 .panel-heading {
