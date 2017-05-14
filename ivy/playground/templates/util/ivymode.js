@@ -91,7 +91,7 @@ var IvyHighlightRules = function(options) {
         "variable.language":
             "checkTxSig|checkMultiSig|sha256|sha3|min|max|abs|size|before|after",
         "keyword":
-            "contract|clause|verify|lock|unlock|locks|requires|of",
+            "contract|clause|verify|lock|unlock|locks|requires|of|with",
     }, "identifier");
 
     this.$rules = {
