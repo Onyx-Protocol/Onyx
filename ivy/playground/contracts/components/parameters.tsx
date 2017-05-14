@@ -1,8 +1,17 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
-import { isHash, isTypeVariable, isList, typeToString,
-         toContractParameter, Type, Template, ContractParameter,
-         ContractParameterType } from 'ivy-compiler'
+import { typeToString } from 'ivy-compiler'
+
+// ivy imports
+import { Item as Asset } from '../../assets/types'
+import { Item as Account } from '../../accounts/types'
+import { getItemList as getAssets } from '../../assets/selectors'
+import { getItemList as getAccounts } from '../../accounts/selectors'
+import { getClauseValueId } from '../../contracts/selectors'
+import { getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
+
+import RadioSelect from '../../app/components/radioSelect'
 import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringInput,
          ProvideStringInput, GenerateStringInput, HashInput,
          TimeInput, TimestampTimeInput,
@@ -11,21 +20,16 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
          ProvideSignatureInput, ProvidePrivateKeyInput,
          ValueInput, AccountAliasInput, AssetAliasInput, AssetInput, AmountInput,
          ProgramInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
-import { getParameterIdentifier, getInputContext } from '../../inputs/data'
+
+import { validateInput, computeDataForInput, getChild,
+         getParameterIdentifier, getInputContext } from '../../inputs/data'
+
+
+// internal imports
+import { updateInput, updateClauseInput } from '../actions'
 import { getSpendInputMap, getClauseParameterIds } from '../selectors'
-import { getInputMap, getContractValueId } from '../../templates/selectors'
-import { getClauseValueId } from '../../contracts/selectors'
-import { updateClauseInput } from '../actions'
-import accounts from '../../accounts'
-import { Item as Account } from '../../accounts/types'
 
-import assets from '../../assets'
-import { Item as Asset } from '../../assets/types'
 
-import { updateInput } from '../actions'
-import { getParameterIds } from '../../templates/selectors'
-import { validateInput, computeDataForInput, getChild } from '../../inputs/data'
-import app from '../../app'
 
 
 function getChildWidget(input: ComplexInput) {
@@ -79,7 +83,7 @@ function StringWidget(props: { input: StringInput, handleChange: (e)=>undefined 
                  {label: "Provide String", value: "provideStringInput"}]
   let handleChange = (s: string) => undefined
   return <div>
-    <app.components.RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
+    <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
     {getChildWidget(props.input)}
   </div>
 }
@@ -96,7 +100,7 @@ function HashWidget(props: { input: HashInput, handleChange: (e)=>undefined }) {
                  {label: "Provide Hash", value: "provideHashInput"}]
   let handleChange = (s: string) => undefined
   return <div>
-    <app.components.RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
+    <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
     {getChildWidget(props.input)}
   </div>
 }
@@ -126,7 +130,7 @@ function GeneratePublicKeyWidget(props: { input: GeneratePublicKeyInput, handleC
       <div className="nested">
       <div className="description">derived from:</div>
       <label className="type-label">PrivateKey</label>
-    <app.components.RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
+    <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
     {getChildWidget(props.input)}
   </div></div>
 }
@@ -188,7 +192,7 @@ function AccountAliasWidgetUnconnected(props: { input: AccountAliasInput,
 }
 
 let AccountAliasWidget = connect(
-  (state) => ({ accounts: accounts.selectors.getItemList(state) })
+  (state) => ({ accounts: getAccounts(state) })
 )(AccountAliasWidgetUnconnected)
 
 function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
@@ -207,7 +211,7 @@ function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
 }
 
 let AssetAliasWidget = connect(
-  (state) => ({ assets: assets.selectors.getItemList(state) })
+  (state) => ({ assets: getAssets(state) })
 )(AssetAliasWidgetUnconnected)
 
 function ChoosePublicKeyWidget(props: { input: ChoosePublicKeyInput,

@@ -1,6 +1,3 @@
-// external imports
-import { compileContractParameters, ContractParameter } from 'ivy-compiler';
-
 // ivy imports
 import { TemplateState, CompiledTemplate } from './types'
 import { UPDATE_INPUT } from '../contracts/actions'

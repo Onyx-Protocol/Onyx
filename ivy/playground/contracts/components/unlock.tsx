@@ -1,16 +1,19 @@
+// external imports
 import * as React from 'react'
+import DocumentTitle from 'react-document-title'
 import { connect } from 'react-redux'
+
+// ivy imports
 import Section from '../../app/components/section'
 import { Contract } from '../types'
-import { Template, TemplateClause } from 'ivy-compiler'
+import { getSpendContractId } from '../selectors'
 
-import DocumentTitle from 'react-document-title'
+// internal imports
 import SpendInputs from './argsDisplay'
 import UnlockButton from './unlockButton'
 import { DisplaySpendContract } from './display'
-import Return from './return'
+import UnlockDestination from './unlockDestination'
 import ClauseSelect from './clauseselect'
-import { getSpendContractId } from '../selectors'
 import { ClauseValue, ClauseParameters, getWidget } from './parameters'
 import { ContractValue } from './argsDisplay'
 
@@ -34,7 +37,7 @@ export default function Unlock(props: { contract: Contract }) {
             <ClauseSelect />
             <ClauseValue />
             <ClauseParameters />
-            <Return />
+            <UnlockDestination />
           </div>
         </Section>
         <UnlockButton />
