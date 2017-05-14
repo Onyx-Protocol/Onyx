@@ -7,5 +7,11 @@ export const Display = (props: { source: string }) => {
 }
 
 export const DisplaySpendContract = connect(
-  (state) => ({ source: getSpendContract(state).template.source })
+  (state) => {
+    const contract = getSpendContract(state)
+    if (contract) {
+      return { source: contract.template.source }
+    }
+    return { source: '' }
+  }
 )(Display)
