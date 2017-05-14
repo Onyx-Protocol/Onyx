@@ -4,7 +4,7 @@ import { push } from 'react-router-redux'
 // ivy imports
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
-import { displayError as displayCreateError } from '../templates/actions'
+import { setSource, displayError as displayCreateError } from '../templates/actions'
 import {
   getSource,
   getContractValue,
@@ -111,6 +111,7 @@ export const create = () => {
             utxo
           })
           dispatch(push(prefixRoute('/unlock')))
+          dispatch(setSource(source))
         }).catch(err => {
           dispatch(displayCreateError(err))
         })
