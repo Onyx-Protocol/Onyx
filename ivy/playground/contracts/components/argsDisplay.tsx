@@ -175,14 +175,17 @@ export const ContractValue = connect(
 
 function SpendInputsUnconnected(props: { spendInputIds: string[] }) {
   if (props.spendInputIds.length === 0) return <div />
-  let spendInputWidgets = props.spendInputIds.map((id) => {
+  const spendInputWidgets = props.spendInputIds.map((id) => {
     return <div key={id} className="argument">{getWidget(id)}</div>
   })
-  return <section style={{ wordBreak: 'break-all'}}>
-    <h4>Contract Arguments</h4>
-    <form className="form">
-    {spendInputWidgets}
-  </form></section>
+  return (
+    <section style={{ wordBreak: 'break-all'}}>
+      <h4>Contract Arguments</h4>
+      <form className="form">
+        {spendInputWidgets}
+      </form>
+    </section>
+  )
 }
 
 const SpendInputs = connect(

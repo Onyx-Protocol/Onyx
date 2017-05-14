@@ -3,25 +3,35 @@ import * as React from 'react'
 import { connect } from 'react-redux'
 import DocumentTitle from 'react-document-title'
 
+// ivy imports
 import Section from '../../app/components/section'
-import LockButton from './lockButton'
-
-import { getSource, getContractParameters, getCompiled } from '../selectors'
-
+import { Display } from '../../contracts/components/display'
 import { ContractParameters, ContractValue } from '../../contracts/components/parameters'
 
+// internal imports
 import Editor from './editor'
-
-import { Display } from '../../contracts/components/display'
+import LockButton from './lockButton'
+import { getError, getSource, getContractParameters, getCompiled } from '../selectors'
 
 const mapStateToProps = (state) => {
   const source = getSource(state)
   const contractParameters = getContractParameters(state)
   const instantiable = contractParameters && contractParameters.length > 0
-  return { source, instantiable }
+  const error = getError(state)
+  return { source, instantiable, error }
 }
 
-const Lock = ({ source, instantiable }) => {
+const ErrorAlert = (props: { error: string }) => {
+  return (
+    <div style={{margin: '25px 0 0 0'}} className="alert alert-danger" role="alert">
+      <span className="sr-only">Error:</span>
+      <span className="glyphicon glyphicon-exclamation-sign" style={{marginRight: "5px"}}></span>
+      {props.error}
+    </div>
+  )
+}
+
+const Lock = ({ source, instantiable, error }) => {
   let instantiate
   if (instantiable) {
     instantiate = (
@@ -34,6 +44,9 @@ const Lock = ({ source, instantiable }) => {
         <Section name="Contract Arguments">
           <div className="form-wrapper">
             <ContractParameters />
+          </div>
+          <div className="form-wrapper">
+            { error ? <ErrorAlert error={error} /> : <div/> }
           </div>
         </Section>
         <LockButton />

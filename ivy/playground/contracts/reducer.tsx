@@ -12,7 +12,7 @@ import { addDefaultInput, getPublicKeys } from '../inputs/data'
 import { Contract } from './types'
 
 // internal imports
-import { CREATE_CONTRACT, SPEND_CONTRACT,
+import { CREATE_CONTRACT, SPEND_CONTRACT, DISPLAY_ERROR,
          UPDATE_CLAUSE_INPUT, SET_CLAUSE_INDEX,  } from './actions'
 
 export const INITIAL_STATE: ContractsState = {
@@ -21,6 +21,7 @@ export const INITIAL_STATE: ContractsState = {
   spentIdList: [],
   spendContractId: "",
   selectedClauseIndex: 0,
+  error: undefined
 }
 
 export default function reducer(state: ContractsState = INITIAL_STATE, action): ContractsState {
@@ -37,7 +38,8 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
           }
         },
         idList: state.idList.filter(id => id !== action.id),
-        spentIdList: [action.id, ...state.spentIdList]
+        spentIdList: [action.id, ...state.spentIdList],
+        error: undefined
       }
     }
     case CREATE_CONTRACT: // reset keys etc. this is safe (the action already has this stuff)
@@ -111,7 +113,8 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         contractMap: {
           ...state.contractMap,
           [contract.id]: contract
-        }
+        },
+        error: undefined
       }
     case UPDATE_CLAUSE_INPUT: {
       // gotta find a way to make this logic shorter
@@ -145,6 +148,12 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       return {
         ...state,
         selectedClauseIndex: action.selectedClauseIndex
+      }
+    }
+    case DISPLAY_ERROR: {
+      return {
+        ...state,
+        error: action.error
       }
     }
     case "@@router/LOCATION_CHANGE":
