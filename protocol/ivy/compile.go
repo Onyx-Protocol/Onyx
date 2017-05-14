@@ -179,7 +179,8 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	stack := addParamsToStack(nil, contract.params)
 
 	b := newBuilder()
-	for _, a := range args {
+	for i := len(args) - 1; i >= 0; i-- {
+		a := args[i]
 		switch {
 		case a.B != nil:
 			var n int64
