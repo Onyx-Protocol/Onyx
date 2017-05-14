@@ -49,6 +49,8 @@ tr:last-of-type td {
 .panel-default>.panel-heading {
   background-image: none !important;
   color: #20252d;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
 }
 
 .panel-title {
