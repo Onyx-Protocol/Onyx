@@ -123,7 +123,7 @@ const HistoryRowUnconnected = (props: { asset, string, contract: Contract }) => 
   const contract = props.contract
   return (
     <tr>
-      <td>{ props.asset.alias }</td>
+      <td>{ props.asset && props.asset.alias }</td>
       <td>{ contract.amount }</td>
       <td>{ contract.template.name }</td>
       <td><a href={"/dashboard/transactions/" + contract.id} target="_blank">{ shortenHash(contract.id) }</a></td>
