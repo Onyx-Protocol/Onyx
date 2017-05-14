@@ -4,6 +4,7 @@ import { push } from 'react-router-redux'
 // ivy imports
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
+import { displayError as displayCreateError } from '../templates/actions'
 import {
   getSource,
   getContractValue,
@@ -45,11 +46,12 @@ import {
   WitnessComponent
 } from '../core/types'
 
-export const SHOW_ERRORS = 'contracts/SHOW_ERRORS'
+export const DISPLAY_ERROR = 'contracts/DISPLAY_ERROR'
 
-export const showErrors = () => {
+export const displayError = (error) => {
   return {
-    type: SHOW_ERRORS
+    type: DISPLAY_ERROR,
+    error
   }
 }
 
@@ -109,10 +111,12 @@ export const create = () => {
             utxo
           })
           dispatch(push(prefixRoute('/unlock')))
+        }).catch(err => {
+          dispatch(displayCreateError(err))
         })
       })
     }).catch(err => {
-      console.log("error found", err)
+      dispatch(displayCreateError(err))
     })
   }
 }
@@ -150,7 +154,7 @@ export const spend = () => {
         lockTxid: result.id
       })
       dispatch(push(prefixRoute('/unlock')))
-    })
+    }).catch(err => dispatch(displayError(err)))
   }
 }
 

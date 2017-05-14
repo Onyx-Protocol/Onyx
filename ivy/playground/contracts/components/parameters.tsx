@@ -27,10 +27,7 @@ import { validateInput, computeDataForInput, getChild,
 
 // internal imports
 import { updateInput, updateClauseInput } from '../actions'
-import { getSpendInputMap, getClauseParameterIds } from '../selectors'
-
-
-
+import { getError, getSpendInputMap, getClauseParameterIds } from '../selectors'
 
 function getChildWidget(input: ComplexInput) {
   return getWidget(getChild(input))
@@ -356,7 +353,7 @@ function mapStateToContractParametersProps(state) {
 
 function ContractParametersUnconnected(props: { parameterIds: string[] }) {
   if (props.parameterIds.length === 0) return <div />
-  let parameterInputs = props.parameterIds.map((id) => {
+  const parameterInputs = props.parameterIds.map((id) => {
     return <div key={id} className="argument">{getWidget(id)}</div>
   })
   return (
