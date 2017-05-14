@@ -1,7 +1,7 @@
 export type Type = Primitive | TypeVariable | Hash | List | "SigHash" | "Contract"
 
-export type Primitive = "PublicKey" | "Signature" | "String" | "Integer" | "Time" |
-                        "Boolean" | "Value" | "Asset" | "Amount" | "Program"
+export type Primitive = "PublicKey" | "Signature" | "String" | "Integer" | "Time" | "Boolean" |
+                        "Value" | "Asset" | "Amount" | "Program" | "Sha3(PublicKey)" | "Sha3(String)"
 
 export type DeclarableType = Primitive | "Hash"
 
@@ -49,8 +49,8 @@ export type Input = ParameterInput | StringInput | HashInput | PublicKeyInput | 
                     GenerateSignatureInput | ProvideSignatureInput | ProgramInput | ValueInput | AccountAliasInput | AssetAliasInput |
                     AmountInput | ProgramInput | AssetInput | ChoosePublicKeyInput
 
-export type ComplexInput = StringInput | HashInput | GenerateHashInput | PublicKeyInput | TimeInput | ParameterInput |
-                           GeneratePublicKeyInput | SignatureInput | GenerateSignatureInput | ProgramInput | ProgramInput
+export type ComplexInput = StringInput | HashInput | GenerateHashInput | PublicKeyInput | TimeInput | ParameterInput | GeneratePublicKeyInput |
+                           SignatureInput | GenerateSignatureInput | ProgramInput
 
 export type InputType = "parameterInput" | "stringInput" | "generateStringInput" | "provideStringInput" | "hashInput" |
                         "generateHashInput" | "provideHashInput" | "publicKeyInput" | "generatePublicKeyInput" | "providePublicKeyInput" |
@@ -58,8 +58,8 @@ export type InputType = "parameterInput" | "stringInput" | "generateStringInput"
                         "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "programInput" |
                         "valueInput" | "accountInput" | "assetInput" | "programInput" | "assetInput" | "amountInput" | "choosePublicKeyInput"
 
-export type PrimaryInputType = "stringInput" | "hashInput" | "publicKeyInput" | "numberInput" | "booleanInput" |
-                               "timeInput" | "signatureInput" | "valueInput" | "programInput" | "assetInput" | "amountInput"
+export type PrimaryInputType = "stringInput" | "hashInput" | "publicKeyInput" | "numberInput" | "booleanInput" | "timeInput" | "signatureInput" |
+                               "valueInput" | "programInput" | "assetInput" | "amountInput"
 
 export type InputContext = "contractParameters"|"clauseParameters"|"clauseValue"|"contractValue"|"unlockValue"
 
@@ -121,7 +121,7 @@ export type KeyData = {
 
 export type PublicKeyInput = {
   type: "publicKeyInput",
-  value: "accountInput", //"providePublicKeyInput"|"generatePublicKeyInput",
+  value: "accountInput" | "provideStringInput",
   name: string,
   computedData?: string,
   keyData?: KeyData
@@ -229,7 +229,7 @@ export type AmountInput = {
 export type ProgramInput = {
   type: "programInput",
   value: string, // for now just "accountInput"
-  name: string
+  name: string,
   computedData?: string
 }
 
