@@ -120,3 +120,64 @@ func TestAddJump(t *testing.T) {
 		})
 	}
 }
+
+func TestOptimize(t *testing.T) {
+	cases := []struct {
+		name    string
+		fn      func(b *Builder)
+		wantHex string
+	}{
+		{
+			"0 ROLL",
+			func(b *Builder) {
+				b.AddInt64(0).AddOp(vm.OP_ROLL)
+			},
+			"",
+		},
+		{
+			"0 PICK",
+			func(b *Builder) {
+				b.AddInt64(0).AddOp(vm.OP_PICK)
+			},
+			"76", // DUP
+		},
+		{
+			"1 ROLL",
+			func(b *Builder) {
+				b.AddInt64(1).AddOp(vm.OP_ROLL)
+			},
+			"7c", // SWAP
+		},
+		{
+			"1 x ADD",
+			func(b *Builder) {
+				b.AddInt64(1).AddOp(vm.OP_OVER).AddOp(vm.OP_ADD)
+			},
+			"788b", // OVER 1ADD
+		},
+		{
+			"SWAP EQUAL",
+			func(b *Builder) {
+				b.AddOp(vm.OP_SWAP).AddOp(vm.OP_EQUAL)
+			},
+			"87", // EQUAL
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			b := NewBuilder(true)
+			c.fn(b)
+			got, err := b.Build()
+			if err != nil {
+				t.Fatal(err)
+			}
+			want, err := hex.DecodeString(c.wantHex)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(got, want) {
+				t.Errorf("got %x, want %x", got, want)
+			}
+		})
+	}
+}
