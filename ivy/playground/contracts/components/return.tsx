@@ -1,24 +1,27 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
-import { TemplateClause } from 'ivy-compiler'
 
+// ivy imports
+import { Input } from '../../inputs/types'
 import { getWidget } from '../../contracts/components/parameters'
-import { getSpendTemplateClause } from '../selectors'
 
+// internal imports
+import { getClauseUnlockInput } from '../selectors'
 
-const Return = (props: { clause: TemplateClause }) => {
-  if (props.clause.returnStatement === undefined) {
+const UnlockDestination = (props: { unlockInput: Input }) => {
+  if (props.unlockInput === undefined) {
     return <div></div>
   } else {
     return (
       <section>
         <h4>Unlocked Value Destination</h4>
-        {getWidget("transactionDetails.accountInput")}
+        {getWidget("unlockValue.accountInput")}
       </section>
     )
   }
 }
 
 export default connect(
-  (state) => ({ clause: getSpendTemplateClause(state) })
-)(Return)
+  (state) => ({ unlockInput: getClauseUnlockInput(state) })
+)(UnlockDestination)

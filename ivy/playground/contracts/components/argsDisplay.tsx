@@ -1,19 +1,22 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
-import { getSpendContractParametersInputMap } from '../selectors'
-import { Input, ParameterInput, NumberInput, BooleanInput, StringInput,
-         ProvideStringInput, GenerateStringInput, HashInput,
-         TimeInput, TimestampTimeInput,
-         PublicKeyInput, GeneratePublicKeyInput, ProvidePublicKeyInput, GenerateHashInput,
-         ProvideHashInput, InputType, ComplexInput, ValueInput,
-         AssetAliasInput, AccountAliasInput, AssetInput, AmountInput, ProgramInput } from '../../inputs/types'
-import { getChild, getParameterIdentifier, getGenerateStringInputValue, computeDataForInput } from '../../inputs/data'
 import { typeToString } from 'ivy-compiler'
+
+// ivy imports
 import { getItemMap as getAssetMap } from '../../assets/selectors'
 import { getItemMap as getAccountMap } from '../../accounts/selectors'
 import { getContractValueId } from '../../templates/selectors'
+import { getChild, getParameterIdentifier,
+         getGenerateStringInputValue, computeDataForInput } from '../../inputs/data'
+import { Input, ParameterInput, NumberInput, BooleanInput, StringInput, ProvideStringInput,
+         GenerateStringInput, HashInput, TimeInput, TimestampTimeInput, PublicKeyInput,
+         GeneratePublicKeyInput, ProvidePublicKeyInput, GenerateHashInput, ProvideHashInput,
+         InputType, ComplexInput, ValueInput, AssetAliasInput, AccountAliasInput, AssetInput,
+         AmountInput, ProgramInput } from '../../inputs/types'
 
-import { getSpendContractParameterSelector, getSpendParameterIds } from '../selectors'
+// internal imports
+import { getInputMap, getInputSelector, getParameterIds } from '../selectors'
 
 function getChildWidget(input: ComplexInput) {
   return getWidget(getChild(input))
@@ -104,7 +107,6 @@ function GenerateStringWidget(props: { input: GenerateStringInput }) {
   return <div><pre>{getGenerateStringInputValue(props.input)}</pre></div>
 }
 
-
 function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Element) {
   switch (type) {
     case "stringInput":
@@ -138,14 +140,14 @@ function getWidgetType(type: InputType): ((props: { input: Input }) => JSX.Eleme
 function getWidget(id: string): JSX.Element {
   let type = id.split(".").pop() as InputType
   let widgetTypeConnected = connect(
-    (state) => ({ input: getSpendContractParameterSelector(id)(state) })
+    (state) => ({ input: getInputSelector(id)(state) })
   )(getWidgetType(type))
   if (type === "generateHashInput" || type === "generatePublicKeyInput") {
     widgetTypeConnected = connect(
       (state) => {
         return {
-          input: getSpendContractParameterSelector(id)(state),
-          computedValue: computeDataForInput(id, getSpendContractParametersInputMap(state))
+          input: getInputSelector(id)(state),
+          computedValue: computeDataForInput(id, getInputMap(state))
         }
       }
     )(getWidgetType(type))
@@ -184,7 +186,7 @@ function SpendInputsUnconnected(props: { spendInputIds: string[] }) {
 }
 
 const SpendInputs = connect(
-  (state) => ({ spendInputIds: getSpendParameterIds(state) })
+  (state) => ({ spendInputIds: getParameterIds(state) })
 )(SpendInputsUnconnected)
 
 export default SpendInputs
