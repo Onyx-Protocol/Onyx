@@ -72,10 +72,6 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
     case "assetInput": {
       return Buffer.from(input.value, 'hex')
     }
-    // case "generatePublicKeyInput": {
-    //   let publicKeyValue = getPublicKeyValue(inputId, inputsById)
-    //   return Buffer.from(publicKeyValue, "hex")
-    // }
     case "numberInput":
     case "amountInput": {
       return parseInt(input.value, 10)
@@ -99,12 +95,6 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
         default: throw "unexpected hash function"
       }
     }
-    // case "generateSignatureInput": {
-    //   throw " "
-    //   let privKey = getPrivateKeyValue(inputId, inputsById)
-    //   if (sigHash === undefined) throw "no sigHash provided to generateSignatureInput"
-    //   return createSignature(sigHash, privKey, inputsById)
-    // }
     default:
       throw "should not call getData with " + input.type
   }
@@ -205,8 +195,6 @@ export const isValidInput = (id: string, inputMap: InputMap): boolean => {
     case "programInput":
     case "signatureInput":
       return isValidInput(getChild(input), inputMap)
-    //case "assetInput":
-    //  return isValidInput(input.name + ".assetInput", inputMap)
     case "valueInput":
       return isValidInput(input.name + ".accountInput", inputMap) &&
              isValidInput(input.name + ".assetInput", inputMap) &&
@@ -290,12 +278,6 @@ export const validateInput = (input: Input): boolean => {
       throw 'input type not valid ' + input.type
   }
 }
-
-// export const getPublicKeyValue = (inputId: string, inputsById: {[s: string]: Input}) => {
-//   let privateKeyValue = getPrivateKeyValue(inputId, inputsById)
-//   let kr = keyring.fromSecret(privateKeyValue)
-//   return kr.getPublicKey("hex")
-// }
 
 export const getGenerateStringInputValue = (input: GenerateStringInput) => {
   let length = parseInt(input.value, 10)
@@ -424,10 +406,8 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
       return "provideHashInput"
     case "publicKeyInput":
       return "accountInput"
-      // return "providePublicKeyInput"
     case "signatureInput":
       return "choosePublicKeyInput"
-      // return "generateSignatureInput"
     case "generatePublicKeyInput":
     case "generateSignatureInput":
       return "providePrivateKeyInput"
@@ -443,7 +423,7 @@ export function getDefaultClauseParameterValue(inputType: InputType): string {
     case "assetInput":
     case "amountInput":
     case "choosePublicKeyInput":
-      return "" // TODO?: dan
+      return ""
     case "generatePrivateKeyInput":
       throw inputType + " should not be allowed"
   }
@@ -533,6 +513,7 @@ export function addDefaultInput(inputs: Input[], inputType: InputType, parentNam
     }
     case "publicKeyInput": {
       addDefaultInput(inputs, "accountInput", name)
+      addDefaultInput(inputs, "provideStringInput", name)
       return
     }
     case "generatePublicKeyInput": {

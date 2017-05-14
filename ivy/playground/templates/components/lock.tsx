@@ -17,7 +17,7 @@ import { Display } from '../../contracts/components/display'
 const mapStateToProps = (state) => {
   const source = getSource(state)
   const contractParameters = getContractParameters(state)
-  const instantiable = contractParameters !== undefined
+  const instantiable = contractParameters && contractParameters.length > 0
   return { source, instantiable }
 }
 
