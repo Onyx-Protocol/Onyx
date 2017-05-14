@@ -1,12 +1,10 @@
-import { Template as OldTemplate, ContractParameter } from 'ivy-compiler'
-
-import { InputMap } from '../inputs/types'
+import { ClauseParameterType, ContractParameterType, InputMap } from '../inputs/types'
 
 export type SourceMap = { [s: string]: string }
 
 export type Param = {
   name: string,
-  type: string
+  type: ContractParameterType | ClauseParameterType
 }
 
 export type HashCall = {
@@ -49,5 +47,3 @@ export type TemplateState = {
   inputMap?: InputMap,
   compiled?: CompiledTemplate,
 }
-
-export { OldTemplate }

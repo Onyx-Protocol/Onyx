@@ -1,23 +1,9 @@
-import { mapServerTemplate } from '../templates/util';
-import { AssetAliasInput, ProgramInput } from '../inputs/types';
+// external imports
+import { push } from 'react-router-redux'
+
+// ivy imports
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
-export const CREATE_CONTRACT = 'contracts/CREATE_CONTRACT'
-export const UPDATE_INPUT = 'contracts/UPDATE_INPUT'
-import { push } from 'react-router-redux'
-import {
-  getClauseParameterIds,
-  getClauseDataParameterIds,
-  getSpendContractId,
-  getClauseWitnessComponents,
-  getSpendContractSelectedClauseIndex,
-  getClauseOutputActions,
-  getClauseValue,
-  getClauseReturnAction,
-  getClauseMintimes,
-  getClauseMaxtimes
-} from './selectors';
-
 import {
   getSource,
   getContractValue,
@@ -27,6 +13,19 @@ import {
 
 import { getPromisedInputMap } from '../inputs/data'
 
+// internal imports
+import {
+  getSpendContract,
+  getSpendContractId,
+  getSelectedClauseIndex,
+  getLockActions,
+  getRequiredValueAction,
+  getUnlockAction,
+  getClauseWitnessComponents,
+  getClauseMintimes,
+  getClauseMaxtimes
+} from './selectors';
+
 import {
   client,
   prefixRoute,
@@ -35,26 +34,18 @@ import {
 } from '../core'
 
 import {
-  WitnessComponent,
-  KeyId,
-  DataWitness,
-  SignatureWitness,
-  Receiver,
-  SpendUnspentOutput,
+  Action,
   ControlWithAccount,
   ControlWithReceiver,
-  Action
+  DataWitness,
+  KeyId,
+  Receiver,
+  SignatureWitness,
+  SpendUnspentOutput,
+  WitnessComponent
 } from '../core/types'
 
-
-export const SELECT_TEMPLATE = 'contracts/SELECT_TEMPLATE'
-export const SET_CLAUSE_INDEX = 'contracts/SET_CLAUSE_INDEX'
-export const SPEND = 'contracts/SPEND'
 export const SHOW_ERRORS = 'contracts/SHOW_ERRORS'
-
-import { getSpendContract } from './selectors'
-
-import { InputMap } from '../inputs/types'
 
 export const showErrors = () => {
   return {
@@ -62,12 +53,15 @@ export const showErrors = () => {
   }
 }
 
+export const CREATE_CONTRACT = 'contracts/CREATE_CONTRACT'
+
 export const create = () => {
   return (dispatch, getState) => {
-    let state = getState()
-    let inputMap = getInputMap(state)
+    const state = getState()
+    const inputMap = getInputMap(state)
     if (inputMap === undefined) throw "create should not have been called when inputMap is undefined"
-    let promisedInputMap = getPromisedInputMap(inputMap)
+
+    const promisedInputMap = getPromisedInputMap(inputMap)
     promisedInputMap.then((inputMap) => {
       const args = getParameterData(state, inputMap).map(param => {
         if (param instanceof Buffer) {
@@ -88,24 +82,23 @@ export const create = () => {
         throw 'unsupported argument type ' + (typeof param)
       })
       const source = getSource(state)
-      client.ivy.compile({ contract: source, args: args }).then(contract => {
-        let controlProgram = contract.program
-        let spendFromAccount = getContractValue(state)
+      client.ivy.compile({ contract: source, args: args }).then(template => {
+        const controlProgram = template.program
+        const spendFromAccount = getContractValue(state)
         if (spendFromAccount === undefined) throw "spendFromAccount should not be undefined here"
-        let assetId = spendFromAccount.assetId
-        let amount = spendFromAccount.amount
-        let receiver: Receiver = {
+        const assetId = spendFromAccount.assetId
+        const amount = spendFromAccount.amount
+        const receiver: Receiver = {
           controlProgram: controlProgram,
           expiresAt: "2017-06-25T00:00:00.000Z" // TODO
         }
-        let controlWithReceiver: ControlWithReceiver = {
+        const controlWithReceiver: ControlWithReceiver = {
           type: "controlWithReceiver",
           receiver,
           assetId,
           amount
         }
-        let template = mapServerTemplate(contract)
-        let actions: Action[] = [spendFromAccount, controlWithReceiver]
+        const actions: Action[] = [spendFromAccount, controlWithReceiver]
         return createLockingTx(actions).then(utxo => {
           dispatch({
             type: CREATE_CONTRACT,
@@ -130,26 +123,23 @@ export const spend = () => {
   return(dispatch, getState) => {
     const state = getState()
     const contract = getSpendContract(state)
-    const clauseIndex = getSpendContractSelectedClauseIndex(state)
     const outputId = contract.outputId
-    const spendContractAction: SpendUnspentOutput = {
+    const lockedValueAction: SpendUnspentOutput = {
       type: "spendUnspentOutput",
       outputId
     }
+    const lockActions: Action[] = getLockActions(state)
+    const actions: Action[] = [lockedValueAction, ...lockActions]
 
-    const clauseOutputActions: Action[] = getClauseOutputActions(state)
-    const actions: Action[] = [spendContractAction, ...clauseOutputActions]
-    const clauseValue = getClauseValue(state)
-    if (clauseValue !== undefined) {
-      actions.push(clauseValue)
+    const reqValueAction = getRequiredValueAction(state)
+    if (reqValueAction !== undefined) {
+      actions.push(reqValueAction)
     }
-    const returnAction = getClauseReturnAction(state)
-    if (returnAction !== undefined) {
-      actions.push(returnAction)
+    const unlockAction = getUnlockAction(state)
+    if (unlockAction !== undefined) {
+      actions.push(unlockAction)
     }
 
-    const clauseParams = getClauseParameterIds(state)
-    const clauseDataParams = getClauseDataParameterIds(state)
     const witness: WitnessComponent[] = getClauseWitnessComponents(getState())
     const mintimes = getClauseMintimes(getState())
     const maxtimes = getClauseMaxtimes(getState())
@@ -164,6 +154,8 @@ export const spend = () => {
   }
 }
 
+export const SET_CLAUSE_INDEX = 'contracts/SET_CLAUSE_INDEX'
+
 export const setClauseIndex = (selectedClauseIndex: number) => {
   return {
     type: SET_CLAUSE_INDEX,
@@ -171,7 +163,9 @@ export const setClauseIndex = (selectedClauseIndex: number) => {
   }
 }
 
-export function updateInput(name: string, newValue: string) {
+export const UPDATE_INPUT = 'contracts/UPDATE_INPUT'
+
+export const updateInput = (name: string, newValue: string) => {
   return {
     type: UPDATE_INPUT,
     name: name,
@@ -179,12 +173,12 @@ export function updateInput(name: string, newValue: string) {
   }
 }
 
-export const UPDATE_CLAUSE_INPUT = 'UPDATE_CLAUSE_INPUT'
+export const UPDATE_CLAUSE_INPUT = 'contracts/UPDATE_CLAUSE_INPUT'
 
-export function updateClauseInput(name: string, newValue: string) {
+export const updateClauseInput = (name: string, newValue: string) => {
   return (dispatch, getState) => {
-    let state = getState()
-    let contractId = getSpendContractId(state)
+    const state = getState()
+    const contractId = getSpendContractId(state)
     dispatch({
       type: UPDATE_CLAUSE_INPUT,
       contractId: contractId,

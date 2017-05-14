@@ -1,14 +1,15 @@
 import { Input, InputMap } from '../inputs/types'
 
-import { OldTemplate } from '../templates/types'
+import { CompiledTemplate } from '../templates/types'
 
 export type Contract = {
+  // lock tx id
   id: string,
-  lockTxid: string,
+  unlockTxid: string,
   outputId: string,
   assetId: string,
   amount: number,
-  template: OldTemplate,
+  template: CompiledTemplate,
   controlProgram: string,
 
   // Map of UI Form inputs
@@ -26,29 +27,13 @@ export type Contract = {
   }
 }
 
-export type ItemMap = { [s: string]: Contract }
+export type ContractMap = { [s: string]: Contract }
 
 export type ContractsState = {
-  itemMap: ItemMap,
+  contractMap: ContractMap,
   idList: string[],
   spentIdList: string[],
   spendContractId: string,
   selectedClauseIndex: number
 }
 
-export type ContractParameterType = "PublicKey" | "String" | "Integer" | "Time" | "Boolean" |
-                                    "Program" | "Asset" | "Amount" | "Value" //| ContractParameterHash
-
-export type ContractParameter = {
-  type: "contractParameter",
-  valueType: ContractParameterType,
-  identifier: string
-}
-
-export type ClauseParameter = {
-  type: "clauseParameter",
-  valueType: ClauseParameterType,
-  identifier: string
-}
-
-export type ClauseParameterType = "Signature" | ContractParameterType // ClauseParameterHash | ContractParameterType

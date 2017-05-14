@@ -3,14 +3,6 @@ import * as React from 'react'
 import { createSelector } from 'reselect'
 
 import {
-  isHash,
-  HashFunction,
-  ClauseParameter,
-  ClauseParameterType,
-  ClauseParameterHash // clause parameters are a superset of contract parameters
-} from 'ivy-compiler'
-
-import {
   Input,
   ComplexInput,
   InputType,
@@ -24,7 +16,12 @@ import {
   GenerateHashInput,
   ParameterInput,
   ProvideHashInput,
-  KeyMap
+  KeyMap,
+  isHash,
+  HashFunction,
+  ClauseParameter,
+  ClauseParameterType,
+  ClauseParameterHash // clause parameters are a superset of contract parameters
 } from './types'
 
 let Promise = require('prfun')
@@ -394,7 +391,7 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
   }
 }
 
-export function getDefaultTransactionDetailValue(inputType: InputType): string {
+export function getDefaultUnlockValue(inputType: InputType): string {
   switch (inputType) {
     case "programInput":
       return "generateProgramInput"
@@ -503,7 +500,7 @@ export function getDefaultValue(inputType, name): string {
     case "contractParameters": return getDefaultContractParameterValue(inputType)
     case "contractValue": return getDefaultContractParameterValue(inputType)
     case "clauseValue": return getDefaultClauseParameterValue(inputType)
-    case "transactionDetails": return getDefaultTransactionDetailValue(inputType)
+    case "unlockValue": return getDefaultUnlockValue(inputType)
   }
 }
 
