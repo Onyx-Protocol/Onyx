@@ -411,6 +411,17 @@ export const getLockActions = createSelector(
   }
 )
 
+export const getError = createSelector(
+  getState,
+  state => {
+    const err = state.error
+    if (err === undefined) {
+      return ''
+    }
+    return err.message
+  }
+)
+
 export const generateInputMap = (compiled: CompiledTemplate): InputMap => {
   let inputs: Input[] = []
   for (const param of compiled.params) {
