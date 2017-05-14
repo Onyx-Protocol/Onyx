@@ -75,10 +75,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         }
 
         for (const value of clause.valueInfo) {
-          // TODO(boymanjor): remove
-          // const inputName = "contractValue." + value.name
-          // if (action.inputMap[inputName]) {
-          if (value.program === undefined) {
+          if (value.name === template.value) {
             // This is the unlock statement.
             // Do not add it to the spendInputMap.
             continue
