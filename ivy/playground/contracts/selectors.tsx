@@ -1,5 +1,6 @@
 // external imports
 import { createSelector } from 'reselect'
+import { sha3_256 } from 'js-sha3'
 
 // ivy imports
 import { client, signer } from '../core'
@@ -13,6 +14,7 @@ import {
 } from './types'
 
 import {
+  HashFunction,
   ClauseParameterType,
   Input,
   InputMap,
@@ -180,7 +182,28 @@ export const getClauseWitnessComponents = createSelector(
     clauseParameters.forEach(clauseParameter => {
       const clauseParameterPrefix = "clauseParameters." + clauseName + "." + clauseParameter.name
       switch (clauseParameter.type) {
-        case "Value": {
+        case "PublicKey": {
+          const inputId = clauseParameterPrefix + ".publicKeyInput.provideStringInput"
+          const input = spendInputMap[inputId]
+          if (input === undefined || input.type !== "provideStringInput") {
+            throw "provideStringInput surprisingly not found for PublicKey clause parameter"
+          }
+          witness.push({
+            type: "data",
+            value: dataToArgString(getData(inputId, spendInputMap))
+          })
+          return
+        }
+        case "String": {
+          const inputId = clauseParameterPrefix + ".stringInput.provideStringInput"
+          const input = spendInputMap[inputId]
+          if (input === undefined || input.type !== "provideStringInput") {
+            throw "provideStringInput surprisingly not found for String clause parameter"
+          }
+          witness.push({
+            type: "data",
+            value: dataToArgString(getData(inputId, spendInputMap))
+          })
           return
         }
         case "Signature": {
@@ -218,14 +241,15 @@ export const getClauseWitnessComponents = createSelector(
         }
       }
     })
+    const reverse = witness.reverse()
     if (contract.clauseList.length > 1) {
       const value = dataToArgString(clauseIndex)
-      witness.push({
+      reverse.push({
         type: "data",
         value
       } as DataWitness)
     }
-    return witness
+    return reverse
   }
 )
 
@@ -390,8 +414,30 @@ export const getLockActions = createSelector(
 export const generateInputMap = (compiled: CompiledTemplate): InputMap => {
   let inputs: Input[] = []
   for (const param of compiled.params) {
-    addParameterInput(inputs, param.type as ClauseParameterType, "contractParameters." + param.name)
+    switch(param.type) {
+      case "Sha3(PublicKey)": {
+        const hashParam = {
+          type: "hashType",
+          inputType: "PublicKey",
+          hashFunction: "sha3" as HashFunction
+        }
+        addParameterInput(inputs, hashParam as ClauseParameterType, "contractParameters." + param.name)
+        break
+      }
+      case "Sha3(String)": {
+        const hashParam = {
+          type: "hashType",
+          inputType: "String",
+          hashFunction: "sha3" as HashFunction
+        }
+        addParameterInput(inputs, hashParam as ClauseParameterType, "contractParameters." + param.name)
+        break
+      }
+      default:
+        addParameterInput(inputs, param.type as ClauseParameterType, "contractParameters." + param.name)
+    }
   }
+
   if (compiled.value !== "") {
     addParameterInput(inputs, "Value", "contractValue." + compiled.value)
   }

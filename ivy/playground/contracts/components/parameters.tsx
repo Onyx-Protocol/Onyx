@@ -117,9 +117,15 @@ function GenerateHashWidget(props: { input: GenerateHashInput, handleChange: (e)
 }
 
 function PublicKeyWidget(props: { input: PublicKeyInput, handleChange: (e)=>undefined }) {
-  return <div>
-    {getChildWidget(props.input)}
-  </div>
+  let options = [{label: "Generate Pubkey", value: "accountInput"},
+                 {label: "Provide Pubkey", value: "provideStringInput"}]
+  let handleChange = (s: string) => undefined
+  return (
+    <div>
+      <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
+      {getChildWidget(props.input)}
+    </div>
+  )
 }
 
 function GeneratePublicKeyWidget(props: { input: GeneratePublicKeyInput, handleChange: (e)=>undefined,
