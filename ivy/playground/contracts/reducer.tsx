@@ -2,7 +2,7 @@
 import { ContractsState } from './types'
 import { getParameterIds } from '../templates/selectors'
 import { CompiledTemplate } from '../templates/types'
-import { Input, InputMap } from '../inputs/types'
+import { ClauseParameterType, Input, InputMap, HashFunction } from '../inputs/types'
 import { getInputMap } from '../templates/selectors'
 import { addParameterInput } from '../inputs/data'
 
@@ -49,8 +49,29 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       const inputs: Input[] = []
       for (const clause of template.clauseInfo) {
         clauseParameterIds[clause.name] = clause.args.map(param => "clauseParameters." + clause.name + "." + param.name)
-        for (let parameter of clause.args) {
-          addParameterInput(inputs, parameter.type, "clauseParameters." + clause.name + "." + parameter.name)
+        for (let param of clause.args) {
+          switch(param.type) {
+            case "Sha3(PublicKey)": {
+              const hashParam = {
+                type: "hashType",
+                inputType: "PublicKey",
+                hashFunction: "sha3" as HashFunction
+              }
+              addParameterInput(inputs, hashParam as ClauseParameterType, "clauseParameters." + clause.name + "." + param.name)
+              break
+            }
+            case "Sha3(String)": {
+              const hashParam = {
+                type: "hashType",
+                inputType: "String",
+                hashFunction: "sha3" as HashFunction
+              }
+              addParameterInput(inputs, hashParam as ClauseParameterType, "clauseParameters." + clause.name + "." + param.name)
+              break
+            }
+            default:
+              addParameterInput(inputs, param.type as ClauseParameterType, "clauseParameters." + clause.name + "." + param.name)
+          }
         }
 
         for (const value of clause.valueInfo) {
