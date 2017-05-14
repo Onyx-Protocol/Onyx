@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 
 import { TemplateClause } from 'ivy-compiler'
 
-import { getSpendContract, getSpendContractId, getSpendContractSelectedClauseIndex } from '../selectors'
+import { getSpendContract, getSpendContractId, getSelectedClauseIndex } from '../selectors'
 import { setClauseIndex } from '../actions'
 
 const ClauseSelect = (props: { contractId: string, clauses: TemplateClause[], 
@@ -20,8 +20,8 @@ const ClauseSelect = (props: { contractId: string, clauses: TemplateClause[],
 
 export default connect(
   (state) => ({
-    spendIndex: getSpendContractSelectedClauseIndex(state),
-    clauses: getSpendContract(state).template.clauses,
+    spendIndex: getSelectedClauseIndex(state),
+    clauses: getSpendContract(state).template.clauseInfo,
     contractId: getSpendContractId(state)
   }),
   { setClauseIndex }

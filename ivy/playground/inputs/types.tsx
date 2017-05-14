@@ -1,32 +1,67 @@
-import {
-  HashFunction,
-  ClauseParameter,
-  ClauseParameterType,
-  ClauseParameterHash // clause parameters are a superset of contract parameters
-} from 'ivy-compiler'
+export type Type = Primitive | TypeVariable | Hash | List | "SigHash" | "Contract"
 
-export type Input = ParameterInput | StringInput | HashInput | PublicKeyInput | NumberInput |
-  BooleanInput | TimeInput | GenerateStringInput | ProvideStringInput | GenerateHashInput |
-  ProvideHashInput | GeneratePublicKeyInput | ProvidePublicKeyInput | GeneratePrivateKeyInput |
-  ProvidePrivateKeyInput | TimestampTimeInput |
-  SignatureInput | GenerateSignatureInput | ProvideSignatureInput | ProgramInput | 
-  ValueInput | AccountAliasInput | AssetAliasInput | AmountInput |
-  ProgramInput | AssetInput | ChoosePublicKeyInput
+export type Primitive = "PublicKey" | "Signature" | "String" | "Integer" | "Time" |
+                        "Boolean" | "Value" | "Asset" | "Amount" | "Program"
 
-export type ComplexInput = StringInput | HashInput | GenerateHashInput | PublicKeyInput | TimeInput |
-  ParameterInput | GeneratePublicKeyInput | SignatureInput | GenerateSignatureInput | ProgramInput |
-  ProgramInput
+export type DeclarableType = Primitive | "Hash"
 
-export type InputType = "parameterInput" | "stringInput" | "generateStringInput" | "provideStringInput" |
-  "hashInput" | "generateHashInput" | "provideHashInput" | "publicKeyInput" | "generatePublicKeyInput" |
-  "providePublicKeyInput" | "generatePrivateKeyInput" | "providePrivateKeyInput" | "numberInput" | "booleanInput" |
-  "timeInput" | "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "programInput" |
-  "valueInput" | "accountInput" | "assetInput" | "programInput" | "assetInput" | "amountInput" | "choosePublicKeyInput"
+export type HashFunction = "sha256" | "sha3"
+
+export type Hash = { type: "hashType", hashFunction: HashFunction, inputType: Type }
+
+export type List = { type: "listType", elementType: Type }
+
+export type TypeClass = "Primitive" | "TypeVariable" | "Hash" | "List" | "Other"
+
+export type TypeVariable = { type: "typeVariable", name: string }
+
+export type ContractParameterHash = {
+  type: "hashType",
+  inputType: ContractParameterType,
+  hashFunction: HashFunction
+}
+
+export type ClauseParameterHash = {
+  type: "hashType",
+  inputType: ClauseParameterType,
+  hashFunction: HashFunction
+}
+
+export type ClauseParameterType = "Signature" | ClauseParameterHash | ContractParameterType
+
+export type ContractParameterType = "PublicKey" | "String" | "Integer" | "Time" | "Boolean" |
+                                    "Program" | "Asset" | "Amount" | "Value" | ContractParameterHash
+export type ContractParameter = {
+  type: "contractParameter",
+  valueType: ContractParameterType,
+  name: string
+}
+
+export type ClauseParameter = {
+  type: "clauseParameter",
+  valueType: ClauseParameterType,
+  name: string
+}
+
+export type Input = ParameterInput | StringInput | HashInput | PublicKeyInput | NumberInput | BooleanInput | TimeInput |
+                    GenerateStringInput | ProvideStringInput | GenerateHashInput | ProvideHashInput | GeneratePublicKeyInput |
+                    ProvidePublicKeyInput | GeneratePrivateKeyInput | ProvidePrivateKeyInput | TimestampTimeInput | SignatureInput |
+                    GenerateSignatureInput | ProvideSignatureInput | ProgramInput | ValueInput | AccountAliasInput | AssetAliasInput |
+                    AmountInput | ProgramInput | AssetInput | ChoosePublicKeyInput
+
+export type ComplexInput = StringInput | HashInput | GenerateHashInput | PublicKeyInput | TimeInput | ParameterInput |
+                           GeneratePublicKeyInput | SignatureInput | GenerateSignatureInput | ProgramInput | ProgramInput
+
+export type InputType = "parameterInput" | "stringInput" | "generateStringInput" | "provideStringInput" | "hashInput" |
+                        "generateHashInput" | "provideHashInput" | "publicKeyInput" | "generatePublicKeyInput" | "providePublicKeyInput" |
+                        "generatePrivateKeyInput" | "providePrivateKeyInput" | "numberInput" | "booleanInput" | "timeInput" |
+                        "timestampTimeInput" | "signatureInput" | "generateSignatureInput" | "provideSignatureInput" | "programInput" |
+                        "valueInput" | "accountInput" | "assetInput" | "programInput" | "assetInput" | "amountInput" | "choosePublicKeyInput"
 
 export type PrimaryInputType = "stringInput" | "hashInput" | "publicKeyInput" | "numberInput" | "booleanInput" |
-  "timeInput" | "signatureInput" | "valueInput" | "programInput" | "assetInput" | "amountInput"
+                               "timeInput" | "signatureInput" | "valueInput" | "programInput" | "assetInput" | "amountInput"
 
-export type InputContext = "contractParameters"|"clauseParameters"|"clauseValue"|"contractValue"|"transactionDetails"
+export type InputContext = "contractParameters"|"clauseParameters"|"clauseValue"|"contractValue"|"unlockValue"
 
 export type InputMap = {[s: string]: Input}
 
@@ -202,4 +237,8 @@ export type AssetInput = {
   type: "assetInput",
   value: string,
   name: string
+}
+
+export function isHash(type: Type): type is Hash {
+  return (typeof type === "object" && type.type === "hashType")
 }
