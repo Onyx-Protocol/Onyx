@@ -1,12 +1,13 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
 
-import { TemplateClause } from 'ivy-compiler'
-
+// internal imports
 import { getSpendContract, getSpendContractId, getSelectedClauseIndex } from '../selectors'
 import { setClauseIndex } from '../actions'
+import { ClauseInfo } from '../../templates/types'
 
-const ClauseSelect = (props: { contractId: string, clauses: TemplateClause[], 
+const ClauseSelect = (props: { contractId: string, clauses: ClauseInfo[],
                                setClauseIndex: (number)=>undefined, spendIndex: number }) => {
   return (
     <section>
