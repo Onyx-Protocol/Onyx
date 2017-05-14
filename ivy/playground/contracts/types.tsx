@@ -34,6 +34,7 @@ export type ContractsState = {
   idList: string[],
   spentIdList: string[],
   spendContractId: string,
-  selectedClauseIndex: number
+  selectedClauseIndex: number,
+  error?
 }
 

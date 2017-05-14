@@ -14,6 +14,15 @@ export const loadTemplate = (selected: string) => {
   }
 }
 
+export const DISPLAY_ERROR = 'templates/DISPLAY_ERROR'
+
+export const displayError = (error) => {
+  return {
+    type: DISPLAY_ERROR,
+    error
+  }
+}
+
 export const SET_SOURCE = 'templates/SET_SOURCE'
 
 export const setSource = (source: string) => {

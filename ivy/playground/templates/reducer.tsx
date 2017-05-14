@@ -1,11 +1,11 @@
 // ivy imports
 import { TemplateState, CompiledTemplate } from './types'
-import { UPDATE_INPUT } from '../contracts/actions'
+import { CREATE_CONTRACT, UPDATE_INPUT } from '../contracts/actions'
 import { generateInputMap } from '../contracts/selectors'
 import { InputMap } from '../inputs/types'
 
 // internal imports
-import { SET_SOURCE, SAVE_TEMPLATE, FETCH_COMPILED } from './actions'
+import { DISPLAY_ERROR, SET_SOURCE, SAVE_TEMPLATE, FETCH_COMPILED } from './actions'
 import { INITIAL_SOURCE_MAP, INITIAL_ID_LIST } from './constants'
 
 const INITIAL_STATE: TemplateState = {
@@ -13,7 +13,8 @@ const INITIAL_STATE: TemplateState = {
   idList: INITIAL_ID_LIST,
   source: '',
   inputMap: undefined,
-  compiled: undefined
+  compiled: undefined,
+  error: undefined
 }
 
 export default function reducer(state: TemplateState = INITIAL_STATE, action): TemplateState {
@@ -61,6 +62,18 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
         ...state,
         compiled,
         inputMap
+      }
+    }
+    case CREATE_CONTRACT: {
+      return {
+        ...state,
+        error: undefined
+      }
+    }
+    case DISPLAY_ERROR: {
+      return {
+        ...state,
+        error: action.error
       }
     }
     default:

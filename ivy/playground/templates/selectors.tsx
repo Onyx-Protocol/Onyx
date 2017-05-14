@@ -12,6 +12,17 @@ import { TemplateState, SourceMap } from './types'
 
 export const getTemplateState = (state: AppState): TemplateState => state.templates
 
+export const getError = createSelector(
+  getTemplateState,
+  state => {
+    const err = state.error
+    if (err === undefined) {
+      return ''
+    }
+    return err.message
+  }
+)
+
 export const getSourceMap = createSelector(
   getTemplateState,
   (state: TemplateState): SourceMap => state.sourceMap
