@@ -1,12 +1,17 @@
+// external imports
 import * as React from 'react'
 import DocumentTitle from 'react-document-title'
-import Section from '../../app/components/section'
-import { Contract } from '../types'
-import { getIdList as getContractIds, getItem as getContract, getSpentIdList as getSpentContractIds } from '../selectors'
-import { connect } from 'react-redux'
 import { Link } from 'react-router-dom'
+import { connect } from 'react-redux'
+
+// ivy imports
+import Section from '../../app/components/section'
 import { prefixRoute } from '../../core'
 import { getItemMap as getAssetMap } from '../../assets/selectors'
+
+// internal imports
+import { getContractIds, getContract, getSpentContractIds } from '../selectors'
+import { Contract } from '../types'
 
 function shortenHash(hash: string) {
   if (hash.length < 9) {
@@ -114,7 +119,7 @@ const History = (props: { spentContractIds: string[] }) => {
   )
 }
 
-const HistoryRowUnconnected = (props: { asset, contractId: string, contract: Contract }) => {
+const HistoryRowUnconnected = (props: { asset, string, contract: Contract }) => {
   const contract = props.contract
   return (
     <tr>
@@ -122,7 +127,7 @@ const HistoryRowUnconnected = (props: { asset, contractId: string, contract: Con
       <td>{ contract.amount }</td>
       <td>{ contract.template.name }</td>
       <td><a href={"/dashboard/transactions/" + contract.id} target="_blank">{ shortenHash(contract.id) }</a></td>
-      <td><a href={"/dashboard/transactions/" + contract.lockTxid} target="_blank">{ shortenHash(contract.lockTxid) }</a></td>
+      <td><a href={"/dashboard/transactions/" + contract.unlockTxid} target="_blank">{ shortenHash(contract.unlockTxid) }</a></td>
       <td />
     </tr>
   )

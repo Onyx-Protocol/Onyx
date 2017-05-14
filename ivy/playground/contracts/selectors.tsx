@@ -2,21 +2,18 @@
 import { createSelector } from 'reselect'
 
 // ivy imports
+import { client, signer } from '../core'
 import { AppState } from '../app/types'
 import { CompiledTemplate } from '../templates/types'
-import { client, signer } from '../core'
-
-// internal imports
-import { SPEND_CONTRACT } from './actions';
 
 import {
-  ClauseParameterType,
   Contract,
   ContractsState,
-  ItemMap,
+  ContractMap,
 } from './types'
 
 import {
+  ClauseParameterType,
   Input,
   InputMap,
   ProgramInput,
@@ -30,10 +27,6 @@ import {
 } from '../inputs/data'
 
 import {
-  instantiate
-} from 'ivy-compiler'
-
-import {
   ControlWithReceiver,
   ControlWithAccount,
   DataWitness,
@@ -44,32 +37,29 @@ import {
   WitnessComponent
 } from '../core/types';
 
-import {
-  getSourceMap
-} from '../templates/selectors'
-
-import templates from '../templates'
+// internal imports
+import { SPEND_CONTRACT } from './actions'
 
 export const getState = (state: AppState): ContractsState => state.contracts
 
-export const getIdList = createSelector(
+export const getContractIds= createSelector(
   getState,
   (state: ContractsState) => state.idList
 )
 
-export const getSpentIdList = createSelector(
+export const getSpentContractIds = createSelector(
   getState,
   (state: ContractsState) => state.spentIdList
 )
 
-export const getItemMap = createSelector(
+export const getContractMap = createSelector(
   getState,
-  (state: ContractsState) => state.itemMap
+  (state: ContractsState) => state.contractMap
 )
 
-export const getItem = (state: AppState, contractId: string) => {
-  let itemMap = getItemMap(state)
-  return itemMap[contractId]
+export const getContract = (state: AppState, contractId: string) => {
+  const contractMap = getContractMap(state)
+  return contractMap[contractId]
 }
 
 export const getSpendContractId = createSelector(
@@ -77,7 +67,7 @@ export const getSpendContractId = createSelector(
   (state: ContractsState): string => state.spendContractId
 )
 
-export const getSpendContractSelectedClauseIndex = createSelector(
+export const getSelectedClauseIndex = createSelector(
   getState,
   (state: ContractsState): number => {
     let selectedClauseIndex = state.selectedClauseIndex
@@ -90,25 +80,25 @@ export const getSpendContractSelectedClauseIndex = createSelector(
 )
 
 export const getSpendContract = createSelector(
-  getItemMap,
+  getContractMap,
   getSpendContractId,
-  (itemMap: ItemMap, contractId: string) => {
-    let spendContract = itemMap[contractId]
+  (contractMap: ContractMap, contractId: string) => {
+    const spendContract = contractMap[contractId]
     if (spendContract === undefined)
       throw "no contract for ID " + contractId
     return spendContract
   }
 )
 
-export const getSpendContractParameterSelector = (id: string) => {
+export const getInputSelector = (id: string) => {
   return createSelector(
-    getSpendContract,
-    (spendContract: Contract) => {
-      let spendInput = spendContract.inputMap[id]
-      if (spendInput === undefined) {
+    getInputMap,
+    (inputMap: InputMap) => {
+      const input = inputMap[id]
+      if (input === undefined) {
         throw "bad spend input ID: " + id
       } else {
-        return spendInput
+        return input
       }
     }
   )
@@ -133,39 +123,39 @@ export const getSpendInputMap = createSelector(
   spendContract => spendContract.spendInputMap
 )
 
-export const getSpendContractParametersInputMap = createSelector(
+export const getInputMap = createSelector(
   getSpendContract,
   spendContract => spendContract.inputMap
 )
 
-export const getSpendParameterIds = createSelector(
+export const getParameterIds = createSelector(
   getSpendContract,
-  spendContract => spendContract.template.contractParameters.map(param => "contractParameters." + param.identifier)
+  spendContract => spendContract.template.params.map(param => "contractParameters." + param.name)
 )
 
-export const getSpendTemplateClause = createSelector(
+export const getSelectedClause = createSelector(
   getSpendContract,
-  getSpendContractSelectedClauseIndex,
+  getSelectedClauseIndex,
   (spendContract, clauseIndex) => {
-    return spendContract.template.clauses[clauseIndex]
+    return spendContract.template.clauseInfo[clauseIndex]
   }
 )
 
-export const getClauseParameters = createSelector(
-  getSpendTemplateClause,
-  (clause) => clause.parameters
+export const getClauseName = createSelector(
+  getSelectedClause,
+  clause => clause.name
 )
 
-export const getClauseName = createSelector(
-  getSpendTemplateClause,
-  clause => clause.name
+export const getClauseParameters = createSelector(
+  getSelectedClause,
+  (clause) => clause.args
 )
 
 export const getClauseParameterIds = createSelector(
   getClauseName,
   getClauseParameters,
   (clauseName, clauseParameters) => {
-    return clauseParameters.map(param => "clauseParameters." + clauseName + "." + param.identifier)
+    return clauseParameters.map(param => "clauseParameters." + clauseName + "." + param.name)
   }
 )
 
@@ -184,23 +174,27 @@ export const getClauseWitnessComponents = createSelector(
   getClauseName,
   getClauseParameters,
   getSpendContract,
-  getSpendContractSelectedClauseIndex,
+  getSelectedClauseIndex,
   (spendInputMap: InputMap, clauseName: string, clauseParameters, contract, clauseIndex): WitnessComponent[] => {
     const witness: WitnessComponent[] = []
     clauseParameters.forEach(clauseParameter => {
-      let clauseParameterPrefix = "clauseParameters." + clauseName + "." + clauseParameter.identifier
-      switch (clauseParameter.valueType) {
+      const clauseParameterPrefix = "clauseParameters." + clauseName + "." + clauseParameter.name
+      switch (clauseParameter.type) {
         case "Value": {
           return
         }
         case "Signature": {
-          let inputId = clauseParameterPrefix + ".signatureInput.choosePublicKeyInput"
-          let input = spendInputMap[inputId]
-          if (input === undefined || input.type !== "choosePublicKeyInput") throw "choosePublicKeyInput surprisingly not found"
+          const inputId = clauseParameterPrefix + ".signatureInput.choosePublicKeyInput"
+          const input = spendInputMap[inputId]
+          if (input === undefined || input.type !== "choosePublicKeyInput") {
+            throw "choosePublicKeyInput surprisingly not found"
+          }
+
           const pubkey = input.value
           if (input.keyMap === undefined) {
             throw 'surprisingly undefined keymap for input ' + input.name
           }
+
           const keymap = input.keyMap[pubkey]
           witness.push({
             type: "raw_tx_signature",
@@ -214,20 +208,18 @@ export const getClauseWitnessComponents = createSelector(
           signer.addKey(keymap.rootXpub, client.mockHsm.signerConnection)
           return
         }
-        case "Asset": // TODO
-        case "Amount": // TODO
         default: {
-          let val = dataToArgString(getData(clauseParameterPrefix, spendInputMap))
+          const val = dataToArgString(getData(clauseParameterPrefix, spendInputMap))
           witness.push({
             type: "data",
             value: val
           })
-          return // TODO: handle
+          return
         }
       }
     })
     if (contract.clauseList.length > 1) {
-      let value = dataToArgString(clauseIndex)
+      const value = dataToArgString(clauseIndex)
       witness.push({
         type: "data",
         value
@@ -237,34 +229,37 @@ export const getClauseWitnessComponents = createSelector(
   }
 )
 
-export const getClauseOutputs = createSelector(
-  getSpendContract,
-  getSpendContractSelectedClauseIndex,
-  (spendContract, clauseIndex) => {
-    return spendContract.template.clauses[clauseIndex].outputs
+export const getClauseValueInfo = createSelector(
+  getSelectedClause,
+  (clause) => {
+    return clause.valueInfo
   }
 )
 
-export const getClauseReturnStatement = createSelector(
-  getSpendContract,
-  getSpendContractSelectedClauseIndex,
-  (spendContract, clauseIndex) => {
-    return spendContract.template.clauses[clauseIndex].returnStatement
-  }
-)
-
-export const getClauseReturnAction = createSelector(
-  getSpendContract,
+export const getClauseUnlockInput = createSelector(
+  getSelectedClause,
   getSpendInputMap,
-  getClauseReturnStatement,
-  (contract, spendInputMap, returnStatement) => {
-    if (returnStatement === undefined) {
+  (clause, spendInputMap) => {
+    let input
+    clause.valueInfo.forEach(value => {
+      if (value.program === undefined) {
+        input = spendInputMap["unlockValue.accountInput"]
+      }
+    })
+    return input
+  }
+)
+
+export const getUnlockAction = createSelector(
+  getSpendContract,
+  getClauseUnlockInput,
+  (contract, unlockInput) => {
+    if (unlockInput === undefined || unlockInput.value === '') {
       return undefined
     }
-    const returnInput = spendInputMap["transactionDetails.accountInput"]
     return {
         type: "controlWithAccount",
-        accountId: returnInput.value,
+        accountId: unlockInput.value,
         assetId: contract.assetId,
         amount: contract.amount
     } as ControlWithAccount
@@ -273,13 +268,10 @@ export const getClauseReturnAction = createSelector(
 
 export const getClauseMintimes = createSelector(
   getSpendContract,
-  getSpendContractSelectedClauseIndex,
+  getSelectedClauseIndex,
   (spendContract, clauseIndex) => {
     const clauseName = spendContract.clauseList[clauseIndex]
-    const mintimes = spendContract.template.clauses[clauseIndex].mintimes
-    if (mintimes === undefined)
-      return []
-
+    const mintimes = spendContract.template.clauseInfo[clauseIndex].mintimes
     return mintimes.map(argName => {
       const inputMap = spendContract.inputMap
       return new Date(inputMap["contractParameters." + argName + ".timeInput.timestampTimeInput"].value)
@@ -289,10 +281,10 @@ export const getClauseMintimes = createSelector(
 
 export const getClauseMaxtimes = createSelector(
   getSpendContract,
-  getSpendContractSelectedClauseIndex,
+  getSelectedClauseIndex,
   (spendContract, clauseIndex) => {
     const clauseName = spendContract.clauseList[clauseIndex]
-    const maxtimes = spendContract.template.clauses[clauseIndex].maxtimes
+    const maxtimes = spendContract.template.clauseInfo[clauseIndex].maxtimes
     if (maxtimes === undefined)
       return []
 
@@ -303,26 +295,15 @@ export const getClauseMaxtimes = createSelector(
   }
 )
 
-export const getClauseDataParameterIds = createSelector(
-  getSpendContract,
-  getSpendContractSelectedClauseIndex,
-  (spendContract, clauseIndex) => {
-    let clauseName = spendContract.clauseList[clauseIndex]
-    return spendContract.template.clauses[clauseIndex].parameters
-      .filter(param => param.valueType !== "Value")
-      .map(param => "clauseParameters." + clauseName + "." + param.identifier)
-  }
-)
-
 export const areSpendInputsValid = createSelector(
   getSpendInputMap,
   getClauseParameterIds,
-  getSpendTemplateClause,
-  (spendInputMap, paramIdList, spendTemplateClause) => {
-    const invalid = paramIdList.filter(id => {
+  getClauseUnlockInput,
+  (spendInputMap, parameterIds, unlockInput) => {
+    const invalid = parameterIds.filter(id => {
       return !isValidInput(id, spendInputMap)
     })
-    return (invalid.length === 0) && (spendTemplateClause.returnStatement === undefined || isValidInput('transactionDetails.accountInput', spendInputMap))
+    return (invalid.length === 0) && (unlockInput === undefined || isValidInput('unlockValue.accountInput', spendInputMap))
   }
 )
 
@@ -341,7 +322,7 @@ export const getClauseValueId = createSelector(
   }
 )
 
-export const getClauseValue = createSelector(
+export const getRequiredValueAction = createSelector(
   getClauseValueId,
   getSpendInputMap,
   (clauseValuePrefix, spendInputMap) => {
@@ -363,39 +344,45 @@ export const getClauseValue = createSelector(
   }
 )
 
-export const getClauseOutputActions = createSelector(
-  getSpendContract,
-  getClauseOutputs,
-  (contract, clauseOutputs) => {
-    let inputMap = contract.inputMap
-    return clauseOutputs.map(clauseOutput => {
-      const programIdentifier = clauseOutput.contract.program.identifier
-      const programInput = inputMap["contractParameters." + programIdentifier + ".programInput"] as ProgramInput
-      if (programInput === undefined) throw "programInput unexpectedly undefined"
-      if (programInput.computedData === undefined) throw "programInput.computedData unexpectedly undefined"
-      const receiver: Receiver = {
-        controlProgram: programInput.computedData,
-        expiresAt: "2020-06-25T00:00:00.000Z" // TODO
-      }
+export const getLockActions = createSelector(
+  getInputMap,
+  getClauseValueInfo,
+  (inputMap, valueInfo) => {
+    return valueInfo
+      .filter(value => value.program !== undefined)
+      .map(value => {
+        const progName = value.program
+        const progInput = inputMap["contractParameters." + progName + ".programInput"] as ProgramInput
+        if (progInput === undefined) throw "programInput unexpectedly undefined"
+        if (progInput.computedData === undefined) throw "programInput.computedData unexpectedly undefined"
+        const receiver: Receiver = {
+          controlProgram: progInput.computedData,
+          expiresAt: "2020-06-25T00:00:00.000Z" // TODO
+        }
 
-      const valueIdentifier = clauseOutput.contract.value.identifier
-      let assetInput = inputMap["contractParameters." + clauseOutput.asset + ".assetInput"]
-      let amountInput = inputMap["contractParameters." + clauseOutput.amount + ".amountInput"]
-      if (assetInput === undefined) {
-        assetInput = inputMap["clauseValue." + valueIdentifier + ".valueInput.assetInput"]
-        amountInput = inputMap["clauseValue." + valueIdentifier + ".valueInput.amountInput"]
-      }
-      if (assetInput === undefined) {
-        assetInput = inputMap["contractValue." + valueIdentifier + ".valueInput.assetInput"]
-        amountInput = inputMap["contractValue." + valueIdentifier + ".valueInput.amountInput"]
-      }
-      const action: ControlWithReceiver = {
-        type: "controlWithReceiver",
-        assetId: assetInput.value,
-        amount: parseInt(amountInput.value, 10),
-        receiver
-      }
-      return action
+        // Handles locking a contract paramater's asset amount
+        let assetInput = inputMap["contractParameters." + value.asset + ".assetInput"]
+        let amountInput = inputMap["contractParameters." + value.amount + ".amountInput"]
+
+        // Handles locking a required value
+        if (assetInput === undefined) {
+          assetInput = inputMap["clauseValue." + value.name + ".valueInput.assetInput"]
+          amountInput = inputMap["clauseValue." + value.name + ".valueInput.amountInput"]
+        }
+
+        // Handles re-locking the locked value
+        if (assetInput === undefined) {
+          assetInput = inputMap["contractValue." + value.name + ".valueInput.assetInput"]
+          amountInput = inputMap["contractValue." + value.name + ".valueInput.amountInput"]
+        }
+
+        const action: ControlWithReceiver = {
+          type: "controlWithReceiver",
+          assetId: assetInput.value,
+          amount: parseInt(amountInput.value, 10),
+          receiver
+        }
+        return action
     })
   }
 )

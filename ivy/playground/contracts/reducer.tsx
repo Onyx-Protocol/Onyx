@@ -1,21 +1,22 @@
+// external imports
 import { ContractsState } from './types'
-import { SELECT_TEMPLATE } from './actions'
 import { getParameterIds } from '../templates/selectors'
-import { OldTemplate } from '../templates/types'
+import { CompiledTemplate } from '../templates/types'
 import { Input, InputMap } from '../inputs/types'
 import { getInputMap } from '../templates/selectors'
 import { addParameterInput } from '../inputs/data'
+
+// ivy imports
 import { AppState } from '../app/types'
-import { createSelector } from 'reselect'
-import { CREATE_CONTRACT, UPDATE_CLAUSE_INPUT, UPDATE_INPUT,
-         SET_CLAUSE_INDEX, SPEND_CONTRACT } from './actions'
 import { addDefaultInput, getPublicKeys } from '../inputs/data'
-import { Contract as Contract } from './types'
-import { ClauseParameterType } from 'ivy-compiler'
-import { Param } from '../templates/types'
+import { Contract } from './types'
+
+// internal imports
+import { CREATE_CONTRACT, SPEND_CONTRACT,
+         UPDATE_CLAUSE_INPUT, SET_CLAUSE_INDEX,  } from './actions'
 
 export const INITIAL_STATE: ContractsState = {
-  itemMap: {},
+  contractMap: {},
   idList: [],
   spentIdList: [],
   spendContractId: "",
@@ -25,11 +26,11 @@ export const INITIAL_STATE: ContractsState = {
 export default function reducer(state: ContractsState = INITIAL_STATE, action): ContractsState {
   switch (action.type) {
     case SPEND_CONTRACT: {
-      const contract = state.itemMap[action.id]
+      const contract = state.contractMap[action.id]
       return {
         ...state,
-        itemMap: {
-          ...state.itemMap,
+        contractMap: {
+          ...state.contractMap,
           [action.id]: {
             ...contract,
             lockTxid: action.lockTxid
@@ -40,41 +41,43 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       }
     }
     case CREATE_CONTRACT: // reset keys etc. this is safe (the action already has this stuff)
-      let controlProgram = action.controlProgram
-      let hash = action.utxo.transactionId
-      let template: OldTemplate = action.template
-      let clauseNames = template.clauses.map(clause => clause.name)
-      let clauseParameterIds = {}
-      let inputs: Input[] = []
-      for (let clause of template.clauses) {
-        clauseParameterIds[clause.name] = clause.parameters.map(param => "clauseParameters." + clause.name + "." + param.identifier)
-        for (let parameter of clause.parameters) {
-          addParameterInput(inputs, parameter.valueType, "clauseParameters." + clause.name + "." + parameter.identifier)
+      const controlProgram = action.controlProgram
+      const hash = action.utxo.transactionId
+      const template: CompiledTemplate = action.template
+      const clauseNames = template.clauseInfo.map(clause => clause.name)
+      const clauseParameterIds = {}
+      const inputs: Input[] = []
+      for (const clause of template.clauseInfo) {
+        clauseParameterIds[clause.name] = clause.args.map(param => "clauseParameters." + clause.name + "." + param.name)
+        for (let parameter of clause.args) {
+          addParameterInput(inputs, parameter.type, "clauseParameters." + clause.name + "." + parameter.name)
         }
 
-        for (const output of clause.outputs) {
-          const inputName = "contractValue." + output.contract.value.identifier
-          if (action.inputMap[inputName]) {
-            // This is the locked value.
+        for (const value of clause.valueInfo) {
+          // TODO(boymanjor): remove
+          // const inputName = "contractValue." + value.name
+          // if (action.inputMap[inputName]) {
+          if (value.program === undefined) {
+            // This is the unlock statement.
             // Do not add it to the spendInputMap.
             continue
           }
-          addParameterInput(inputs, "Value", "clauseValue." + clause.name + "." + output.contract.value.identifier)
+          addParameterInput(inputs, "Value", "clauseValue." + clause.name + "." + value.name)
         }
       }
-      addDefaultInput(inputs, "accountInput", "transactionDetails") // return destination. not always used
-      let spendInputMap = {}
-      let keyMap = getPublicKeys(action.inputMap)
-      for (let input of inputs) {
+      addDefaultInput(inputs, "accountInput", "unlockValue") // Unlocked value destination. Not always used.
+      const spendInputMap = {}
+      const keyMap = getPublicKeys(action.inputMap)
+      for (const input of inputs) {
         spendInputMap[input.name] = input
         if (input.type === "choosePublicKeyInput") {
           input.keyMap = keyMap
         }
       }
-      let contract: Contract = {
+      const contract: Contract = {
         template: action.template,
         id: hash,
-        lockTxid: '',
+        unlockTxid: '',
         outputId: action.utxo.id,
         assetId: action.utxo.assetId,
         amount: action.utxo.amount,
@@ -84,20 +87,19 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         clauseMap: clauseParameterIds,
         spendInputMap: spendInputMap
       }
-      let contractId = contract.id
       return {
         ...state,
         idList: [contract.id, ...state.idList],
-        itemMap: {
-          ...state.itemMap,
-          [contractId]: contract
-        },
+        contractMap: {
+          ...state.contractMap,
+          [contract.id]: contract
+        }
       }
     case UPDATE_CLAUSE_INPUT: {
       // gotta find a way to make this logic shorter
       // maybe further normalizing it; maybe Immutable.js or cursors or something
       let contractId = action.contractId as string
-      let oldContract = state.itemMap[action.contractId]
+      let oldContract = state.contractMap[action.contractId]
       let oldSpendInputMap = oldContract.spendInputMap
       let oldInput = oldSpendInputMap[action.name]
       if (oldInput === undefined) throw "unexpectedly undefined clause input"
@@ -112,8 +114,8 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       newSpendInputMap[action.name] = newInput
       return {
         ...state,
-        itemMap: {
-          ...state.itemMap,
+        contractMap: {
+          ...state.contractMap,
           [action.contractId]: {
             ...oldContract,
             spendInputMap: newSpendInputMap
@@ -128,7 +130,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       }
     }
     case "@@router/LOCATION_CHANGE":
-      let path = action.payload.pathname.split("/")
+      const path = action.payload.pathname.split("/")
       if (path[1] === "ivy") {
         path.shift()
       }
@@ -144,11 +146,3 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       return state
   }
 }
-
-export const getParameterInputs = createSelector(
-  getInputMap,
-  getParameterIds,
-  (inputMap, parameterIds) => {
-    return inputMap && parameterIds && parameterIds.map(id => inputMap[id])
-  }
-)
