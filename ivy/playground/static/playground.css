@@ -84,6 +84,10 @@ margin-bottom: 0;
   max-width: 300px;
 }
 
+.form-control.string-input {
+  max-width: 100%;
+}
+
 .form-inline input {
   margin-right: 10px;
 }
@@ -265,7 +269,6 @@ section h4 {
 }
 
 .argument .form-group {
-  max-width: 250px;
   margin-bottom: 0;
 }
 
