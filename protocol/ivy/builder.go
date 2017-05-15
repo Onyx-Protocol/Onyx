@@ -64,6 +64,11 @@ func (b *builder) addJumpIf(target int) *builder {
 	return b
 }
 
+func (b *builder) addFrom(other *builder) *builder {
+	b.b.AddFrom(other.b)
+	return b
+}
+
 func (b *builder) build() ([]byte, error) {
 	return b.b.Build()
 }

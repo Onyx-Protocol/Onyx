@@ -64,6 +64,37 @@ func (b *Builder) AddOp(op vm.Op) *Builder {
 	return b
 }
 
+// AddFrom adds the items in another builder to this one. Jump targets
+// are renumbered to not conflict with ones already defined in the
+// destination builder.
+func (b *Builder) AddFrom(other *Builder) *Builder {
+	jumpTargetMap := make(map[int]int) // jumpTargetMap[otherTarget] = thisTarget
+	for _, item := range other.items {
+		switch t := item.(type) {
+		case int64Item:
+			b.AddInt64(int64(t))
+		case pushdataItem:
+			b.AddData([]byte(t))
+		case rawdataItem:
+			b.AddRawBytes([]byte(t))
+		case opItem:
+			b.AddOp(vm.Op(t))
+		case jumpItem:
+			target, ok := jumpTargetMap[t.targetNum]
+			if !ok {
+				target = b.NewJumpTarget()
+				jumpTargetMap[t.targetNum] = target
+			}
+			if t.isIf {
+				b.AddJumpIf(target)
+			} else {
+				b.AddJump(target)
+			}
+		}
+	}
+	return b
+}
+
 // NewJumpTarget allocates a number that can be used as a jump target
 // in AddJump and AddJumpIf. Call SetJumpTarget to associate the
 // number with a program location.

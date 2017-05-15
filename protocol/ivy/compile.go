@@ -249,12 +249,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "compiling clause %d", i)
 		}
-		prog, err := b2.build()
-		if err != nil {
-			return nil, errors.Wrap(err, "assembling bytecode")
-		}
-		b.addRawBytes(prog)
-
+		b.addFrom(b2)
 		if i < len(contract.clauses)-1 {
 			b.addJump(endTarget)
 		}
@@ -437,11 +432,9 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if err != nil {
 			return nil, errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
 		}
-		ops, err := vm.Assemble(e.op.opcodes)
-		if err != nil {
-			return nil, errors.Wrapf(err, "assembling bytecode in \"%s\" expression", e.op.op)
+		for _, op := range e.op.opcodes {
+			b.addOp(op)
 		}
-		b.addRawBytes(ops)
 		stack = append(stack[:len(stack)-2], stackEntry(e.String()))
 
 	case *unaryExpr:
@@ -453,11 +446,9 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if err != nil {
 			return nil, errors.Wrapf(err, "in \"%s\" expression", e.op.op)
 		}
-		ops, err := vm.Assemble(e.op.opcodes)
-		if err != nil {
-			return nil, errors.Wrapf(err, "assembling bytecode in \"%s\" expression", e.op.op)
+		for _, op := range e.op.opcodes {
+			b.addOp(op)
 		}
-		b.addRawBytes(ops)
 		stack = append(stack[:len(stack)-1], stackEntry(e.String()))
 
 	case *call:
@@ -541,11 +532,9 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			}
 			k += k2
 		}
-		ops, err := vm.Assemble(bi.opcodes)
-		if err != nil {
-			return nil, errors.Wrap(err, "assembling bytecode in call expression")
+		for _, op := range bi.opcodes {
+			b.addOp(op)
 		}
-		b.addRawBytes(ops)
 		stack = stack[:len(stack)-k]
 		stack = append(stack, stackEntry(e.String()))
 
