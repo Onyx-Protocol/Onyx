@@ -336,6 +336,10 @@ section h4 {
   background-color: #20252d !important;
 }
 
+.ace-monokai .ace_indent-guide {
+  background: none !important;
+}
+
 .ace_gutter {
   background-color: #000 !important;
   opacity: .2;
