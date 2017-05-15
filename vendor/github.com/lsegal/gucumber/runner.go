@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/lsegal/gucumber/gherkin"
+	"github.com/gucumber/gucumber/gherkin"
 	"github.com/shiena/ansicolor"
 )
 
@@ -106,7 +106,7 @@ func (c *Runner) MissingMatcherStubs() string {
 	var buf bytes.Buffer
 	matches := map[string]bool{}
 
-	buf.WriteString(`import . "github.com/lsegal/gucumber"` + "\n\n")
+	buf.WriteString(`import . "github.com/gucumber/gucumber"` + "\n\n")
 	buf.WriteString("func init() {\n")
 
 	for _, m := range c.Unmatched {

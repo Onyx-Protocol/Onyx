@@ -1,6 +1,6 @@
 package main
 
-import "github.com/lsegal/gucumber"
+import "github.com/gucumber/gucumber"
 
 func main() {
 	gucumber.RunMain()

@@ -8,11 +8,13 @@ Feature: Scenarios
     And I have a second step
     When I run the "gucumber" command
     Then this scenario should execute 1 time and pass
+    And setup was called 1 time
 
   @outline
   Scenario Outline: Scenario outline
     Given I perform <val1> + <val2>
     Then I should get <result>
+    And setup was called 1 time
 
     Examples:
       | val1 | val2 | result |

@@ -1,15 +1,15 @@
 # Gucumber
 
-[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/lsegal/gucumber)
-[![Build Status](https://img.shields.io/travis/lsegal/gucumber.svg)](https://travis-ci.org/lsegal/gucumber)
-[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/lsegal/gucumber/blob/master/LICENSE.txt)
+[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/gucumber/gucumber)
+[![Build Status](https://img.shields.io/travis/gucumber/gucumber.svg)](https://travis-ci.org/gucumber/gucumber)
+[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/gucumber/gucumber/blob/master/LICENSE.txt)
 
 An implementation of [Cucumber][cuke] BDD-style testing for Go.
 
 # Installing
 
 ```sh
-$ go get github.com/lsegal/gucumber/cmd/gucumber
+$ go get github.com/gucumber/gucumber/cmd/gucumber
 ```
 
 # Usage
@@ -43,7 +43,7 @@ in ".go" files in the same `internal/features/` directory. We might create
 package accounts
 
 import (
-	. "github.com/lsegal/gucumber"
+	. "github.com/gucumber/gucumber"
 )
 
 func init() {
@@ -73,7 +73,7 @@ func init() {
 The `T` value is a [testing.T](http://golang.org/pkg/testing/#T) style
 value that represents the test context for each test. It mostly supports
 `Errorf(fmt, args...)`, but also supports other convenience methods. See
- the [API documentation](http://godoc.org/github.com/lsegal/gucumber#TestingT)
+ the [API documentation](http://godoc.org/github.com/gucumber/gucumber#TestingT)
  for more information.
 
 ## Running

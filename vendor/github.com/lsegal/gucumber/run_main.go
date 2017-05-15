@@ -17,9 +17,11 @@ func (f *filters) Set(value string) error {
 }
 
 var filterFlag filters
+var goBuildTags string
 
 func init() {
 	flag.Var(&filterFlag, "tags", "comma-separated list of tags to filter scenarios by")
+	flag.StringVar(&goBuildTags, "go-tags", "", "space seperated list of tags, wrap in quotes to specify multiple tags")
 }
 
 func RunMain() {
@@ -36,7 +38,7 @@ func RunMain() {
 	for _, f := range filterFlag {
 		filt = append(filt, string(f))
 	}
-	if err := BuildAndRunDir(dir, filt); err != nil {
+	if err := BuildAndRunDirWithGoBuildTags(dir, filt, goBuildTags); err != nil {
 		panic(err)
 	}
 }
