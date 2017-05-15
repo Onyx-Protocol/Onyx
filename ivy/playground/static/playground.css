@@ -1,10 +1,27 @@
 /*Boostrap Overrides*/
 
+@font-face {
+  font-family: "Nitti";
+  src: url('fonts/nitti-normal.woff');
+}
+
+@font-face {
+  font-family: "Nitti Grotesk";
+  src: url('fonts/nittigrotesk-normal.woff');
+}
+
+@font-face {
+  font-family: "Nitti Grotesk";
+  font-weight: bold;
+  src: url('fonts/nittigrotesk-medium.woff');
+}
+
 body {
   color: #20252d;
   padding-top: 80px;
   font-family: Nitti Grotesk, sans-serif;
   font-size: 16px;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,h2,h3,h4,h5 {
@@ -335,7 +352,17 @@ section h4 {
 
 .ace_editor {
   border-radius: 2px;
-  font-family: Nitti, Menlo, Monaco, Consolas, "Courier New", monospace;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ace_line,
+.ace_gutter-cell {
+  height: 23px !important;
+}
+
+.ace_editor {
+  min-height: 345px !important;
+  max-height: 345px !important;
 }
 
 .ace-monokai {
@@ -359,22 +386,6 @@ section h4 {
 
 .ace_function, .ace_variable, .ace_language {
   color: #BFD472 !important;
-}
-
-@font-face {
-  font-family: "Nitti";
-  src: url('fonts/nitti-normal.woff');
-}
-
-@font-face {
-  font-family: "Nitti Grotesk";
-  src: url('fonts/nittigrotesk-normal.woff');
-}
-
-@font-face {
-  font-family: "Nitti Grotesk";
-  font-weight: bold;
-  src: url('fonts/nittigrotesk-medium.woff');
 }
 
 

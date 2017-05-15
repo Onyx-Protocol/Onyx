@@ -26,13 +26,15 @@ const Ace = ({ source, handleChange }) => {
         onChange={handleChange}
         name="aceEditor"
         width="100%"
-        fontSize={16}
         tabSize={2}
-        maxLines={25}
-        minLines={15}
         value={source}
         editorProps={{$blockScrolling: Infinity}}
-        setOptions={{useSoftTabs: true, showPrintMargin: false}}
+        setOptions={{
+          useSoftTabs: true,
+          showPrintMargin: false,
+          fontFamily: "Nitti, Menlo, Monaco, Consolas, Courier New, monospace",
+          fontSize: 18
+        }}
       />
     </div>
   )
