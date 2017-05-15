@@ -4,13 +4,22 @@ const chain = require('chain-sdk')
 // internal imports
 import * as types from './types'
 
-let apiHost: string
+let url: string
 const isProd: boolean = process.env.NODE_ENV === 'production'
 if (isProd) {
-  apiHost = window.location.origin
+  url = window.location.origin
 } else {
-  apiHost = process.env.API_URL || 'http://localhost:8080/api'
+  // Used to proxy requests from the client to core.
+  url = process.env.API_URL || 'http://localhost:8080/api'
 }
+
+const dashboardState = importState()
+const accessToken = dashboardState.core && dashboardState.core.clientToken
+export const client = new chain.Client({
+  url,
+  accessToken
+})
+export const signer = new chain.HsmSigner()
 
 // Prefixes the redux router route during production builds.
 export const prefixRoute = (route: string): string => {
@@ -20,11 +29,23 @@ export const prefixRoute = (route: string): string => {
   return route
 }
 
-export const client = new chain.Client({
-  url: apiHost
-})
+// Imports the dashboard's redux state from localStorage.
+// This is used to retrieve the client access token, if it exists.
+// Taken directly from dashboard code.
+function importState() {
+  let state
+  try {
+    state = localStorage.getItem('reduxState')
+  } catch (err) { /* localstorage not available */ }
 
-export const signer = new chain.HsmSigner()
+  if (!state) return {}
+
+  try {
+    return JSON.parse(state)
+  } catch (_) {
+    return {}
+  }
+}
 
 // Uses the ivy contract to lock value.
 export const createLockingTx = (actions: types.Action[]): Promise<Object> => {

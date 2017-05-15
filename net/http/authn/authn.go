@@ -66,6 +66,10 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 	if strings.HasPrefix(req.URL.Path, "/dashboard/") || req.URL.Path == "/dashboard" {
 		return req.WithContext(ctx), nil
 	}
+	// Adding this workaround for Ivy Playground.
+	if strings.HasPrefix(req.URL.Path, "/ivy/") || req.URL.Path == "/ivy" {
+		return req.WithContext(ctx), nil
+	}
 	if loopbackOn && local {
 		return req.WithContext(ctx), nil
 	}
