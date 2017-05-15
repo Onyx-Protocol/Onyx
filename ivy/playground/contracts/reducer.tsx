@@ -34,7 +34,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
           ...state.contractMap,
           [action.id]: {
             ...contract,
-            lockTxid: action.lockTxid
+            unlockTxid: action.unlockTxid
           }
         },
         idList: state.idList.filter(id => id !== action.id),

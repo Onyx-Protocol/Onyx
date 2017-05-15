@@ -115,10 +115,12 @@ export const create = () => {
           dispatch(setSource(source))
           dispatch(push(prefixRoute('/unlock')))
         }).catch(err => {
+          console.log(err)
           dispatch(displayCreateError(err))
         })
       })
     }).catch(err => {
+      console.log(err)
       dispatch(displayCreateError(err))
     })
   }
@@ -154,11 +156,14 @@ export const spend = () => {
       dispatch({
         type: SPEND_CONTRACT,
         id: contract.id,
-        lockTxid: result.id
+        unlockTxid: result.id
       })
       dispatch(fetch())
       dispatch(push(prefixRoute('/unlock')))
-    }).catch(err => dispatch(displayError(err)))
+    }).catch(err => {
+      console.log(err)
+      dispatch(displayError(err))
+    })
   }
 }
 
