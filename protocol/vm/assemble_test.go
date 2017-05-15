@@ -56,7 +56,7 @@ func TestDisassemble(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got, gotErr := Disassemble(c.raw)
+		got, gotErr := Disassemble(c.raw, nil)
 
 		if errors.Root(gotErr) != c.wantErr {
 			t.Errorf("Decompile(%x) err = %v want %v", c.raw, errors.Root(gotErr), c.wantErr)

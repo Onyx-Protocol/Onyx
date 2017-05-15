@@ -12,6 +12,10 @@ type Builder struct {
 	items       []item
 	jumpCounter int
 	opt         bool
+
+	// Maps jump target numbers to absolute program addresses, but only
+	// after Build is called.
+	jumpTargets map[int]uint32
 }
 
 type item interface {
@@ -140,24 +144,30 @@ var ErrUnresolvedJump = errors.New("unresolved jump target")
 func (b *Builder) Build() ([]byte, error) {
 	var result []byte
 	jumps := make(map[int]int)
-	jumpTargets := make(map[int]uint32)
+	b.jumpTargets = make(map[int]uint32)
 	for _, it := range b.items {
 		switch j := it.(type) {
 		case jumpItem:
 			jumps[len(result)] = j.targetNum
 		case jumpTargetItem:
-			jumpTargets[int(j)] = uint32(len(result))
+			b.jumpTargets[int(j)] = uint32(len(result))
 		}
 		result = append(result, it.bytes()...)
 	}
 	for jloc, targetNum := range jumps {
-		addr, ok := jumpTargets[targetNum]
+		addr, ok := b.jumpTargets[targetNum]
 		if !ok {
 			return nil, errors.Wrapf(ErrUnresolvedJump, "target %d", targetNum)
 		}
 		binary.LittleEndian.PutUint32(result[jloc+1:jloc+5], addr)
 	}
 	return result, nil
+}
+
+// JumpAddrs returns the mapping from jump-target numbers to program
+// addresses.  It is only valid after a call to Build.
+func (b *Builder) JumpAddrs() map[int]uint32 {
+	return b.jumpTargets
 }
 
 func (i int64Item) bytes() []byte {
