@@ -241,15 +241,14 @@ export const getClauseWitnessComponents = createSelector(
         }
       }
     })
-    const reverse = witness.reverse()
     if (contract.clauseList.length > 1) {
       const value = dataToArgString(clauseIndex)
-      reverse.push({
+      witness.push({
         type: "data",
         value
       } as DataWitness)
     }
-    return reverse
+    return witness
   }
 )
 
