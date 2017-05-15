@@ -7,7 +7,7 @@ It uploads the full combined output (stdout and stderr)
 plus the exit code (if nonzero)
 to the S3 object "run/[started at]-[name]",
 then updates a summary table of past runs
-at 'summary.json' and 'index.html'.
+at 'results.json' and 'index.html'.
 
 It also writes the time of the last run
 in RFC 3339 format in S3 object 'lastrun'.
