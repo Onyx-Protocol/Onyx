@@ -175,10 +175,10 @@ func TestCompile(t *testing.T) {
 				Clauses: []ClauseInfo{{
 					Name: "unlockWith2Sigs",
 					Args: []ClauseArg{{
-						Name: "sig1",
+						Name: "sig2",
 						Typ:  "Signature",
 					}, {
-						Name: "sig2",
+						Name: "sig1",
 						Typ:  "Signature",
 					}},
 					Values: []ValueInfo{{
