@@ -102,9 +102,11 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 			info.Maxtimes = []string{}
 		}
 
-		// TODO(bobg): this could just be info.Args = clause.params, if we
-		// rejigger the types and exports.
-		for _, p := range clause.params {
+		// Report clause params in reverse order. The client will supply
+		// them in reverse order, which is how the contract logic expects
+		// them.
+		for i := len(clause.params) - 1; i >= 0; i-- {
+			p := clause.params[i]
 			info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: string(p.bestType())})
 		}
 		for _, stmt := range clause.statements {
