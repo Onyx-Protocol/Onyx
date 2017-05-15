@@ -32,7 +32,7 @@ func NewStore(db pg.DB) *Store {
 		cache: newBlockCache(func(height uint64) (*legacy.Block, error) {
 			const q = `SELECT data FROM blocks WHERE height = $1`
 			var b legacy.Block
-			err := db.QueryRow(context.Background(), q, height).Scan(&b)
+			err := db.QueryRowContext(context.Background(), q, height).Scan(&b)
 			if err != nil {
 				return nil, errors.Wrap(err, "select query")
 			}
@@ -45,7 +45,7 @@ func NewStore(db pg.DB) *Store {
 func (s *Store) Height(ctx context.Context) (uint64, error) {
 	const q = `SELECT COALESCE(MAX(height), 0) FROM blocks`
 	var height uint64
-	err := s.db.QueryRow(ctx, q).Scan(&height)
+	err := s.db.QueryRowContext(ctx, q).Scan(&height)
 	return height, errors.Wrap(err, "max height sql query")
 }
 
@@ -68,7 +68,7 @@ func (s *Store) LatestSnapshotInfo(ctx context.Context) (height uint64, size uin
 	const q = `
 		SELECT height, octet_length(data) FROM snapshots ORDER BY height DESC LIMIT 1
 	`
-	err = s.db.QueryRow(ctx, q).Scan(&height, &size)
+	err = s.db.QueryRowContext(ctx, q).Scan(&height, &size)
 	return height, size, err
 }
 
@@ -86,7 +86,7 @@ func (s *Store) SaveBlock(ctx context.Context, block *legacy.Block) error {
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (block_hash) DO NOTHING
 	`
-	_, err := s.db.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
+	_, err := s.db.ExecContext(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {
 		return errors.Wrap(err, "insert block")
 	}
@@ -102,6 +102,6 @@ func (s *Store) SaveSnapshot(ctx context.Context, height uint64, snapshot *state
 }
 
 func (s *Store) FinalizeBlock(ctx context.Context, height uint64) error {
-	_, err := s.db.Exec(ctx, `SELECT pg_notify('newblock', $1)`, height)
+	_, err := s.db.ExecContext(ctx, `SELECT pg_notify('newblock', $1)`, height)
 	return err
 }

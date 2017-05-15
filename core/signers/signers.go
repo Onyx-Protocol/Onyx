@@ -113,7 +113,7 @@ func Create(ctx context.Context, db pg.DB, typ string, xpubs []chainkd.XPub, quo
 		id       string
 		keyIndex uint64
 	)
-	err := db.QueryRow(ctx, q, typeIDMap[typ], typ, pq.ByteaArray(xpubBytes), quorum, nullToken).
+	err := db.QueryRowContext(ctx, q, typeIDMap[typ], typ, pq.ByteaArray(xpubBytes), quorum, nullToken).
 		Scan(&id, &keyIndex)
 	if err == sql.ErrNoRows && clientToken != "" {
 		return findByClientToken(ctx, db, clientToken)
@@ -155,7 +155,7 @@ func findByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Sign
 		s         Signer
 		xpubBytes [][]byte
 	)
-	err := db.QueryRow(ctx, q, clientToken).
+	err := db.QueryRowContext(ctx, q, clientToken).
 		Scan(&s.ID, &s.Type, (*pq.ByteaArray)(&xpubBytes), &s.Quorum, &s.KeyIndex)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -183,7 +183,7 @@ func Find(ctx context.Context, db pg.DB, typ, id string) (*Signer, error) {
 		s         Signer
 		xpubBytes [][]byte
 	)
-	err := db.QueryRow(ctx, q, id).Scan(
+	err := db.QueryRowContext(ctx, q, id).Scan(
 		&s.ID,
 		&s.Type,
 		(*pq.ByteaArray)(&xpubBytes),

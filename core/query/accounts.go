@@ -23,7 +23,7 @@ func (ind *Indexer) SaveAnnotatedAccount(ctx context.Context, account *Annotated
 		VALUES($1, $2, $3::jsonb, $4, $5::jsonb)
 		ON CONFLICT (id) DO UPDATE SET tags = $5::jsonb
 	`
-	_, err = ind.db.Exec(ctx, q, account.ID, account.Alias, keysJSON,
+	_, err = ind.db.ExecContext(ctx, q, account.ID, account.Alias, keysJSON,
 		account.Quorum, string(*account.Tags))
 	return errors.Wrap(err, "saving annotated account")
 }
@@ -43,7 +43,7 @@ func (ind *Indexer) Accounts(ctx context.Context, filt string, vals []interface{
 	}
 
 	queryStr, queryArgs := constructAccountsQuery(expr, vals, after, limit)
-	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
+	rows, err := ind.db.QueryContext(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "executing acc query")
 	}

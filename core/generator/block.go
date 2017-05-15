@@ -2,13 +2,13 @@ package generator
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 	"time"
 
 	"chain/crypto/ed25519"
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 	"chain/metrics"
@@ -180,7 +180,7 @@ func nonNilSigs(a [][]byte) (b [][]byte) {
 func getPendingBlock(ctx context.Context, db pg.DB) (*legacy.Block, error) {
 	const q = `SELECT data FROM generator_pending_block`
 	var block legacy.Block
-	err := db.QueryRow(ctx, q).Scan(&block)
+	err := db.QueryRowContext(ctx, q).Scan(&block)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -199,7 +199,7 @@ func savePendingBlock(ctx context.Context, db pg.DB, b *legacy.Block) error {
 			SET data = excluded.data, height = excluded.height
 			WHERE COALESCE(generator_pending_block.height, 0) < excluded.height
 	`
-	res, err := db.Exec(ctx, q, b, b.Height)
+	res, err := db.ExecContext(ctx, q, b, b.Height)
 	if err != nil {
 		return errors.Wrap(err, "generator_pending_block insert query")
 	}

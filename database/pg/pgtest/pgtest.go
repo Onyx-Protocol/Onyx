@@ -2,7 +2,7 @@ package pgtest
 
 import (
 	"context"
-	stdsql "database/sql"
+	"database/sql"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -15,7 +15,6 @@ import (
 	"github.com/lib/pq"
 
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/testutil"
 )
 
@@ -95,7 +94,7 @@ func NewTx(t testing.TB) *sql.Tx {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx, err := db.Begin(ctx)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		db.Close()
 		t.Fatal(err)
@@ -114,7 +113,7 @@ func CloneDB(ctx context.Context, baseURL string) (newURL string, err error) {
 		return "", err
 	}
 
-	ctldb, err := stdsql.Open("postgres", baseURL)
+	ctldb, err := sql.Open("postgres", baseURL)
 	if err != nil {
 		return "", err
 	}
@@ -141,7 +140,7 @@ func open(ctx context.Context, baseURL, schemaFile string) (newurl string, db *s
 		return "", nil, err
 	}
 
-	ctldb, err := stdsql.Open("postgres", baseURL)
+	ctldb, err := sql.Open("postgres", baseURL)
 	if err != nil {
 		return "", nil, err
 	}
@@ -167,7 +166,7 @@ func open(ctx context.Context, baseURL, schemaFile string) (newurl string, db *s
 	if err != nil {
 		return "", nil, err
 	}
-	_, err = db.Exec(ctx, string(schema))
+	_, err = db.ExecContext(ctx, string(schema))
 	if err != nil {
 		db.Close()
 		return "", nil, err
@@ -178,9 +177,8 @@ func open(ctx context.Context, baseURL, schemaFile string) (newurl string, db *s
 type finaldb struct{ db *sql.DB }
 
 func (f finaldb) finalizeTx(tx *sql.Tx) {
-	ctx := context.Background()
 	go func() { // don't block the finalizer goroutine for too long
-		err := tx.Rollback(ctx)
+		err := tx.Rollback()
 		if err != nil {
 			// If the tx has been committed (or if anything
 			// else goes wrong), we can't reuse db.
@@ -205,7 +203,7 @@ func getdb(ctx context.Context, url, path string) (*sql.DB, error) {
 	}
 }
 
-func gcdbs(db *stdsql.DB) error {
+func gcdbs(db *sql.DB) error {
 	gcTime := time.Now().Add(-gcDur)
 	const q = `
 		SELECT datname FROM pg_database
@@ -251,7 +249,7 @@ func formatPrefix(prefix string, t time.Time) string {
 // Exec executes q in the database or transaction in ctx.
 // If there is an error, it fails t.
 func Exec(ctx context.Context, db pg.DB, t testing.TB, q string, args ...interface{}) {
-	_, err := db.Exec(ctx, q, args...)
+	_, err := db.ExecContext(ctx, q, args...)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

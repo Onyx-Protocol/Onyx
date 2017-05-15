@@ -39,7 +39,7 @@ func TestB32encCrockford(t *testing.T) {
 	ctx := context.Background()
 	for _, test := range cases {
 		var got string
-		err := db.QueryRow(ctx, `SELECT b32enc_crockford($1)`, test.decoded).Scan(&got)
+		err := db.QueryRowContext(ctx, `SELECT b32enc_crockford($1)`, test.decoded).Scan(&got)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			continue

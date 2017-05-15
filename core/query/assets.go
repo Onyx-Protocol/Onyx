@@ -24,7 +24,7 @@ func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, asset *AnnotatedAsse
 		VALUES($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)
 		ON CONFLICT (id) DO UPDATE SET sort_id = $2, tags = $8::jsonb
 	`
-	_, err = ind.db.Exec(ctx, q, asset.ID, sortID, asset.Alias, []byte(asset.IssuanceProgram),
+	_, err = ind.db.ExecContext(ctx, q, asset.ID, sortID, asset.Alias, []byte(asset.IssuanceProgram),
 		keysJSON, asset.Quorum, string(*asset.Definition), string(*asset.Tags), bool(asset.IsLocal))
 	return errors.Wrap(err, "saving annotated asset")
 }
@@ -44,7 +44,7 @@ func (ind *Indexer) Assets(ctx context.Context, filt string, vals []interface{},
 	}
 
 	queryStr, queryArgs := constructAssetsQuery(expr, vals, after, limit)
-	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
+	rows, err := ind.db.QueryContext(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "executing assets query")
 	}

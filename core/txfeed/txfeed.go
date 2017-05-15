@@ -65,7 +65,7 @@ func insertTxFeed(ctx context.Context, db pg.DB, feed *TxFeed, clientToken strin
 		Valid:  clientToken != "",
 	}
 
-	err := db.QueryRow(
+	err := db.QueryRowContext(
 		ctx, q, alias, feed.Filter, feed.After,
 		nullToken).Scan(&feed.ID)
 
@@ -96,7 +96,7 @@ func txfeedByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Tx
 		feed  TxFeed
 		alias sql.NullString
 	)
-	err := db.QueryRow(ctx, q, clientToken).Scan(&feed.ID, &alias, &feed.Filter, &feed.After)
+	err := db.QueryRowContext(ctx, q, clientToken).Scan(&feed.ID, &alias, &feed.Filter, &feed.After)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (t *Tracker) Find(ctx context.Context, id, alias string) (*TxFeed, error) {
 		sqlAlias sql.NullString
 	)
 
-	err := t.DB.QueryRow(ctx, q.String(), id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
+	err := t.DB.QueryRowContext(ctx, q.String(), id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
 	if err == sql.ErrNoRows {
 		err = errors.Sub(pg.ErrUserInputNotFound, err)
 		err = errors.WithDetailf(err, "alias: %s", alias)
@@ -158,7 +158,7 @@ func (t *Tracker) Delete(ctx context.Context, id, alias string) error {
 		id = alias
 	}
 
-	res, err := t.DB.Exec(ctx, q.String(), id)
+	res, err := t.DB.ExecContext(ctx, q.String(), id)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (t *Tracker) Update(ctx context.Context, id, alias, after, prev string) (*T
 
 	q.WriteString(` AND after=$3`)
 
-	res, err := t.DB.Exec(ctx, q.String(), after, id, prev)
+	res, err := t.DB.ExecContext(ctx, q.String(), after, id, prev)
 	if err != nil {
 		return nil, err
 	}

@@ -81,7 +81,7 @@ func TestDeleteUTXOs(t *testing.T) {
 	}
 
 	var n int
-	err = m.db.QueryRow(ctx, `SELECT count(*) FROM account_utxos`).Scan(&n)
+	err = m.db.QueryRowContext(ctx, `SELECT count(*) FROM account_utxos`).Scan(&n)
 	if err != nil {
 		t.Fatal(err)
 	}

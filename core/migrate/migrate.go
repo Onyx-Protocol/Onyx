@@ -16,7 +16,7 @@ func Run(db pg.DB) error {
 	ctx := context.Background()
 
 	// Create the migrations table if not yet created.
-	_, err := db.Exec(ctx, createMigrationTableSQL)
+	_, err := db.ExecContext(ctx, createMigrationTableSQL)
 	if err != nil {
 		return errors.Wrap(err, "creating migration table")
 	}
@@ -36,7 +36,7 @@ func Run(db pg.DB) error {
 			continue
 		}
 		fmt.Println("Pending migration:", m.Name)
-		_, err := db.Exec(ctx, m.SQL)
+		_, err := db.ExecContext(ctx, m.SQL)
 		if err != nil {
 			return errors.Wrapf(err, "migration %s", m.Name)
 		}
@@ -96,7 +96,7 @@ func loadStatus(db pg.DB, ms []migration) error {
 		WHERE schemaname='public' AND tablename='migrations'
 	`
 	var n int
-	err := db.QueryRow(ctx, q).Scan(&n)
+	err := db.QueryRowContext(ctx, q).Scan(&n)
 	if err != nil {
 		log.Fatalkv(ctx, log.KeyError, err)
 	}
@@ -104,7 +104,7 @@ func loadStatus(db pg.DB, ms []migration) error {
 		return nil // no schema; nothing has been applied
 	}
 
-	rows, err := db.Query(ctx, `SELECT filename, hash, applied_at FROM migrations`)
+	rows, err := db.QueryContext(ctx, `SELECT filename, hash, applied_at FROM migrations`)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -146,7 +146,7 @@ func convertOldStatus(db pg.DB) error {
 		AND hash='00ac8143767fe4a44855cab1ec57afd52c44fd4d727055db9e8584c3e9b10983'
 	`
 	var n int
-	err := db.QueryRow(ctx, q).Scan(&n)
+	err := db.QueryRowContext(ctx, q).Scan(&n)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -154,7 +154,7 @@ func convertOldStatus(db pg.DB) error {
 		return nil // no conversion necessary/possible
 	}
 
-	_, err = db.Exec(ctx, `
+	_, err = db.ExecContext(ctx, `
 		TRUNCATE migrations;
 
 		INSERT INTO migrations (filename, hash, applied_at)
@@ -185,7 +185,7 @@ func insertAppliedMigration(db pg.DB, m migration) error {
 		INSERT INTO migrations (filename, hash, applied_at)
 		VALUES($1, $2, NOW())
 	`
-	_, err := db.Exec(ctx, q, m.Name, m.Hash)
+	_, err := db.ExecContext(ctx, q, m.Name, m.Hash)
 	if err != nil {
 		return errors.Wrap(err, "recording applied migration")
 	}

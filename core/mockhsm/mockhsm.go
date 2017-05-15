@@ -72,7 +72,7 @@ func (h *HSM) createChainKDKey(ctx context.Context, alias string, get bool) (*XP
 		ptrAlias = &alias
 	}
 	const q = `INSERT INTO mockhsm (pub, prv, alias, key_type) VALUES ($1, $2, $3, 'chain_kd')`
-	_, err = h.db.Exec(ctx, q, xpub.Bytes(), xprv.Bytes(), sqlAlias)
+	_, err = h.db.ExecContext(ctx, q, xpub.Bytes(), xprv.Bytes(), sqlAlias)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
 			if !get {
@@ -80,7 +80,7 @@ func (h *HSM) createChainKDKey(ctx context.Context, alias string, get bool) (*XP
 			}
 
 			var xpubBytes []byte
-			err = h.db.QueryRow(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&xpubBytes)
+			err = h.db.QueryRowContext(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&xpubBytes)
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "reading existing xpub with alias %s", alias)
 			}
@@ -117,7 +117,7 @@ func (h *HSM) createEd25519Key(ctx context.Context, alias string, get bool) (*Pu
 		ptrAlias = &alias
 	}
 	const q = `INSERT INTO mockhsm (pub, prv, alias, key_type) VALUES ($1, $2, $3, 'ed25519')`
-	_, err = h.db.Exec(ctx, q, []byte(pub), []byte(prv), sqlAlias)
+	_, err = h.db.ExecContext(ctx, q, []byte(pub), []byte(prv), sqlAlias)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
 			if !get {
@@ -125,7 +125,7 @@ func (h *HSM) createEd25519Key(ctx context.Context, alias string, get bool) (*Pu
 			}
 
 			var pubBytes []byte
-			err = h.db.QueryRow(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&pubBytes)
+			err = h.db.QueryRowContext(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&pubBytes)
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "reading existing pub with alias %s", alias)
 			}
@@ -204,7 +204,7 @@ func (h *HSM) loadChainKDKey(ctx context.Context, xpub chainkd.XPub) (xprv chain
 	}
 
 	var b []byte
-	err = h.db.QueryRow(ctx, "SELECT prv FROM mockhsm WHERE pub = $1 AND key_type='chain_kd'", xpub.Bytes()).Scan(&b)
+	err = h.db.QueryRowContext(ctx, "SELECT prv FROM mockhsm WHERE pub = $1 AND key_type='chain_kd'", xpub.Bytes()).Scan(&b)
 	if err == sql.ErrNoRows {
 		return xprv, ErrNoKey
 	}
@@ -234,7 +234,7 @@ func (h *HSM) DeleteChainKDKey(ctx context.Context, xpub chainkd.XPub) error {
 	h.cacheMu.Lock()
 	delete(h.kdCache, xpub)
 	h.cacheMu.Unlock()
-	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE pub = $1 AND key_type='chain_kd'", xpub.Bytes())
+	_, err := h.db.ExecContext(ctx, "DELETE FROM mockhsm WHERE pub = $1 AND key_type='chain_kd'", xpub.Bytes())
 	return err
 }
 
@@ -248,7 +248,7 @@ func (h *HSM) loadEd25519Key(ctx context.Context, pub ed25519.PublicKey) (prv ed
 		return prv, nil
 	}
 
-	err = h.db.QueryRow(ctx, "SELECT prv FROM mockhsm WHERE pub = $1 AND key_type='ed25519'", []byte(pub)).Scan(&prv)
+	err = h.db.QueryRowContext(ctx, "SELECT prv FROM mockhsm WHERE pub = $1 AND key_type='ed25519'", []byte(pub)).Scan(&prv)
 	if err == sql.ErrNoRows {
 		return prv, ErrNoKey
 	}

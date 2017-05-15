@@ -1,13 +1,12 @@
 package pgtest
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"runtime"
 	"testing"
 
 	"github.com/lib/pq"
-
-	"chain/database/sql"
 )
 
 // WrapDB opens a new connection to the database at the provided URL,

@@ -83,7 +83,7 @@ func (ind *Indexer) insertBlock(ctx context.Context, b *legacy.Block) error {
 		INSERT INTO query_blocks (height, timestamp) VALUES($1, $2)
 		ON CONFLICT (height) DO NOTHING
 	`
-	_, err := ind.db.Exec(ctx, q, b.Height, b.TimestampMS)
+	_, err := ind.db.ExecContext(ctx, q, b.Height, b.TimestampMS)
 	return errors.Wrap(err, "inserting block timestamp")
 }
 
@@ -130,7 +130,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *legacy.Block) ([]
 			unnest($6::jsonb[]), unnest($7::boolean[]), unnest($8::jsonb[]), $9
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
-	_, err := ind.db.Exec(ctx, insertQ, b.Height, b.Hash(), b.Time(),
+	_, err := ind.db.ExecContext(ctx, insertQ, b.Height, b.Hash(), b.Time(),
 		pq.Array(positions), hashes, annotatedTxBlobs, locals,
 		referenceDatas, len(b.Transactions))
 	if err != nil {
@@ -198,7 +198,7 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *legacy.Block, 
 		unnest($13::bytea[]), unnest($14::jsonb[]), unnest($15::boolean[]), unnest($16::bytea[])
 		ON CONFLICT (tx_hash, index) DO NOTHING;
 	`
-	_, err := ind.db.Exec(ctx, insertQ, inputTxHashes, inputIndexes, inputTypes, inputAssetIDs,
+	_, err := ind.db.ExecContext(ctx, insertQ, inputTxHashes, inputIndexes, inputTypes, inputAssetIDs,
 		inputAssetAliases, inputAssetDefinitions, pq.Array(inputAssetTags), inputAssetLocals,
 		inputAmounts, pq.Array(inputAccountIDs), pq.Array(inputAccountAliases), pq.Array(inputAccountTags),
 		inputIssuancePrograms, inputReferenceDatas, inputLocals, inputSpentOutputIDs)
@@ -282,7 +282,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *legacy.Block,
 		FROM utxos
 		ON CONFLICT (block_height, tx_pos, output_index) DO NOTHING;
 	`
-	_, err := ind.db.Exec(ctx, insertQ, b.Height, pq.Array(outputTxPositions),
+	_, err := ind.db.ExecContext(ctx, insertQ, b.Height, pq.Array(outputTxPositions),
 		pq.Array(outputIndexes), outputTxHashes, b.TimestampMS, outputIDs, outputTypes,
 		outputPurposes, outputAssetIDs, outputAssetAliases,
 		outputAssetDefinitions, outputAssetTags, outputAssetLocals,
@@ -297,6 +297,6 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *legacy.Block,
 		UPDATE annotated_outputs SET timespan = INT8RANGE(LOWER(timespan), $1)
 		WHERE (output_id) IN (SELECT unnest($2::bytea[]))
 	`
-	_, err = ind.db.Exec(ctx, updateQ, b.TimestampMS, prevoutIDs)
+	_, err = ind.db.ExecContext(ctx, updateQ, b.TimestampMS, prevoutIDs)
 	return errors.Wrap(err, "updating spent annotated outputs")
 }

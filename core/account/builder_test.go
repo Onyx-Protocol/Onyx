@@ -194,7 +194,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 func programInAccount(ctx context.Context, t testing.TB, db pg.DB, program []byte, account string) bool {
 	const q = `SELECT signer_id=$1 FROM account_control_programs WHERE control_program=$2`
 	var in bool
-	err := db.QueryRow(ctx, q, account, program).Scan(&in)
+	err := db.QueryRowContext(ctx, q, account, program).Scan(&in)
 	if err == sql.ErrNoRows {
 		return false
 	}

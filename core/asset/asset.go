@@ -282,7 +282,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 		Valid:  clientToken != "",
 	}
 
-	err := reg.db.QueryRow(
+	err := reg.db.QueryRowContext(
 		ctx, q,
 		asset.AssetID, asset.Alias, signerID,
 		asset.InitialBlockHash, asset.VMVersion, asset.IssuanceProgram,
@@ -316,7 +316,7 @@ func insertAssetTags(ctx context.Context, db pg.DB, assetID bc.AssetID, tags map
 		INSERT INTO asset_tags (asset_id, tags) VALUES ($1, $2)
 		ON CONFLICT (asset_id) DO UPDATE SET tags = $2
 	`
-	_, err = db.Exec(ctx, q, assetID, tagsParam)
+	_, err = db.ExecContext(ctx, q, assetID, tagsParam)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -352,7 +352,7 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 		xpubs      [][]byte
 		tags       []byte
 	)
-	err := db.QueryRow(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
+	err := db.QueryRowContext(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
 		&a.AssetID,
 		&a.Alias,
 		&a.VMVersion,

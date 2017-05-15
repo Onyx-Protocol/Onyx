@@ -42,7 +42,7 @@ func TestDecodeOutputsAfter(t *testing.T) {
 func TestOutputsAfter(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
-	_, err := db.Exec(ctx, `
+	_, err := db.ExecContext(ctx, `
 		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, output_id, timespan,
 			type, purpose, asset_id, asset_alias, asset_definition, asset_local, asset_tags, amount, control_program, reference_data, local)
 		VALUES

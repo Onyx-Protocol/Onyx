@@ -2,12 +2,12 @@ package txdb
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/golang/protobuf/proto"
 
 	"chain/core/txdb/internal/storage"
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/patricia"
@@ -74,13 +74,13 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 		INSERT INTO snapshots (height, data) VALUES($1, $2)
 		ON CONFLICT (height) DO UPDATE SET data = $2, created_at = NOW()
 	`
-	_, err = db.Exec(ctx, insertQ, blockHeight, b)
+	_, err = db.ExecContext(ctx, insertQ, blockHeight, b)
 	if err != nil {
 		return errors.Wrap(err, "writing state snapshot to database")
 	}
 
 	const deleteQ = `DELETE FROM snapshots WHERE created_at < NOW() - INTERVAL '24 hours'`
-	_, err = db.Exec(ctx, deleteQ)
+	_, err = db.ExecContext(ctx, deleteQ)
 	return errors.Wrap(err, "deleting old snapshots")
 }
 
@@ -93,7 +93,7 @@ func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, e
 		height uint64
 	)
 
-	err := db.QueryRow(ctx, q).Scan(&data, &height)
+	err := db.QueryRowContext(ctx, q).Scan(&data, &height)
 	if err == sql.ErrNoRows {
 		return state.Empty(), 0, nil
 	} else if err != nil {
@@ -111,7 +111,7 @@ func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, e
 // provided height.
 func getRawSnapshot(ctx context.Context, db pg.DB, height uint64) (data []byte, err error) {
 	const q = `SELECT data FROM snapshots WHERE height = $1`
-	err = db.QueryRow(ctx, q, height).Scan(&data)
+	err = db.QueryRowContext(ctx, q, height).Scan(&data)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	}

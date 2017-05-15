@@ -63,7 +63,7 @@ func (s *Store) CreatePin(ctx context.Context, name string, height uint64) error
 		INSERT INTO block_processors (name, height) VALUES($1, $2)
 		ON CONFLICT(name) DO NOTHING;
 	`
-	_, err := s.db.Exec(ctx, q, name, height)
+	_, err := s.db.ExecContext(ctx, q, name, height)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -249,13 +249,13 @@ func (p *pin) complete(ctx context.Context, height uint64) error {
 	}
 
 	const q = `UPDATE block_processors SET height=$1 WHERE height<$1 AND name=$2`
-	_, err := p.db.Exec(ctx, q, max, p.name)
+	_, err := p.db.ExecContext(ctx, q, max, p.name)
 	if err != nil {
 		return err
 	}
 
 	const notifyQ = `SELECT pg_notify($1, $2)`
-	_, err = p.db.Exec(ctx, notifyQ, "pin-"+p.name, max)
+	_, err = p.db.ExecContext(ctx, notifyQ, "pin-"+p.name, max)
 	if err != nil {
 		return err
 	}

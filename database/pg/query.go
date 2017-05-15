@@ -66,7 +66,7 @@ func ForQueryRows(ctx context.Context, db DB, query string, args ...interface{})
 		return errors.Wrap(ErrBadRequest, "fn arg return type must be error")
 	}
 
-	rows, err := db.Query(ctx, query, queryArgs...)
+	rows, err := db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return errors.Wrap(err, "query")
 	}

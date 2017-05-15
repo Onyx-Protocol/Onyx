@@ -14,20 +14,23 @@ import (
 
 	"github.com/lib/pq"
 
-	chainsql "chain/database/sql"
 	chainnet "chain/net"
 )
 
 // DB holds methods common to the DB, Tx, and Stmt types
 // in package sql.
 type DB interface {
-	Query(context.Context, string, ...interface{}) (*chainsql.Rows, error)
-	QueryRow(context.Context, string, ...interface{}) *chainsql.Row
-	Exec(context.Context, string, ...interface{}) (chainsql.Result, error)
+	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
+	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
 }
 
 // TODO: move this under chain/hapg
 type hapgDriver struct{}
+
+func NewDriver() driver.Driver {
+	return hapgDriver{}
+}
 
 func (d hapgDriver) Open(name string) (driver.Conn, error) {
 	name, err := resolveURI(name)

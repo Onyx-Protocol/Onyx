@@ -264,7 +264,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 }
 
 func dumpBlocks(ctx context.Context, t *testing.T, db pg.DB) {
-	rows, err := db.Query(ctx, `SELECT height, block_hash FROM blocks`)
+	rows, err := db.QueryContext(ctx, `SELECT height, block_hash FROM blocks`)
 	if err != nil {
 		t.Fatal(err)
 	}

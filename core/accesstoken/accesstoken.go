@@ -70,7 +70,7 @@ func (cs *CredentialStore) Create(ctx context.Context, id, typ string) (*Token, 
 		sortID    string
 		maybeType = sql.NullString{String: typ, Valid: typ != ""}
 	)
-	err = cs.DB.QueryRow(ctx, q, id, maybeType, hashedSecret[:]).Scan(&created, &sortID)
+	err = cs.DB.QueryRowContext(ctx, q, id, maybeType, hashedSecret[:]).Scan(&created, &sortID)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetailf(ErrDuplicateID, "id %q already in use", id)
 	}
@@ -98,7 +98,7 @@ func (cs *CredentialStore) Check(ctx context.Context, id string, secret []byte) 
 
 	const q = `SELECT EXISTS(SELECT 1 FROM access_tokens WHERE id=$1 AND hashed_secret=$2)`
 	var valid bool
-	err := cs.DB.QueryRow(ctx, q, id, hashed[:]).Scan(&valid)
+	err := cs.DB.QueryRowContext(ctx, q, id, hashed[:]).Scan(&valid)
 	if err != nil {
 		return false, err
 	}
@@ -110,7 +110,7 @@ func (cs *CredentialStore) Check(ctx context.Context, id string, secret []byte) 
 func (cs *CredentialStore) Exists(ctx context.Context, id string) bool {
 	const q = `SELECT EXISTS(SELECT 1 FROM access_tokens WHERE id=$1)`
 	var valid bool
-	err := cs.DB.QueryRow(ctx, q, id).Scan(&valid)
+	err := cs.DB.QueryRowContext(ctx, q, id).Scan(&valid)
 	if err != nil {
 		return false
 	}
@@ -153,7 +153,7 @@ func (cs *CredentialStore) List(ctx context.Context, typ, after string, limit in
 // Delete deletes an access token by id.
 func (cs *CredentialStore) Delete(ctx context.Context, id string) error {
 	const q = `DELETE FROM access_tokens WHERE id=$1`
-	res, err := cs.DB.Exec(ctx, q, id)
+	res, err := cs.DB.ExecContext(ctx, q, id)
 	if err != nil {
 		return errors.Wrap(err)
 	}

@@ -160,7 +160,7 @@ func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHei
 		INSERT INTO submitted_txs (tx_hash, height) VALUES($1, $2)
 		ON CONFLICT DO NOTHING
 	`
-	res, err := db.Exec(ctx, insertQ, txHash.Bytes(), currentHeight)
+	res, err := db.ExecContext(ctx, insertQ, txHash.Bytes(), currentHeight)
 	if err != nil {
 		return 0, err
 	}
@@ -178,7 +178,7 @@ func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHei
 		SELECT height FROM submitted_txs WHERE tx_hash = $1
 	`
 	var height uint64
-	err = db.QueryRow(ctx, selectQ, txHash.Bytes()).Scan(&height)
+	err = db.QueryRowContext(ctx, selectQ, txHash.Bytes()).Scan(&height)
 	return height, err
 }
 
@@ -195,7 +195,7 @@ func cleanUpSubmittedTxs(ctx context.Context, db pg.DB) {
 			// play well with ON CONFLICT clauses though, so we would need to rework
 			// how we guarantee uniqueness.
 			const q = `DELETE FROM submitted_txs WHERE submitted_at < now() - interval '1 day'`
-			_, err := db.Exec(ctx, q)
+			_, err := db.ExecContext(ctx, q)
 			if err != nil {
 				log.Error(ctx, err)
 			}

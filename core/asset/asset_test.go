@@ -29,7 +29,7 @@ func TestDefineAsset(t *testing.T) {
 	// Verify that the asset was defined.
 	var id bc.AssetID
 	var checkQ = `SELECT id FROM assets`
-	err = r.db.QueryRow(ctx, checkQ).Scan(&id)
+	err = r.db.QueryRowContext(ctx, checkQ).Scan(&id)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
