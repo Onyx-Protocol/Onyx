@@ -10,7 +10,7 @@ import {
   getSource,
   getContractValue,
   getInputMap,
-  getParameterData,
+  getContractArgs,
 } from '../templates/selectors'
 
 import { getPromisedInputMap } from '../inputs/data'
@@ -66,7 +66,7 @@ export const create = () => {
 
     const promisedInputMap = getPromisedInputMap(inputMap)
     promisedInputMap.then((inputMap) => {
-      const args = getParameterData(state, inputMap).map(param => {
+      const args = getContractArgs(state, inputMap).map(param => {
         if (param instanceof Buffer) {
           return { "string": param.toString('hex') }
         }
