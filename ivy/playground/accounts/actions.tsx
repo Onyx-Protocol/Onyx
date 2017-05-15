@@ -11,9 +11,7 @@ export const fetch = () => {
   return (dispatch, getState) => {
     let items
     const type = FETCH
-    Promise.resolve().then(() => {
-      return client.accounts.query()
-    }).then(data => {
+    client.accounts.query().then(data => {
       items = data.items
       const getBalances = data.items.map(item => {
         return client.balances.query({

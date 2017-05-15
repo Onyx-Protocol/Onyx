@@ -27,48 +27,36 @@ export const SEED: string = "app/SEED"
 
 export const seed = () => {
   return (dispatch, getState) => {
-    Promise.resolve().then(() => {
-      const createKeys = [
-        client.mockHsm.keys.create(),
-        client.mockHsm.keys.create(),
-        client.mockHsm.keys.create(),
-        client.mockHsm.keys.create(),
-        client.mockHsm.keys.create()
-      ]
-      return Promise.all(createKeys)
-    }).then(keys => {
-      keys.forEach(key => {
-        signer.addKey(key.xpub, client.mockHsm.signerConnection)
-      })
-
+    return client.mockHsm.keys.create().then(key => {
+      signer.addKey(key.xpub, client.mockHsm.signerConnection)
       const createEntities = [
         client.assets.create({
           alias: 'USD',
-          rootXpubs: [keys[0].xpub],
+          rootXpubs: [key.xpub],
           quorum: 1,
         }),
 
         client.assets.create({
           alias: 'Gold',
-          rootXpubs: [keys[1].xpub],
+          rootXpubs: [key.xpub],
           quorum: 1,
         }),
 
         client.accounts.create({
           alias: 'Escrow Agent',
-          rootXpubs: [keys[2].xpub],
+          rootXpubs: [key.xpub],
           quorum: 1
         }),
 
         client.accounts.create({
           alias: 'Bob',
-          rootXpubs: [keys[3].xpub],
+          rootXpubs: [key.xpub],
           quorum: 1
         }),
 
         client.accounts.create({
           alias: 'Alice',
-          rootXpubs: [keys[4].xpub],
+          rootXpubs: [key.xpub],
           quorum: 1
         })
       ]
