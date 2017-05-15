@@ -75,7 +75,7 @@ class Navigation extends React.Component {
         <ul className={styles.navigation}>
           <li className={styles.navigationTitle}>developers</li>
           <li>
-            <a href='/ivy'>
+            <a href='/ivy' target='_blank'>
               {navIcon('transaction', styles)}
               Ivy Playground
             </a>
