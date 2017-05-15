@@ -64,7 +64,7 @@ const (
 func NewDB(f Fataler, schemaPath string) (url string, db *sql.DB) {
 	ctx := context.Background()
 	if os.Getenv("CHAIN") == "" {
-		logTo(f, "warning: $CHAIN not set; probably can't find schema")
+		log.Println("warning: $CHAIN not set; probably can't find schema")
 	}
 	url, db, err := open(ctx, DBURL, schemaPath)
 	if err != nil {
@@ -88,7 +88,7 @@ func NewTx(f Fataler) *sql.Tx {
 	runtime.GC() // give the finalizers a better chance to run
 	ctx := context.Background()
 	if os.Getenv("CHAIN") == "" {
-		logTo(f, "warning: $CHAIN not set; probably can't find schema")
+		log.Println("warning: $CHAIN not set; probably can't find schema")
 	}
 	db, err := getdb(ctx, DBURL, SchemaPath)
 	if err != nil {
@@ -258,28 +258,4 @@ func Exec(ctx context.Context, db pg.DB, t testing.TB, q string, args ...interfa
 // Fataler lets NewTx and NewDB signal immediate failure.
 type Fataler interface {
 	Fatal(...interface{})
-}
-
-// Logger is an optional interface that can be satisfied
-// by the first argument to NewTx or NewDB.
-// If available, it will be used to print non-fatal diagnostics.
-type Logger interface {
-	Log(...interface{})
-}
-
-// Printlner is an optional interface that can be satisfied
-// by the first argument to NewTx or NewDB.
-// If available, it will be used to print non-fatal diagnostics.
-type Printlner interface {
-	Println(...interface{})
-}
-
-func logTo(x interface{}, args ...interface{}) {
-	if l, ok := x.(Logger); ok {
-		l.Log(args...)
-	} else if p, ok := x.(Printlner); ok {
-		p.Println(args...)
-	} else {
-		log.Println(args...)
-	}
 }
