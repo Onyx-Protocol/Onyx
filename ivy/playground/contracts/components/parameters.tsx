@@ -44,10 +44,13 @@ function ParameterWidget(props: { input: ParameterInput, handleChange: (e)=>unde
 }
 
 function GenerateStringWidget(props: { input: GenerateStringInput, handleChange: (e)=>undefined, computedValue: string }) {
-  return <div>{ props.computedValue ? <pre>{props.computedValue}</pre> : <span />}<div className="input-group">
-    <div className="input-group-addon">Length</div>
-    <input type="text" className="form-control" key={props.input.name} value={props.input.value} onChange={props.handleChange} />
-  </div></div>
+  return <div>
+    <div className="input-group">
+      <div className="input-group-addon">Length</div>
+      <input type="text" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
+    </div>
+    { props.computedValue ? <pre>{props.computedValue}</pre> : <span />}
+  </div>
 }
 
 function NumberWidget(props: { input: NumberInput | AmountInput,
@@ -63,7 +66,7 @@ function TimestampTimeWidget(props: { input: TimeInput, handleChange: (e)=>undef
 
 function AmountWidget(props: { input: AmountInput
                                handleChange: (e)=>undefined }) {
-  return <div className="form-group form-inline">
+  return <div className="form-group">
     <div className="input-group">
     <div className="input-group-addon">Amount</div>
     <NumberWidget input={props.input} handleChange={props.handleChange} />
@@ -197,7 +200,7 @@ function BalanceWidgetUnconnected({ namePrefix, balanceMap, inputMap, contracts 
     }
     jsx = (
       <div className="widget-wrapper">
-        <div className="form-group form-inline">
+        <div className="form-group">
           <div className="input-group">
             <div className="value-balance">{amount} available</div>
           </div>
@@ -224,7 +227,7 @@ function AccountAliasWidgetUnconnected(props: { input: AccountAliasInput,
                                      accounts: Account[]}) {
   let options = props.accounts.map(account => <option key={account.id} value={account.id}>{account.alias}</option>)
   options.unshift(<option key="" value="">Select Account</option>)
-  return <div className="form-group form-inline">
+  return <div className="form-group">
     <div className="input-group">
     <div className="input-group-addon">Account</div>
     <select id={props.input.name} className="form-control with-addon" value={props.input.value} onChange={props.handleChange}>
@@ -243,7 +246,7 @@ function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
                                               assets: Asset[]}) {
   let options = props.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.alias}</option>)
   options.unshift(<option key="" value="">Select Asset</option>)
-  return <div className="form-inline form-group">
+  return <div className="form-group">
     <div className="input-group">
     <div className="input-group-addon">Asset</div>
     <select id={props.input.name} className="form-control with-addon" value={props.input.value} onChange={props.handleChange}>
@@ -266,7 +269,7 @@ function ChoosePublicKeyWidget(props: { input: ChoosePublicKeyInput,
     options.push(<option key={key} value={key}>{key}</option>)
   }
   options.unshift(<option key="" value="">Select Public Key</option>)
-  return <div className="form-inline form-group">
+  return <div className="form-group">
     <div className="input-group">
     <div className="input-group-addon">Public Key</div>
     <select id={props.input.name} className="form-control with-addon" value={props.input.value} onChange={props.handleChange}>
