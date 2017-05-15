@@ -4,6 +4,7 @@ import { push } from 'react-router-redux'
 // ivy imports
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
+import { fetch } from '../accounts/actions';
 import { setSource, displayError as displayCreateError } from '../templates/actions'
 import {
   getSource,
@@ -110,8 +111,9 @@ export const create = () => {
             inputMap,
             utxo
           })
-          dispatch(push(prefixRoute('/unlock')))
+          dispatch(fetch())
           dispatch(setSource(source))
+          dispatch(push(prefixRoute('/unlock')))
         }).catch(err => {
           dispatch(displayCreateError(err))
         })
@@ -154,6 +156,7 @@ export const spend = () => {
         id: contract.id,
         lockTxid: result.id
       })
+      dispatch(fetch())
       dispatch(push(prefixRoute('/unlock')))
     }).catch(err => dispatch(displayError(err)))
   }
