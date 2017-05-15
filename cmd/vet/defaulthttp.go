@@ -39,6 +39,9 @@ var checkCmds = map[string]bool{
 
 // checkHttpCall checks that the chain packages do not use the
 // http DefaultClient which does not include TLS settings.
+//
+// TODO(jackson): use pointer analysis to catch more uses:
+// https://github.com/chain/chain/pull/1124#discussion_r115578973
 func checkHttpCall(f *File, node ast.Node) {
 	// Skip test files.
 	if strings.HasSuffix(f.name, "_test.go") {
