@@ -15,11 +15,12 @@ import (
 
 type (
 	CompileResult struct {
-		Name    string             `json:"name"`
-		Program chainjson.HexBytes `json:"program"`
-		Value   string             `json:"value"`
-		Params  []ContractParam    `json:"params"`
-		Clauses []ClauseInfo       `json:"clause_info"`
+		Name    string
+		Program []byte
+		Value   string
+		Params  []ContractParam
+		Clauses []ClauseInfo
+		Labels  map[uint32]string
 	}
 
 	ContractParam struct {
@@ -73,7 +74,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "parse error")
 	}
-	prog, err := compileContract(c, args)
+	prog, labels, err := compileContract(c, args)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
@@ -82,6 +83,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		Program: prog,
 		Params:  []ContractParam{},
 		Value:   c.value,
+		Labels:  labels,
 	}
 	for _, param := range c.params {
 		result.Params = append(result.Params, ContractParam{Name: param.name, Typ: string(param.bestType())})
@@ -132,9 +134,9 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	return result, nil
 }
 
-func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
+func compileContract(contract *contract, args []ContractArg) ([]byte, map[uint32]string, error) {
 	if len(contract.clauses) == 0 {
-		return nil, fmt.Errorf("empty contract")
+		return nil, nil, fmt.Errorf("empty contract")
 	}
 
 	env := newEnviron(nil)
@@ -146,32 +148,32 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	}
 	err := env.add(contract.name, contractType, roleContract)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, p := range contract.params {
 		err = env.add(p.name, p.typ, roleContractParam)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	err = env.add(contract.value, valueType, roleContractValue)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, c := range contract.clauses {
 		err = env.add(c.name, nilType, roleClause)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	err = prohibitValueParams(contract)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	err = requireAllParamsUsedInClauses(contract.params, contract.clauses)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	stack := addParamsToStack(nil, contract.params, true)
@@ -196,9 +198,10 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 	if len(contract.clauses) == 1 {
 		err = compileClause(b, stack, contract, env, contract.clauses[0])
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return b.build()
+		prog, err := b.build()
+		return prog, nil, err
 	}
 
 	endTarget := b.newJumpTarget()
@@ -247,7 +250,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 		b2 := newBuilder()
 		err = compileClause(b2, stack, contract, env, clause)
 		if err != nil {
-			return nil, errors.Wrapf(err, "compiling clause %d", i)
+			return nil, nil, errors.Wrapf(err, "compiling clause %d", i)
 		}
 		b.addFrom(b2)
 		if i < len(contract.clauses)-1 {
@@ -255,7 +258,17 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 		}
 	}
 	b.setJumpTarget(endTarget)
-	return b.build()
+	prog, err := b.build()
+	if err != nil {
+		return nil, nil, err
+	}
+	jumpAddrs := b.jumpAddrs()
+	labels := make(map[uint32]string)
+	labels[jumpAddrs[endTarget]] = "_end"
+	for i, targ := range clauseTargets {
+		labels[jumpAddrs[targ]] = contract.clauses[i].name
+	}
+	return prog, labels, nil
 }
 
 func compileClause(b *builder, contractStack []stackEntry, contract *contract, env *environ, clause *clause) error {

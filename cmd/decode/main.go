@@ -99,7 +99,7 @@ func main() {
 			fatalf("err decoding hex: %s", err)
 		}
 
-		s, err := vm.Disassemble(b)
+		s, err := vm.Disassemble(b, nil)
 		if err != nil {
 			fatalf("error decoding script: %s", err)
 		}

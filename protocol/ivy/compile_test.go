@@ -439,9 +439,11 @@ func TestCompile(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			gotProg, _ := vm.Disassemble(got.Program)
+			labels := got.Labels
+			got.Labels = nil // to make DeepEqual easier
+			gotProg, _ := vm.Disassemble(got.Program, labels)
 			if !reflect.DeepEqual(got, c.want) {
-				wantProg, _ := vm.Disassemble(c.want.Program)
+				wantProg, _ := vm.Disassemble(c.want.Program, labels)
 				gotJSON, _ := json.Marshal(got)
 				wantJSON, _ := json.Marshal(c.want)
 				t.Errorf("got %s [prog: %s]\nwant %s [prog: %s]", string(gotJSON), gotProg, wantJSON, wantProg)
