@@ -8,6 +8,6 @@ export type ItemMap = {
 }
 
 export type State = {
-  itemMap: { [s: string]: Item },
+  itemMap: ItemMap,
   idList: string[],
 }
