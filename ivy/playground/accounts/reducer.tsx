@@ -10,7 +10,17 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
         return { ...map, [id]: { id, alias } }
       }, {})
 
-      // MUST build balanceMap before sorting the accounts
+      // Sort accounts in alphabetical order by alias
+      const idList = [...action.items].sort((a,b) => {
+        if (a.alias < b.alias) {
+          return -1
+        }
+        if (a.alias > b.alias) {
+          return 1
+        }
+        return 0
+      }).map(item => item.id)
+
       // {
       //   [acctId: string]:  {
       //     [assetId: string]: amount: number
@@ -28,17 +38,6 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
           [acct.id]: balances
         }
       }, {})
-
-      // Sort accounts in alphabetical order by alias
-      const idList = action.items.sort((a,b) => {
-        if (a.alias < b.alias) {
-          return -1
-        }
-        if (a.alias > b.alias) {
-          return 1
-        }
-        return 0
-      }).map(item => item.id)
       return { itemMap, idList, balanceMap }
     }
     default: return state
