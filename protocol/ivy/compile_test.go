@@ -160,7 +160,7 @@ func TestCompile(t *testing.T) {
 			lockWith2of3Keys,
 			CompileResult{
 				Name:    "LockWith3Keys",
-				Program: mustDecodeHex("547a547a526bae71557a536c7cad"),
+				Program: mustDecodeHex("537a547a526bae71557a536c7cad"),
 				Value:   "locked",
 				Params: []ContractParam{{
 					Name: "pubkey1",
@@ -175,10 +175,10 @@ func TestCompile(t *testing.T) {
 				Clauses: []ClauseInfo{{
 					Name: "unlockWith2Sigs",
 					Args: []ClauseArg{{
-						Name: "sig2",
+						Name: "sig1",
 						Typ:  "Signature",
 					}, {
-						Name: "sig1",
+						Name: "sig2",
 						Typ:  "Signature",
 					}},
 					Values: []ValueInfo{{
@@ -396,12 +396,14 @@ func TestCompile(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			gotProg, _ := vm.Disassemble(got.Program)
 			if !reflect.DeepEqual(got, c.want) {
-				gotProg, _ := vm.Disassemble(got.Program)
 				wantProg, _ := vm.Disassemble(c.want.Program)
 				gotJSON, _ := json.Marshal(got)
 				wantJSON, _ := json.Marshal(c.want)
 				t.Errorf("got %s [prog: %s]\nwant %s [prog: %s]", string(gotJSON), gotProg, wantJSON, wantProg)
+			} else {
+				t.Log(gotProg)
 			}
 		})
 	}

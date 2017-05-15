@@ -102,11 +102,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 			info.Maxtimes = []string{}
 		}
 
-		// Report clause params in reverse order. The client will supply
-		// them in reverse order, which is how the contract logic expects
-		// them.
-		for i := len(clause.params) - 1; i >= 0; i-- {
-			p := clause.params[i]
+		for _, p := range clause.params {
 			info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: string(p.bestType())})
 		}
 		for _, stmt := range clause.statements {
@@ -178,7 +174,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, error) {
 		return nil, err
 	}
 
-	stack := addParamsToStack(nil, contract.params)
+	stack := addParamsToStack(nil, contract.params, true)
 
 	b := newBuilder()
 	for i := len(args) - 1; i >= 0; i-- {
@@ -296,7 +292,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 		return err
 	}
 	assignIndexes(clause)
-	stack := addParamsToStack(nil, clause.params)
+	stack := addParamsToStack(nil, clause.params, false)
 	stack = append(stack, contractStack...)
 
 	// a count of the number of times each variable is referenced
