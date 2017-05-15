@@ -73,6 +73,10 @@ func (b *builder) build() ([]byte, error) {
 	return b.b.Build()
 }
 
+func (b *builder) jumpAddrs() map[int]uint32 {
+	return b.b.JumpAddrs()
+}
+
 func (b *builder) resolve() {
 	if b.verifyPending {
 		b.b.AddOp(vm.OP_VERIFY)

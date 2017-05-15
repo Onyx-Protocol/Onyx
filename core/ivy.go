@@ -36,7 +36,7 @@ func compileIvy(req compileReq) (compileResp, error) {
 		resp.Value = compiled.Value
 		resp.Program = compiled.Program
 		resp.Clauses = compiled.Clauses
-		resp.Opcodes, err = vm.Disassemble(resp.Program)
+		resp.Opcodes, err = vm.Disassemble(resp.Program, compiled.Labels)
 		if err != nil {
 			return resp, err
 		}
