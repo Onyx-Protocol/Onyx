@@ -34,6 +34,8 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
 
         progressBarConstraint.constant = 1.0
 
+        self.subtitleLabel.stringValue = editionSubtitle()
+
         self.subtitleLabel.font = NSFont(name: "Nitti-Bold", size: 22)
         self.titleLabel.font    = NSFont(name: "NittiGrotesk-Bold", size: 60)
         self.statusLabel.font   = NSFont(name: "NittiGrotesk-Medium", size: 16)
@@ -78,7 +80,12 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
     }
 
     func userAgent() -> String {
-        return "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String])"
+        return "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String] ?? "")"
+    }
+
+    func editionSubtitle() -> String {
+        // "Developer Edition" by default
+        return Bundle.main.infoDictionary!["ChainCoreEdition"] as? String ?? ""
     }
 
     func doLoadModernDashboard() {

@@ -344,10 +344,80 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		20927EB61ECA36AA00E8CE8D /* IvyPlaygroundRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CHAIN_CORE_EDITION = "DEVELOPER EDITION";
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/pg/build/include";
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/pg/build/lib";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = "-lpq";
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				UPDATES_URL = "https://download.chain.com/mac/updates.xml";
+			};
+			name = IvyPlaygroundRelease;
+		};
+		20927EB71ECA36AA00E8CE8D /* IvyPlaygroundRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APP_VERSION = 1.2.0.ivy.rc2;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CHAIN_CORE_EDITION = "IVY PLAYGROUND";
+				CLANG_ENABLE_MODULES = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DB_VERSION = v1.1.1;
+				DEVELOPMENT_TEAM = ZA97W57QRY;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/ChainCore/Vendor",
+				);
+				INFOPLIST_FILE = ChainCore/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.chain.ChainCoreApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "Chain Core App Mac Production";
+				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
+				SWIFT_VERSION = 3.0.1;
+				UPDATES_URL = "https://download.chain.com/mac/ivy-playground/updates.xml";
+			};
+			name = IvyPlaygroundRelease;
+		};
 		83FB57251D1B05F000A903A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CHAIN_CORE_EDITION = "DEVELOPER EDITION";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -390,6 +460,7 @@
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				UPDATES_URL = "https://download.chain.com/mac/updates.xml";
 			};
 			name = Debug;
 		};
@@ -397,6 +468,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CHAIN_CORE_EDITION = "DEVELOPER EDITION";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -431,6 +503,7 @@
 				OTHER_LDFLAGS = "-lpq";
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				UPDATES_URL = "https://download.chain.com/mac/updates.xml";
 			};
 			name = Release;
 		};
@@ -439,6 +512,7 @@
 			buildSettings = {
 				APP_VERSION = 1.2.0;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CHAIN_CORE_EDITION = "";
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DB_VERSION = v1.1.1;
@@ -452,11 +526,11 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.chain.ChainCoreApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "52f8d7ba-ced6-496e-80e9-e209aa0fa82a";
 				PROVISIONING_PROFILE_SPECIFIER = "Chain Core App Mac Production";
 				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 3.0.1;
+				UPDATES_URL = "";
 			};
 			name = Debug;
 		};
@@ -465,10 +539,11 @@
 			buildSettings = {
 				APP_VERSION = 1.2.0;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CHAIN_CORE_EDITION = "";
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DB_VERSION = v1.1.1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZA97W57QRY;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -478,8 +553,10 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.chain.ChainCoreApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "Chain Core App Mac Production";
 				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
 				SWIFT_VERSION = 3.0.1;
+				UPDATES_URL = "";
 			};
 			name = Release;
 		};
@@ -491,6 +568,7 @@
 			buildConfigurations = (
 				83FB57251D1B05F000A903A3 /* Debug */,
 				83FB57261D1B05F000A903A3 /* Release */,
+				20927EB61ECA36AA00E8CE8D /* IvyPlaygroundRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -500,6 +578,7 @@
 			buildConfigurations = (
 				83FB57281D1B05F000A903A3 /* Debug */,
 				83FB57291D1B05F000A903A3 /* Release */,
+				20927EB71ECA36AA00E8CE8D /* IvyPlaygroundRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
