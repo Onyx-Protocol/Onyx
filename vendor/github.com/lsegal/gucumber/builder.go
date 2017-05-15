@@ -15,7 +15,22 @@ const (
 	testFile         = "gucumbertest__.go"
 )
 
+// BuildAndRunDir builds the given director's features into Go Code.
+// Using the filters provided. An error is returned if the build fails.
 func BuildAndRunDir(dir string, filters []string) error {
+	return buildAndRunDir(dir, filters, "")
+}
+
+// BuildAndRunDirWithGoBuildTags builds the given director's features into Go
+// Code using the filters provided. Also takes a string for the build tags to
+// be passed to the go command. An error is returned if the build fails.
+//
+// If goBuildTags is empty, the param will be ignored.
+func BuildAndRunDirWithGoBuildTags(dir string, filters []string, goBuildTags string) error {
+	return buildAndRunDir(dir, filters, goBuildTags)
+}
+
+func buildAndRunDir(dir string, filters []string, goBuildTags string) error {
 	defer buildCleanup(dir)
 
 	info := buildInfo{
@@ -36,18 +51,7 @@ func BuildAndRunDir(dir string, filters []string) error {
 			if pkgName == "_test" {
 				continue
 			}
-
-			// TODO figure out fully qualified package name in GOPATH
-			a, _ := filepath.Abs(filepath.Dir(file))
-			absPath, fullPkg := filepath.ToSlash(a), ""
-			for _, p := range filepath.SplitList(os.Getenv("GOPATH")) {
-				a, _ = filepath.Abs(p)
-				p = filepath.ToSlash(a)
-				if strings.HasPrefix(absPath, p) {
-					fullPkg = absPath[len(p+"/src/"):]
-					break
-				}
-			}
+			fullPkg := assembleImportPath(file)
 
 			if fullPkg == "" {
 				return fmt.Errorf("could not determine package path for %s", file)
@@ -74,7 +78,12 @@ func BuildAndRunDir(dir string, filters []string) error {
 
 	// now run the command
 	tfile := "./" + filepath.ToSlash(dir) + "/_test/" + testFile
-	cmd := exec.Command("go", "run", tfile)
+	var cmd *exec.Cmd
+	if len(goBuildTags) > 0 {
+		cmd = exec.Command("go", "run", "-tags", goBuildTags, tfile)
+	} else {
+		cmd = exec.Command("go", "run", tfile)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -83,6 +92,25 @@ func BuildAndRunDir(dir string, filters []string) error {
 	}
 
 	return nil
+}
+
+// ToSlash is being used to coerce the different
+// os PathSeparators into the forward slash
+// as the forward slash is required by Go's import statement
+func assembleImportPath(file string) string {
+	a, _ := filepath.Abs(filepath.Dir(file))
+	absPath, fullPkg := filepath.ToSlash(a), ""
+	for _, p := range filepath.SplitList(os.Getenv("GOPATH")) {
+		a, _ = filepath.Abs(p)
+		p = filepath.ToSlash(a)
+		if strings.HasPrefix(absPath, p) {
+			prefixPath := filepath.ToSlash(filepath.Join(p, "src"))
+			rpath, _ := filepath.Rel(prefixPath, absPath)
+			fullPkg = filepath.ToSlash(rpath)
+			break
+		}
+	}
+	return fullPkg
 }
 
 type buildInfo struct {
@@ -110,7 +138,7 @@ var tplMain = template.Must(template.New("main").Parse(`
 package main
 
 import (
-	"github.com/lsegal/gucumber"
+	"github.com/gucumber/gucumber"
 	{{range $n, $i := .Imports}}_i{{$n}} "{{$i}}"
 	{{end}}
 )

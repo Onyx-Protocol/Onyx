@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lsegal/gucumber/gherkin"
+	"github.com/gucumber/gucumber/gherkin"
 )
 
 var (
@@ -56,6 +56,18 @@ func BeforeMulti(filters []string, fn func()) {
 
 func AfterMulti(filters []string, fn func()) {
 	GlobalContext.AfterMulti(filters, fn)
+}
+
+func BeforeAll(fn func()) {
+	GlobalContext.BeforeAll(fn)
+}
+
+func AfterAll(fn func()) {
+	GlobalContext.AfterAll(fn)
+}
+
+func Execute(t Tester, line string, arg string) (bool, error) {
+	return GlobalContext.Execute(t, line, arg)
 }
 
 type Context struct {

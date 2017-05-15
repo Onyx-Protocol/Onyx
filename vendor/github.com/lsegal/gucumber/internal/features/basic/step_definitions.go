@@ -1,13 +1,18 @@
 package basic
 
 import (
-	. "github.com/lsegal/gucumber"
+	. "github.com/gucumber/gucumber"
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
 	executions := 100
 	result := 1
+	beforeAllCalls := 0
+
+	BeforeAll(func() {
+		beforeAllCalls++
+	})
 
 	Before("@basic", func() {
 		executions = 0
@@ -36,5 +41,9 @@ func init() {
 
 	Then(`^I should get (\d+)$`, func(i1 int) {
 		assert.Equal(T, result, i1)
+	})
+
+	Then(`^setup was called (\d+) times?$`, func(i2 int) {
+		assert.Equal(T, i2, beforeAllCalls)
 	})
 }
