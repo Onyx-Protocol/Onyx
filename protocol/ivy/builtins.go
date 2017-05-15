@@ -1,31 +1,33 @@
 package ivy
 
+import "chain/protocol/vm"
+
 type builtin struct {
 	name    string
-	opcodes string
+	opcodes []vm.Op
 	args    []typeDesc
 	result  typeDesc
 }
 
 var builtins = []builtin{
-	{"sha3", "SHA3", []typeDesc{nilType}, hashType},
-	{"sha256", "SHA256", []typeDesc{nilType}, hashType},
-	{"size", "SIZE SWAP DROP", []typeDesc{nilType}, intType},
-	{"abs", "ABS", []typeDesc{intType}, intType},
-	{"min", "MIN", []typeDesc{intType, intType}, intType},
-	{"max", "MAX", []typeDesc{intType, intType}, intType},
-	{"checkTxSig", "TXSIGHASH SWAP CHECKSIG", []typeDesc{pubkeyType, sigType}, boolType},
-	{"concat", "CAT", []typeDesc{nilType, nilType}, strType},
-	{"concatpush", "CATPUSHDATA", []typeDesc{nilType, nilType}, strType},
-	{"before", "MAXTIME GREATERTHAN", []typeDesc{timeType}, boolType},
-	{"after", "MINTIME LESSTHAN", []typeDesc{timeType}, boolType},
-	{"checkTxMultiSig", "", []typeDesc{listType, listType}, boolType}, // WARNING WARNING WOOP WOOP special case
+	{"sha3", []vm.Op{vm.OP_SHA3}, []typeDesc{nilType}, hashType},
+	{"sha256", []vm.Op{vm.OP_SHA256}, []typeDesc{nilType}, hashType},
+	{"size", []vm.Op{vm.OP_SIZE, vm.OP_SWAP, vm.OP_DROP}, []typeDesc{nilType}, intType},
+	{"abs", []vm.Op{vm.OP_ABS}, []typeDesc{intType}, intType},
+	{"min", []vm.Op{vm.OP_MIN}, []typeDesc{intType, intType}, intType},
+	{"max", []vm.Op{vm.OP_MAX}, []typeDesc{intType, intType}, intType},
+	{"checkTxSig", []vm.Op{vm.OP_TXSIGHASH, vm.OP_SWAP, vm.OP_CHECKSIG}, []typeDesc{pubkeyType, sigType}, boolType},
+	{"concat", []vm.Op{vm.OP_CAT}, []typeDesc{nilType, nilType}, strType},
+	{"concatpush", []vm.Op{vm.OP_CATPUSHDATA}, []typeDesc{nilType, nilType}, strType},
+	{"before", []vm.Op{vm.OP_MAXTIME, vm.OP_GREATERTHAN}, []typeDesc{timeType}, boolType},
+	{"after", []vm.Op{vm.OP_MINTIME, vm.OP_LESSTHAN}, []typeDesc{timeType}, boolType},
+	{"checkTxMultiSig", nil, []typeDesc{listType, listType}, boolType}, // WARNING WARNING WOOP WOOP special case
 }
 
 type binaryOp struct {
 	op         string
 	precedence int
-	opcodes    string
+	opcodes    []vm.Op
 
 	left, right, result typeDesc
 }
@@ -37,43 +39,43 @@ var binaryOps = []binaryOp{
 	// and disallow this too
 	// {"&&", 2, "BOOLAND", "Boolean", "Boolean", "Boolean"},
 
-	{">", 3, "GREATERTHAN", "Integer", "Integer", "Boolean"},
-	{"<", 3, "LESSTHAN", "Integer", "Integer", "Boolean"},
-	{">=", 3, "GREATERTHANOREQUAL", "Integer", "Integer", "Boolean"},
-	{"<=", 3, "LESSTHANOREQUAL", "Integer", "Integer", "Boolean"},
+	{">", 3, []vm.Op{vm.OP_GREATERTHAN}, "Integer", "Integer", "Boolean"},
+	{"<", 3, []vm.Op{vm.OP_LESSTHAN}, "Integer", "Integer", "Boolean"},
+	{">=", 3, []vm.Op{vm.OP_GREATERTHANOREQUAL}, "Integer", "Integer", "Boolean"},
+	{"<=", 3, []vm.Op{vm.OP_LESSTHANOREQUAL}, "Integer", "Integer", "Boolean"},
 
-	{"==", 3, "EQUAL", "", "", "Boolean"},
-	{"!=", 3, "EQUAL NOT", "", "", "Boolean"},
+	{"==", 3, []vm.Op{vm.OP_EQUAL}, "", "", "Boolean"},
+	{"!=", 3, []vm.Op{vm.OP_EQUAL, vm.OP_NOT}, "", "", "Boolean"},
 
-	{"^", 4, "XOR", "", "", ""},
-	{"|", 4, "OR", "", "", ""},
+	{"^", 4, []vm.Op{vm.OP_XOR}, "", "", ""},
+	{"|", 4, []vm.Op{vm.OP_OR}, "", "", ""},
 
-	{"+", 4, "ADD", "Integer", "Integer", "Integer"},
-	{"-", 4, "SUB", "Integer", "Integer", "Integer"},
+	{"+", 4, []vm.Op{vm.OP_ADD}, "Integer", "Integer", "Integer"},
+	{"-", 4, []vm.Op{vm.OP_SUB}, "Integer", "Integer", "Integer"},
 
-	{"&^", 5, "INVERT AND", "", "", ""},
-	{"&", 5, "AND", "", "", ""},
+	{"&^", 5, []vm.Op{vm.OP_INVERT, vm.OP_AND}, "", "", ""},
+	{"&", 5, []vm.Op{vm.OP_AND}, "", "", ""},
 
-	{"<<", 5, "LSHIFT", "Integer", "Integer", "Integer"},
-	{">>", 5, "RSHIFT", "Integer", "Integer", "Integer"},
+	{"<<", 5, []vm.Op{vm.OP_LSHIFT}, "Integer", "Integer", "Integer"},
+	{">>", 5, []vm.Op{vm.OP_RSHIFT}, "Integer", "Integer", "Integer"},
 
-	{"%", 5, "MOD", "Integer", "Integer", "Integer"},
-	{"*", 5, "MUL", "Integer", "Integer", "Integer"},
-	{"/", 5, "DIV", "Integer", "Integer", "Integer"},
+	{"%", 5, []vm.Op{vm.OP_MOD}, "Integer", "Integer", "Integer"},
+	{"*", 5, []vm.Op{vm.OP_MUL}, "Integer", "Integer", "Integer"},
+	{"/", 5, []vm.Op{vm.OP_DIV}, "Integer", "Integer", "Integer"},
 }
 
 type unaryOp struct {
 	op      string
-	opcodes string
+	opcodes []vm.Op
 
 	operand, result typeDesc
 }
 
 var unaryOps = []unaryOp{
-	{"-", "NEGATE", "Integer", "Integer"},
+	{"-", []vm.Op{vm.OP_NEGATE}, "Integer", "Integer"},
 
 	// not not allowed (for now?)
-	// {"!", "NOT", "Boolean", "Boolean"},
+	// {"!", []vm.Op{vm.OP_NOT}, "Boolean", "Boolean"},
 
-	{"~", "INVERT", "", ""},
+	{"~", []vm.Op{vm.OP_INVERT}, "", ""},
 }

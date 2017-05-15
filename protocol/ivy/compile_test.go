@@ -170,7 +170,7 @@ func TestCompile(t *testing.T) {
 			lockWithPKHash,
 			CompileResult{
 				Name:    "LockWithPublicKeyHash",
-				Program: mustDecodeHex("5279aa7c87697cae7cac"),
+				Program: mustDecodeHex("5279aa887cae7cac"),
 				Value:   "value",
 				Params: []ContractParam{{
 					Name: "pubKeyHash",
@@ -406,7 +406,7 @@ func TestCompile(t *testing.T) {
 			revealPreimage,
 			CompileResult{
 				Name:    "RevealPreimage",
-				Program: mustDecodeHex("7caa7c87"),
+				Program: mustDecodeHex("7caa87"),
 				Value:   "value",
 				Params: []ContractParam{{
 					Name: "hash",
