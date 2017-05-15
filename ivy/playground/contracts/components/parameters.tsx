@@ -7,8 +7,8 @@ import { typeToString } from 'ivy-compiler'
 import { Item as Asset } from '../../assets/types'
 import { Item as Account } from '../../accounts/types'
 import { getItemList as getAssets } from '../../assets/selectors'
-import { getItemList as getAccounts } from '../../accounts/selectors'
-import { getClauseValueId } from '../../contracts/selectors'
+import { getBalanceMap, getItemList as getAccounts } from '../../accounts/selectors'
+import { getClauseValueId, getState as getContractsState } from '../../contracts/selectors'
 import { getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
 
 import RadioSelect from '../../app/components/radioSelect'
@@ -166,12 +166,52 @@ function TimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
 }
 
 function ValueWidget(props: { input: ValueInput, handleChange: (e)=>undefined }) {
-  return <div>
-    {getWidget(props.input.name + ".accountInput")}
-    {getWidget(props.input.name + ".assetInput")}
-    {getWidget(props.input.name + ".amountInput")}
-  </div>
+  return (
+    <div>
+      {getWidget(props.input.name + ".accountInput")}
+      {getWidget(props.input.name + ".assetInput")}
+      {getWidget(props.input.name + ".amountInput")}
+      <BalanceWidget namePrefix={props.input.name} />
+    </div>
+  )
 }
+
+function BalanceWidgetUnconnected({ namePrefix, balanceMap, inputMap, contracts }) {
+  let acctInput
+  let assetInput
+  if (namePrefix.startsWith("contract")) {
+    acctInput = inputMap[namePrefix + ".accountInput"]
+    assetInput = inputMap[namePrefix + ".assetInput"]
+  } else if (namePrefix.startsWith("clause")) {
+    // THIS IS A HACK
+    const spendInputMap = contracts.contractMap[contracts.spendContractId].spendInputMap
+    acctInput = spendInputMap[namePrefix + ".accountInput"]
+    assetInput = spendInputMap[namePrefix + ".assetInput"]
+  }
+
+  let jsx = <div/>
+  if (acctInput && acctInput.value && assetInput && assetInput.value) {
+    let amount = balanceMap[acctInput.value][assetInput.value]
+    if (!amount) {
+      amount = 0
+    }
+    jsx = (
+      <div className="widget-wrapper">
+        <div className="form-group form-inline">
+          <div className="input-group">
+            <div className="value-balance">{amount} available</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  return jsx
+}
+
+// TODO(boymanjor): Find a better way to update this widget on clause input updates.
+let BalanceWidget = connect(
+  (state) => ({ balanceMap: getBalanceMap(state), inputMap: getInputMap(state), contracts: getContractsState(state) })
+)(BalanceWidgetUnconnected)
 
 function ProgramWidget(props: { input: ProgramInput, handleChange: (e)=>undefined }) {
   return <div>
