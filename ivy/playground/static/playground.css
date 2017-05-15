@@ -103,6 +103,10 @@ tr:last-of-type td {
   margin-top: 5px;
 }
 
+.radio label {
+  line-height: 24px;
+}
+
 .form {
   margin-bottom: 0;
 }
