@@ -256,6 +256,7 @@ func Exec(ctx context.Context, db pg.DB, t testing.TB, q string, args ...interfa
 }
 
 // Fataler lets NewTx and NewDB signal immediate failure.
+// It is satisfied by *testing.T, *testing.B, and *log.Logger.
 type Fataler interface {
 	Fatal(...interface{})
 }
