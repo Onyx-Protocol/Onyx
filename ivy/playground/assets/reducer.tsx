@@ -11,7 +11,7 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
       }, {})
 
       // Sort assets in alphabetical order
-      const idList = action.items.sort((a,b) => {
+      const idList = [...action.items].sort((a,b) => {
         if (a.alias < b.alias) {
           return -1
         }
