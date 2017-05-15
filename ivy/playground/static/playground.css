@@ -23,6 +23,10 @@ h1,h2,h3,h4,h5 {
   padding: 10px 0 0 15px;
 }
 
+.dropdown-menu {
+  font-size:16px;
+}
+
 .container {
   max-width: 1200px;
 }
@@ -82,11 +86,12 @@ tr:last-of-type td {
 }
 
 .form {
-margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .form-control {
   max-width: 300px;
+  font-size:16px;
 }
 
 .form-control.string-input {
@@ -99,6 +104,7 @@ margin-bottom: 0;
 
 .form-control, .input-group-addon {
   border-radius: 2px;
+  font-size:16px;
 }
 
 .input-group select.with-addon {
