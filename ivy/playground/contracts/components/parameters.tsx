@@ -192,20 +192,14 @@ function BalanceWidgetUnconnected({ namePrefix, balanceMap, inputMap, contracts 
     assetInput = spendInputMap[namePrefix + ".assetInput"]
   }
 
-  let jsx = <div/>
+  let jsx = <small/>
   if (acctInput && acctInput.value && assetInput && assetInput.value) {
     let amount = balanceMap[acctInput.value][assetInput.value]
     if (!amount) {
       amount = 0
     }
     jsx = (
-      <div className="widget-wrapper">
-        <div className="form-group">
-          <div className="input-group">
-            <div className="value-balance">{amount} available</div>
-          </div>
-        </div>
-      </div>
+      <small className="value-balance">{amount} available</small>
     )
   }
   return jsx
