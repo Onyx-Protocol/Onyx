@@ -81,7 +81,8 @@ tr:last-of-type td {
 .panel-title {
   line-height: 34px;
   color: #20252d;
-  font-size:18px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .panel-body {
@@ -94,8 +95,8 @@ tr:last-of-type td {
 
 .panel-body.inner h1 {
   margin: 0 0 10px 0;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .radio {
@@ -387,5 +388,3 @@ section h4 {
 .ace_function, .ace_variable, .ace_language {
   color: #BFD472 !important;
 }
-
-
