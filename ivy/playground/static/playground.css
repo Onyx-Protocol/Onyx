@@ -95,6 +95,7 @@ margin-bottom: 0;
 .input-group select.with-addon {
   -webkit-appearance: none;
   -webkit-border-left-radius: 0px !important;
+  width: 200px;
 }
 
 input[type="datetime-local"] {
@@ -120,6 +121,10 @@ select {
 
 select:hover {
   background-color: #fafafa !important;
+}
+
+.input-group {
+  margin-bottom: 20px;
 }
 
 .input-group-addon {
@@ -233,8 +238,8 @@ section h4 {
   border-top: 1px solid #f2f2f2;
 }
 
-.widget-wrapper:last-of-type > .form-group {
-  margin-bottom: 0;
+.widget-wrapper:last-of-type > .form-group > .input-group {
+  margin-bottom: 0px;
 }
 
 .form-wrapper {
@@ -261,6 +266,7 @@ section h4 {
 
 .argument .form-group {
   max-width: 250px;
+  margin-bottom: 0;
 }
 
 .nested {
