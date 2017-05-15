@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/lib/pq"
 
@@ -39,7 +40,9 @@ var (
 	tlsKey     = env.String("TLSKEY", "")
 
 	// aws relies on AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY being set
-	awsS3    = s3.New(aws.DefaultConfig.WithRegion("us-east-1"))
+	region   = "us-east-1" // TODO(kr): figure out how to not hard code this
+	awsSess  = session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
+	awsS3    = s3.New(awsSess)
 	s3Bucket = env.String("CACHEBUCKET", "blocks-cache")
 
 	s3ACL      = aws.String("public-read")
