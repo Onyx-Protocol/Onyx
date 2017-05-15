@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(APP_VERSION)</string>
+	<key>ChainCoreEdition</key>
+	<string>$(CHAIN_CORE_EDITION)</string>
 	<key>ChainDatabaseVersion</key>
 	<string>$(DB_VERSION)</string>
 	<key>LSMinimumSystemVersion</key>
@@ -49,6 +51,6 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
-	<string>https://download.chain.com/mac/updates.xml</string>
+	<string>$(UPDATES_URL)</string>
 </dict>
 </plist>
