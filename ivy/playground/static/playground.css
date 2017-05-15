@@ -357,12 +357,12 @@ section h4 {
 
 .ace_line,
 .ace_gutter-cell {
-  height: 23px !important;
+  /*height: 23px !important;*/
 }
 
 .ace_editor {
-  min-height: 345px !important;
-  max-height: 345px !important;
+  /*min-height: 345px !important;*/
+  /*max-height: 345px !important;*/
 }
 
 .ace-monokai {
