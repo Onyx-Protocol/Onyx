@@ -27,6 +27,16 @@ contract LockWithPublicKey(publicKey: PublicKey) locks locked {
 }
 `
 
+const lockWithPKHash = `
+contract LockWithPublicKeyHash(pubKeyHash: Hash) locks value {
+  clause spend(pubKey: PublicKey, sig: Signature) {
+    verify sha3(pubKey) == pubKeyHash
+    verify checkTxSig(pubKey, sig)
+    unlock value
+  }
+}
+`
+
 const lockWith2of3Keys = `
 contract LockWith3Keys(pubkey1, pubkey2, pubkey3: PublicKey) locks locked {
   clause unlockWith2Sigs(sig1, sig2: Signature) {
@@ -152,6 +162,39 @@ func TestCompile(t *testing.T) {
 					}},
 					Mintimes: []string{},
 					Maxtimes: []string{},
+				}},
+			},
+		},
+		{
+			"LockWithPublicKeyHash",
+			lockWithPKHash,
+			CompileResult{
+				Name:    "LockWithPublicKeyHash",
+				Program: mustDecodeHex("5279aa7c87697cae7cac"),
+				Value:   "value",
+				Params: []ContractParam{{
+					Name: "pubKeyHash",
+					Typ:  "Sha3(PublicKey)",
+				}},
+				Clauses: []ClauseInfo{{
+					Name: "spend",
+					Args: []ClauseArg{{
+						Name: "pubKey",
+						Typ:  "PublicKey",
+					}, {
+						Name: "sig",
+						Typ:  "Signature",
+					}},
+					Values: []ValueInfo{{
+						Name: "value",
+					}},
+					Mintimes: []string{},
+					Maxtimes: []string{},
+					HashCalls: []hashCall{{
+						HashType: "sha3",
+						Arg:      "pubKey",
+						ArgType:  "PublicKey",
+					}},
 				}},
 			},
 		},
