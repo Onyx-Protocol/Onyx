@@ -92,7 +92,7 @@ function TextWidget(props: { input: ProvideStringInput | ProvideHashInput |
                                     ProvidePublicKeyInput | ProvideSignatureInput |
                                     ProvidePrivateKeyInput
                              handleChange: (e)=>undefined }) {
-  return <div className = "form-group"><input type="text" key={props.input.name} className="form-control" value={props.input.value} onChange={props.handleChange} /></div>
+  return <div className = "form-group"><input type="text" key={props.input.name} className="form-control string-input" value={props.input.value} onChange={props.handleChange} /></div>
 }
 
 function HashWidget(props: { input: HashInput, handleChange: (e)=>undefined }) {
