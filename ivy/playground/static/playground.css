@@ -291,6 +291,11 @@ section h4 {
   padding: 5px;
 }
 
+.value-balance {
+  color: #b9b9b9;
+  float: right;
+}
+
 /*React Component Overrides*/
 
 .__react_component_tooltip {

@@ -10,5 +10,6 @@ export type ItemMap = {
 export type State = {
   itemMap: { [s: string]: Item },
   idList: string[],
+  balanceMap: { [s: string]: number }
 }
 
