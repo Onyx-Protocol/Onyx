@@ -14,6 +14,7 @@ h1,h2,h3,h4,h5 {
   background: #20252D;
   border: 0;
   margin-bottom: 30px;
+  font-size:110%;
 }
 
 .navbar-brand {
@@ -33,7 +34,7 @@ tr:last-of-type td {
 }
 
 .table {
-  font-size: 14px;
+  font-size: 16px;
   margin-bottom: 0;
 }
 
@@ -57,6 +58,7 @@ tr:last-of-type td {
 .panel-title {
   line-height: 34px;
   color: #20252d;
+  font-size:18px;
 }
 
 .panel-body {
@@ -69,7 +71,7 @@ tr:last-of-type td {
 
 .panel-body.inner h1 {
   margin: 0 0 10px 0;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -142,7 +144,7 @@ select:hover {
 }
 
 .btn-lg {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .btn-primary {
@@ -200,7 +202,7 @@ code {
   padding: 40px;
   text-align: center;
   color: #bfbfbf;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .contracts-table {
