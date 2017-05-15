@@ -25,6 +25,8 @@ const Ace = ({ source, handleChange }) => {
         theme="monokai"
         onChange={handleChange}
         name="aceEditor"
+        minLines={15}
+        maxLines={25}
         width="100%"
         tabSize={2}
         value={source}
@@ -32,8 +34,8 @@ const Ace = ({ source, handleChange }) => {
         setOptions={{
           useSoftTabs: true,
           showPrintMargin: false,
-          fontFamily: "Nitti, Menlo, Monaco, Consolas, Courier New, monospace",
-          fontSize: 18
+          fontFamily: "Menlo, Monaco, Consolas, Courier New, monospace",
+          fontSize: 16
         }}
       />
     </div>
