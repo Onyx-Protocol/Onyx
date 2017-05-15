@@ -28,6 +28,7 @@ module.exports = {
       { test: /\.pegjs$/, loader: 'pegjs-loader'},
       { test: /\.json$/, loader: 'json'},
       { test: /\.tsx?$/, loaders: ['babel', 'awesome-typescript-loader']},
+      { test: /\.(eot|svg|ttf|woff|woff2)$/, loader: 'file-loader' },
       { test: /\.(png|jpg)$/, loader: 'url-loader?limit=8192' },
       { test: /\.css$/, loader: 'style-loader!css-loader' }
     ]

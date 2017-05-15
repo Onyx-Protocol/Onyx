@@ -3,6 +3,7 @@
 body {
   color: #20252d;
   padding-top: 80px;
+  font-family: Nitti Grotesk, sans-serif;
 }
 
 h1,h2,h3,h4,h5 {
@@ -178,6 +179,7 @@ pre {
   padding: 15px;
   border-radius: 2px;
   margin-bottom: 0;
+  font-family: Nitti, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 pre.wrap {
@@ -191,6 +193,7 @@ code {
   background-color: transparent ;
   border: 1px solid #ececec;
   padding: 5px 7px;
+  font-family: Nitti, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 .table-placeholder {
@@ -322,6 +325,7 @@ section h4 {
 
 .ace_editor {
   border-radius: 2px;
+  font-family: Nitti, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 .ace-monokai {
@@ -342,3 +346,21 @@ section h4 {
 .ace_function, .ace_variable, .ace_language {
   color: #BFD472 !important;
 }
+
+@font-face {
+  font-family: "Nitti";
+  src: url('fonts/nitti-normal.woff');
+}
+
+@font-face {
+  font-family: "Nitti Grotesk";
+  src: url('fonts/nittigrotesk-normal.woff');
+}
+
+@font-face {
+  font-family: "Nitti Grotesk";
+  font-weight: bold;
+  src: url('fonts/nittigrotesk-medium.woff');
+}
+
+
