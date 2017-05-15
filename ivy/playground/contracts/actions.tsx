@@ -64,8 +64,13 @@ export const create = () => {
     const inputMap = getInputMap(state)
     if (inputMap === undefined) throw "create should not have been called when inputMap is undefined"
 
+    const source = getSource(state)
+    const spendFromAccount = getContractValue(state)
+    if (spendFromAccount === undefined) throw "spendFromAccount should not be undefined here"
+    const assetId = spendFromAccount.assetId
+    const amount = spendFromAccount.amount
     const promisedInputMap = getPromisedInputMap(inputMap)
-    promisedInputMap.then((inputMap) => {
+    const promisedTemplate = promisedInputMap.then((inputMap) => {
       const args = getContractArgs(state, inputMap).map(param => {
         if (param instanceof Buffer) {
           return { "string": param.toString('hex') }
@@ -84,41 +89,42 @@ export const create = () => {
         }
         throw 'unsupported argument type ' + (typeof param)
       })
-      const source = getSource(state)
-      client.ivy.compile({ contract: source, args: args }).then(template => {
-        const controlProgram = template.program
-        const spendFromAccount = getContractValue(state)
-        if (spendFromAccount === undefined) throw "spendFromAccount should not be undefined here"
-        const assetId = spendFromAccount.assetId
-        const amount = spendFromAccount.amount
-        const receiver: Receiver = {
-          controlProgram: controlProgram,
-          expiresAt: "2017-06-25T00:00:00.000Z" // TODO
-        }
-        const controlWithReceiver: ControlWithReceiver = {
-          type: "controlWithReceiver",
-          receiver,
-          assetId,
-          amount
-        }
-        const actions: Action[] = [spendFromAccount, controlWithReceiver]
-        return createLockingTx(actions).then(utxo => {
-          dispatch({
-            type: CREATE_CONTRACT,
-            controlProgram,
-            source,
-            template,
-            inputMap,
-            utxo
-          })
-          dispatch(fetch())
-          dispatch(setSource(source))
-          dispatch(push(prefixRoute('/unlock')))
-        }).catch(err => {
-          console.log(err)
-          dispatch(displayCreateError(err))
-        })
+      return client.ivy.compile({ contract: source, args: args })
+    }).catch(err => {
+      console.log(err)
+      dispatch(displayCreateError(err))
+    })
+
+    const promisedUtxo = promisedTemplate.then(template => {
+      const receiver: Receiver = {
+        controlProgram: template.program,
+        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
+      }
+      const controlWithReceiver: ControlWithReceiver = {
+        type: "controlWithReceiver",
+        receiver,
+        assetId,
+        amount
+      }
+      const actions: Action[] = [spendFromAccount, controlWithReceiver]
+      return createLockingTx(actions)
+    }).catch(err => {
+      console.log(err)
+      dispatch(displayCreateError(err))
+    })
+
+    Promise.all([promisedInputMap, promisedTemplate, promisedUtxo]).then(([inputMap, template, utxo]) => {
+      dispatch({
+        type: CREATE_CONTRACT,
+        controlProgram: template.program,
+        source,
+        template,
+        inputMap,
+        utxo
       })
+      dispatch(fetch())
+      dispatch(setSource(source))
+      dispatch(push(prefixRoute('/unlock')))
     }).catch(err => {
       console.log(err)
       dispatch(displayCreateError(err))
