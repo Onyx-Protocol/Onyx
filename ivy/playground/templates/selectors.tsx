@@ -139,29 +139,20 @@ export const getContractValue = createSelector(
   }
 )
 
-export const getParameterData = (state, inputMap) => {
-  let parameterIds = getDataParameterIds(state)
+export const getContractArgs = (state, inputMap) => {
+  let parameterIds = getParameterIds(state)
   if (parameterIds === undefined) throw "parameter IDs should not be undefined when getParameterData is called"
   try {
-    let parameterData: (number|Buffer)[] = []
+    let contractArgs: (number|Buffer)[] = []
     for (let id of parameterIds) {
-      parameterData.push(getData(id, inputMap))
+      contractArgs.push(getData(id, inputMap))
     }
-    return parameterData.reverse()
+    return contractArgs
   } catch (e) {
     console.log(e)
     return []
   }
 }
-
-const getDataParameterIds = createSelector(
-  getContractParameters,
-  (contractParameters) => {
-    return contractParameters && contractParameters
-      .filter(param => param.type !== "Value" )
-      .map(param => "contractParameters." + param.name)
-  }
-)
 
 export const getSelectedTemplate = createSelector(
   getCompiled,
