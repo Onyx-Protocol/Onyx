@@ -23,6 +23,11 @@ export const getItemList = createSelector(
   }
 )
 
+export const getBalanceMap = createSelector(
+  getState,
+  (state: State) => state.balanceMap
+)
+
 export const getItem = (id) => {
   return createSelector(
     getState,
