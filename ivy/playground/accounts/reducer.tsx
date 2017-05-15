@@ -4,13 +4,32 @@ import { Item, ItemMap, State } from './types'
 export default function reducer(state: State = INITIAL_STATE, action): State {
   switch(action.type) {
     case FETCH: {
-      const itemMap = action.items.reduce((map: ItemMap, item: Item) => {
-        const id: string = item.id
-        const alias: string = item.alias
+      const itemMap = action.items.reduce((map: ItemMap, acct: Item) => {
+        const id: string = acct.id
+        const alias: string = acct.alias
         return { ...map, [id]: { id, alias } }
       }, {})
 
-      // Sort accounts in alphabetical order
+      // MUST build balanceMap before sorting the accounts
+      // {
+      //   [acctId: string]:  {
+      //     [assetId: string]: amount: number
+      //   }
+      // }
+      const balanceMap = action.items.reduce((map, acct: Item, i: number) => {
+        const balances = action.balances[i].items.reduce((map, item) => {
+          return {
+            ...map,
+            [item.sumBy.assetId]: item.amount
+          }
+        }, {})
+        return {
+          ...map,
+          [acct.id]: balances
+        }
+      }, {})
+
+      // Sort accounts in alphabetical order by alias
       const idList = action.items.sort((a,b) => {
         if (a.alias < b.alias) {
           return -1
@@ -20,7 +39,7 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
         }
         return 0
       }).map(item => item.id)
-      return { itemMap, idList }
+      return { itemMap, idList, balanceMap }
     }
     default: return state
   }
