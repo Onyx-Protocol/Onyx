@@ -19,7 +19,7 @@ var builtinGrants = []*Grant{{GuardType: "any", Policy: "public"}}
 
 type Authorizer struct {
 	sdb         *sinkdb.DB
-	kvPrefix    string
+	keyPrefix   string
 	policies    map[string][]string // by route
 	extraGrants map[string][]*Grant // by policy
 }
@@ -27,7 +27,7 @@ type Authorizer struct {
 func NewAuthorizer(sdb *sinkdb.DB, prefix string, policyMap map[string][]string) *Authorizer {
 	a := &Authorizer{
 		sdb:         sdb,
-		kvPrefix:    prefix,
+		keyPrefix:   prefix,
 		policies:    policyMap,
 		extraGrants: make(map[string][]*Grant),
 	}
@@ -104,7 +104,7 @@ func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {
 		grants = append(grants, a.extraGrants[p]...)
 
 		var grantList GrantList
-		found, err := a.sdb.GetInconsistent(a.kvPrefix+p, &grantList)
+		found, err := a.sdb.GetInconsistent(a.keyPrefix+p, &grantList)
 		if err != nil {
 			return nil, err
 		} else if found {
