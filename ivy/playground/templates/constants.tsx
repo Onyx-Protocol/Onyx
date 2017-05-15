@@ -35,7 +35,7 @@ export const TRADE_OFFER = `contract TradeOffer(requestedAsset: Asset,
   }
   clause cancel(sellerSig: Signature) {
     verify checkTxSig(sellerKey, sellerSig)
-    lock offered with sellerProgram
+    unlock offered
   }
 }`
 
