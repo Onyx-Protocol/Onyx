@@ -46,18 +46,13 @@ var (
 
 	Version, BuildCommit, BuildDate string
 
-	// This is the default, Chain development configuration.
-	// These options can be updated with build tags.
-	BuildConfig = struct {
+	// These feature flags are marked as enabled by build tags.
+	// See files in $CHAIN/cmd/cored.
+	BuildConfig struct {
 		LocalhostAuth bool `json:"is_localhost_auth"`
 		MockHSM       bool `json:"is_mockhsm"`
 		Reset         bool `json:"is_reset"`
 		HTTPOk        bool `json:"is_http_ok"`
-	}{
-		LocalhostAuth: false,
-		MockHSM:       true,
-		Reset:         true,
-		HTTPOk:        false,
 	}
 )
 
