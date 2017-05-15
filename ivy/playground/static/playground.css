@@ -4,6 +4,7 @@ body {
   color: #20252d;
   padding-top: 80px;
   font-family: Nitti Grotesk, sans-serif;
+  font-size: 16px;
 }
 
 h1,h2,h3,h4,h5 {
@@ -14,7 +15,8 @@ h1,h2,h3,h4,h5 {
   background: #20252D;
   border: 0;
   margin-bottom: 30px;
-  font-size:110%;
+  font-size:100%;
+  font-weight:700;
 }
 
 .navbar-brand {
