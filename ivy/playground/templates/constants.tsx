@@ -17,8 +17,7 @@ export const LOCK_WITH_PUBLIC_KEY_HASH = `contract LockWithPublicKeyHash(pubKeyH
 
 export const LOCK_WITH_MULTISIG = `contract LockWithMultiSig(publicKey1: PublicKey,
                           publicKey2: PublicKey,
-                          publicKey3: PublicKey
-) locks value {
+                          publicKey3: PublicKey) locks value {
   clause spend(sig1: Signature, sig2: Signature) {
     verify checkTxMultiSig([publicKey1, publicKey2, publicKey3], [sig1, sig2])
     unlock value
