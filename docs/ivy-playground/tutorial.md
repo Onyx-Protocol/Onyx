@@ -16,23 +16,23 @@ The features and examples in the Ivy Playground demonstrate the kinds of things 
 
 ## Before you get started
 
-You’ll need to download and run a version of Chain Core Developer Edition that includes the experimental Ivy Playground feature. xxx
+You’ll need to download and run a version of Chain Core Developer Edition that includes the experimental Ivy Playground feature. [xxx describe]
 
 ## Setting up
 
 Open the Chain Core dashboard by visiting [http://localhost:1999/](http://localhost:1999/).
 
-Select “Create new blockchain network” and click the “Create network” button. [xxx image]
+Select “Create new blockchain network” and click the “Create network” button. ![create network](create_network.png)
 
-Chain Core will ask if you’d like to try a 5-minute tutorial. [xxx image] This is not related to Ivy, but if you’re new to Chain Core, give it a try. It teaches concepts that will be useful in understanding Ivy. If you already have some familiarity with Chain Core, or you’re in a hurry, feel free to skip it.
+Chain Core will ask if you’d like to try a 5-minute tutorial. ![5-minute tutorial](five_minute_tutorial.png) This is not related to Ivy, but if you’re new to Chain Core, give it a try. It teaches concepts that will be useful in understanding Ivy. If you already have some familiarity with Chain Core, or you’re in a hurry, feel free to skip it.
 
-Click “Ivy Playground” in the left-hand navigation bar. [xxx image]
+Click “Ivy Playground” in the left-hand navigation bar. ![playground nav](playground_nav.png)
 
 ## Welcome to the playground
 
 The Ivy Playground opens on a view of the _contract template editor_, preloaded with the `LockWithPublicKey` example.
 
-[xxx image]
+![LockWithPublicKey](lock_with_pubkey.png)
 
 `LockWithPublicKey` is an Ivy contract that performs the simple payment function described in the Introduction above: it is used to “lock” a payment, here called `value`, with a `PublicKey` supplied by the sender of the payment. A later transaction may `unlock` the `value` by supplying a `Signature` that passes the `checkTxSig` test. (That’s short for “check transaction signature.”)
 
@@ -108,8 +108,10 @@ Let’s try creating and saving a new contract template. It’ll be just like `L
 
 1. Load the `LockWithPublicKey` template with the Load Template button
 2. Change the beginning from `contract LockWithPublicKey` to `contract TimedPayment`
-3. Add a `deadline` to the list of contract parameters [xxx image]
-4. The `spend` clause should only be usable _before_ the deadline, so add the line `verify before(deadline)` to the `spend` clause [xxx image]
+3. Add a `deadline` to the list of contract parameters
+4. The `spend` clause should only be usable _before_ the deadline, so add the line `verify before(deadline)` to the `spend` clause
+
+![verify before(deadline)](verify_before_deadline.png)
 
 Now we need a new clause for unlocking `value` and returning it to the sender after the deadline passes. The naive way to do it is:
 
@@ -131,9 +133,13 @@ clause revert() {
 }
 ```
 
-If you insert this clause after the `spend` clause, the Ivy Playground should look like this: [xxx image]
+If you insert this clause after the `spend` clause, the Ivy Playground should look like this:
 
-There’s still an error: `sender` is undefined. [xxx the actual error message in this case is “program in lock statement in clause "revert" has type "", must be Program,” can we improve that?] It must be specified at the time the first transaction is created, i.e. as a contract parameter, so that the later transaction can’t send `value` anywhere it chooses. Add `sender: Program` to the contract parameters, and the contract template is complete: [xxx image]
+![sender undefined](sender_undefined.png)
+
+There’s still an error: `sender` is undefined. [xxx the actual error message in this case is “program in lock statement in clause "revert" has type "", must be Program,” can we improve that?] It must be specified at the time the first transaction is created, i.e. as a contract parameter, so that the later transaction can’t send `value` anywhere it chooses. Add `sender: Program` to the contract parameters, and the contract template is complete:
+
+![TimedPayment](timed_payment.png)
 
 Click the Save button to save the `TimedPayment` contract template.
 
@@ -159,11 +165,13 @@ In the next section, we must choose arguments for each of the parameters require
 - Choose a time in the future as the deadline
 - Choose Alice’s account as the sender of the payment
 
-[xxx image]
+![contract args](contract_args.png)
 
 Once the value and all the arguments are specified, the “Lock Value” button is enabled, indicating we’re ready to create a transaction. Click the Lock Value button.
 
-You should see a page listing transactions created in the Ivy Playground. The `TimedPayment` transaction should be at the top of the `Locked Value` list. [xxx image]
+You should see a page listing transactions created in the Ivy Playground. The `TimedPayment` transaction should be at the top of the `Locked Value` list.
+
+![locked transactions](locked_list.png)
 
 This transaction is published on your Chain blockchain. You can inspect it in the Chain Core dashboard by clicking its alphanumeric identifier.
 
@@ -171,27 +179,25 @@ This transaction is published on your Chain blockchain. You can inspect it in th
 
 If you’ve been following the steps in this tutorial, you should now have 10 units of gold locked in a `TimedPayment` contract visible at [http://localhost:1999/ivy/unlock](http://localhost:1999/ivy/unlock).
 
-[xxx image]
-
 Recall that `TimedPayment` offers two ways for a later transaction to unlock its value: before the deadline, the recipient can sign for it; after the deadline, the sender can repay it to him or herself.
 
 Let’s try unlocking the value in the `TimedPayment` contract. Click the “Unlock” button.
 
-[xxx image]
-
-The first part of this page is a summary the payment and how it was locked - namely, 10 units of gold, with the `TimedPayment` contract, with particular `publicKey`, `deadline`, and `sender` arguments.
+The first part of this page is a summary of the payment and how it was locked - namely, 10 units of gold, with the `TimedPayment` contract, with particular `publicKey`, `deadline`, and `sender` arguments.
 
 The second part of this page gives us options for unlocking the payment: either with the `spend` clause, which requires a signature and a destination for the unlocked value:
 
-[xxx image]
+![unlock args](unlock_args.png)
 
 ...or with the `revert` clause, which requires only that the deadline has passed.
 
-Let’s see what happens if we try to unlock the value with `revert` _before_ the deadline. Select the `revert` clause and click “Unlock Value.” You should see the error “max\_time is less than min\_time,” [xxx ugh] indicating that the `verify after(deadline)` check in the `revert` clause failed. [xxx image]
+Let’s see what happens if we try to unlock the value with `revert` _before_ the deadline. Select the `revert` clause and click “Unlock Value.” You should see the error “max\_time is less than min\_time,” [xxx ugh] indicating that the `verify after(deadline)` check in the `revert` clause failed.
+
+![unlock fail](unlock_fail.png)
 
 So let’s try unlocking with `spend` instead. Select the `spend` clause, and select the public key (Bob’s) from whose matching _private_ key a signature should be generated. (The Ivy Playground handles these details behind the scenes.) Now select Bob’s account as the destination for the unlocked value and the “Unlock Value” button should light up.
 
-[xxx image]
+![unlock ok](unlock_ok.png)
 
 Click Unlock Value. This takes you to the transaction-list view, where you can see that the `TimedPayment` contract is no longer in the “Locked Value” list but in the “History” list, since it has been unlocked. The History view includes two links to the Chain Core dashboard: one for the transaction creating the contract, where value was locked up; and one for the transaction where the value was unlocked.
 
