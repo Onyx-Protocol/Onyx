@@ -27,9 +27,18 @@ const LoadTemplate = ({ idList, selected, handleChange }) => {
   })
   options.unshift(<option key={""} value={""}>Load Template...</option>)
   return (
-    <select className="form-control" value={""} onChange={ (e) => handleChange(e.target.value) }>
-      {options}
-    </select>
+    <div className="dropdown">
+  <button className="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+    <span className="glyphicon glyphicon-open"></span>
+    Load Template
+  </button>
+  <ul className="dropdown-menu" aria-labelledby="dropdownMenu1">
+    <li><a href="#">LockWithPublicKey</a></li>
+    <li><a href="#">TradeOffer</a></li>
+    <li><a href="#">Something else here</a></li>
+    <li><a href="#">Separated link</a></li>
+  </ul>
+</div>
   )
 }
 
