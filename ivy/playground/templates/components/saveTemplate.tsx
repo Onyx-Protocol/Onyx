@@ -24,21 +24,19 @@ const mapDispatchToProps = (dispatch) => {
 const SaveTemplate = ({ handleClick, saveability }) => {
   if (saveability.saveable) {
     return (
-      <td>
-        <button className="btn btn-primary" onClick={handleClick}>
-          <span className="glyphicon glyphicon-floppy-disk"></span>
-          Save
-        </button>
-      </td>
+      <button className="btn btn-primary" onClick={handleClick}>
+        <span className="glyphicon glyphicon-floppy-disk"></span>
+        Save
+      </button>
     )
   } else {
     return (
-      <td data-for="saveButtonTooltip" data-tip={saveability.error}>
+      <div data-for="saveButtonTooltip" data-tip={saveability.error}>
         <button className="btn btn-primary" disabled={true}>
           <span className="glyphicon glyphicon-floppy-disk"></span>
           Save
         </button>
-     </td>
+     </div>
     )
   }
 }
