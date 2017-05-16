@@ -6,7 +6,6 @@ import { typeToString } from 'ivy-compiler'
 // ivy imports
 import { getItemMap as getAssetMap } from '../../assets/selectors'
 import { getItemMap as getAccountMap } from '../../accounts/selectors'
-import { getContractValueId } from '../../templates/selectors'
 import { getChild, getParameterIdentifier,
          getGenerateStringInputValue, computeDataForInput } from '../../inputs/data'
 import { Input, ParameterInput, NumberInput, BooleanInput, StringInput, ProvideStringInput,
@@ -16,7 +15,7 @@ import { Input, ParameterInput, NumberInput, BooleanInput, StringInput, ProvideS
          AmountInput, ProgramInput } from '../../inputs/types'
 
 // internal imports
-import { getInputMap, getInputSelector, getParameterIds } from '../selectors'
+import { getInputMap, getInputSelector, getParameterIds, getSpendContractValueId } from '../selectors'
 
 function getChildWidget(input: ComplexInput) {
   return getWidget(getChild(input))
@@ -157,16 +156,19 @@ function getWidget(id: string): JSX.Element {
 
 function mapStateToContractValueProps(state) {
   return {
-    valueId: getContractValueId(state)
+    valueId: getSpendContractValueId(state)
   }
 }
 
 function ContractValueUnconnected(props: { valueId: string }) {
-  return <section style={{wordBreak: 'break-all'}}>
-    <h4>Locked Value</h4>
-    <form className="form">
-    <div className="argument">{getWidget(props.valueId)}</div>
-  </form></section>
+  return (
+    <section style={{wordBreak: 'break-all'}}>
+      <h4>Locked Value</h4>
+      <form className="form">
+        <div className="argument">{getWidget(props.valueId)}</div>
+      </form>
+    </section>
+  )
 }
 
 export const ContractValue = connect(
