@@ -104,11 +104,11 @@ func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {
 		grants = append(grants, a.extraGrants[p]...)
 
 		var grantList GrantList
-		found, err := a.sdb.GetInconsistent(a.keyPrefix+p, &grantList)
+		found, err := a.sdb.GetStale(a.keyPrefix+p, &grantList)
 		if err != nil {
 			return nil, err
 		} else if found {
-			grants = append(grants, grantList.GetGrants()...)
+			grants = append(grants, grantList.Grants...)
 		}
 	}
 	return grants, nil

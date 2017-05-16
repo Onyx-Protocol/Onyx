@@ -61,9 +61,9 @@ func (db *DB) Get(ctx context.Context, key string, v proto.Message) (found bool,
 	return true, proto.Unmarshal(buf, v)
 }
 
-// GetInconsistent performs a non-linearizable read of the provided key.
+// GetStale performs a non-linearizable read of the provided key.
 // The value may be stale. The read value is unmarshalled into v.
-func (db *DB) GetInconsistent(key string, v proto.Message) (found bool, err error) {
+func (db *DB) GetStale(key string, v proto.Message) (found bool, err error) {
 	buf := db.state.get(key) // read directly from state
 	// TODO(jackson): propagate real key existence bool
 	if len(buf) == 0 {
