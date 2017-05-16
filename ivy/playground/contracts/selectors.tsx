@@ -98,7 +98,7 @@ export const getInputSelector = (id: string) => {
     (inputMap: InputMap) => {
       const input = inputMap[id]
       if (input === undefined) {
-        throw "bad spend input ID: " + id
+        throw "bad input ID: " + id
       } else {
         return input
       }
@@ -328,6 +328,11 @@ export const areSpendInputsValid = createSelector(
     })
     return (invalid.length === 0) && (unlockInput === undefined || isValidInput('unlockValue.accountInput', spendInputMap))
   }
+)
+
+export const getSpendContractValueId = createSelector(
+  getSpendContract,
+  (contract) => contract.template && ("contractValue." + contract.template.value)
 )
 
 export const getClauseValueId = createSelector(

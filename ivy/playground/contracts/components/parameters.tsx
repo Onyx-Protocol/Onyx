@@ -7,7 +7,7 @@ import { typeToString } from 'ivy-compiler'
 import { Item as Asset } from '../../assets/types'
 import { Item as Account } from '../../accounts/types'
 import { getItemMap as getAssetMap, getItemList as getAssets } from '../../assets/selectors'
-import { getBalanceMap, getItemList as getAccounts } from '../../accounts/selectors'
+import { getBalanceMap, getItemList as getAccounts, getBalanceSelector } from '../../accounts/selectors'
 import { getClauseValueId, getState as getContractsState } from '../../contracts/selectors'
 import { getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
 import { getRequiredAssetAmount, getSpendContract } from '../../contracts/selectors'
@@ -194,10 +194,49 @@ let EmptyCoreAlert = connect(
   }
 )(EmptyCoreAlertUnconnected)
 
+function InsufficientFundsAlertUnconnected({ namePrefix, balance, inputMap, contracts }) {
+  let amountInput
+  if (namePrefix.startsWith("contract")) {
+    amountInput = inputMap[namePrefix + ".amountInput"]
+  } else if (namePrefix.startsWith("clause")) {
+    // THIS IS A HACK
+    const spendInputMap = contracts.contractMap[contracts.spendContractId].spendInputMap
+    amountInput = spendInputMap[namePrefix + ".valueInput.amountInput"]
+  }
+  let jsx = <small/>
+  if (balance !== undefined && amountInput && amountInput.value) {
+    if (balance < amountInput.value) {
+      jsx = (
+        <div style={{width: '300px'}}className="alert alert-danger" role="alert">
+          Insufficient Funds
+        </div>
+      )
+    }
+  }
+  return jsx
+}
+
+let InsufficientFundsAlert = connect(
+  (state, ownProps: { namePrefix: string }) => ({ balance: getBalanceSelector(ownProps.namePrefix)(state), inputMap: getInputMap(state), contracts: getContractsState(state) })
+)(InsufficientFundsAlertUnconnected)
+
+function BalanceWidgetUnconnected({ namePrefix, balance }) {
+  let jsx = <small/>
+  if (balance !== undefined) {
+    jsx = <small className="value-balance">{balance} available</small>
+  }
+  return jsx
+}
+
+let BalanceWidget = connect(
+  (state, ownProps: { namePrefix: string }) => ({ balance: getBalanceSelector(ownProps.namePrefix)(state) })
+)(BalanceWidgetUnconnected)
+
 function ValueWidget(props: { input: ValueInput, handleChange: (e)=>undefined }) {
   return (
     <div>
       <EmptyCoreAlert />
+      <InsufficientFundsAlert namePrefix={props.input.name} />
       {getWidget(props.input.name + ".accountInput")}
       {getWidget(props.input.name + ".assetInput")}
       {getWidget(props.input.name + ".amountInput")}
@@ -205,37 +244,6 @@ function ValueWidget(props: { input: ValueInput, handleChange: (e)=>undefined })
     </div>
   )
 }
-
-function BalanceWidgetUnconnected({ namePrefix, balanceMap, inputMap, contracts }) {
-  let acctInput
-  let assetInput
-  if (namePrefix.startsWith("contract")) {
-    acctInput = inputMap[namePrefix + ".accountInput"]
-    assetInput = inputMap[namePrefix + ".assetInput"]
-  } else if (namePrefix.startsWith("clause")) {
-    // THIS IS A HACK
-    const spendInputMap = contracts.contractMap[contracts.spendContractId].spendInputMap
-    acctInput = spendInputMap[namePrefix + ".accountInput"]
-    assetInput = spendInputMap[namePrefix + ".assetInput"]
-  }
-
-  let jsx = <small/>
-  if (acctInput && acctInput.value && assetInput && assetInput.value) {
-    let amount = balanceMap[acctInput.value][assetInput.value]
-    if (!amount) {
-      amount = 0
-    }
-    jsx = (
-      <small className="value-balance">{amount} available</small>
-    )
-  }
-  return jsx
-}
-
-// TODO(boymanjor): Find a better way to update this widget on clause input updates.
-let BalanceWidget = connect(
-  (state) => ({ balanceMap: getBalanceMap(state), inputMap: getInputMap(state), contracts: getContractsState(state) })
-)(BalanceWidgetUnconnected)
 
 function ProgramWidget(props: { input: ProgramInput, handleChange: (e)=>undefined }) {
   return <div>
@@ -482,21 +490,26 @@ function mapStateToClauseValueProps(state) {
   return {
     valueId: getClauseValueId(state),
     assetMap: getAssetMap(state),
-    assetAmount: getRequiredAssetAmount(state)
+    assetAmount: getRequiredAssetAmount(state),
+    balanceMap: getBalanceMap(state),
+    spendInputMap: getSpendInputMap(state)
   }
 }
 
-function ClauseValueUnconnected(props: { assetAmount, assetMap, valueId: string }) {
-  if (props.valueId === undefined) {
+function ClauseValueUnconnected(props: { spendInputMap, balanceMap, assetAmount, assetMap, valueId: string }) {
+  if (props.valueId === undefined || props.assetAmount === undefined) {
     return <div />
   } else {
     const parameterName = props.valueId.split('.').pop()
     const valueType = "Value"
+    props.spendInputMap[props.valueId + ".valueInput.assetInput"].value = props.assetAmount.assetId
+    props.spendInputMap[props.valueId + ".valueInput.amountInput"].value = props.assetAmount.amount
     return (
       <section style={{wordBreak: 'break-all'}}>
         <h4>Required Value</h4>
         <form className="form">
           <label>{parameterName}: <span className='type-label'>{valueType}</span></label>
+          <InsufficientFundsAlert namePrefix={props.valueId} />
           {getWidget(props.valueId + ".valueInput.accountInput")}
           <div className="form-group">
             <div className="input-group">
@@ -510,6 +523,7 @@ function ClauseValueUnconnected(props: { assetAmount, assetMap, valueId: string 
               <input type="text" className="form-control" value={props.assetAmount.amount} disabled />
             </div>
           </div>
+          <BalanceWidget namePrefix={props.valueId} />
         </form>
       </section>
     )
