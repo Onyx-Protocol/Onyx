@@ -345,23 +345,62 @@ export const getClauseValueId = createSelector(
   }
 )
 
-export const getRequiredValueAction = createSelector(
+export const getRequiredAssetAmount = createSelector(
   getClauseValueId,
+  getClauseValueInfo,
+  getInputMap,
   getSpendInputMap,
-  (clauseValuePrefix, spendInputMap) => {
-    const accountInput = spendInputMap[clauseValuePrefix + ".valueInput.accountInput"]
-    if (accountInput === undefined) {
+  (clauseValuePrefix, valueInfo, inputMap, spendInputMap) => {
+    if (clauseValuePrefix === undefined) {
       return undefined
     }
 
-    const assetInput = spendInputMap[clauseValuePrefix + ".valueInput.assetInput"]
-    const amountInput = spendInputMap[clauseValuePrefix + ".valueInput.amountInput"]
-    const amount = parseInt(amountInput.value, 10)
+    const name = clauseValuePrefix.split('.').pop()
+    if (name === undefined) {
+      return undefined
+    }
+
+    const valueArg = valueInfo.find(info => {
+      return info.name === name
+    })
+    if (valueArg === undefined) {
+      return undefined
+    }
+
+    const assetInput = inputMap["contractParameters." + valueArg.asset + ".assetInput"]
+    const amountInput = inputMap["contractParameters." + valueArg.amount + ".amountInput"]
+    if (!(assetInput && amountInput)) {
+      return undefined
+    }
+    return {
+      assetId: assetInput.value,
+      amount: amountInput.value
+    }
+  }
+)
+
+export const getRequiredValueAction = createSelector(
+  getClauseValueId,
+  getSpendInputMap,
+  getRequiredAssetAmount,
+  (clauseValuePrefix, spendInputMap, assetAmount) => {
+    const accountInput = spendInputMap[clauseValuePrefix + ".valueInput.accountInput"]
+    if (clauseValuePrefix === undefined || accountInput === undefined) {
+      return undefined
+    }
+
+    if (assetAmount === undefined) {
+      return undefined
+    }
+
+    const accountId = accountInput.value
+    const assetId = assetAmount.assetId
+    const amount = parseInt(assetAmount.amount, 10)
     const spendFromAccount: SpendFromAccount = {
       type: "spendFromAccount",
-      accountId: accountInput.value,
-      assetId: assetInput.value,
-      amount: amount
+      accountId,
+      amount,
+      assetId
     }
     return spendFromAccount
   }
