@@ -234,6 +234,11 @@ select:hover {
 .alert-warning {
   background: #fff6e8;
   box-shadow: none;
+  border-color: #faebcc;
+}
+
+.alert-danger {
+  border-color: #ebccd1;
 }
 
 .alert a {
