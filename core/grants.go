@@ -114,12 +114,9 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 		// perhaps could denormalize the data in storage to speed this up,
 		// but for now assume a small number of grants
 		var grantList authz.GrantList
-		ok, err := a.sdb.Get(ctx, GrantPrefix+p, &grantList)
+		_, err := a.sdb.Get(ctx, GrantPrefix+p, &grantList)
 		if err != nil {
 			return nil, errors.Wrap(err)
-		}
-		if !ok {
-			continue
 		}
 
 		for _, g := range grantList.Grants {
