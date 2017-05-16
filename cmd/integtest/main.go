@@ -96,14 +96,12 @@ func main() {
 }
 
 func printInfo(ctx context.Context) {
-	fmt.Print("commit: ")
 	c := command(ctx, "git", "rev-parse", "HEAD")
 	c.Dir = chain
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	must(run(c))
 
-	fmt.Print("hostname: ")
 	c = command(ctx, "hostname")
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
