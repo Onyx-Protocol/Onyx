@@ -5,12 +5,15 @@ import { push } from 'react-router-redux'
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
 import { fetch } from '../accounts/actions';
-import { setSource, displayError as displayCreateError } from '../templates/actions'
+import {
+  setSource,
+  updateError as updateCreateError,
+} from '../templates/actions'
 import {
   getSource,
   getContractValue,
   getInputMap,
-  getContractArgs,
+  getContractArgs
 } from '../templates/selectors'
 
 import { getPromisedInputMap } from '../inputs/data'
@@ -47,11 +50,11 @@ import {
   WitnessComponent
 } from '../core/types'
 
-export const DISPLAY_ERROR = 'contracts/DISPLAY_ERROR'
+export const UPDATE_ERROR = 'contracts/UPDATE_ERROR'
 
-export const displayError = (error) => {
+export const updateError = (error?) => {
   return {
-    type: DISPLAY_ERROR,
+    type: UPDATE_ERROR,
     error
   }
 }
@@ -121,7 +124,7 @@ export const create = () => {
       dispatch(push(prefixRoute('/unlock')))
     }).catch(err => {
       console.log(err)
-      dispatch(displayCreateError(err))
+      dispatch(updateCreateError(err))
     })
   }
 }
@@ -162,7 +165,7 @@ export const spend = () => {
       dispatch(push(prefixRoute('/unlock')))
     }).catch(err => {
       console.log(err)
-      dispatch(displayError(err))
+      dispatch(updateError(err))
     })
   }
 }
@@ -179,10 +182,13 @@ export const setClauseIndex = (selectedClauseIndex: number) => {
 export const UPDATE_INPUT = 'contracts/UPDATE_INPUT'
 
 export const updateInput = (name: string, newValue: string) => {
-  return {
-    type: UPDATE_INPUT,
-    name: name,
-    newValue: newValue
+  return (dispatch, getState) => {
+    dispatch({
+      type: UPDATE_INPUT,
+      name: name,
+      newValue: newValue
+    })
+    dispatch(updateCreateError())
   }
 }
 
@@ -198,5 +204,6 @@ export const updateClauseInput = (name: string, newValue: string) => {
       name: name,
       newValue: newValue
     })
+    dispatch(updateError())
   }
 }

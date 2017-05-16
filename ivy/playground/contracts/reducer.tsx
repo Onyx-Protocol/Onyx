@@ -12,7 +12,7 @@ import { addDefaultInput, getPublicKeys } from '../inputs/data'
 import { Contract } from './types'
 
 // internal imports
-import { CREATE_CONTRACT, SPEND_CONTRACT, DISPLAY_ERROR,
+import { CREATE_CONTRACT, SPEND_CONTRACT, UPDATE_ERROR,
          UPDATE_CLAUSE_INPUT, SET_CLAUSE_INDEX,  } from './actions'
 
 export const INITIAL_STATE: ContractsState = {
@@ -150,7 +150,7 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         selectedClauseIndex: action.selectedClauseIndex
       }
     }
-    case DISPLAY_ERROR: {
+    case UPDATE_ERROR: {
       return {
         ...state,
         error: action.error
