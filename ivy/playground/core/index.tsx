@@ -10,7 +10,7 @@ if (isProd) {
   url = window.location.origin
 } else {
   // Used to proxy requests from the client to core.
-  url = process.env.API_URL || 'http://localhost:8080/api'
+  url = process.env.API_URL || 'http://localhost:8081/api'
 }
 
 const dashboardState = importState()
