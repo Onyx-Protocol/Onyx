@@ -4,13 +4,14 @@ import { reset } from '../actions'
 
 const mapStateToProps = undefined
 const mapDispatchToProps = (dispatch) => ({
-  handleClick() {
+  handleClick(e) {
+    e.preventDefault()
     dispatch(reset())
   }
 })
 
 const Reset = ({ handleClick }) => {
-  return <li><a href="#" onClick={handleClick}>Reset</a></li>
+  return <li><a href="#" onClick={(e) => handleClick(e)}>Reset</a></li>
 }
 
 export default connect(
