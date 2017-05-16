@@ -4,7 +4,7 @@ import { CREATE_CONTRACT, UPDATE_INPUT } from '../contracts/actions'
 import { InputMap } from '../inputs/types'
 
 // internal imports
-import { DISPLAY_ERROR, SET_SOURCE, SAVE_TEMPLATE, FETCH_COMPILED } from './actions'
+import { UPDATE_ERROR, SET_SOURCE, SAVE_TEMPLATE, FETCH_COMPILED } from './actions'
 import { INITIAL_SOURCE_MAP, INITIAL_ID_LIST } from './constants'
 
 const INITIAL_STATE: TemplateState = {
@@ -69,7 +69,7 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
         error: undefined
       }
     }
-    case DISPLAY_ERROR: {
+    case UPDATE_ERROR: {
       return {
         ...state,
         error: action.error

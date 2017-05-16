@@ -14,11 +14,11 @@ export const loadTemplate = (selected: string) => {
   }
 }
 
-export const DISPLAY_ERROR = 'templates/DISPLAY_ERROR'
+export const UPDATE_ERROR = 'templates/UPDATE_ERROR'
 
-export const displayError = (error) => {
+export const updateError = (error?) => {
   return {
-    type: DISPLAY_ERROR,
+    type: UPDATE_ERROR,
     error
   }
 }
