@@ -16,7 +16,7 @@ import (
 type (
 	CompileResult struct {
 		Name    string
-		Program []byte
+		Program chainjson.HexBytes
 		Value   string
 		Params  []ContractParam
 		Clauses []ClauseInfo
@@ -226,7 +226,7 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, map[uint32
 	}
 
 	// clause 1
-	b.addJumpIf(clauseTargets[1])
+	b.addJumpIf(clauseTargets[1]) // consumes the clause selector
 
 	// no jump needed for clause 0
 
@@ -248,6 +248,13 @@ func compileContract(contract *contract, args []ContractArg) ([]byte, map[uint32
 		// TODO(bobg): when we _do_ generate jumps in clause bodies, we'll
 		// need a cleverer way to remove the trailing VERIFY.
 		b2 := newBuilder()
+
+		if i > 1 {
+			// Clauses 0 and 1 have no clause selector on top of the
+			// stack. Clauses 2 and later do.
+			b2.addOp(vm.OP_DROP)
+		}
+
 		err = compileClause(b2, stack, contract, env, clause)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "compiling clause %d", i)
