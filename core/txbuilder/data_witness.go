@@ -6,14 +6,14 @@ import (
 	chainjson "chain/encoding/json"
 )
 
-type dataWitness chainjson.HexBytes
+type DataWitness chainjson.HexBytes
 
-func (dw dataWitness) materialize(args *[][]byte) error {
+func (dw DataWitness) materialize(args *[][]byte) error {
 	*args = append(*args, dw)
 	return nil
 }
 
-func (dw dataWitness) MarshalJSON() ([]byte, error) {
+func (dw DataWitness) MarshalJSON() ([]byte, error) {
 	x := struct {
 		Type  string             `json:"type"`
 		Value chainjson.HexBytes `json:"value"`

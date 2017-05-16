@@ -6,140 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"chain/protocol/ivy/ivytest"
 	"chain/protocol/vm"
 	"chain/testutil"
 )
-
-const trivialLock = `
-contract TrivialLock() locks locked {
-  clause trivialUnlock() {
-    unlock locked
-  }
-}
-`
-
-const lockWithPublicKey = `
-contract LockWithPublicKey(publicKey: PublicKey) locks locked {
-  clause unlockWithSig(sig: Signature) {
-    verify checkTxSig(publicKey, sig)
-    unlock locked
-  }
-}
-`
-
-const lockWithPKHash = `
-contract LockWithPublicKeyHash(pubKeyHash: Hash) locks value {
-  clause spend(pubKey: PublicKey, sig: Signature) {
-    verify sha3(pubKey) == pubKeyHash
-    verify checkTxSig(pubKey, sig)
-    unlock value
-  }
-}
-`
-
-const lockWith2of3Keys = `
-contract LockWith3Keys(pubkey1, pubkey2, pubkey3: PublicKey) locks locked {
-  clause unlockWith2Sigs(sig1, sig2: Signature) {
-    verify checkTxMultiSig([pubkey1, pubkey2, pubkey3], [sig1, sig2])
-    unlock locked
-  }
-}
-`
-
-const lockToOutput = `
-contract LockToOutput(address: Program) locks locked {
-  clause relock() {
-    lock locked with address
-  }
-}
-`
-
-const tradeOffer = `
-contract TradeOffer(requestedAsset: Asset, requestedAmount: Amount, sellerProgram: Program, sellerKey: PublicKey) locks offered {
-  clause trade() requires payment: requestedAmount of requestedAsset {
-    lock payment with sellerProgram
-    unlock offered
-  }
-  clause cancel(sellerSig: Signature) {
-    verify checkTxSig(sellerKey, sellerSig)
-    lock offered with sellerProgram
-  }
-}
-`
-
-const escrowedTransfer = `
-contract EscrowedTransfer(agent: PublicKey, sender: Program, recipient: Program) locks value {
-  clause approve(sig: Signature) {
-    verify checkTxSig(agent, sig)
-    lock value with recipient
-  }
-  clause reject(sig: Signature) {
-    verify checkTxSig(agent, sig)
-    lock value with sender
-  }
-}
-`
-
-const collateralizedLoan = `
-contract CollateralizedLoan(balanceAsset: Asset, balanceAmount: Amount, deadline: Time, lender: Program, borrower: Program) locks collateral {
-  clause repay() requires payment: balanceAmount of balanceAsset {
-    lock payment with lender
-    lock collateral with borrower
-  }
-  clause default() {
-    verify after(deadline)
-    lock collateral with lender
-  }
-}
-`
-
-const revealPreimage = `
-contract RevealPreimage(hash: Hash) locks value {
-  clause reveal(string: String) {
-    verify sha3(string) == hash
-    unlock value
-  }
-}
-`
-
-const priceChanger = `
-contract PriceChanger(askAmount: Amount, askAsset: Asset, sellerKey: PublicKey, sellerProg: Program) locks offered {
-  clause changePrice(newAmount: Amount, newAsset: Asset, sig: Signature) {
-    verify checkTxSig(sellerKey, sig)
-    lock offered with PriceChanger(newAmount, newAsset, sellerKey, sellerProg)
-  }
-  clause redeem() requires payment: askAmount of askAsset {
-    lock payment with sellerProg
-    unlock offered
-  }
-}
-`
-
-const callOptionWithSettlement = `
-contract CallOptionWithSettlement(strikePrice: Amount,
-                    strikeCurrency: Asset,
-                    sellerProgram: Program,
-                    sellerKey: PublicKey,
-                    buyerKey: PublicKey,
-                    deadline: Time) locks underlying {
-  clause exercise(buyerSig: Signature) 
-                 requires payment: strikePrice of strikeCurrency {
-    verify before(deadline)
-    verify checkTxSig(buyerKey, buyerSig)
-    lock payment with sellerProgram
-    unlock underlying
-  }
-  clause expire() {
-    verify after(deadline)
-    lock underlying with sellerProgram
-  }
-  clause settle(sellerSig: Signature, buyerSig: Signature) {
-    verify checkTxSig(sellerKey, sellerSig)
-    verify checkTxSig(buyerKey, buyerSig)
-    unlock underlying
-  }
-}
-`
 
 func TestCompile(t *testing.T) {
 	cases := []struct {
@@ -149,7 +19,7 @@ func TestCompile(t *testing.T) {
 	}{
 		{
 			"TrivialLock",
-			trivialLock,
+			ivytest.TrivialLock,
 			CompileResult{
 				Name:    "TrivialLock",
 				Program: mustDecodeHex("51"),
@@ -164,7 +34,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"LockWithPublicKey",
-			lockWithPublicKey,
+			ivytest.LockWithPublicKey,
 			CompileResult{
 				Name:    "LockWithPublicKey",
 				Program: mustDecodeHex("ae7cac"),
@@ -187,7 +57,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"LockWithPublicKeyHash",
-			lockWithPKHash,
+			ivytest.LockWithPKHash,
 			CompileResult{
 				Name:    "LockWithPublicKeyHash",
 				Program: mustDecodeHex("5279aa887cae7cac"),
@@ -218,7 +88,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"LockWith2of3Keys",
-			lockWith2of3Keys,
+			ivytest.LockWith2of3Keys,
 			CompileResult{
 				Name:    "LockWith3Keys",
 				Program: mustDecodeHex("537a547a526bae71557a536c7cad"),
@@ -250,7 +120,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"LockToOutput",
-			lockToOutput,
+			ivytest.LockToOutput,
 			CompileResult{
 				Name:    "LockToOutput",
 				Program: mustDecodeHex("0000c3c251557ac1"),
@@ -270,7 +140,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"TradeOffer",
-			tradeOffer,
+			ivytest.TradeOffer,
 			CompileResult{
 				Name:    "TradeOffer",
 				Program: mustDecodeHex("547a641300000000007251557ac16323000000547a547aae7cac690000c3c251577ac1"),
@@ -313,7 +183,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"EscrowedTransfer",
-			escrowedTransfer,
+			ivytest.EscrowedTransfer,
 			CompileResult{
 				Name:    "EscrowedTransfer",
 				Program: mustDecodeHex("537a641b000000537a7cae7cac690000c3c251567ac1632a000000537a7cae7cac690000c3c251557ac1"),
@@ -353,7 +223,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"CollateralizedLoan",
-			collateralizedLoan,
+			ivytest.CollateralizedLoan,
 			CompileResult{
 				Name:    "CollateralizedLoan",
 				Program: mustDecodeHex("557a641c00000000007251567ac1695100c3c251567ac163280000007bc59f690000c3c251577ac1"),
@@ -402,7 +272,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"RevealPreimage",
-			revealPreimage,
+			ivytest.RevealPreimage,
 			CompileResult{
 				Name:    "RevealPreimage",
 				Program: mustDecodeHex("7caa87"),
@@ -430,7 +300,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"CallOptionWithSettlement",
-			callOptionWithSettlement,
+			ivytest.CallOptionWithSettlement,
 			CompileResult{
 				Name:    "CallOptionWithSettlement",
 				Program: mustDecodeHex("567a76529c64390000006427000000557ac6a06971ae7cac6900007b537a51557ac16349000000557ac59f690000c3c251577ac1634900000075577a547aae7cac69557a547aae7cac"),

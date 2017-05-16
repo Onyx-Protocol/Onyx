@@ -16,7 +16,7 @@ import (
 // signature programs.
 type RawTxSigWitness struct {
 	Quorum int                  `json:"quorum"`
-	Keys   []keyID              `json:"keys"`
+	Keys   []KeyID              `json:"keys"`
 	Sigs   []chainjson.HexBytes `json:"signatures"`
 }
 
@@ -72,7 +72,7 @@ func (sw RawTxSigWitness) MarshalJSON() ([]byte, error) {
 	obj := struct {
 		Type   string               `json:"type"`
 		Quorum int                  `json:"quorum"`
-		Keys   []keyID              `json:"keys"`
+		Keys   []KeyID              `json:"keys"`
 		Sigs   []chainjson.HexBytes `json:"signatures"`
 	}{
 		Type:   "raw_tx_signature",

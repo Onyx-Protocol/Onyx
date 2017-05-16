@@ -17,7 +17,7 @@ type (
 		Quorum int `json:"quorum"`
 
 		// Keys are the identities of the keys to sign with.
-		Keys []keyID `json:"keys"`
+		Keys []KeyID `json:"keys"`
 
 		// Program is the predicate part of the signature program, whose hash is what gets
 		// signed. If empty, it is computed during Sign from the outputs
@@ -29,7 +29,7 @@ type (
 		Sigs []chainjson.HexBytes `json:"signatures"`
 	}
 
-	keyID struct {
+	KeyID struct {
 		XPub           chainkd.XPub         `json:"xpub"`
 		DerivationPath []chainjson.HexBytes `json:"derivation_path"`
 	}
@@ -122,7 +122,7 @@ func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
 	obj := struct {
 		Type   string               `json:"type"`
 		Quorum int                  `json:"quorum"`
-		Keys   []keyID              `json:"keys"`
+		Keys   []KeyID              `json:"keys"`
 		Sigs   []chainjson.HexBytes `json:"signatures"`
 	}{
 		Type:   "signature",

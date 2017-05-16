@@ -18,6 +18,14 @@ type spendUTXOAction struct {
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
+func (s *Store) NewSpendUTXOAction(outputID *bc.Hash, refData chainjson.Map) txbuilder.Action {
+	return &spendUTXOAction{
+		store:         s,
+		OutputID:      outputID,
+		ReferenceData: refData,
+	}
+}
+
 func (s *Store) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
 	a := &spendUTXOAction{store: s}
 	err := json.Unmarshal(data, a)

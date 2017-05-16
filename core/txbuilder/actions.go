@@ -24,6 +24,14 @@ type controlReceiverAction struct {
 	ReferenceData json.Map  `json:"reference_data"`
 }
 
+func NewControlReceiverAction(assetAmount bc.AssetAmount, receiver *Receiver, refData json.Map) *controlReceiverAction {
+	return &controlReceiverAction{
+		AssetAmount:   assetAmount,
+		Receiver:      receiver,
+		ReferenceData: refData,
+	}
+}
+
 func (a *controlReceiverAction) Build(ctx context.Context, b *TemplateBuilder) error {
 	var missing []string
 	if a.Receiver == nil {
@@ -102,6 +110,10 @@ func DecodeRetireAction(data []byte) (Action, error) {
 type retireAction struct {
 	bc.AssetAmount
 	ReferenceData json.Map `json:"reference_data"`
+}
+
+func NewRetireAction(assetAmount bc.AssetAmount, refData json.Map) Action {
+	return &retireAction{AssetAmount: assetAmount, ReferenceData: refData}
 }
 
 func (a *retireAction) Build(ctx context.Context, b *TemplateBuilder) error {
