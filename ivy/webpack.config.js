@@ -35,6 +35,7 @@ module.exports = {
   },
   devServer: {
     historyApiFallback: true,
+    port: 8081,
 
     // Proxy API requests to local core server
     proxy: {
