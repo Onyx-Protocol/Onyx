@@ -95,6 +95,14 @@ tr:last-of-type td {
   padding: 0;
 }
 
+.panel-heading-btns .dropdown-menu li {
+  display: block;
+}
+
+.panel-heading-btns li a {
+  display: block;
+}
+
 .panel-title {
   line-height: 34px;
   color: #20252d;
