@@ -6,10 +6,11 @@ import { typeToString } from 'ivy-compiler'
 // ivy imports
 import { Item as Asset } from '../../assets/types'
 import { Item as Account } from '../../accounts/types'
-import { getItemList as getAssets } from '../../assets/selectors'
+import { getItemMap as getAssetMap, getItemList as getAssets } from '../../assets/selectors'
 import { getBalanceMap, getItemList as getAccounts } from '../../accounts/selectors'
 import { getClauseValueId, getState as getContractsState } from '../../contracts/selectors'
 import { getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
+import { getRequiredAssetAmount, getSpendContract } from '../../contracts/selectors'
 import { seed } from '../../app/actions'
 
 import RadioSelect from '../../app/components/radioSelect'
@@ -36,12 +37,14 @@ function getChildWidget(input: ComplexInput) {
 
 function ParameterWidget(props: { input: ParameterInput, handleChange: (e)=>undefined }) {
   // handle the fact that clause arguments look like spend.sig rather than sig
-  let parameterName = getParameterIdentifier(props.input)
-  let valueType = typeToString(props.input.valueType)
-  return <div key={props.input.name}>
-    <label>{parameterName}: <span className='type-label'>{valueType}</span></label>
-    {getChildWidget(props.input)}
-  </div>
+  const parameterName = getParameterIdentifier(props.input)
+  const valueType = typeToString(props.input.valueType)
+  return (
+    <div key={props.input.name}>
+      <label>{parameterName}: <span className='type-label'>{valueType}</span></label>
+      {getChildWidget(props.input)}
+    </div>
+  )
 }
 
 function GenerateStringWidget(props: { id: string, input: GenerateStringInput, handleChange: (e)=>undefined}) {
@@ -427,9 +430,11 @@ export function getWidget(id: string): JSX.Element {
       mapDispatchToSpendInputProps
     )(getWidgetType(type))
   }
-  return <div className="widget-wrapper" key={"container(" + id + ")"}>
-    {React.createElement(widgetTypeConnected, { key: "connect(" + id + ")", id: id })}
-  </div>
+  return (
+    <div className="widget-wrapper" key={"container(" + id + ")"}>
+      {React.createElement(widgetTypeConnected, { key: "connect(" + id + ")", id: id })}
+    </div>
+  )
 }
 
 function mapStateToContractParametersProps(state) {
@@ -472,21 +477,39 @@ export const ClauseParameters = connect(
   (state) => ({ parameterIds: getClauseParameterIds(state) })
 )(ClauseParametersUnconnected)
 
+
 function mapStateToClauseValueProps(state) {
   return {
-    valueId: getClauseValueId(state)
+    valueId: getClauseValueId(state),
+    assetMap: getAssetMap(state),
+    assetAmount: getRequiredAssetAmount(state)
   }
 }
 
-function ClauseValueUnconnected(props: { valueId: string }) {
+function ClauseValueUnconnected(props: { assetAmount, assetMap, valueId: string }) {
   if (props.valueId === undefined) {
     return <div />
   } else {
+    const parameterName = props.valueId.split('.').pop()
+    const valueType = "Value"
     return (
       <section style={{wordBreak: 'break-all'}}>
         <h4>Required Value</h4>
         <form className="form">
-          <div className="argument">{getWidget(props.valueId)}</div>
+          <label>{parameterName}: <span className='type-label'>{valueType}</span></label>
+          {getWidget(props.valueId + ".valueInput.accountInput")}
+          <div className="form-group">
+            <div className="input-group">
+              <div className="input-group-addon">Asset</div>
+              <input type="text" className="form-control" value={props.assetMap[props.assetAmount.assetId].alias} disabled />
+            </div>
+          </div>
+          <div className="form-group">
+            <div className="input-group">
+              <div className="input-group-addon">Amount</div>
+              <input type="text" className="form-control" value={props.assetAmount.amount} disabled />
+            </div>
+          </div>
         </form>
       </section>
     )
