@@ -1,4 +1,4 @@
-# Ivy Playground
+# Ivy Playground Docs
 
 ## Introduction
 
