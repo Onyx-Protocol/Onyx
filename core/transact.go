@@ -88,7 +88,7 @@ func (a *API) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Te
 		maxTime = time.Now().Add(ttl)
 	}
 	if maxTime.Before(minTime) {
-		return nil, errors.WithDetailf(errBadMaxTime, "max_time is less than min_time")
+		return nil, errors.WithDetailf(errBadMaxTime, "max time is earlier than min time")
 	}
 
 	tpl, err := txbuilder.Build(ctx, req.Tx, actions, minTime, maxTime)

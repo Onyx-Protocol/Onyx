@@ -35,16 +35,33 @@ export const parseError = (err) => {
     return ''
   }
 
-  const body = err.body
-  if (err.code === 'CH706' && body && body.data) {
-    return body.data.actions.reduce((msg, action, i, arr) => {
-      if (i < arr.length - 1) {
-        msg += "\n"
+  switch(err.code) {
+    case 'CH706': {
+      const body = err.body
+      if (body === undefined) {
+        return err.message
       }
-      return msg + action.code + ": " + action.message
-    }, "")
+
+      const data = body.data
+      if (data === undefined) {
+        return err.message
+      }
+
+      const actions = data.actions
+      if (actions === undefined || actions.length === 0) {
+        return err.message
+      }
+      return actions[0].message
+    }
+    case 'CH707': {
+      return (
+        'The current time fails contract validation. ' +
+        'Check arguments to before() and after() function calls.'
+      )
+    }
+    default:
+      return err.message
   }
-  return err.message
 }
 
 // Imports the dashboard's redux state from localStorage.
