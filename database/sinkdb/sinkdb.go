@@ -64,21 +64,6 @@ func (db *DB) GetStale(key string, v proto.Message) (found bool, err error) {
 	return found, proto.Unmarshal(buf, v)
 }
 
-// AddAllowedMember configures sinkdb to allow the provided address
-// to participate in Raft.
-func (db *DB) AddAllowedMember(ctx context.Context, addr string) error {
-	instr, err := proto.Marshal(&sinkpb.Instruction{
-		Operations: []*sinkpb.Op{{
-			Key:   allowedMemberPrefix + "/" + addr,
-			Value: []byte{0x01},
-		}},
-	})
-	if err != nil {
-		return err
-	}
-	return db.raft.Exec(ctx, instr)
-}
-
 // RaftService returns the raft service used for replication.
 func (db *DB) RaftService() *raft.Service {
 	return db.raft

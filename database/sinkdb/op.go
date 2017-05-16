@@ -48,3 +48,14 @@ func Set(key string, value proto.Message) Op {
 		}},
 	}
 }
+
+// AddAllowedMember configures sinkdb to allow the provided address
+// to participate in Raft.
+func AddAllowedMember(addr string) Op {
+	return Op{
+		effects: []*sinkpb.Op{{
+			Key:   allowedMemberPrefix + "/" + addr,
+			Value: []byte{0x01},
+		}},
+	}
+}
