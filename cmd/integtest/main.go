@@ -75,13 +75,12 @@ func main() {
 	must(os.MkdirAll(wkdir, 0700))
 
 	_, base := path.Split(pkg)
-	fmt.Println(base, strings.Join(args, " "))
 	cmd := command(ctx, gobin+"/"+base, args...)
 	cmd.Dir = wkdir
 	cmd.Env = mergeEnvLists(env, os.Environ())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Start()
+	err := start(cmd)
 	if err != nil {
 		log.Printf("%s: %v", base, err)
 		panic("cmd failed")
@@ -95,8 +94,7 @@ func main() {
 }
 
 func setupDB(ctx context.Context) {
-	fmt.Println("initdb", "-D", pgdir)
-	err := command(ctx, "initdb", "-D", pgdir).Run()
+	err := run(command(ctx, "initdb", "-D", pgdir))
 	if err, ok := err.(*exec.ExitError); ok {
 		os.Stderr.Write(err.Stderr)
 	}
@@ -116,10 +114,9 @@ func setupDB(ctx context.Context) {
 	must(hbaTemplate.Execute(&buf, nil))
 	must(ioutil.WriteFile(pgdir+"/pg_hba.conf", buf.Bytes(), 0600))
 
-	fmt.Println("postgres", "-D", pgdir)
 	cmd := command(ctx, "postgres", "-D", pgdir)
 	cmd.Env = mergeEnvLists([]string{"GOBIN=" + gobin}, os.Environ())
-	err = cmd.Start()
+	err = start(cmd)
 	if err, ok := err.(*exec.ExitError); ok {
 		os.Stderr.Write(err.Stderr)
 	}
@@ -132,11 +129,10 @@ func setupDB(ctx context.Context) {
 }
 
 func buildTest(ctx context.Context, pkg string) {
-	fmt.Println("go", "install", pkg)
 	cmd := command(ctx, "go", "install", pkg)
 	cmd.Env = mergeEnvLists([]string{"GOBIN=" + gobin}, os.Environ())
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := run(cmd)
 	if err, ok := err.(*exec.ExitError); ok {
 		os.Stderr.Write(err.Stderr)
 	}
@@ -188,6 +184,25 @@ func command(ctx context.Context, name string, arg ...string) *exec.Cmd {
 	c := exec.CommandContext(ctx, name, arg...)
 	c.SysProcAttr = newSysProcAttr()
 	return c
+}
+
+func run(c *exec.Cmd) error {
+	logCmd(c)
+	return c.Run()
+}
+
+func start(c *exec.Cmd) error {
+	logCmd(c, "&")
+	return c.Start()
+}
+
+func logCmd(cmd *exec.Cmd, extra ...string) {
+	words := append(cmd.Args[:len(cmd.Args):len(cmd.Args)], extra...)
+	if s := strings.Join(words, " "); cmd.Dir != "" {
+		fmt.Printf("(cd %s;\n%s)\n", cmd.Dir, s)
+	} else {
+		fmt.Printf("%s\n", s)
+	}
 }
 
 func must(err error) {
