@@ -53,23 +53,15 @@ func (db *DB) Get(ctx context.Context, key string, v proto.Message) (found bool,
 	if err != nil {
 		return false, err
 	}
-	buf := db.state.get(key)
-	// TODO(jackson): propagate real key existence bool
-	if len(buf) == 0 {
-		return false, err
-	}
-	return true, proto.Unmarshal(buf, v)
+	buf, found := db.state.get(key)
+	return found, proto.Unmarshal(buf, v)
 }
 
 // GetStale performs a non-linearizable read of the provided key.
 // The value may be stale. The read value is unmarshalled into v.
 func (db *DB) GetStale(key string, v proto.Message) (found bool, err error) {
-	buf := db.state.get(key) // read directly from state
-	// TODO(jackson): propagate real key existence bool
-	if len(buf) == 0 {
-		return false, err
-	}
-	return true, proto.Unmarshal(buf, v)
+	buf, found := db.state.get(key) // read directly from state
+	return found, proto.Unmarshal(buf, v)
 }
 
 // AddAllowedMember configures sinkdb to allow the provided address
