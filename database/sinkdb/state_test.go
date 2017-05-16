@@ -2,9 +2,9 @@ package sinkdb
 
 import (
 	"context"
+	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -45,13 +45,7 @@ func TestGetPeerAddr(t *testing.T) {
 }
 
 func TestAllowedMember(t *testing.T) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raftDir := filepath.Join(currentDir, "/.testraft")
-	err = os.Mkdir(raftDir, 0700)
+	raftDir, err := ioutil.TempDir("", "sinkdb")
 	if err != nil {
 		t.Fatal(err)
 	}

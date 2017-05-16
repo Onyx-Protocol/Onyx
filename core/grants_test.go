@@ -3,38 +3,21 @@ package core
 import (
 	"context"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"chain/core/accesstoken"
 	"chain/database/pg/pgtest"
-	"chain/database/sinkdb"
+	"chain/database/sinkdb/sinkdbtest"
 )
 
 func TestCreatGrantValidation(t *testing.T) {
 	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	sdb, cleanup := sinkdbtest.NewDB(t)
+	defer cleanup()
 
 	accessTokens := &accesstoken.CredentialStore{db}
 	_, err := accessTokens.Create(ctx, "test-token", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	currentDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raftDir := filepath.Join(currentDir, "/.testraft")
-	err = os.Mkdir(raftDir, 0700)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(raftDir)
-
-	sdb, err := sinkdb.Open("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,26 +127,11 @@ func TestCreatGrantValidation(t *testing.T) {
 func TestDeleteGrants(t *testing.T) {
 	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	sdb, cleanup := sinkdbtest.NewDB(t)
+	defer cleanup()
 
 	accessTokens := &accesstoken.CredentialStore{db}
 	_, err := accessTokens.Create(ctx, "test-token", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	currentDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raftDir := filepath.Join(currentDir, "/.testraft")
-	err = os.Mkdir(raftDir, 0700)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(raftDir)
-
-	sdb, err := sinkdb.Open("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,6 +224,8 @@ func TestDeleteGrants(t *testing.T) {
 func TestDeleteGrantsByAccessToken(t *testing.T) {
 	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	sdb, cleanup := sinkdbtest.NewDB(t)
+	defer cleanup()
 
 	accessTokens := &accesstoken.CredentialStore{db}
 	_, err := accessTokens.Create(ctx, "test-token-0", "")
@@ -264,23 +234,6 @@ func TestDeleteGrantsByAccessToken(t *testing.T) {
 	}
 
 	_, err = accessTokens.Create(ctx, "test-token-1", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	currentDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	raftDir := filepath.Join(currentDir, "/.testraft")
-	err = os.Mkdir(raftDir, 0700)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(raftDir)
-
-	sdb, err := sinkdb.Open("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
