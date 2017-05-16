@@ -13,7 +13,7 @@ import (
 
 	"chain/core/accesstoken"
 	"chain/database/pg/pgtest"
-	"chain/database/raft"
+	"chain/database/sinkdb"
 )
 
 func TestAuthz(t *testing.T) {
@@ -33,20 +33,20 @@ func TestAuthz(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	raftDB, err := raft.Start("", raftDir, "", new(http.Client), false)
+	sdb, err := sinkdb.Open("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/raft/", raftDB)
+	mux.Handle("/raft/", sdb.RaftService())
 
 	var handler http.Handler = mux
-	handler = AuthHandler(handler, raftDB, accessTokens, nil)
+	handler = AuthHandler(handler, sdb, accessTokens, nil)
 
 	api := &API{
 		mux:          http.NewServeMux(),
-		raftDB:       raftDB,
+		sdb:          sdb,
 		accessTokens: accessTokens,
 	}
 	api.buildHandler()

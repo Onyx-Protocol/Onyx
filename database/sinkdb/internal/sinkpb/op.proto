@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package statepb;
+package sinkpb;
 
 message Op {
 	enum Type {

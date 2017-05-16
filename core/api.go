@@ -27,7 +27,7 @@ import (
 	"chain/core/txdb"
 	"chain/core/txfeed"
 	"chain/database/pg"
-	"chain/database/raft"
+	"chain/database/sinkdb"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
@@ -68,7 +68,7 @@ type API struct {
 	config          *config.Config
 	submitter       txbuilder.Submitter
 	db              pg.DB
-	raftDB          *raft.Service
+	sdb             *sinkdb.DB
 	mux             *http.ServeMux
 	handler         http.Handler
 	leader          leaderProcess
@@ -250,8 +250,8 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
-	authorizer := authz.NewAuthorizer(rDB, GrantPrefix, policyByRoute)
+func AuthHandler(handler http.Handler, sdb *sinkdb.DB, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
+	authorizer := authz.NewAuthorizer(sdb, GrantPrefix, policyByRoute)
 
 	rootCAs := x509.NewCertPool()
 	if tlsConfig != nil {

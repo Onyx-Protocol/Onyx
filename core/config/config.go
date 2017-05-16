@@ -15,14 +15,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-
 	"chain/core/accesstoken"
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
-	"chain/database/raft"
+	"chain/database/sinkdb"
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/authz"
@@ -57,52 +55,46 @@ var (
 )
 
 // Load loads the stored configuration, if any, from the database.
-// It will first try to load the config from raft storage; if that fails,
-// it will try Postgres next. If it finds a config in Postgres but not in raft
-// storage, the config will be added to raft storage.
-func Load(ctx context.Context, db pg.DB, rDB *raft.Service) (*Config, error) {
-	data, err := rDB.Get(ctx, "/core/config")
+// It will first try to load the config from sinkdb; if that fails,
+// it will try Postgres next. If it finds a config in Postgres but not in sinkdb
+// storage, the config will be added to sinkdb.
+func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
+	c := new(Config)
+	found, err := sdb.Get(ctx, "/core/config", c)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	if data == nil {
-		// Check Postgres next.
-		config, err := loadFromPG(ctx, db)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
+	if found {
+		return c, nil
+	}
 
-		// If we were able to find a config in Postgres, store it in Raft.
-		// This also means that we are running this core with raft for the first time
-		// which means that we will also migrate access tokens.
-		if config != nil {
-			val, err := proto.Marshal(config)
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-			err = rDB.Insert(ctx, "/core/config", val)
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-			err = deleteFromPG(ctx, db)
-			if err != nil {
-				// If we got this far but failed to delete from PG, it's really NBD. Just
-				// log the failure and carry on.
-				log.Error(ctx, err, "failed to delete config from postgres")
-			}
-			err = migrateAccessTokens(ctx, db, rDB)
-			if err != nil {
-				panic(err)
-			}
-			return config, nil
-		}
+	// Check Postgres next.
+	c, err = loadFromPG(ctx, db)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	if c == nil {
 		return nil, nil
 	}
 
-	c := new(Config)
-	err = proto.Unmarshal(data, c)
+	// If we were able to find a config in Postgres, store it in sinkdb.
+	// This also means that we are running this core with raft/sinkdb
+	// for the first time which means that we will also migrate access tokens.
+	err = sdb.Exec(ctx,
+		sinkdb.IfNotExists("/core/config"),
+		sinkdb.Set("/core/config", c))
 	if err != nil {
 		return nil, errors.Wrap(err)
+	}
+	err = deleteFromPG(ctx, db)
+	if err != nil {
+		// If we got this far but failed to delete from PG, it's really NBD. Just
+		// log the failure and carry on.
+		log.Error(ctx, err, "failed to delete config from postgres")
+	}
+	err = migrateAccessTokens(ctx, db, sdb)
+	if err != nil {
+		panic(err)
 	}
 	return c, nil
 }
@@ -181,7 +173,7 @@ func deleteFromPG(ctx context.Context, db pg.DB) error {
 // saves it, and assigns its hash to c.BlockchainId
 // Otherwise, c.IsGenerator is false, and Configure makes a test request
 // to GeneratorUrl to detect simple configuration mistakes.
-func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, httpClient *http.Client, c *Config) error {
+func Configure(ctx context.Context, db pg.DB, sdb *sinkdb.DB, httpClient *http.Client, c *Config) error {
 	var err error
 	if !c.IsGenerator {
 		blockchainID, err := c.BlockchainId.MarshalText()
@@ -261,11 +253,10 @@ func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, httpClient *htt
 	c.Id = hex.EncodeToString(b)
 	c.ConfiguredAt = bc.Millis(time.Now())
 
-	val, err := proto.Marshal(c)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	return rDB.Insert(ctx, "/core/config", val)
+	return sdb.Exec(ctx,
+		sinkdb.IfNotExists("/core/config"),
+		sinkdb.Set("/core/config", c),
+	)
 }
 
 func tryGenerator(ctx context.Context, url, accessToken, blockchainID string, httpClient *http.Client) error {
@@ -292,7 +283,7 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string, ht
 
 // TODO(tessr): make all of this atomic in raft, so we don't get halfway through
 // a postgres->raft migration and fail, losing the second half of the migration
-func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error {
+func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 	const q = `SELECT id, type, created FROM access_tokens`
 	var tokens []*accesstoken.Token
 	err := pg.ForQueryRows(ctx, db, q, func(id string, maybeType sql.NullString, created time.Time) {
@@ -324,7 +315,7 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error
 		case "network":
 			grant.Policy = "crosscore"
 		}
-		_, err = authz.StoreGrant(ctx, rDB, grant, GrantPrefix)
+		_, err = authz.StoreGrant(ctx, sdb, grant, GrantPrefix)
 		if err != nil {
 			return errors.Wrap(err)
 		}

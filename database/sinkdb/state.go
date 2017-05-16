@@ -1,30 +1,31 @@
-package state
+package sinkdb
 
 import (
 	"bytes"
 
 	"github.com/golang/protobuf/proto"
 
-	"chain/database/raft/internal/statepb"
+	"chain/database/sinkdb/internal/sinkpb"
 	"chain/errors"
 )
 
-const nextNodeID = "raft/nextNodeID"
+const (
+	nextNodeID          = "raft/nextNodeID"
+	allowedMemberPrefix = "/raft/allowed"
+)
 
-var ErrAlreadyApplied = errors.New("entry already applied")
-
-// State is a general-purpose data store designed to accumulate
+// state is a general-purpose data store designed to accumulate
 // and apply replicated updates from a raft log.
-type State struct {
+type state struct {
 	state        map[string][]byte
 	peers        map[uint64]string // id -> addr
 	appliedIndex uint64
 	version      map[string]uint64 //key -> value index
 }
 
-// New returns a new State.
-func New() *State {
-	return &State{
+// newState returns a new State.
+func newState() *state {
+	return &state{
 		state:   map[string][]byte{nextNodeID: []byte("2")},
 		peers:   make(map[uint64]string),
 		version: make(map[string]uint64),
@@ -32,17 +33,17 @@ func New() *State {
 }
 
 // SetPeerAddr sets the address for the given peer.
-func (s *State) SetPeerAddr(id uint64, addr string) {
+func (s *state) SetPeerAddr(id uint64, addr string) {
 	s.peers[id] = addr
 }
 
 // GetPeerAddr gets the current address for the given peer, if set.
-func (s *State) GetPeerAddr(id uint64) (addr string) {
+func (s *state) GetPeerAddr(id uint64) (addr string) {
 	return s.peers[id]
 }
 
 // RemovePeerAddr deletes the current address for the given peer if it exists.
-func (s *State) RemovePeerAddr(id uint64) {
+func (s *state) RemovePeerAddr(id uint64) {
 	delete(s.peers, id)
 }
 
@@ -50,10 +51,10 @@ func (s *State) RemovePeerAddr(id uint64) {
 // It should be called with the retrieved snapshot
 // when bootstrapping a new node from an existing cluster
 // or when recovering from a file on disk.
-func (s *State) RestoreSnapshot(data []byte, index uint64) error {
+func (s *state) RestoreSnapshot(data []byte, index uint64) error {
 	s.appliedIndex = index
-	//TODO (ameets): think about having statepb in state for restore
-	snapshot := &statepb.Snapshot{}
+	//TODO (ameets): think about having sinkpb in state for restore
+	snapshot := &sinkpb.Snapshot{}
 	err := proto.Unmarshal(data, snapshot)
 	s.peers = snapshot.Peers
 	s.state = snapshot.State //TODO (ameets): need to add version here
@@ -61,8 +62,8 @@ func (s *State) RestoreSnapshot(data []byte, index uint64) error {
 }
 
 // Snapshot returns an encoded copy of s suitable for RestoreSnapshot.
-func (s *State) Snapshot() ([]byte, uint64, error) {
-	data, err := proto.Marshal(&statepb.Snapshot{
+func (s *state) Snapshot() ([]byte, uint64, error) {
+	data, err := proto.Marshal(&sinkpb.Snapshot{
 		State: s.state,
 		Peers: s.peers,
 	})
@@ -71,11 +72,11 @@ func (s *State) Snapshot() ([]byte, uint64, error) {
 
 // Apply applies a raft log entry payload to s. For conditional operations, it
 // returns whether the condition was satisfied.
-func (s *State) Apply(data []byte, index uint64) (satisfied bool, err error) {
+func (s *state) Apply(data []byte, index uint64) (satisfied bool, err error) {
 	if index < s.appliedIndex {
-		return false, ErrAlreadyApplied
+		return false, errors.New("entry already applied")
 	}
-	instr := &statepb.Instruction{}
+	instr := &sinkpb.Instruction{}
 	err = proto.Unmarshal(data, instr)
 	if err != nil {
 		// An error here indicates a malformed update
@@ -91,24 +92,24 @@ func (s *State) Apply(data []byte, index uint64) (satisfied bool, err error) {
 		y := true
 		switch cond.Type {
 
-		case statepb.Cond_NOT_KEY_EXISTS:
+		case sinkpb.Cond_NOT_KEY_EXISTS:
 			y = false
 			fallthrough
-		case statepb.Cond_KEY_EXISTS:
+		case sinkpb.Cond_KEY_EXISTS:
 			if _, ok := s.state[cond.Key]; ok != y {
 				return false, nil
 			}
-		case statepb.Cond_NOT_VALUE_EQUAL:
+		case sinkpb.Cond_NOT_VALUE_EQUAL:
 			y = false
 			fallthrough
-		case statepb.Cond_VALUE_EQUAL:
+		case sinkpb.Cond_VALUE_EQUAL:
 			if ok := bytes.Equal(s.state[cond.Key], cond.Value); ok != y {
 				return false, nil
 			}
-		case statepb.Cond_NOT_INDEX_EQUAL:
+		case sinkpb.Cond_NOT_INDEX_EQUAL:
 			y = false
 			fallthrough
-		case statepb.Cond_INDEX_EQUAL:
+		case sinkpb.Cond_INDEX_EQUAL:
 			if ok := (s.version[cond.Key] == cond.Index); ok != y {
 				return false, nil
 			}
@@ -118,10 +119,10 @@ func (s *State) Apply(data []byte, index uint64) (satisfied bool, err error) {
 	}
 	for _, op := range instr.Operations {
 		switch op.Type {
-		case statepb.Op_SET:
+		case sinkpb.Op_SET:
 			s.state[op.Key] = op.Value
 			s.version[op.Key] = index
-		case statepb.Op_DELETE:
+		case sinkpb.Op_DELETE:
 			delete(s.state, op.Key)
 			delete(s.version, op.Key)
 		default:
@@ -132,64 +133,18 @@ func (s *State) Apply(data []byte, index uint64) (satisfied bool, err error) {
 	return true, nil
 }
 
-// Provisional read operation.
-func (s *State) Get(key string) (value []byte) {
+// get performs a provisional read operation.
+func (s *state) get(key string) (value []byte) {
 	return s.state[key]
 }
 
-// Set encodes a set operation setting key to value.
-// The encoded op should be committed to the raft log,
-// then it can be applied with Apply.
-func Set(key string, value []byte) (instruction []byte) {
-	b, _ := proto.Marshal(&statepb.Instruction{
-		Operations: []*statepb.Op{{
-			Type:  statepb.Op_SET,
-			Key:   key,
-			Value: value,
-		}},
-	})
-
-	return b
-}
-
-// Insert encodes an insert operation. It is the same as Set,
-// except it adds the condition that nothing can exist at the
-// given key.
-func Insert(key string, value []byte) (instruction []byte) {
-	b, _ := proto.Marshal(&statepb.Instruction{
-		Operations: []*statepb.Op{{
-			Type:  statepb.Op_SET,
-			Key:   key,
-			Value: value,
-		}},
-		Conditions: []*statepb.Cond{{
-			Type: statepb.Cond_NOT_KEY_EXISTS,
-			Key:  key,
-		}},
-	})
-
-	return b
-}
-
-// Delete encodes a delete operation for a given key.
-func Delete(key string) (instruction []byte) {
-	b, _ := proto.Marshal(&statepb.Instruction{
-		Operations: []*statepb.Op{{
-			Type: statepb.Op_DELETE,
-			Key:  key,
-		}},
-	})
-
-	return b
-}
-
 // AppliedIndex returns the raft log index (applied index) of current state
-func (s *State) AppliedIndex() uint64 {
+func (s *state) AppliedIndex() uint64 {
 	return s.appliedIndex
 }
 
 // NextNodeID generates an ID for the next node to join the cluster.
-func (s *State) NextNodeID() (id, version uint64) {
+func (s *state) NextNodeID() (id, version uint64) {
 	id, n := proto.DecodeVarint(s.state[nextNodeID])
 	if n == 0 {
 		panic("raft: cannot decode nextNodeID")
@@ -197,19 +152,33 @@ func (s *State) NextNodeID() (id, version uint64) {
 	return id, s.version[nextNodeID]
 }
 
-func IncrementNextNodeID(oldID uint64, index uint64) (instruction []byte) {
-	b, _ := proto.Marshal(&statepb.Instruction{
-		Conditions: []*statepb.Cond{{
-			Type:  statepb.Cond_INDEX_EQUAL,
+func (s *state) IsAllowedMember(addr string) bool {
+	data := s.get(allowedMemberPrefix + "/" + addr)
+	return len(data) > 0
+}
+
+func (s *state) IncrementNextNodeID(oldID uint64, index uint64) (instruction []byte) {
+	instruction, _ = proto.Marshal(&sinkpb.Instruction{
+		Conditions: []*sinkpb.Cond{{
+			Type:  sinkpb.Cond_INDEX_EQUAL,
 			Key:   nextNodeID,
 			Index: index,
 		}},
-		Operations: []*statepb.Op{{
-			Type:  statepb.Op_SET,
+		Operations: []*sinkpb.Op{{
+			Type:  sinkpb.Op_SET,
 			Key:   nextNodeID,
 			Value: proto.EncodeVarint(oldID + 1),
 		}},
 	})
+	return instruction
+}
 
-	return b
+func (s *state) EmptyWrite() (instruction []byte) {
+	instruction, _ = proto.Marshal(&sinkpb.Instruction{
+		Operations: []*sinkpb.Op{{
+			Type:  sinkpb.Op_SET,
+			Key:   "/dummyWrite",
+			Value: []byte(""),
+		}}})
+	return instruction
 }

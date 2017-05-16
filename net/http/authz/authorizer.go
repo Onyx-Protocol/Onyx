@@ -8,9 +8,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-
-	"chain/database/raft"
+	"chain/database/sinkdb"
 	"chain/errors"
 	"chain/net/http/authn"
 )
@@ -20,16 +18,16 @@ var ErrNotAuthorized = errors.New("not authorized")
 var builtinGrants = []*Grant{{GuardType: "any", Policy: "public"}}
 
 type Authorizer struct {
-	raftDB      *raft.Service
-	raftPrefix  string
+	sdb         *sinkdb.DB
+	keyPrefix   string
 	policies    map[string][]string // by route
 	extraGrants map[string][]*Grant // by policy
 }
 
-func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]string) *Authorizer {
+func NewAuthorizer(sdb *sinkdb.DB, prefix string, policyMap map[string][]string) *Authorizer {
 	a := &Authorizer{
-		raftDB:      rdb,
-		raftPrefix:  prefix,
+		sdb:         sdb,
+		keyPrefix:   prefix,
 		policies:    policyMap,
 		extraGrants: make(map[string][]*Grant),
 	}
@@ -40,7 +38,7 @@ func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]stri
 }
 
 // GrantInternal grants access for subj to policy internal.
-// This grant is not stored in raft and applies only for
+// This grant is not stored in sinkdb and applies only for
 // the current process.
 func (a *Authorizer) GrantInternal(subj pkix.Name) {
 	a.extraGrants["internal"] = append(a.extraGrants["internal"], &Grant{
@@ -104,14 +102,13 @@ func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {
 	var grants []*Grant
 	for _, p := range policies {
 		grants = append(grants, a.extraGrants[p]...)
-		data := a.raftDB.Stale().Get(a.raftPrefix + p)
-		if data != nil {
-			grantList := new(GrantList)
-			err := proto.Unmarshal(data, grantList)
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-			grants = append(grants, grantList.GetGrants()...)
+
+		var grantList GrantList
+		found, err := a.sdb.GetStale(a.keyPrefix+p, &grantList)
+		if err != nil {
+			return nil, err
+		} else if found {
+			grants = append(grants, grantList.Grants...)
 		}
 	}
 	return grants, nil
