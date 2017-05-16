@@ -4,26 +4,43 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"chain/database/sinkdb"
 )
 
+const dataDirectoryPrefix = `chain-syncdbtest`
+
 // NewDB creates a new sinkdb instance with a random temporary
 // storage directory.
-func NewDB(t testing.TB) (sdb *sinkdb.DB, cleanup func()) {
-	tempDir, err := ioutil.TempDir("", "chain-syncdbtest")
+func NewDB(t testing.TB) *sinkdb.DB {
+	gcDataDirectories() // clean up old data directories from previous tests
+
+	tempDir, err := ioutil.TempDir("", dataDirectoryPrefix)
 	if err != nil {
 		t.Fatal(err)
 	}
-	sdb, err = sinkdb.Open("", tempDir, "", new(http.Client), false)
+	sdb, err := sinkdb.Open("", tempDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
+	return sdb
+}
 
-	// TODO(jackson): support closing sinkdb.DB and stopping
-	// any goroutines spawned in the raft package.
-	cleanup = func() { os.RemoveAll(tempDir) }
-
-	return sdb, cleanup
+func gcDataDirectories() {
+	tempDir := os.TempDir()
+	cutoff := time.Now().Add(-time.Hour * 24)
+	dirents, _ := ioutil.ReadDir(tempDir)
+	for _, dirent := range dirents {
+		if !strings.HasPrefix(dirent.Name(), dataDirectoryPrefix) {
+			continue
+		}
+		if dirent.ModTime().After(cutoff) {
+			continue
+		}
+		os.RemoveAll(filepath.Join(tempDir, dirent.Name()))
+	}
 }

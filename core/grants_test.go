@@ -13,8 +13,6 @@ import (
 func TestCreatGrantValidation(t *testing.T) {
 	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	sdb, cleanup := sinkdbtest.NewDB(t)
-	defer cleanup()
 
 	accessTokens := &accesstoken.CredentialStore{db}
 	_, err := accessTokens.Create(ctx, "test-token", "")
@@ -24,7 +22,7 @@ func TestCreatGrantValidation(t *testing.T) {
 
 	api := &API{
 		mux:          http.NewServeMux(),
-		sdb:          sdb,
+		sdb:          sinkdbtest.NewDB(t),
 		accessTokens: accessTokens,
 	}
 
@@ -127,8 +125,6 @@ func TestCreatGrantValidation(t *testing.T) {
 func TestDeleteGrants(t *testing.T) {
 	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	sdb, cleanup := sinkdbtest.NewDB(t)
-	defer cleanup()
 
 	accessTokens := &accesstoken.CredentialStore{db}
 	_, err := accessTokens.Create(ctx, "test-token", "")
@@ -138,7 +134,7 @@ func TestDeleteGrants(t *testing.T) {
 
 	api := &API{
 		mux:          http.NewServeMux(),
-		sdb:          sdb,
+		sdb:          sinkdbtest.NewDB(t),
 		accessTokens: accessTokens,
 	}
 
@@ -224,8 +220,6 @@ func TestDeleteGrants(t *testing.T) {
 func TestDeleteGrantsByAccessToken(t *testing.T) {
 	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	sdb, cleanup := sinkdbtest.NewDB(t)
-	defer cleanup()
 
 	accessTokens := &accesstoken.CredentialStore{db}
 	_, err := accessTokens.Create(ctx, "test-token-0", "")
@@ -240,7 +234,7 @@ func TestDeleteGrantsByAccessToken(t *testing.T) {
 
 	api := &API{
 		mux:          http.NewServeMux(),
-		sdb:          sdb,
+		sdb:          sinkdbtest.NewDB(t),
 		accessTokens: accessTokens,
 	}
 

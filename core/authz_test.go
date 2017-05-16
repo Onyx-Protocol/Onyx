@@ -18,8 +18,7 @@ func TestAuthz(t *testing.T) {
 	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	accessTokens := &accesstoken.CredentialStore{db}
-	sdb, cleanup := sinkdbtest.NewDB(t)
-	defer cleanup()
+	sdb := sinkdbtest.NewDB(t)
 
 	mux := http.NewServeMux()
 	mux.Handle("/raft/", sdb.RaftService())
