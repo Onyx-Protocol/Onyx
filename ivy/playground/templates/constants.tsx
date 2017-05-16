@@ -38,9 +38,10 @@ export const TRADE_OFFER = `contract TradeOffer(requestedAsset: Asset,
   }
 }`
 
-export const ESCROWED_TRANSFER = `contract EscrowedTransfer(agent: PublicKey,
-                          sender: Program,
-                          recipient: Program)locks value {
+export const ESCROW = `
+contract Escrow(agent: PublicKey,
+                sender: Program,
+                recipient: Program)locks value {
   clause approve(sig: Signature) {
     verify checkTxSig(agent, sig)
     lock value with recipient
@@ -85,7 +86,7 @@ export const INITIAL_SOURCE_MAP = {
   LockWithPublicKeyHash: LOCK_WITH_PUBLIC_KEY_HASH,
   LockWithMultiSig: LOCK_WITH_MULTISIG,
   TradeOffer: TRADE_OFFER,
-  EscrowedTransfer: ESCROWED_TRANSFER,
+  Escrow: ESCROW,
   LoanCollateral: LOAN_COLLATERAL,
   RevealPreimage: REVEAL_PREIMAGE,
   RevealFactors: REVEAL_FACTORS,
@@ -96,7 +97,7 @@ export const INITIAL_ID_LIST = [
   "LockWithPublicKeyHash",
   "LockWithMultiSig",
   "TradeOffer",
-  "EscrowedTransfer",
+  "Escrow",
   "LoanCollateral",
   "RevealPreimage",
 ]
