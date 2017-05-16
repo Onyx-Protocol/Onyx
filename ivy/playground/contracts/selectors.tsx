@@ -347,15 +347,27 @@ export const getClauseValueId = createSelector(
 
 export const getRequiredValueAction = createSelector(
   getClauseValueId,
+  getClauseValueInfo,
+  getInputMap,
   getSpendInputMap,
-  (clauseValuePrefix, spendInputMap) => {
+  (clauseValuePrefix, valueInfo, inputMap, spendInputMap) => {
     const accountInput = spendInputMap[clauseValuePrefix + ".valueInput.accountInput"]
-    if (accountInput === undefined) {
+    if (clauseValuePrefix === undefined || accountInput === undefined) {
       return undefined
     }
 
-    const assetInput = spendInputMap[clauseValuePrefix + ".valueInput.assetInput"]
-    const amountInput = spendInputMap[clauseValuePrefix + ".valueInput.amountInput"]
+    const split = clauseValuePrefix.split('.')
+    if (split === undefined) {
+      return undefined
+    }
+
+    const name = split[2]
+    const match = valueInfo.find(info => {
+      return info.name === name
+    })
+    const valueArg = match && match[1]
+    const assetInput = inputMap["contractParameters." + valueArg.asset + ".assetInput"]
+    const amountInput = inputMap["contractParameters." + valueArg.amount + ".amountInput"]
     const amount = parseInt(amountInput.value, 10)
     const spendFromAccount: SpendFromAccount = {
       type: "spendFromAccount",

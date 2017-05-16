@@ -6,10 +6,11 @@ import { typeToString } from 'ivy-compiler'
 // ivy imports
 import { Item as Asset } from '../../assets/types'
 import { Item as Account } from '../../accounts/types'
-import { getItemList as getAssets } from '../../assets/selectors'
+import { getItemMap as getAssetMap, getItemList as getAssets } from '../../assets/selectors'
 import { getBalanceMap, getItemList as getAccounts } from '../../accounts/selectors'
 import { getClauseValueId, getState as getContractsState } from '../../contracts/selectors'
 import { getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
+import { getSpendContract } from '../../contracts/selectors'
 import { seed } from '../../app/actions'
 
 import RadioSelect from '../../app/components/radioSelect'
@@ -472,13 +473,16 @@ export const ClauseParameters = connect(
   (state) => ({ parameterIds: getClauseParameterIds(state) })
 )(ClauseParametersUnconnected)
 
+
 function mapStateToClauseValueProps(state) {
   return {
-    valueId: getClauseValueId(state)
+    valueId: getClauseValueId(state),
+    assetMap: getAssetMap(state),
+    contract: getSpendContract(state)
   }
 }
 
-function ClauseValueUnconnected(props: { valueId: string }) {
+function ClauseValueUnconnected(props: { assetMap, contract, valueId: string }) {
   if (props.valueId === undefined) {
     return <div />
   } else {
@@ -486,8 +490,21 @@ function ClauseValueUnconnected(props: { valueId: string }) {
       <section style={{wordBreak: 'break-all'}}>
         <h4>Required Value</h4>
         <form className="form">
-          <div className="argument">{getWidget(props.valueId)}</div>
+          {getWidget(props.valueId + ".valueInput.accountInput")}
+          <div className="form-group">
+            <div className="input-group">
+              <div className="input-group-addon">Asset</div>
+              <input type="text" className="form-control" value={props.assetMap[props.contract.assetId].alias} disabled />
+            </div>
+          </div>
+          <div className="form-group">
+            <div className="input-group">
+              <div className="input-group-addon">Amount</div>
+              <input type="text" className="form-control" value={props.contract.amount} disabled />
+            </div>
+          </div>
         </form>
+
       </section>
     )
   }
