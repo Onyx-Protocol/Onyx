@@ -178,10 +178,15 @@ select:hover {
 
 .btn {
   border-radius: 2px;
+  font-size: 16px;
+  padding: 5px 12px;
+  min-width: 75px;
 }
 
+
 .btn-lg {
-  font-size: 18px;
+  font-size: 20px;
+  padding: 8px 16px;
 }
 
 .btn-primary {
