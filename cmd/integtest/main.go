@@ -90,7 +90,7 @@ func main() {
 	err = cmd.Wait()
 	if err != nil {
 		log.Printf("%s: %v", base, err)
-		panic("cmd failed")
+		os.Exit(1)
 	}
 }
 
