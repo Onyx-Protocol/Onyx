@@ -125,6 +125,7 @@ var errorFormatter = httperror.Formatter{
 		txbuilder.ErrBadAmount:  {400, "CH704", "Invalid asset amount"},
 		txbuilder.ErrBlankCheck: {400, "CH705", "Unsafe transaction: leaves assets to be taken without requiring payment"},
 		txbuilder.ErrAction:     {400, "CH706", "One or more actions had an error: see attached data"},
+		errBadMaxTime:           {400, "CH707", "Invalid tx max time"},
 
 		// Submit error namespace (73x)
 		txbuilder.ErrMissingRawTx:          {400, "CH730", "Missing raw transaction"},
