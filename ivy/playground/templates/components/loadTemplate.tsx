@@ -16,20 +16,26 @@ const mapStateToProps = (state: AppState) => {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  handleChange: (id: string): void => {
+  handleClick: (e, id: string): void => {
+    e.preventDefault()
     dispatch(loadTemplate(id))
   }
 })
 
-const LoadTemplate = ({ idList, selected, handleChange }) => {
+const LoadTemplate = ({ idList, selected, handleClick }) => {
   const options = idList.map(id => {
-    return <option key={id} value={id}>{id}</option>
+    return <li key={id}><a onClick={(e) => handleClick(e, id)} href='#'>{id}</a></li>
   })
-  options.unshift(<option key={""} value={""}>Load Template...</option>)
   return (
-    <select className="form-control" value={""} onChange={ (e) => handleChange(e.target.value) }>
-      {options}
-    </select>
+    <div className="dropdown">
+      <button className="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+        <span className="glyphicon glyphicon-open"></span>
+        Load Template
+      </button>
+      <ul className="dropdown-menu" aria-labelledby="dropdownMenu1">
+        {options}
+      </ul>
+    </div>
   )
 }
 
