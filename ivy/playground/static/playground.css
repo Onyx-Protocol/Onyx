@@ -88,6 +88,7 @@ tr:last-of-type td {
   color: #20252d;
   font-size: 18px;
   font-weight: bold;
+  background: #F5F5F8;
 }
 
 .panel-body {
@@ -174,6 +175,7 @@ select:hover {
 .input-group-addon {
   min-width: 100px;
   text-align: left;
+  background: #F5F5F8;
 }
 
 .btn {
@@ -237,6 +239,7 @@ select:hover {
 }
 
 pre {
+  background: #F5F5F8;
   padding: 15px;
   border-radius: 2px;
   margin-bottom: 0;
