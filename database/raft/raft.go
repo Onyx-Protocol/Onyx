@@ -439,7 +439,7 @@ func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 // read stale data.)
 func (sv *Service) WaitRead(ctx context.Context) error {
 	for {
-		err := sv.linearizeRead(ctx)
+		err := sv.waitRead(ctx)
 		if isTimeout(err) {
 			continue
 		}
@@ -447,7 +447,7 @@ func (sv *Service) WaitRead(ctx context.Context) error {
 	}
 }
 
-func (sv *Service) linearizeRead(ctx context.Context) error {
+func (sv *Service) waitRead(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, electionTick*tickDur)
 	defer cancel()
 	// TODO (ameets)[WIP] possibly refactor, maybe read while holding the lock?
