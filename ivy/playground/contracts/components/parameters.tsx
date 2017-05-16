@@ -44,13 +44,13 @@ function ParameterWidget(props: { input: ParameterInput, handleChange: (e)=>unde
   </div>
 }
 
-function GenerateStringWidget(props: { input: GenerateStringInput, handleChange: (e)=>undefined, computedValue: string }) {
+function GenerateStringWidget(props: { id: string, input: GenerateStringInput, handleChange: (e)=>undefined}) {
   return <div>
     <div className="input-group">
       <div className="input-group-addon">Length</div>
       <input type="text" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
     </div>
-    { props.computedValue ? <pre>{props.computedValue}</pre> : <span />}
+    <ComputedValue computeFor={props.id} />
   </div>
 }
 
@@ -106,10 +106,9 @@ function HashWidget(props: { input: HashInput, handleChange: (e)=>undefined }) {
   </div>
 }
 
-function GenerateHashWidget(props: { input: GenerateHashInput, handleChange: (e)=>undefined,
-                                     computedValue: string }) {
+function GenerateHashWidget(props: { id: string, input: GenerateHashInput, handleChange: (e)=>undefined}) {
   return <div>
-      {props.computedValue ? <pre>{props.computedValue}</pre> : <span />}
+      <ComputedValue computeFor={props.id} />
       <div className="nested">
       <div className="description">{props.input.hashType.hashFunction} of:</div>
       <label className="type-label">{typeToString(props.input.hashType.inputType)}</label>
@@ -129,11 +128,11 @@ function PublicKeyWidget(props: { input: PublicKeyInput, handleChange: (e)=>unde
   )
 }
 
-function GeneratePublicKeyWidget(props: { input: GeneratePublicKeyInput, handleChange: (e)=>undefined,
-                                          computedValue: string }) {
+function GeneratePublicKeyWidget(props: { id: string, input: GeneratePublicKeyInput, handleChange: (e)=>undefined}) {
   let options = [{label: "Generate Private Key", value: "generatePrivateKeyInput"},
                  {label: "Provide Private Key", value: "providePrivateKeyInput"}]
-  return <div>{props.computedValue ? <pre>{props.computedValue}</pre> : <span />}
+  return <div>
+      <ComputedValue computeFor={props.id} />
       <div className="nested">
       <div className="description">derived from:</div>
       <label className="type-label">PrivateKey</label>
@@ -349,20 +348,6 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
 function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
   let input = inputsById[id]
   if (input === undefined) throw "bad input ID: " + id
-  if (input.type === "generateHashInput" ||
-      input.type === "generateStringInput") {
-    try {
-      let computedValue = computeDataForInput(id, inputsById)
-      return {
-        input: input,
-        computedValue: computedValue
-      }
-    } catch(e) {
-      return {
-        input: input
-      }
-    }
-  }
   if (input.type === "generateSignatureInput") {
     return {
       input: input,
@@ -400,6 +385,32 @@ function mapDispatchToSpendInputProps(dispatch, ownProps: { id: string} ) {
     }
   }
 }
+
+function mapToComputedProps(state, ownProps: { computeFor: string} ) {
+  let inputsById = getInputMap(state)
+  if (inputsById === undefined) throw "inputMap should not be undefined when contract inputs are being rendered"
+  let input = inputsById[ownProps.computeFor]
+  if (input === undefined) throw "bad input ID: " + ownProps.computeFor
+  if (input.type === "generateHashInput" ||
+      input.type === "generateStringInput") {
+    try {
+      let computedValue = computeDataForInput(ownProps.computeFor, inputsById)
+      return {
+        value: computedValue
+      }
+    } catch(e) {
+      return {}
+    }
+  }
+}
+
+function ComputedValueUnconnected(props: { value: string }) {
+  return props.value? <pre>{props.value}</pre> : <span />
+}
+
+const ComputedValue = connect(
+  mapToComputedProps,
+)(ComputedValueUnconnected)
 
 export function getWidget(id: string): JSX.Element {
   let inputContext = id.split(".").shift() as InputContext
