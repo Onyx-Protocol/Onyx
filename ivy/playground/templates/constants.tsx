@@ -85,17 +85,17 @@ export const CALL_OPTION = `contract CallOption(strikePrice: Amount,
                     strikeCurrency: Asset,
                     sellerProgram: Program,
                     buyerKey: PublicKey,
-                    deadline: Time) locks offered {
+                    deadline: Time) locks underlying {
   clause exercise(buyerSig: Signature) 
                  requires payment: strikePrice of strikeCurrency {
     verify before(deadline)
     verify checkTxSig(buyerKey, buyerSig)
     lock payment with sellerProgram
-    unlock offered
+    unlock underlying
   }
-  clause cancel() {
+  clause expire() {
     verify after(deadline)
-    lock offered with sellerProgram
+    lock underlying with sellerProgram
   }
 }`
 
