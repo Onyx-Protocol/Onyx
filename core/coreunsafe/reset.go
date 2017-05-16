@@ -37,29 +37,14 @@ func ResetBlockchain(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 	var skip []string
 	skip = append(skip, persistBlockchainReset...)
 	skip = append(skip, neverReset...)
-
-	const tableQ = `
-		SELECT table_name
-		FROM information_schema.tables
-		WHERE table_schema='public' AND NOT (table_name=ANY($1::text[]))
-	`
-	var tables []string
-	err := pg.ForQueryRows(ctx, db, tableQ, pq.StringArray(skip), func(table string) {
-		tables = append(tables, table)
-	})
+	err := truncateDB(ctx, db, skip)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
 	// Config "table" now lives in raft, and it needs to be deleted too
 	err = sdb.Exec(ctx, sinkdb.Delete("/core/config"))
-	if err != nil {
-		return errors.Wrap(err, "could not delete config from sinkdb")
-	}
-
-	const q = `TRUNCATE %s RESTART IDENTITY;`
-	_, err = db.ExecContext(ctx, fmt.Sprintf(q, strings.Join(tables, ", ")))
-	return errors.Wrap(err)
+	return errors.Wrap(err, "could not delete config from sinkdb")
 }
 
 // ResetEverything deletes all of a Core's data.
@@ -70,23 +55,39 @@ func ResetEverything(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 		panic("reset called on reset disabled binary")
 	}
 
-	err := ResetBlockchain(ctx, db, sdb)
+	err := truncateDB(ctx, db, neverReset)
+	if err != nil {
+		return err
+	}
+
+	// TODO(tessr): remove allowed members list, once raft storage supports
+	// directory-style operations
+
+	// Delete config & grants in sinkdb
+	var ops []sinkdb.Op
+	ops = append(ops, sinkdb.Delete("/core/config"))
+	for _, p := range core.Policies {
+		ops = append(ops, sinkdb.Delete(core.GrantPrefix+p))
+	}
+	err = sdb.Exec(ctx, ops...)
+	return errors.Wrap(err, "could not delete grants sinkdb")
+}
+
+func truncateDB(ctx context.Context, db pg.DB, skipTbls []string) error {
+	const tableQ = `
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema='public' AND NOT (table_name=ANY($1::text[]))
+	`
+	var tables []string
+	err := pg.ForQueryRows(ctx, db, tableQ, pq.StringArray(skipTbls), func(table string) {
+		tables = append(tables, table)
+	})
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
-	// Delete all grants in sinkdb
-	// TODO(jackson): delete all of the policies in a single batch
-	for _, p := range core.Policies {
-		err = sdb.Exec(ctx, sinkdb.Delete(core.GrantPrefix+p))
-		if err != nil {
-			return errors.Wrapf(err, "could not delete grants for policy %s from sinkdb", p)
-		}
-	}
-
-	// TODO(tessr): remove allowed members list, once raft storage supports directory-style operations
-
 	const q = `TRUNCATE %s RESTART IDENTITY;`
-	_, err = db.ExecContext(ctx, fmt.Sprintf(q, strings.Join(persistBlockchainReset, ", ")))
+	_, err = db.ExecContext(ctx, fmt.Sprintf(q, strings.Join(tables, ", ")))
 	return errors.Wrap(err)
 }
