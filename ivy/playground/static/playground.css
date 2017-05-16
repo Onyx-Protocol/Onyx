@@ -83,6 +83,26 @@ tr:last-of-type td {
   border-top-right-radius: 2px;
 }
 
+.panel-heading-btns {
+  list-style: none;
+  margin:0;
+  padding: 0;
+}
+
+.panel-heading-btns li {
+  display: inline-block;
+  margin:0;
+  padding: 0;
+}
+
+.panel-heading-btns .dropdown-menu li {
+  display: block;
+}
+
+.panel-heading-btns li a {
+  display: block;
+}
+
 .panel-title {
   line-height: 34px;
   color: #20252d;
@@ -201,7 +221,7 @@ select:hover {
   min-width: 100px;
 }
 
-.btn-primary:hover, .btn-primary:active, .btn-primary:focus{
+.btn-primary:hover, .btn-primary:active, .btn-primary:focus, .btn-primary.active, .btn-primary:active, .open>.dropdown-toggle.btn-primary{
   background: #00BFAA !important;
   border-color: #00BFAA !important;
   opacity: .8;
@@ -215,9 +235,13 @@ select:hover {
   opacity:.65;
 }
 
-.glyphicon-floppy-disk {
+.dropdown .btn {
+  margin-right: 10px;
+}
+
+.btn .glyphicon {
   top:3px;
-  padding-right: 2px;
+  padding-right: 5px;
 }
 
 .alert {

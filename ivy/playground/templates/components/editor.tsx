@@ -28,14 +28,10 @@ const Editor = ({ compiled, source }) => {
       <div className="panel panel-default">
         <div className="panel-heading clearfix">
           <h1 className="panel-title pull-left">Contract Template</h1>
-          <table className="pull-right">
-            <tbody>
-              <tr>
-                <td style={{width: 300, paddingRight: 10}}><LoadTemplate /></td>
-                <SaveTemplate />{/* SaveTemplate returns a <td> element */}
-              </tr>
-            </tbody>
-          </table>
+          <ul className="panel-heading-btns pull-right">
+            <li><LoadTemplate /></li>
+            <li><SaveTemplate /></li>
+          </ul>
         </div>
         <Ace source={source} />
         { compiled && compiled.error !== "" ? <ErrorAlert errorMessage={compiled.error} /> : <Opcodes />}
