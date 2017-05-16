@@ -9,13 +9,14 @@ const mapStateToProps = (state) => {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  handleClick() {
+  handleClick(e) {
+    e.preventDefault()
     dispatch(seed())
   }
 })
 
 const Seed = ({ handleClick, disable }) => {
-  let jsx = (<li><a href="#" onClick={handleClick}>Seed</a></li>)
+  let jsx = (<li><a href="#" onClick={(e) => handleClick(e)}>Seed</a></li>)
   if (disable) {
     handleClick = () => {}
     jsx = (<li className='disabled'><a data-for="seedButtonTooltip" data-tip="Chain Core already has accounts and assets created." href="#" onClick={handleClick}>Seed</a></li>)
