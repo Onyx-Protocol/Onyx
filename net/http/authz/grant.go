@@ -25,7 +25,7 @@ func StoreGrant(ctx context.Context, sdb *sinkdb.DB, grant Grant, grantPrefix st
 		return nil, errors.Wrap(err)
 	}
 
-	grants := grantList.GetGrants()
+	grants := grantList.Grants
 	for _, existing := range grants {
 		if EqualGrants(*existing, grant) {
 			// this grant already exists, return for idempotency
