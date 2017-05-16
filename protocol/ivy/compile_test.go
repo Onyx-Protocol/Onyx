@@ -3,11 +3,11 @@ package ivy
 import (
 	"encoding/hex"
 	"encoding/json"
-	"reflect"
 	"strings"
 	"testing"
 
 	"chain/protocol/vm"
+	"chain/testutil"
 )
 
 const trivialLock = `
@@ -115,6 +115,32 @@ contract PriceChanger(askAmount: Amount, askAsset: Asset, sellerKey: PublicKey, 
 }
 `
 
+const callOptionWithSettlement = `
+contract CallOptionWithSettlement(strikePrice: Amount,
+                    strikeCurrency: Asset,
+                    sellerProgram: Program,
+                    sellerKey: PublicKey,
+                    buyerKey: PublicKey,
+                    deadline: Time) locks underlying {
+  clause exercise(buyerSig: Signature) 
+                 requires payment: strikePrice of strikeCurrency {
+    verify before(deadline)
+    verify checkTxSig(buyerKey, buyerSig)
+    lock payment with sellerProgram
+    unlock underlying
+  }
+  clause expire() {
+    verify after(deadline)
+    lock underlying with sellerProgram
+  }
+  clause settle(sellerSig: Signature, buyerSig: Signature) {
+    verify checkTxSig(sellerKey, sellerSig)
+    verify checkTxSig(buyerKey, buyerSig)
+    unlock underlying
+  }
+}
+`
+
 func TestCompile(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -128,15 +154,11 @@ func TestCompile(t *testing.T) {
 				Name:    "TrivialLock",
 				Program: mustDecodeHex("51"),
 				Value:   "locked",
-				Params:  []ContractParam{},
 				Clauses: []ClauseInfo{{
 					Name: "trivialUnlock",
-					Args: []ClauseArg{},
 					Values: []ValueInfo{{
 						Name: "locked",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -160,8 +182,6 @@ func TestCompile(t *testing.T) {
 					Values: []ValueInfo{{
 						Name: "locked",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -188,8 +208,6 @@ func TestCompile(t *testing.T) {
 					Values: []ValueInfo{{
 						Name: "value",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 					HashCalls: []hashCall{{
 						HashType: "sha3",
 						Arg:      "pubKey",
@@ -227,8 +245,6 @@ func TestCompile(t *testing.T) {
 					Values: []ValueInfo{{
 						Name: "locked",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -245,13 +261,10 @@ func TestCompile(t *testing.T) {
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "relock",
-					Args: []ClauseArg{},
 					Values: []ValueInfo{{
 						Name:    "locked",
 						Program: "address",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -277,7 +290,6 @@ func TestCompile(t *testing.T) {
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "trade",
-					Args: []ClauseArg{},
 					Values: []ValueInfo{{
 						Name:    "payment",
 						Program: "sellerProgram",
@@ -286,8 +298,6 @@ func TestCompile(t *testing.T) {
 					}, {
 						Name: "offered",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}, {
 					Name: "cancel",
 					Args: []ClauseArg{{
@@ -298,8 +308,6 @@ func TestCompile(t *testing.T) {
 						Name:    "offered",
 						Program: "sellerProgram",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -330,8 +338,6 @@ func TestCompile(t *testing.T) {
 						Name:    "value",
 						Program: "recipient",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}, {
 					Name: "reject",
 					Args: []ClauseArg{{
@@ -342,8 +348,6 @@ func TestCompile(t *testing.T) {
 						Name:    "value",
 						Program: "sender",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -372,7 +376,6 @@ func TestCompile(t *testing.T) {
 				}},
 				Clauses: []ClauseInfo{{
 					Name: "repay",
-					Args: []ClauseArg{},
 					Values: []ValueInfo{
 						{
 							Name:    "payment",
@@ -385,11 +388,8 @@ func TestCompile(t *testing.T) {
 							Program: "borrower",
 						},
 					},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 				}, {
 					Name: "default",
-					Args: []ClauseArg{},
 					Values: []ValueInfo{
 						{
 							Name:    "collateral",
@@ -397,7 +397,6 @@ func TestCompile(t *testing.T) {
 						},
 					},
 					Mintimes: []string{"deadline"},
-					Maxtimes: []string{},
 				}},
 			},
 		},
@@ -421,12 +420,73 @@ func TestCompile(t *testing.T) {
 					Values: []ValueInfo{{
 						Name: "value",
 					}},
-					Mintimes: []string{},
-					Maxtimes: []string{},
 					HashCalls: []hashCall{{
 						HashType: "sha3",
 						Arg:      "string",
 						ArgType:  "String",
+					}},
+				}},
+			},
+		},
+		{
+			"CallOptionWithSettlement",
+			callOptionWithSettlement,
+			CompileResult{
+				Name:    "CallOptionWithSettlement",
+				Program: mustDecodeHex("567a76529c64390000006427000000557ac6a06971ae7cac6900007b537a51557ac16349000000557ac59f690000c3c251577ac1634900000075577a547aae7cac69557a547aae7cac"),
+				Value:   "underlying",
+				Params: []ContractParam{{
+					Name: "strikePrice",
+					Typ:  "Amount",
+				}, {
+					Name: "strikeCurrency",
+					Typ:  "Asset",
+				}, {
+					Name: "sellerProgram",
+					Typ:  "Program",
+				}, {
+					Name: "sellerKey",
+					Typ:  "PublicKey",
+				}, {
+					Name: "buyerKey",
+					Typ:  "PublicKey",
+				}, {
+					Name: "deadline",
+					Typ:  "Time",
+				}},
+				Clauses: []ClauseInfo{{
+					Name: "exercise",
+					Args: []ClauseArg{{
+						Name: "buyerSig",
+						Typ:  "Signature",
+					}},
+					Values: []ValueInfo{{
+						Name:    "payment",
+						Program: "sellerProgram",
+						Asset:   "strikeCurrency",
+						Amount:  "strikePrice",
+					}, {
+						Name: "underlying",
+					}},
+					Maxtimes: []string{"deadline"},
+				}, {
+					Name: "expire",
+					Values: []ValueInfo{{
+						Name:    "underlying",
+						Program: "sellerProgram",
+					}},
+					Mintimes: []string{"deadline"},
+				}, {
+					Name: "settle",
+					Args: []ClauseArg{{
+						Name: "sellerSig",
+						Typ:  "Signature",
+					}, {
+						Name: "buyerSig",
+						Typ:  "Signature",
+					}},
+					Values: []ValueInfo{{
+						Name: "underlying",
 					}},
 				}},
 			},
@@ -442,7 +502,7 @@ func TestCompile(t *testing.T) {
 			labels := got.Labels
 			got.Labels = nil // to make DeepEqual easier
 			gotProg, _ := vm.Disassemble(got.Program, labels)
-			if !reflect.DeepEqual(got, c.want) {
+			if !testutil.DeepEqual(got, c.want) {
 				wantProg, _ := vm.Disassemble(c.want.Program, labels)
 				gotJSON, _ := json.Marshal(got)
 				wantJSON, _ := json.Marshal(c.want)
