@@ -550,7 +550,7 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// wait before reading so we can perform a linerizable read of
+	// wait before reading so we can perform a linearizable read of
 	// the membership list.
 	err = sv.WaitRead(req.Context())
 	if err != nil {
