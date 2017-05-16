@@ -29,6 +29,7 @@ var (
 	pgdir    = dir + "/pg"
 	pgrun    = dir + "/pgrun" // for socket file
 	pglog    = dir + "/pglog" // for log file
+	chain    = first(os.Getenv("CHAIN"), home+"/go/src/chain")
 )
 
 var (
@@ -47,6 +48,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, *flagT)
 	defer cancel()
 
+	printInfo(ctx)
+
 	if s := pgbin(); s != "" {
 		must(os.Setenv("PATH", os.Getenv("PATH")+":"+s))
 	}
@@ -63,10 +66,7 @@ func main() {
 
 	// accumulate environment for the test process
 	var env []string
-
-	if os.Getenv("CHAIN") == "" {
-		env = append(env, "CHAIN="+home+"/go/src/chain")
-	}
+	env = append(env, "CHAIN="+chain)
 
 	setupDB(ctx, *flagL)
 	pgURL := "postgresql:///postgres?host=" + pgrun + "&port=" + pgport
@@ -93,6 +93,19 @@ func main() {
 		log.Printf("%s: %v", base, err)
 		os.Exit(1)
 	}
+}
+
+func printInfo(ctx context.Context) {
+	c := command(ctx, "git", "rev-parse", "HEAD")
+	c.Dir = chain
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	must(run(c))
+
+	c = command(ctx, "hostname")
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	must(run(c))
 }
 
 func setupDB(ctx context.Context, logMinDur time.Duration) {
@@ -214,4 +227,13 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func first(s ...string) string {
+	for _, s := range s {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }
