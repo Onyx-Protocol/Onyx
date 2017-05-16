@@ -172,7 +172,7 @@ function EmptyCoreAlertUnconnected({ handleClick, balanceMap }) {
   if (Object.keys(balanceMap).length === 0) {
     return (
       <div style={{width: '300px'}}className="alert alert-warning" role="alert">
-        <a style={{color: 'inherit'}} href='#' onClick={handleClick}>Seed Chain Core</a> w/ Accounts & Assets
+        <a style={{color: 'inherit'}} className="alert-link" href='#' onClick={handleClick}>Seed Chain Core</a> w/ Accounts & Assets
       </div>
     )
   }
