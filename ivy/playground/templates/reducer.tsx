@@ -1,7 +1,6 @@
 // ivy imports
 import { TemplateState, CompiledTemplate } from './types'
 import { CREATE_CONTRACT, UPDATE_INPUT } from '../contracts/actions'
-import { generateInputMap } from '../contracts/selectors'
 import { InputMap } from '../inputs/types'
 
 // internal imports
