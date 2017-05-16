@@ -139,16 +139,38 @@ Click the Save button to save the `TimedPayment` contract template.
 
 ## Locking value in a contract
 
+Let’s create a transaction that uses `TimedPayment` to lock up some blockchain value. We’ll then see how a later transaction can unlock that value.
+
+First, make sure you’ve created and saved the `TimedPayment` contract template as described in the previous section.
+
+Now take a look at the Value to Lock section. This is where we specify how to _fund_ the contract: the source, amount, and type of value to lock up.
+
+In a new Ivy Playground you’ll see a button [xxx it’s actually a link, can we make it a button?] labeled “Seed Chain Core.” This defines some dummy accounts and asset types that you can use in the playground, and issues units of those assets to the accounts. Click “Seed Chain Core.”
+
+Now that we have some accounts defined, and those accounts have balances we can use, let’s fund an instance of the `TimedPayment` contract. Supposing that Alice wants to send a timed payment of 10 pieces of gold to Bob:
+
+- Choose Alice’s account as the source of the contract’s value
+- Choose Gold as the asset type
+- Choose 10 as the amount
+
+In the next section, we must choose arguments for each of the parameters required by `TimedPayment`:
+
+- Choose Bob’s account as the destination of the payment (the Ivy Playground will use a public key from that account)
+- Choose a time in the future as the deadline
+- Choose Alice’s account as the sender of the payment
+
+[xxx image]
+
+Once the value and all the arguments are specified, the “Lock Value” button is enabled, indicating we’re ready to create a transaction. Click the Lock Value button.
+
+You should see a page listing transactions created in the Ivy Playground. The `TimedPayment` transaction should be at the top of the `Locked Value` list. [xxx image]
+
+This transaction is published on your Chain blockchain. You can inspect it in the Chain Core dashboard by clicking its alphanumeric identifier.
+
+## Unlocking contract value
 
 
 
-Choose a contract template
-
-Choose the value
-
-Provide contract arguments
-
-Submit and switch to dashboard to see the transaction
 
 Spend Value
 
