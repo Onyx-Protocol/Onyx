@@ -1,5 +1,6 @@
 // external imports
 import * as React from 'react'
+import { connect } from 'react-redux'
 import { Link } from 'react-router-dom'
 import ReactTooltip from 'react-tooltip'
 
@@ -12,7 +13,18 @@ import Seed from './seed'
 
 const logo = require('../../static/images/logo.png')
 
-export default function Navbar() {
+const mapStateToProps = (state) => {
+  const routing = state.routing
+  const pathname = routing.location.pathname.split("/")
+  if (pathname[1] === "ivy") {
+    pathname.shift()
+  }
+  return {
+    path: pathname[1]
+  }
+}
+
+const Navbar = (props: { path: string }) => {
   return (
     <nav className="navbar navbar-inverse navbar-static-top navbar-fixed-top">
       <div className="container fixedcontainer">
@@ -23,8 +35,8 @@ export default function Navbar() {
         </div>
         <ReactTooltip id="seedButtonTooltip" place="bottom" type="error" effect="solid"/>
         <ul className="nav navbar-nav navbar-right">
-          <li><Link to={prefixRoute('/')}>Lock Value</Link></li>
-          <li><Link to={prefixRoute('/unlock')}>Unlock Value</Link></li>
+          <li className={props.path === 'unlock' ? '' : 'active'} ><Link to={prefixRoute('/')}>Lock Value</Link></li>
+          <li className={props.path === 'unlock' ? 'active' : ''} ><Link to={prefixRoute('/unlock')}>Unlock Value</Link></li>
           <li className="divider-vertical"></li>
           <li><a href="https://chain.com/docs" target="_blank">Docs</a></li>
           <li className="dropdown">
@@ -40,3 +52,7 @@ export default function Navbar() {
     </nav>
   )
 }
+
+export default connect(
+  mapStateToProps
+)(Navbar)
