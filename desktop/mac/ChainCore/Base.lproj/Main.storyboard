@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="11542" systemVersion="16B2657" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="12120" systemVersion="16E195" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="11542"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="12120"/>
         <capability name="box content view" minToolsVersion="7.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
         <capability name="system font weights other than Regular or Bold" minToolsVersion="7.0"/>
@@ -67,7 +67,7 @@
                                     <rect key="frame" x="0.0" y="0.0" width="830" height="530"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="kY5-dp-mdH">
+                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" setsMaxLayoutWidthAtFirstLayout="YES" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kY5-dp-mdH">
                                             <rect key="frame" x="71" y="303" width="691" height="27"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="DEVELOPER EDITION" id="yhd-WS-7y1">
                                                 <font key="font" metaFont="systemSemibold" size="22"/>
@@ -114,7 +114,7 @@
                                             <color key="borderColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                             <color key="fillColor" red="0.0" green="0.0" blue="0.0" alpha="0.02" colorSpace="custom" customColorSpace="sRGB"/>
                                         </box>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="mwY-Ai-dU9">
+                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="mwY-Ai-dU9">
                                             <rect key="frame" x="68" y="79" width="694" height="19"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Version 1.0" id="CHW-G4-t7U">
                                                 <font key="font" metaFont="systemMedium" size="16"/>
@@ -122,17 +122,27 @@
                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
                                         </textField>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="khG-ok-k4k">
+                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" setsMaxLayoutWidthAtFirstLayout="YES" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="khG-ok-k4k">
                                             <rect key="frame" x="68" y="234" width="694" height="72"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="CHAIN CORE" id="7rc-K6-zvZ">
                                                 <font key="font" metaFont="systemBold" size="60"/>
-                                                <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="textColor" red="0.12549019607843137" green="0.14509803921568626" blue="0.1764705882352941" alpha="1" colorSpace="calibratedRGB"/>
+                                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" setsMaxLayoutWidthAtFirstLayout="YES" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="U10-Ea-sCq">
+                                            <rect key="frame" x="71" y="205" width="691" height="27"/>
+                                            <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="qualifier string" id="EEV-Vm-VkL">
+                                                <font key="font" metaFont="systemSemibold" size="22"/>
+                                                <color key="textColor" red="0.97647058823529409" green="0.14901960784313725" blue="0.44705882352941173" alpha="1" colorSpace="calibratedRGB"/>
                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
                                         </textField>
                                     </subviews>
                                     <constraints>
                                         <constraint firstItem="khG-ok-k4k" firstAttribute="top" secondItem="kY5-dp-mdH" secondAttribute="bottom" constant="-3" id="0FY-Dd-yVa"/>
+                                        <constraint firstItem="U10-Ea-sCq" firstAttribute="leading" secondItem="khG-ok-k4k" secondAttribute="leading" constant="3" id="0JO-0i-ave"/>
+                                        <constraint firstItem="U10-Ea-sCq" firstAttribute="top" secondItem="khG-ok-k4k" secondAttribute="bottom" constant="2" id="1Gs-Dj-2iH"/>
                                         <constraint firstItem="5Ws-vV-bXb" firstAttribute="leading" secondItem="alK-ks-W2p" secondAttribute="leading" constant="70" id="3ny-Me-Bg1"/>
                                         <constraint firstItem="mwY-Ai-dU9" firstAttribute="leading" secondItem="Sig-JA-WDH" secondAttribute="leading" id="5tN-6D-vnT"/>
                                         <constraint firstItem="zN5-fh-btK" firstAttribute="leading" secondItem="khG-ok-k4k" secondAttribute="leading" id="6NN-yE-Jw7"/>
@@ -141,6 +151,7 @@
                                         <constraint firstItem="mwY-Ai-dU9" firstAttribute="trailing" secondItem="Sig-JA-WDH" secondAttribute="trailing" id="Okb-f4-eM2"/>
                                         <constraint firstItem="kY5-dp-mdH" firstAttribute="leading" secondItem="5Ws-vV-bXb" secondAttribute="leading" constant="3" id="Zrw-qS-ntW"/>
                                         <constraint firstItem="mwY-Ai-dU9" firstAttribute="top" secondItem="Sig-JA-WDH" secondAttribute="bottom" constant="33" id="bD1-kX-z0s"/>
+                                        <constraint firstItem="U10-Ea-sCq" firstAttribute="trailing" secondItem="khG-ok-k4k" secondAttribute="trailing" id="coT-NI-BBu"/>
                                         <constraint firstItem="5Ws-vV-bXb" firstAttribute="top" secondItem="alK-ks-W2p" secondAttribute="top" constant="64" id="dFa-R6-Ens"/>
                                         <constraint firstAttribute="trailing" secondItem="kY5-dp-mdH" secondAttribute="trailing" constant="70" id="rNS-PO-zQ0"/>
                                         <constraint firstItem="khG-ok-k4k" firstAttribute="leading" secondItem="kY5-dp-mdH" secondAttribute="leading" constant="-3" id="tYK-ow-H2P"/>
@@ -170,6 +181,7 @@
                         <outlet property="preloadView" destination="GLb-Av-wjx" id="h6x-eM-lF9"/>
                         <outlet property="progressBarConstraint" destination="HHT-fr-liG" id="3Qk-qF-WkD"/>
                         <outlet property="progressTrackView" destination="zN5-fh-btK" id="dz7-um-kQc"/>
+                        <outlet property="qualifierLabel" destination="U10-Ea-sCq" id="m4o-UE-swa"/>
                         <outlet property="statusLabel" destination="mwY-Ai-dU9" id="Zp9-7T-enN"/>
                         <outlet property="subtitleLabel" destination="kY5-dp-mdH" id="2B9-9q-wFb"/>
                         <outlet property="titleLabel" destination="khG-ok-k4k" id="bse-sM-TBo"/>

@@ -26,6 +26,8 @@
 	<string>$(APP_VERSION)</string>
 	<key>ChainCoreEdition</key>
 	<string>$(CHAIN_CORE_EDITION)</string>
+	<key>ChainCoreQualifier</key>
+	<string>$(CHAIN_CORE_QUALIFIER)</string>
 	<key>ChainDatabaseVersion</key>
 	<string>$(DB_VERSION)</string>
 	<key>LSMinimumSystemVersion</key>

@@ -8,6 +8,7 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
     @IBOutlet weak var iconView: NSImageView!
     @IBOutlet weak var titleLabel: NSTextField!
     @IBOutlet weak var subtitleLabel: NSTextField!
+    @IBOutlet weak var qualifierLabel: NSTextField!
     @IBOutlet weak var statusLabel: NSTextField!
 
     @IBOutlet weak var webViewOld: WebView!
@@ -35,8 +36,10 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         progressBarConstraint.constant = 1.0
 
         self.subtitleLabel.stringValue = editionSubtitle()
+        self.qualifierLabel.stringValue = qualifierSubtitle()
 
         self.subtitleLabel.font = NSFont(name: "Nitti-Bold", size: 22)
+        self.qualifierLabel.font = NSFont(name: "Nitti-Medium", size: 22)
         self.titleLabel.font    = NSFont(name: "NittiGrotesk-Bold", size: 60)
         self.statusLabel.font   = NSFont(name: "NittiGrotesk-Medium", size: 16)
 
@@ -86,6 +89,11 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
     func editionSubtitle() -> String {
         // "Developer Edition" by default
         return Bundle.main.infoDictionary!["ChainCoreEdition"] as? String ?? ""
+    }
+
+    func qualifierSubtitle() -> String {
+        // "" by default
+        return Bundle.main.infoDictionary!["ChainCoreQualifier"] as? String ?? ""
     }
 
     func doLoadModernDashboard() {
