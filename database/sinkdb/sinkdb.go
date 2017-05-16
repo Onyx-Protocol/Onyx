@@ -7,8 +7,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"chain/database/raft"
 	"chain/database/sinkdb/internal/sinkpb"
+	"chain/net/raft"
 )
 
 // Open initializes the key-value store and returns a database handle.
