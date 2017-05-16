@@ -395,10 +395,15 @@ section h4 {
   border-radius: 0 0 2px 2px;
 }
 
-.ace_type, .ace_storage {
-  color: #00BFAA !important;
+.ace_keyword {
+  color: #fd2c65 !important;
+}
+.ace_type, 
+.ace_storage {
+  color: #00D6BF !important;
+  font-style: normal !important;
 }
 
 .ace_function, .ace_variable, .ace_language {
-  color: #BFD472 !important;
+  color: #FACE5B !important;
 }
