@@ -16,6 +16,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txfeed"
 	"chain/database/pg"
+	"chain/database/sinkdb"
 	"chain/errors"
 	"chain/net/http/authz"
 	"chain/net/http/httperror"
@@ -28,6 +29,8 @@ func isTemporary(info httperror.Info, err error) bool {
 	case "CH000": // internal server error
 		return true
 	case "CH001": // request timed out
+		return true
+	case "CH012": // conflict
 		return true
 	case "CH761": // outputs currently reserved
 		return true
@@ -63,6 +66,7 @@ var errorFormatter = httperror.Formatter{
 		errNotAuthenticated:        {401, "CH009", "Request could not be authenticated"},
 		txbuilder.ErrMissingFields: {400, "CH010", "One or more fields are missing"},
 		authz.ErrNotAuthorized:     {403, "CH011", "Request is unauthorized"},
+		sinkdb.ErrConflict:         {409, "CH012", "Database transaction conflict; retry"},
 		asset.ErrDuplicateAlias:    {400, "CH050", "Alias already exists"},
 		account.ErrDuplicateAlias:  {400, "CH050", "Alias already exists"},
 		txfeed.ErrDuplicateAlias:   {400, "CH050", "Alias already exists"},

@@ -86,22 +86,22 @@ func (s *state) Snapshot() ([]byte, uint64, error) {
 
 // Apply applies a raft log entry payload to s. For conditional operations, it
 // returns whether the condition was satisfied.
-func (s *state) Apply(data []byte, index uint64) (satisfied bool, err error) {
+func (s *state) Apply(data []byte, index uint64) (satisfied bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if index < s.appliedIndex {
-		return false, errors.New("entry already applied")
+		panic(errors.New("entry already applied"))
 	}
 	instr := &sinkpb.Instruction{}
-	err = proto.Unmarshal(data, instr)
+	err := proto.Unmarshal(data, instr)
 	if err != nil {
 		// An error here indicates a malformed update
 		// was written to the raft log. We do version
 		// negotiation in the transport layer, so this
 		// should be impossible; by this point, we are
 		// all speaking the same version.
-		return false, errors.Wrap(err)
+		panic(err)
 	}
 
 	s.appliedIndex = index
@@ -114,24 +114,24 @@ func (s *state) Apply(data []byte, index uint64) (satisfied bool, err error) {
 			fallthrough
 		case sinkpb.Cond_KEY_EXISTS:
 			if _, ok := s.state[cond.Key]; ok != y {
-				return false, nil
+				return false
 			}
 		case sinkpb.Cond_NOT_VALUE_EQUAL:
 			y = false
 			fallthrough
 		case sinkpb.Cond_VALUE_EQUAL:
 			if ok := bytes.Equal(s.state[cond.Key], cond.Value); ok != y {
-				return false, nil
+				return false
 			}
 		case sinkpb.Cond_NOT_INDEX_EQUAL:
 			y = false
 			fallthrough
 		case sinkpb.Cond_INDEX_EQUAL:
 			if ok := (s.version[cond.Key] == cond.Index); ok != y {
-				return false, nil
+				return false
 			}
 		default:
-			return false, errors.New("unknown condition type")
+			panic(errors.New("unknown condition type"))
 		}
 	}
 	for _, op := range instr.Operations {
@@ -143,11 +143,10 @@ func (s *state) Apply(data []byte, index uint64) (satisfied bool, err error) {
 			delete(s.state, op.Key)
 			delete(s.version, op.Key)
 		default:
-			return false, errors.New("unknown operation type")
+			panic(errors.New("unknown operation type"))
 		}
 	}
-
-	return true, nil
+	return true
 }
 
 // get performs a provisional read operation.

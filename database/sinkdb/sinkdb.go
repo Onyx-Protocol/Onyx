@@ -3,6 +3,7 @@ package sinkdb
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
@@ -10,6 +11,10 @@ import (
 	"chain/database/sinkdb/internal/sinkpb"
 	"chain/net/raft"
 )
+
+// ErrConflict is returned by Exec when an instruction was
+// not completed because its preconditions were not met.
+var ErrConflict = errors.New("transaction conflict")
 
 // Open initializes the key-value store and returns a database handle.
 func Open(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*DB, error) {
@@ -43,7 +48,14 @@ func (db *DB) Exec(ctx context.Context, ops ...Op) error {
 	if err != nil {
 		return err
 	}
-	return db.raft.Exec(ctx, encoded)
+	satisfied, err := db.raft.Exec(ctx, encoded)
+	if err != nil {
+		return err
+	}
+	if !satisfied {
+		return ErrConflict
+	}
+	return nil
 }
 
 // Get performs a linearizable read of the provided key. The

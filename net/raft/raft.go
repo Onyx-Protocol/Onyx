@@ -30,8 +30,6 @@ import (
 	"chain/log"
 )
 
-var ErrUnsatisfied = errors.New("precondition not satisfied")
-
 // TODO(kr): do we need a "client" mode?
 // So we can have many coreds without all of them
 // having to be active raft nodes.
@@ -91,7 +89,7 @@ type Service struct {
 
 type State interface {
 	AppliedIndex() uint64
-	Apply(data []byte, index uint64) (satisfied bool, err error)
+	Apply(data []byte, index uint64) (satisfied bool)
 	Snapshot() (data []byte, index uint64, err error)
 	RestoreSnapshot(data []byte, index uint64) error
 	SetPeerAddr(id uint64, addr string)
@@ -381,17 +379,17 @@ func runTicks(rn raft.Node) {
 
 // Exec proposes the provided instruction and waits for it to be
 // satisfied.
-func (sv *Service) Exec(ctx context.Context, instruction []byte) error {
+func (sv *Service) Exec(ctx context.Context, instruction []byte) (satisfied bool, err error) {
 	prop := proposal{Wctx: randID(), Instruction: instruction}
 	data, err := json.Marshal(prop)
 	if err != nil {
-		return errors.Wrap(err)
+		return satisfied, errors.Wrap(err)
 	}
 	req := wctxReq{wctx: prop.Wctx, satisfied: make(chan bool, 1)}
 	select {
 	case sv.wctxReq <- req:
 	case <-sv.donec:
-		return errors.New("raft shutdown")
+		return satisfied, errors.New("raft shutdown")
 	}
 	err = sv.raftNode.Propose(ctx, data)
 	if err != nil {
@@ -399,37 +397,38 @@ func (sv *Service) Exec(ctx context.Context, instruction []byte) error {
 		case sv.wctxReq <- wctxReq{wctx: prop.Wctx}:
 		case <-sv.donec:
 		}
-		return errors.Wrap(err)
+		return satisfied, errors.Wrap(err)
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) //TODO(tessr): realistic timeout
 	defer cancel()
 
 	select {
 	case ok := <-req.satisfied:
-		if !ok {
-			return ErrUnsatisfied
-		}
-		return nil
+		return ok, nil
 	case <-ctx.Done():
-		return ctx.Err()
+		return satisfied, ctx.Err()
 	case <-sv.donec:
-		return errors.New("raft shutdown")
+		return satisfied, errors.New("raft shutdown")
 	}
 }
 
 func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 	// lock state via mutex to pull nextID val, then call increment
-	err := ErrUnsatisfied
+	var err error
+	var satisfied bool
 	var nextID, index uint64
-	for err == ErrUnsatisfied {
+	for !satisfied {
 		sv.stateMu.Lock()
 		nextID, index = sv.state.NextNodeID()
 		log.Printf(ctx, "raft: attempting to allocate nodeID %d at version %d", nextID, index)
 		sv.stateMu.Unlock()
 		b := sv.state.IncrementNextNodeID(nextID, index)
-		err = sv.Exec(ctx, b)
+		satisfied, err = sv.Exec(ctx, b)
+		if err != nil {
+			return 0, err
+		}
 	}
-	return nextID, err //caller should check for error b/c value of nextID is untrustworthy in that case
+	return nextID, nil
 }
 
 // WaitRead waits for a linearizable read. Upon successful return,
@@ -480,9 +479,13 @@ func (sv *Service) waitRead(ctx context.Context) error {
 	go func() {
 		select {
 		case <-time.After(dummyWriteTimeout):
-			err := sv.Exec(ctx, sv.state.EmptyWrite())
+			satisfied, err := sv.Exec(ctx, sv.state.EmptyWrite())
 			if err != nil {
 				return // ok to ignore this error, it will retry
+			}
+			if !satisfied {
+				err = errors.New("empty write unsatisfied")
+				return
 			}
 		case <-cancelDummy:
 			// We're done waiting.
@@ -727,10 +730,7 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 		if err != nil {
 			panic(err)
 		}
-		satisfied, err := sv.state.Apply(p.Instruction, ent.Index)
-		if err != nil {
-			panic(err)
-		}
+		satisfied := sv.state.Apply(p.Instruction, ent.Index)
 		// send 'satisfied' over channel to caller
 		if c := writers[string(p.Wctx)]; c != nil {
 			c <- satisfied
