@@ -56,7 +56,7 @@ func TestAllowedMember(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = sdb.AddAllowedMember(context.Background(), "1234")
+	err = sdb.Exec(context.Background(), AddAllowedMember("1234"))
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}

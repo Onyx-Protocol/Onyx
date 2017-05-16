@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"chain/database/sinkdb"
 	"chain/errors"
 	"chain/net/http/authz"
 )
@@ -16,7 +17,8 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 	if x.Addr == "" {
 		return errMissingAddr
 	}
-	err := a.sdb.AddAllowedMember(ctx, x.Addr)
+	// TODO(kr): create this and the below grant together atomically
+	err := a.sdb.Exec(ctx, sinkdb.AddAllowedMember(x.Addr))
 	if err != nil {
 		return errors.Wrap(err)
 	}
