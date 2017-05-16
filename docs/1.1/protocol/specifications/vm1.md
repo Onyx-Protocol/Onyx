@@ -1146,7 +1146,7 @@ Code  | Stack Diagram                                        | Cost
         3. if the destination is a retirement:
             * `version` equals 1,
             * `prog` begins with a [FAIL](#fail) instruction.
-            * if transaction version is 1 or higher:
+            * if transaction version is 2 or higher:
                 * upgrade program’s VM version is 0.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
