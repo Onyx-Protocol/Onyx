@@ -419,17 +419,6 @@ section h4 {
 
 .ace_editor {
   border-radius: 2px;
-  -webkit-font-smoothing: antialiased;
-}
-
-.ace_line,
-.ace_gutter-cell {
-  /*height: 23px !important;*/
-}
-
-.ace_editor {
-  /*min-height: 345px !important;*/
-  /*max-height: 345px !important;*/
 }
 
 .ace-monokai {
@@ -448,11 +437,11 @@ section h4 {
 }
 
 .ace_keyword {
-  color: #ff3869 !important;
+  color: #F92672 !important;
 }
 .ace_type,
 .ace_storage {
-  color: #00D6BF !important;
+  color: #48BFB2 !important;
   font-style: normal !important;
 }
 
