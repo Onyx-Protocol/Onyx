@@ -52,17 +52,17 @@ export const ESCROWED_TRANSFER = `contract EscrowedTransfer(agent: PublicKey,
   }
 }`
 
-export const COLLATERALIZED_LOAN = `contract CollateralizedLoan(assetLoaned: Asset,
-                            amountLoaned: Amount,
-                            deadline: Time,
-                            lender: Program,
-                            borrower: Program) locks collateral {
+export const LOAN_COLLATERAL =`contract LoanCollateral(assetLoaned: Asset,
+                        amountLoaned: Amount,
+                        repaymentDue: Time,
+                        lender: Program,
+                        borrower: Program) locks collateral {
   clause repay() requires payment: amountLoaned of assetLoaned {
     lock payment with lender
     lock collateral with borrower
   }
   clause default() {
-    verify after(deadline)
+    verify after(repaymentDue)
     lock collateral with lender
   }
 }`
@@ -87,7 +87,7 @@ export const INITIAL_SOURCE_MAP = {
   LockWithMultiSig: LOCK_WITH_MULTISIG,
   TradeOffer: TRADE_OFFER,
   EscrowedTransfer: ESCROWED_TRANSFER,
-  CollateralizedLoan: COLLATERALIZED_LOAN,
+  LoanCollateral: LOAN_COLLATERAL,
   RevealPreimage: REVEAL_PREIMAGE,
   RevealFactors: REVEAL_FACTORS,
 }
@@ -98,6 +98,6 @@ export const INITIAL_ID_LIST = [
   "LockWithMultiSig",
   "TradeOffer",
   "EscrowedTransfer",
-  "CollateralizedLoan",
+  "LoanCollateral",
   "RevealPreimage",
 ]
