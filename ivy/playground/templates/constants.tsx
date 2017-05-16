@@ -81,6 +81,24 @@ export const REVEAL_FACTORS = `contract RevealFactors(product: Integer) locks va
   }
 }`
 
+export const CALL_OPTION = `contract CallOption(strikePrice: Amount,
+                    strikeCurrency: Asset,
+                    sellerProgram: Program,
+                    buyerKey: PublicKey,
+                    deadline: Time) locks offered {
+  clause exercise(buyerSig: Signature) 
+                 requires payment: strikePrice of strikeCurrency {
+    verify before(deadline)
+    verify checkTxSig(buyerKey, buyerSig)
+    lock payment with sellerProgram
+    unlock offered
+  }
+  clause cancel() {
+    verify after(deadline)
+    lock offered with sellerProgram
+  }
+}`
+
 export const INITIAL_SOURCE_MAP = {
   LockWithPublicKey: LOCK_WITH_PUBLIC_KEY,
   LockWithPublicKeyHash: LOCK_WITH_PUBLIC_KEY_HASH,
@@ -90,6 +108,7 @@ export const INITIAL_SOURCE_MAP = {
   LoanCollateral: LOAN_COLLATERAL,
   RevealPreimage: REVEAL_PREIMAGE,
   RevealFactors: REVEAL_FACTORS,
+  CallOption: CALL_OPTION
 }
 
 export const INITIAL_ID_LIST = [
@@ -99,5 +118,6 @@ export const INITIAL_ID_LIST = [
   "TradeOffer",
   "Escrow",
   "LoanCollateral",
+  "CallOption",
   "RevealPreimage",
 ]
