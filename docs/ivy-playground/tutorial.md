@@ -40,7 +40,7 @@ You may edit the text of the contract, but first let’s look around at the othe
 
 Beneath the contract editor is a box labeled “Compiled.” It shows the _opcodes_ that Chain Core uses as a compact internal representation of the contract. (This is explained below. [xxx actually explain it below])
 
-Above the contract editor are two buttons labeled “Load Template” and “Save.” The Save button lets you save contracts you create using the contract template editor. The Load Template button lets you load contracts you’ve previously saved, plus some prewritten samples we’ve provided, such as `LockWithPublicKey`. **Note** Contract templates are not saved permanently. They persist only as long as you leave the Ivy Playground open in your browser. [xxx is this right?]
+Above the contract editor are two buttons labeled “Load Template” and “Save.” The Save button lets you save contracts you create using the contract template editor. The Load Template button lets you load contracts you’ve previously saved, plus some prewritten samples we’ve provided, such as `LockWithPublicKey`.
 
 Beneath the contract editor and “Compiled” box are two boxes, labeled “Value to Lock” and “Contract Arguments.” These are for using the selected contract to create a transaction that locks up actual value. We’ll return to this in a moment.
 
