@@ -76,6 +76,7 @@ func ResetEverything(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 	}
 
 	// Delete all grants in sinkdb
+	// TODO(jackson): delete all of the policies in a single batch
 	for _, p := range core.Policies {
 		err = sdb.Exec(ctx, sinkdb.Delete(core.GrantPrefix+p))
 		if err != nil {
