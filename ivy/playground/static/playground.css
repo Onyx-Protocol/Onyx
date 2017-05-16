@@ -183,7 +183,6 @@ select:hover {
   min-width: 75px;
 }
 
-
 .btn-lg {
   font-size: 20px;
   padding: 8px 16px;
@@ -217,6 +216,24 @@ select:hover {
 .glyphicon-floppy-disk {
   top:3px;
   padding-right: 2px;
+}
+
+.alert {
+  border-radius: 2px;
+}
+
+.alert-warning {
+  background: #fff6e8;
+  box-shadow: none;
+}
+
+.alert a {
+  text-decoration: underline;
+}
+
+.alert a:hover {
+  text-decoration: none;
+  opacity: .9
 }
 
 pre {
@@ -403,7 +420,7 @@ section h4 {
 .ace_keyword {
   color: #ff3869 !important;
 }
-.ace_type, 
+.ace_type,
 .ace_storage {
   color: #00D6BF !important;
   font-style: normal !important;
