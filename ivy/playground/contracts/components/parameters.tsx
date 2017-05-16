@@ -120,8 +120,8 @@ function GenerateHashWidget(props: { id: string, input: GenerateHashInput, handl
 }
 
 function PublicKeyWidget(props: { input: PublicKeyInput, handleChange: (e)=>undefined }) {
-  let options = [{label: "Generate Pubkey", value: "accountInput"},
-                 {label: "Provide Pubkey", value: "provideStringInput"}]
+  let options = [{label: "Generate Public Key", value: "accountInput"},
+                 {label: "Provide Public Key", value: "provideStringInput"}]
   let handleChange = (s: string) => undefined
   return (
     <div>
