@@ -61,14 +61,14 @@ const (
 //
 // Prefer NewTx whenever the caller can do its
 // work in exactly one transaction.
-func NewDB(t testing.TB, schemaPath string) (url string, db *sql.DB) {
+func NewDB(f Fataler, schemaPath string) (url string, db *sql.DB) {
 	ctx := context.Background()
 	if os.Getenv("CHAIN") == "" {
-		t.Log("warning: $CHAIN not set; probably can't find schema")
+		log.Println("warning: $CHAIN not set; probably can't find schema")
 	}
 	url, db, err := open(ctx, DBURL, schemaPath)
 	if err != nil {
-		t.Fatal(err)
+		f.Fatal(err)
 	}
 	runtime.SetFinalizer(db, (*sql.DB).Close)
 	return url, db
@@ -84,20 +84,20 @@ func NewDB(t testing.TB, schemaPath string) (url string, db *sql.DB) {
 // The caller should not commit the returned Tx; doing so
 // will prevent the underlying database from being reused
 // and so cause future calls to NewTx to be slower.
-func NewTx(t testing.TB) *sql.Tx {
+func NewTx(f Fataler) *sql.Tx {
 	runtime.GC() // give the finalizers a better chance to run
 	ctx := context.Background()
 	if os.Getenv("CHAIN") == "" {
-		t.Log("warning: $CHAIN not set; probably can't find schema")
+		log.Println("warning: $CHAIN not set; probably can't find schema")
 	}
 	db, err := getdb(ctx, DBURL, SchemaPath)
 	if err != nil {
-		t.Fatal(err)
+		f.Fatal(err)
 	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		db.Close()
-		t.Fatal(err)
+		f.Fatal(err)
 	}
 	// NOTE(kr): we do not set a finalizer on the DB.
 	// It is closed explicitly, if necessary, by finalizeTx.
@@ -253,4 +253,10 @@ func Exec(ctx context.Context, db pg.DB, t testing.TB, q string, args ...interfa
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+}
+
+// Fataler lets NewTx and NewDB signal immediate failure.
+// It is satisfied by *testing.T, *testing.B, and *log.Logger.
+type Fataler interface {
+	Fatal(...interface{})
 }
