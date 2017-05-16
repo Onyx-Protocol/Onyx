@@ -59,7 +59,7 @@ After this introduction comes one or more _clauses_. Each clause describes one p
 - in `trade`, anyone who supplies the correct `payment` to the seller unlocks the value in `offered`
 - in `cancel`, the seller supplies his or her signature to reclaim the value in `offered`
 
-It’s worth revisiting the steps involved in using something like the `TradeOffer` contract. One transaction uses it to lock up some value:
+Let’s take a look at the steps involved in using something like the `TradeOffer` contract. One transaction uses it to lock up some value:
 
 - Alice has 100 euros and wants 110 US dollars
 - She creates a program by setting the parameters of `TradeOffer` as follows:
@@ -109,7 +109,7 @@ Let’s try creating and saving a new contract template. It’ll be just like `L
 1. Load the `LockWithPublicKey` template with the Load Template button
 2. Change the beginning from `contract LockWithPublicKey` to `contract TimedPayment`
 3. Add a `deadline` to the list of contract parameters
-4. The `spend` clause should only be usable _before_ the deadline, so add the line `verify before(deadline)` to the `spend` clause
+4. We want the `spend` clause to be usable only _before_ the deadline, so add the line `verify before(deadline)` to the `spend` clause
 
 ![verify before(deadline)](verify_before_deadline.png)
 
@@ -143,13 +143,13 @@ There’s still an error: `sender` is undefined. [xxx the actual error message i
 
 Click the Save button to save the `TimedPayment` contract template.
 
-## Locking value in a contract
+## Locking value with a contract
 
 Let’s create a transaction that uses `TimedPayment` to lock up some blockchain value. We’ll then see how a later transaction can unlock that value.
 
 First, make sure you’ve created and saved the `TimedPayment` contract template as described in the previous section.
 
-Now take a look at the Value to Lock section. This is where we specify how to _fund_ the contract: the source, amount, and type of value to lock up.
+Now take a look at the Value to Lock section. This is where we specify the source, amount, and type of value for the contract.
 
 In a new Ivy Playground you’ll see a button [xxx it’s actually a link, can we make it a button?] labeled “Seed Chain Core.” This defines some dummy accounts and asset types that you can use in the playground, and issues units of those assets to the accounts. Click “Seed Chain Core.”
 
@@ -169,15 +169,15 @@ In the next section, we must choose arguments for each of the parameters require
 
 Once the value and all the arguments are specified, the “Lock Value” button is enabled, indicating we’re ready to create a transaction. Click the Lock Value button.
 
-You should see a page listing transactions created in the Ivy Playground. The `TimedPayment` transaction should be at the top of the `Locked Value` list.
+You’ll see a page listing contracts containing locked value. The `TimedPayment` contract should be at the top of the “Locked Value” list.
 
 ![locked transactions](locked_list.png)
 
-This transaction is published on your Chain blockchain. You can inspect it in the Chain Core dashboard by clicking its alphanumeric identifier.
+This contract is part of a transaction published on your Chain blockchain. You can inspect it in the Chain Core dashboard by clicking its alphanumeric identifier.
 
 ## Unlocking contract value
 
-If you’ve been following the steps in this tutorial, you should now have 10 units of gold locked in a `TimedPayment` contract visible at [http://localhost:1999/ivy/unlock](http://localhost:1999/ivy/unlock).
+If you’ve been following the steps in this tutorial, you should now have 10 units of gold locked with a `TimedPayment` contract visible at [http://localhost:1999/ivy/unlock](http://localhost:1999/ivy/unlock).
 
 Recall that `TimedPayment` offers two ways for a later transaction to unlock its value: before the deadline, the recipient can sign for it; after the deadline, the sender can repay it to him or herself.
 
@@ -199,11 +199,11 @@ So let’s try unlocking with `spend` instead. Select the `spend` clause, and se
 
 ![unlock ok](unlock_ok.png)
 
-Click Unlock Value. This takes you to the transaction-list view, where you can see that the `TimedPayment` contract is no longer in the “Locked Value” list but in the “History” list, since it has been unlocked. The History view includes two links to the Chain Core dashboard: one for the transaction creating the contract, where value was locked up; and one for the transaction where the value was unlocked.
+Click Unlock Value. This takes you to the list of value-locking contracts. You can see that the `TimedPayment` contract is no longer in the “Locked Value” list but in the “History” list, since it has been unlocked. The History view includes two links to the Chain Core dashboard: one for the transaction creating the contract, where value was locked up; and one for the transaction where the value was unlocked.
 
 ## Other contract examples
 
-Now that you have run through a complete example from end to end, look through the other predefined contracts in the Ivy Playground. The Ivy documentation [xxx link] will help you to understand how each one works, and how to write new contracts.
+Now that you have run through a complete example from end to end, look through the other predefined contracts in the Ivy Playground. [The Ivy documentation](docs) will help you to understand how each one works, and how to write new contracts.
 
 - `LockWithPublicKey` Our original simple-payment example, discussed above.
 
@@ -221,4 +221,4 @@ Now that you have run through a complete example from end to end, look through t
 
 - `RevealFactors` The value in this contract can be unlocked by anyone able to provide two integers that multiply to a given product.
 
-- `CallOption` A seller locks some value in a time-limited promise to sell to a specific buyer at a specific price. Before the deadline, the buyer may choose to exercise the option. After the deadline, the seller may reclaim the offered value.
+- `CallOption` A seller locks some value with a time-limited promise to sell to a specific buyer at a specific price. Before the deadline, the buyer may choose to exercise the option. After the deadline, the seller may reclaim the offered value.
