@@ -14,35 +14,37 @@ type Op struct {
 
 // IfNotExists encodes a conditional to make an instruction
 // successful only if the provided key does not exist.
-func IfNotExists(key string) (op Op) {
-	op.conds = append(op.conds, &sinkpb.Cond{
-		Type: sinkpb.Cond_NOT_KEY_EXISTS,
-		Key:  key,
-	})
-	return op
+func IfNotExists(key string) Op {
+	return Op{
+		conds: []*sinkpb.Cond{{
+			Type: sinkpb.Cond_NOT_KEY_EXISTS,
+			Key:  key,
+		}},
+	}
 }
 
 // Delete encodes a delete operation for key.
-func Delete(key string) (op Op) {
-	op.effects = append(op.effects, &sinkpb.Op{
-		Type: sinkpb.Op_DELETE,
-		Key:  key,
-	})
-	return op
+func Delete(key string) Op {
+	return Op{
+		effects: []*sinkpb.Op{{
+			Type: sinkpb.Op_DELETE,
+			Key:  key,
+		}},
+	}
 }
 
 // Set encodes a set operation setting key to value.
-func Set(key string, value proto.Message) (op Op) {
+func Set(key string, value proto.Message) Op {
 	encodedValue, err := proto.Marshal(value)
 	if err != nil {
-		op.err = err
-		return op
+		return Op{err: err}
 	}
 
-	op.effects = append(op.effects, &sinkpb.Op{
-		Type:  sinkpb.Op_SET,
-		Key:   key,
-		Value: encodedValue,
-	})
-	return op
+	return Op{
+		effects: []*sinkpb.Op{{
+			Type:  sinkpb.Op_SET,
+			Key:   key,
+			Value: encodedValue,
+		}},
+	}
 }
