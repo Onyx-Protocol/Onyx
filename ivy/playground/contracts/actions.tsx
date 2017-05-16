@@ -90,9 +90,6 @@ export const create = () => {
         throw 'unsupported argument type ' + (typeof param)
       })
       return client.ivy.compile({ contract: source, args: args })
-    }).catch(err => {
-      console.log(err)
-      dispatch(displayCreateError(err))
     })
 
     const promisedUtxo = promisedTemplate.then(template => {
@@ -108,9 +105,6 @@ export const create = () => {
       }
       const actions: Action[] = [spendFromAccount, controlWithReceiver]
       return createLockingTx(actions)
-    }).catch(err => {
-      console.log(err)
-      dispatch(displayCreateError(err))
     })
 
     Promise.all([promisedInputMap, promisedTemplate, promisedUtxo]).then(([inputMap, template, utxo]) => {
