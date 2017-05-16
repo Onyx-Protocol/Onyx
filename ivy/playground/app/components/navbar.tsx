@@ -14,14 +14,16 @@ import Seed from './seed'
 const logo = require('../../static/images/logo.png')
 
 const mapStateToProps = (state) => {
-  const routing = state.routing
-  const pathname = routing.location.pathname.split("/")
+  const location = state.routing.location
+  if (!location) {
+    return { path: 'lock' }
+  }
+
+  const pathname = location.pathname.split("/")
   if (pathname[1] === "ivy") {
     pathname.shift()
   }
-  return {
-    path: pathname[1]
-  }
+  return { path: pathname[1] }
 }
 
 const Navbar = (props: { path: string }) => {
