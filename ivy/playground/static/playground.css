@@ -317,6 +317,20 @@ code {
     border-right: 1px solid rgba(255,255,255,0.2);
 }
 
+.navbar-inverse .navbar-nav>.active>a,
+.navbar-inverse .navbar-nav>.active>a:focus,
+.navbar-inverse .navbar-nav>.active>a:hover,
+.navbar-inverse .navbar-nav>.open>a,
+.navbar-inverse .navbar-nav>.open>a:focus,
+.navbar-inverse .navbar-nav>.open>a:hover {
+  background: none;
+  box-shadow: none;
+}
+
+.dropdown-menu {
+  border-top: none;
+}
+
 section h4 {
   margin-top: 40px;
   margin-bottom: 20px;
