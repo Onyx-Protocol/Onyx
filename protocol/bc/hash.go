@@ -9,27 +9,46 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/crypto/sha3"
+
+	"chain/errors"
+	"chain/protocol/bc/internal"
 )
 
 // Hash represents a 256-bit hash.
+type Hash [32]byte
 
-var EmptyStringHash = NewHash(sha3.Sum256(nil))
+var EmptyStringHash Hash = sha3.Sum256(nil)
+
+func (m Hash) Marshal() ([]byte, error) {
+	var h internal.Hash
+	h.V0 = binary.BigEndian.Uint64(m[0:8])
+	h.V1 = binary.BigEndian.Uint64(m[8:16])
+	h.V2 = binary.BigEndian.Uint64(m[16:24])
+	h.V3 = binary.BigEndian.Uint64(m[24:32])
+	return proto.Marshal(&h)
+}
+
+func (m *Hash) Unmarshal(b []byte) error {
+	var h internal.Hash
+	err := proto.Unmarshal(b, &h)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	binary.BigEndian.PutUint64(m[0:8], h.V0)
+	binary.BigEndian.PutUint64(m[8:16], h.V1)
+	binary.BigEndian.PutUint64(m[16:24], h.V2)
+	binary.BigEndian.PutUint64(m[24:32], h.V3)
+	return nil
+}
 
 func NewHash(b32 [32]byte) (h Hash) {
-	h.V0 = binary.BigEndian.Uint64(b32[0:8])
-	h.V1 = binary.BigEndian.Uint64(b32[8:16])
-	h.V2 = binary.BigEndian.Uint64(b32[16:24])
-	h.V3 = binary.BigEndian.Uint64(b32[24:32])
-	return h
+	return Hash(b32)
 }
 
 func (h Hash) Byte32() (b32 [32]byte) {
-	binary.BigEndian.PutUint64(b32[0:8], h.V0)
-	binary.BigEndian.PutUint64(b32[8:16], h.V1)
-	binary.BigEndian.PutUint64(b32[16:24], h.V2)
-	binary.BigEndian.PutUint64(b32[24:32], h.V3)
-	return b32
+	return [32]byte(h)
 }
 
 // MarshalText satisfies the TextMarshaler interface.
