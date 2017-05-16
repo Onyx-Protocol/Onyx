@@ -4,6 +4,7 @@ import { createSelector } from 'reselect'
 // ivy imports
 import { AppState } from '../app/types'
 import { Input, InputMap } from '../inputs/types'
+import { parseError } from '../core'
 import { SpendFromAccount } from '../core/types'
 import { isValidInput, getData } from '../inputs/data'
 
@@ -14,13 +15,7 @@ export const getTemplateState = (state: AppState): TemplateState => state.templa
 
 export const getError = createSelector(
   getTemplateState,
-  state => {
-    const err = state.error
-    if (err === undefined) {
-      return ''
-    }
-    return err.message
-  }
+  state => parseError(state.error)
 )
 
 export const getSourceMap = createSelector(
