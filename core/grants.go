@@ -160,7 +160,7 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 	var grantList authz.GrantList
 	found, err := a.sdb.Get(ctx, GrantPrefix+x.Policy, &grantList)
 	if err != nil || !found {
-		return errors.Wrap(err)
+		return errors.Wrap(err) // if !found, errors.Wrap(err) is nil
 	}
 
 	var keep []*authz.Grant
