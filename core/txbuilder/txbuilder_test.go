@@ -134,7 +134,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 			WitnessComponents: []witnessComponent{
 				&SignatureWitness{
 					Quorum: 1,
-					Keys: []keyID{{
+					Keys: []KeyID{{
 						XPub:           pubkey,
 						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					}},
@@ -213,7 +213,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		WitnessComponents: []witnessComponent{
 			&SignatureWitness{
 				Quorum: 2,
-				Keys: []keyID{
+				Keys: []KeyID{
 					{
 						XPub:           pubkey1,
 						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},

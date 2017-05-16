@@ -17,9 +17,9 @@ func (si *SigningInstruction) AddWitnessKeys(xpubs []chainkd.XPub, path [][]byte
 		hexPath = append(hexPath, p)
 	}
 
-	keyIDs := make([]keyID, 0, len(xpubs))
+	keyIDs := make([]KeyID, 0, len(xpubs))
 	for _, xpub := range xpubs {
-		keyIDs = append(keyIDs, keyID{xpub, hexPath})
+		keyIDs = append(keyIDs, KeyID{xpub, hexPath})
 	}
 
 	sw := &SignatureWitness{
@@ -71,7 +71,7 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 			if err != nil {
 				return errors.Wrapf(err, "unmarshaling error on witness component %d, type data, input %s", i, wc)
 			}
-			si.WitnessComponents = append(si.WitnessComponents, dataWitness(d.Value))
+			si.WitnessComponents = append(si.WitnessComponents, DataWitness(d.Value))
 
 		case "signature":
 			var s SignatureWitness

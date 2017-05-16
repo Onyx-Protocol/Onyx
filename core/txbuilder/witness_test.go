@@ -53,10 +53,10 @@ func TestWitnessJSON(t *testing.T) {
 	si := &SigningInstruction{
 		Position: 17,
 		WitnessComponents: []witnessComponent{
-			dataWitness{1, 2, 3},
+			DataWitness{1, 2, 3},
 			&SignatureWitness{
 				Quorum: 4,
-				Keys: []keyID{{
+				Keys: []KeyID{{
 					XPub:           testutil.TestXPub,
 					DerivationPath: []chainjson.HexBytes{{5, 6, 7}},
 				}},
@@ -64,7 +64,7 @@ func TestWitnessJSON(t *testing.T) {
 			},
 			&RawTxSigWitness{
 				Quorum: 20,
-				Keys: []keyID{{
+				Keys: []KeyID{{
 					XPub:           testutil.TestXPub,
 					DerivationPath: []chainjson.HexBytes{{21, 22}},
 				}},
