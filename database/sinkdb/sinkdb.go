@@ -53,9 +53,8 @@ func (db *DB) Get(ctx context.Context, key string, v proto.Message) (found bool,
 	if err != nil {
 		return false, err
 	}
-	buf := db.state.get(key)
-	// TODO(jackson): propagate real key existence bool
-	if len(buf) == 0 {
+	buf, found := db.state.get(key)
+	if !found {
 		return false, err
 	}
 	return true, proto.Unmarshal(buf, v)
@@ -64,9 +63,8 @@ func (db *DB) Get(ctx context.Context, key string, v proto.Message) (found bool,
 // GetStale performs a non-linearizable read of the provided key.
 // The value may be stale. The read value is unmarshalled into v.
 func (db *DB) GetStale(key string, v proto.Message) (found bool, err error) {
-	buf := db.state.get(key) // read directly from state
-	// TODO(jackson): propagate real key existence bool
-	if len(buf) == 0 {
+	buf, found := db.state.get(key) // read directly from state
+	if !found {
 		return false, err
 	}
 	return true, proto.Unmarshal(buf, v)
