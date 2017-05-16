@@ -378,7 +378,8 @@ section h4 {
 /*React Component Overrides*/
 
 .__react_component_tooltip {
-  z-index: 9999 !important
+  z-index: 9999 !important;
+  font-size:17px !important;
 }
 
 #root {
