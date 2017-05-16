@@ -3,7 +3,7 @@ import { createSelector } from 'reselect'
 import { sha3_256 } from 'js-sha3'
 
 // ivy imports
-import { client, signer } from '../core'
+import { client, signer, parseError } from '../core'
 import { AppState } from '../app/types'
 import { CompiledTemplate } from '../templates/types'
 
@@ -456,13 +456,7 @@ export const getLockActions = createSelector(
 
 export const getError = createSelector(
   getState,
-  state => {
-    const err = state.error
-    if (err === undefined) {
-      return ''
-    }
-    return err.message
-  }
+  state => parseError(state.error)
 )
 
 export const generateInputMap = (compiled: CompiledTemplate): InputMap => {
