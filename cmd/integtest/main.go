@@ -28,10 +28,12 @@ var (
 	gobin    = dir + "/bin"
 	pgdir    = dir + "/pg"
 	pgrun    = dir + "/pgrun" // for socket file
+	pglog    = dir + "/pglog" // for log file
 )
 
 var (
 	flagT = flag.Duration("t", 15*time.Minute, "abort the test after the given duration")
+	flagL = flag.Duration("l", 0, "pg log_min_duration_statement (-1 to disable)")
 )
 
 func main() {
@@ -66,7 +68,7 @@ func main() {
 		env = append(env, "CHAIN="+home+"/go/src/chain")
 	}
 
-	setupDB(ctx)
+	setupDB(ctx, *flagL)
 	pgURL := "postgresql:///postgres?host=" + pgrun + "&port=" + pgport
 	env = append(env, "DB_URL_TEST="+pgURL) // for chain/database/pg/pgtest
 
@@ -93,7 +95,7 @@ func main() {
 	}
 }
 
-func setupDB(ctx context.Context) {
+func setupDB(ctx context.Context, logMinDur time.Duration) {
 	err := run(command(ctx, "initdb", "-D", pgdir))
 	if err, ok := err.(*exec.ExitError); ok {
 		os.Stderr.Write(err.Stderr)
@@ -103,10 +105,15 @@ func setupDB(ctx context.Context) {
 		panic("cmd failed")
 	}
 
+	must(os.MkdirAll(pgrun, 0700))
+	must(os.MkdirAll(pglog, 0700))
+
 	var buf bytes.Buffer
-	must(configTemplate.Execute(&buf, map[string]string{
+	must(configTemplate.Execute(&buf, map[string]interface{}{
 		"port":    pgport,
 		"sockdir": pgrun,
+		"logdir":  pglog,
+		"logdur":  int64(logMinDur / time.Millisecond),
 	}))
 	must(ioutil.WriteFile(pgdir+"/postgresql.conf", buf.Bytes(), 0600))
 
@@ -124,8 +131,6 @@ func setupDB(ctx context.Context) {
 		log.Printf("go: %v", err)
 		panic("cmd failed")
 	}
-
-	must(os.MkdirAll(pgrun, 0700))
 }
 
 func buildTest(ctx context.Context, pkg string) {

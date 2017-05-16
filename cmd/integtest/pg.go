@@ -43,6 +43,12 @@ lc_time = 'en_US.UTF-8'       # locale for time formatting
 
 # default configuration for text search
 default_text_search_config = 'pg_catalog.english'
+
+log_destination = 'csvlog'
+log_directory = '{{.logdir}}'
+log_filename = 'integtest-queries.log'
+log_file_mode = 0644
+log_min_duration_statement = {{.logdur}}
 `))
 
 var hbaTemplate = template.Must(template.New("pg_hba.conf").Parse(`
