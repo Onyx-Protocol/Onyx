@@ -49,7 +49,7 @@ func (db *DB) Exec(ctx context.Context, ops ...Op) error {
 // Get performs a linearizable read of the provided key. The
 // read value is unmarshalled into v.
 func (db *DB) Get(ctx context.Context, key string, v proto.Message) (found bool, err error) {
-	err = db.raft.RequestRead(ctx)
+	err = db.raft.WaitRead(ctx)
 	if err != nil {
 		return false, err
 	}

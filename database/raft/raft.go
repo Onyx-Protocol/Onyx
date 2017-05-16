@@ -432,13 +432,12 @@ func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 	return nextID, err //caller should check for error b/c value of nextID is untrustworthy in that case
 }
 
-// RequestRead requests a linearizable read. Upon successful return,
-// the caller is guaranteed that a read from the Service's state will
-// be linearizable; this is, if a Set happens before a Get, the Get
-// will observe the effects of the Set. (There is still no guarantee
-// an intervening Set won't have changed the value again, but it is
-// guaranteed not to read stale data.)
-func (sv *Service) RequestRead(ctx context.Context) error {
+// WaitRead waits for a linearizable read. Upon successful return,
+// subsequent reads will observe all writes that happened before the
+// call to WaitRead. (There is still no guarantee an intervening Set
+// won't have changed the value again, but it is guaranteed not to
+// read stale data.)
+func (sv *Service) WaitRead(ctx context.Context) error {
 	for {
 		err := sv.linearizeRead(ctx)
 		if isTimeout(err) {
@@ -551,9 +550,9 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// request a read so that we can perform a linerizable read of
+	// wait before reading so we can perform a linerizable read of
 	// the membership list.
-	err = sv.RequestRead(req.Context())
+	err = sv.WaitRead(req.Context())
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
