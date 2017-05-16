@@ -38,7 +38,7 @@ The Ivy Playground opens on a view of the _contract template editor_, preloaded 
 
 You may edit the text of the contract, but first let’s look around at the other elements on the page.
 
-Beneath the contract editor is a box labeled “Compiled.” It shows the _opcodes_ that Chain Core uses as a compact internal representation of the contract. (This is explained below.)
+Beneath the contract editor is a box labeled “Compiled.” It shows the _opcodes_ that Chain Core uses as a compact internal representation of the contract. (This is explained below. [xxx actually explain it below])
 
 Above the contract editor are two buttons labeled “Load Template” and “Save.” The Save button lets you save contracts you create using the contract template editor. The Load Template button lets you load contracts you’ve previously saved, plus some prewritten samples we’ve provided, such as `LockWithPublicKey`. **Note** Contract templates are not saved permanently. They persist only as long as you leave the Ivy Playground open in your browser. [xxx is this right?]
 
@@ -169,13 +169,50 @@ This transaction is published on your Chain blockchain. You can inspect it in th
 
 ## Unlocking contract value
 
+If you’ve been following the steps in this tutorial, you should now have 10 units of gold locked in a `TimedPayment` contract visible at [http://localhost:1999/ivy/unlock](http://localhost:1999/ivy/unlock).
 
+[xxx image]
 
+Recall that `TimedPayment` offers two ways for a later transaction to unlock its value: before the deadline, the recipient can sign for it; after the deadline, the sender can repay it to him or herself.
 
-Spend Value
+Let’s try unlocking the value in the `TimedPayment` contract. Click the “Unlock” button.
 
-Choose a clause
+[xxx image]
 
-Provide clause arguments
+The first part of this page is a summary the payment and how it was locked - namely, 10 units of gold, with the `TimedPayment` contract, with particular `publicKey`, `deadline`, and `sender` arguments.
 
-Submit and switch to dashboard to see the transaction
+The second part of this page gives us options for unlocking the payment: either with the `spend` clause, which requires a signature and a destination for the unlocked value:
+
+[xxx image]
+
+...or with the `revert` clause, which requires only that the deadline has passed.
+
+Let’s see what happens if we try to unlock the value with `revert` _before_ the deadline. Select the `revert` clause and click “Unlock Value.” You should see the error “max\_time is less than min\_time,” [xxx ugh] indicating that the `verify after(deadline)` check in the `revert` clause failed. [xxx image]
+
+So let’s try unlocking with `spend` instead. Select the `spend` clause, and select the public key (Bob’s) from whose matching _private_ key a signature should be generated. (The Ivy Playground handles these details behind the scenes.) Now select Bob’s account as the destination for the unlocked value and the “Unlock Value” button should light up.
+
+[xxx image]
+
+Click Unlock Value. This takes you to the transaction-list view, where you can see that the `TimedPayment` contract is no longer in the “Locked Value” list but in the “History” list, since it has been unlocked. The History view includes two links to the Chain Core dashboard: one for the transaction creating the contract, where value was locked up; and one for the transaction where the value was unlocked.
+
+## Other contract examples
+
+Now that you have run through a complete example from end to end, look through the other predefined contracts in the Ivy Playground. The Ivy documentation [xxx link] will help you to understand how each one works, and how to write new contracts.
+
+- `LockWithPublicKey` Our original simple-payment example, discussed above.
+
+- `LockWithPublicKeyHash` Like `LockWithPublicKey`, but the sender doesn’t specify the recipient’s public key; he or she specifies a _hash_ of that key instead. To unlock the value in this contract, the recipient must supply not only a signature, but also the public key matching both the hash and the signature.
+
+- `LockWithMultiSig` Also like `LockWithPublicKey` but this one specifies _three_ public keys for locking its value. Unlocking requires signatures matching any two of those three keys.
+
+- `TradeOffer` A seller has an amount of one asset type available for sale and specifies the asking price (of another asset type). The offer can be redeemed by anyone making payment to the seller, or by the seller authorizing, via signature, a return of the offered value to his or her account.
+
+- `Escrow` A sender locks up payment to a recipient, authorizing an escrow agent to either approve or reject the transfer.
+
+- `LoanCollateral` This contract locks up the collateral for a pending loan until either the loan is repaid, releasing the collateral to the borrower, or the borrower defaults, releasing the collateral to the lender.
+
+- `RevealPreimage` The value in this contract can be unlocked by anyone able to provide the “pre-image” of a given hash - i.e., the string that hashes to that hash value.
+
+- `RevealFactors` The value in this contract can be unlocked by anyone able to provide two integers that multiply to a given product.
+
+- `CallOption` A seller locks some value in a time-limited promise to sell to a specific buyer at a specific price. Before the deadline, the buyer may choose to exercise the option. After the deadline, the seller may reclaim the offered value.
