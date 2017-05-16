@@ -29,6 +29,24 @@ export const prefixRoute = (route: string): string => {
   return route
 }
 
+// Parses an error from Chain Core
+export const parseError = (err) => {
+  if (err === undefined) {
+    return ''
+  }
+
+  const body = err.body
+  if (err.code === 'CH706' && body && body.data) {
+    return body.data.actions.reduce((msg, action, i, arr) => {
+      if (i < arr.length - 1) {
+        msg += "\n"
+      }
+      return msg + action.code + ": " + action.message
+    }, "")
+  }
+  return err.message
+}
+
 // Imports the dashboard's redux state from localStorage.
 // This is used to retrieve the client access token, if it exists.
 // Taken directly from dashboard code.
