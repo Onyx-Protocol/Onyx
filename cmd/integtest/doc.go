@@ -12,12 +12,12 @@ Subsequent arguments are passed on to the test process.
 
 Flags
 
-Flag '-timeout' aborts the test after the given duration.
+Flag '-t [duration]' aborts the test after the given duration.
 The default is 15 minutes.
 
 Files and Environment
 
-It puts all temporary files in various subdirectories
+This command puts all temporary files in various subdirectories
 of $HOME/integration.
 This scratch space is cleaned up before each test,
 but left intact after the test
@@ -26,9 +26,14 @@ to assist in debugging a failed test.
 can write files anywhere.)
 
 It requires Postgres and Go installed.
-(The default value for GOPATH is $HOME/go.)
-If CHAIN is unset, command integtest sets it to $HOME/go/src/chain
-before running the test process.
+
+Test Environment
+
+This tool always sets some values for the test process:
+
+  CHAIN          from environment, or $HOME/go/src/chain
+  DB_URL_TEST    the URL of a new, empty postgres cluster
+  (working dir)  an empty scratch directory
 
 */
 package main

@@ -15,16 +15,6 @@ import (
 	"time"
 )
 
-/*
-
-Required environment:
-
-  HOME
-  GOPATH (default $HOME/go)
-  CHAIN  (default $HOME/go/src/chain)
-
-*/
-
 const (
 	pgport = "12345"
 )
@@ -41,7 +31,7 @@ var (
 )
 
 var (
-	flagTimeout = flag.Duration("timeout", 15*time.Minute, "abort the test after the given duration")
+	flagT = flag.Duration("t", 15*time.Minute, "abort the test after the given duration")
 )
 
 func main() {
@@ -52,7 +42,7 @@ func main() {
 	flag.Parse()
 	lock() // ensure only one at a time
 
-	ctx, cancel := context.WithTimeout(ctx, *flagTimeout)
+	ctx, cancel := context.WithTimeout(ctx, *flagT)
 	defer cancel()
 
 	if s := pgbin(); s != "" {
@@ -169,7 +159,7 @@ func lock() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: integtest [flags] [package] [args...]")
+	fmt.Fprintln(os.Stderr, "usage: integtest [-t duration] [package] [args...]")
 	fmt.Fprintln(os.Stderr, "flags:")
 	flag.PrintDefaults()
 	os.Exit(2)
