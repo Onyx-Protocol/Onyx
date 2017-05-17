@@ -53,7 +53,7 @@ var binaryOps = []binaryOp{
 	{"+", 4, []vm.Op{vm.OP_ADD}, "Integer", "Integer", "Integer"},
 	{"-", 4, []vm.Op{vm.OP_SUB}, "Integer", "Integer", "Integer"},
 
-	{"&^", 5, []vm.Op{vm.OP_INVERT, vm.OP_AND}, "", "", ""},
+	// {"&^", 5, []vm.Op{vm.OP_INVERT, vm.OP_AND}, "", "", ""},
 	{"&", 5, []vm.Op{vm.OP_AND}, "", "", ""},
 
 	{"<<", 5, []vm.Op{vm.OP_LSHIFT}, "Integer", "Integer", "Integer"},
