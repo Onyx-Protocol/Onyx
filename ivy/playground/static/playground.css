@@ -44,6 +44,10 @@ small, .small {
   padding: 10px 0 0 15px;
 }
 
+.page-footer {
+  color: #bfbfbf;
+}
+
 .dropdown-menu {
   font-size:16px;
 }

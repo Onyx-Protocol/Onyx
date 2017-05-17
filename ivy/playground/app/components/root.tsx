@@ -10,8 +10,9 @@ export default function Root(props: Props) {
       <div className="container fixedcontainer">
         {props.children}
       </div>
-      <footer>
+      <footer className="page-footer">
         <div className="container fixedcontainer">
+        <hr/>
           &copy; 2017 Chain Inc
         </div>
       </footer>
