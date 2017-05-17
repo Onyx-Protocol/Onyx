@@ -74,7 +74,20 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "parse error")
 	}
-	prog, labels, err := compileContract(c, args)
+
+	globalEnv := newEnviron(nil)
+	for _, k := range keywords {
+		globalEnv.add(k, nilType, roleKeyword)
+	}
+	for _, b := range builtins {
+		globalEnv.add(b.name, nilType, roleBuiltin)
+	}
+	err = globalEnv.add(c.name, contractType, roleContract)
+	if err != nil {
+		return CompileResult{}, err
+	}
+
+	prog, labels, err := compileContract(c, args, globalEnv)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
@@ -134,29 +147,18 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	return result, nil
 }
 
-func compileContract(contract *contract, args []ContractArg) ([]byte, map[uint32]string, error) {
+func compileContract(contract *contract, args []ContractArg, globalEnv *environ) ([]byte, map[uint32]string, error) {
 	if len(contract.clauses) == 0 {
 		return nil, nil, fmt.Errorf("empty contract")
 	}
-
-	env := newEnviron(nil)
-	for _, k := range keywords {
-		env.add(k, nilType, roleKeyword)
-	}
-	for _, b := range builtins {
-		env.add(b.name, nilType, roleBuiltin)
-	}
-	err := env.add(contract.name, contractType, roleContract)
-	if err != nil {
-		return nil, nil, err
-	}
+	env := newEnviron(globalEnv)
 	for _, p := range contract.params {
-		err = env.add(p.name, p.typ, roleContractParam)
+		err := env.add(p.name, p.typ, roleContractParam)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
-	err = env.add(contract.value, valueType, roleContractValue)
+	err := env.add(contract.value, valueType, roleContractValue)
 	if err != nil {
 		return nil, nil, err
 	}
