@@ -9,7 +9,9 @@ export PATH="${PATH}:/usr/local/go/bin"
 
 tempBuildPath=`mktemp -d`
 trap "rm -rf $tempBuildPath" EXIT
-"${CHAIN}/bin/build-cored-release" HEAD $tempBuildPath
+
+headId=`git rev-parse HEAD`
+"${CHAIN}/bin/build-cored-release" $headId $tempBuildPath
 
 cp -f $tempBuildPath/cored "${TARGET_DIR}/"
 cp -f $tempBuildPath/corectl "${TARGET_DIR}/"
