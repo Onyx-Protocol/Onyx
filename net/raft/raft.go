@@ -383,13 +383,13 @@ func (sv *Service) Exec(ctx context.Context, instruction []byte) (satisfied bool
 	prop := proposal{Wctx: randID(), Instruction: instruction}
 	data, err := json.Marshal(prop)
 	if err != nil {
-		return satisfied, errors.Wrap(err)
+		return false, errors.Wrap(err)
 	}
 	req := wctxReq{wctx: prop.Wctx, satisfied: make(chan bool, 1)}
 	select {
 	case sv.wctxReq <- req:
 	case <-sv.donec:
-		return satisfied, errors.New("raft shutdown")
+		return false, errors.New("raft shutdown")
 	}
 	err = sv.raftNode.Propose(ctx, data)
 	if err != nil {
@@ -397,7 +397,7 @@ func (sv *Service) Exec(ctx context.Context, instruction []byte) (satisfied bool
 		case sv.wctxReq <- wctxReq{wctx: prop.Wctx}:
 		case <-sv.donec:
 		}
-		return satisfied, errors.Wrap(err)
+		return false, errors.Wrap(err)
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) //TODO(tessr): realistic timeout
 	defer cancel()
@@ -406,9 +406,9 @@ func (sv *Service) Exec(ctx context.Context, instruction []byte) (satisfied bool
 	case ok := <-req.satisfied:
 		return ok, nil
 	case <-ctx.Done():
-		return satisfied, ctx.Err()
+		return false, ctx.Err()
 	case <-sv.donec:
-		return satisfied, errors.New("raft shutdown")
+		return false, errors.New("raft shutdown")
 	}
 }
 
