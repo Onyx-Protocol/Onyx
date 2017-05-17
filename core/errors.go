@@ -30,8 +30,6 @@ func isTemporary(info httperror.Info, err error) bool {
 		return true
 	case "CH001": // request timed out
 		return true
-	case "CH012": // conflict
-		return true
 	case "CH761": // outputs currently reserved
 		return true
 	case "CH706": // 1 or more action errors
@@ -66,7 +64,7 @@ var errorFormatter = httperror.Formatter{
 		errNotAuthenticated:        {401, "CH009", "Request could not be authenticated"},
 		txbuilder.ErrMissingFields: {400, "CH010", "One or more fields are missing"},
 		authz.ErrNotAuthorized:     {403, "CH011", "Request is unauthorized"},
-		sinkdb.ErrConflict:         {409, "CH012", "Database transaction conflict; retry"},
+		sinkdb.ErrConflict:         {409, "CH012", "Conflict processing request"},
 		asset.ErrDuplicateAlias:    {400, "CH050", "Alias already exists"},
 		account.ErrDuplicateAlias:  {400, "CH050", "Alias already exists"},
 		txfeed.ErrDuplicateAlias:   {400, "CH050", "Alias already exists"},
