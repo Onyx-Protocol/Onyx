@@ -3,11 +3,15 @@ import { client } from '../core'
 import { generateInputMap } from '../contracts/selectors'
 
 // internal imports
+import { INITIAL_ID_LIST } from './constants'
 import { getSourceMap } from './selectors'
 import { CompiledTemplate } from './types'
 
 export const loadTemplate = (selected: string) => {
   return (dispatch, getState) => {
+    if (!selected) {
+      selected = INITIAL_ID_LIST[0]
+    }
     const state = getState()
     const source = getSourceMap(state)[selected]
     dispatch(setSource(source))
