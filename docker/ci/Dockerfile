@@ -19,7 +19,7 @@ ENV CHAIN="/go/src/chain" \
 ADD install /usr/bin
 
 RUN yum -y update \
-    && yum install -y autoconf automake bash curl gcc gcc-c++ git libtool make openssl-devel ruby wget unzip \
+    && yum install -y autoconf automake bash bzip2 cmake curl gcc gcc-c++ gcc48-c++ git libtool make openssl-devel ruby wget unzip zlib zlib-devel \
     && install-go && rm -f /usr/bin/install-go \
     && install-node && rm -f /usr/bin/install-node \
     && install-java && rm -f /usr/bin/install-java \
@@ -29,6 +29,7 @@ RUN yum -y update \
     && install-protobuf && rm -f /usr/bin/install-protobuf \
     && install-gas && rm -f /usr/bin/install-gas \
     && go get -u google.golang.org/grpc \
+    && install-rocksdb \
     && yum remove -y autoconf automake libtool gcc-c++ unzip \
     && yum clean all
 
