@@ -428,6 +428,10 @@ section h4 {
   display: block;
 }
 
+.form-button {
+  margin-bottom: 20px;
+}
+
 /*React Component Overrides*/
 
 .__react_component_tooltip {

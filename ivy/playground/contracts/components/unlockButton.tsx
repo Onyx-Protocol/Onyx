@@ -10,7 +10,7 @@ const mapDispatchToProps = (dispatch) => ({
 })
 
 const UnlockButton = (props: {enabled: boolean, handleSpendClick: (e)=>undefined} ) => {
-  return <button className="btn btn-primary btn-lg" disabled={!props.enabled} onClick={props.handleSpendClick}>Unlock Value</button>
+  return <button className="btn btn-primary btn-lg form-button" disabled={!props.enabled} onClick={props.handleSpendClick}>Unlock Value</button>
 }
 
 export default connect(
