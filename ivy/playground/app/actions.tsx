@@ -13,7 +13,7 @@ export const RESET: string = "app/RESET"
 export const reset = () => {
   return (dispatch, getState) => {
     let selected = templates.selectors.getSelectedTemplate(getState())
-    if ( selected === "") {
+    if (selected === "" || templates.constants.INITIAL_SOURCE_MAP[selected] === undefined) {
       selected = "LockWithPublicKey"
     }
     dispatch({ type: RESET })
