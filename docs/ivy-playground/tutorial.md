@@ -24,11 +24,19 @@ You’ll need to download and run a version of Chain Core Developer Edition that
 
 Open the Chain Core dashboard by visiting [http://localhost:1999/](http://localhost:1999/).
 
-Select “Create new blockchain network” and click the “Create network” button. ![create network](create_network.png)
+Select “Create new blockchain network” and click the “Create network” button.
 
-Chain Core will ask if you’d like to try a 5-minute tutorial. ![5-minute tutorial](five_minute_tutorial.png) This is not related to Ivy, but if you’re new to Chain Core, give it a try. It teaches concepts that will be useful in understanding Ivy. If you already have some familiarity with Chain Core, or you’re in a hurry, feel free to skip it.
+![create network](create_network.png)
 
-Click “Ivy Playground” in the left-hand navigation bar. ![playground nav](playground_nav.png)
+Chain Core will ask if you’d like to try a 5-minute tutorial. This is not related to Ivy, but if you’re new to Chain Core, give it a try. It teaches concepts that will be useful in understanding Ivy. If you already have some familiarity with Chain Core, or you’re in a hurry, feel free to skip it.
+
+![5-minute tutorial](five_minute_tutorial.png)
+
+
+
+Click “Ivy Playground” in the left-hand navigation bar.
+
+![playground nav](playground_nav.png)
 
 ## Welcome to the playground
 

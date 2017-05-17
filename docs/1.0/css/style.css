@@ -873,8 +873,10 @@ a.btn:hover .icon-download {
 /* Icons and Images */
 .image,
 img {
-    width: 100%;
+    width: auto%;
+    max-width: 100%;
 }
+
 .btn-icon {
     width: 15px;
     padding-left: 15px;
