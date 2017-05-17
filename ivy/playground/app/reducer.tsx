@@ -20,7 +20,7 @@ export default function reducer(state: types.AppState, action): types.AppState {
         assets: assets.reducer(undefined, {}),
         contracts: contracts.reducer(undefined, {}),
         templates: templates.reducer(undefined, {}),
-        routing: routerReducer(undefined, {})
+        routing: state.routing
       }
     default:
       return combineReducers({
