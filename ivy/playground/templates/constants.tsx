@@ -38,10 +38,9 @@ export const TRADE_OFFER = `contract TradeOffer(requestedAsset: Asset,
   }
 }`
 
-export const ESCROW = `
-contract Escrow(agent: PublicKey,
+export const ESCROW = `contract Escrow(agent: PublicKey,
                 sender: Program,
-                recipient: Program)locks value {
+                recipient: Program) locks value {
   clause approve(sig: Signature) {
     verify checkTxSig(agent, sig)
     lock value with recipient
