@@ -1,6 +1,6 @@
 # Ivy Playground Tutorial
 
-This tutorial shows you how to use the Ivy Playground, a new feature of Chain Core that lets you explore Ivy, Chain’s high-level contract language. **This is an early preview of Ivy provided for experimentation only. Not for production use.**
+This tutorial shows you how to use the Ivy Playground, a new feature of Chain Core that lets you explore Ivy, Chain’s high-level contract language. For fuller details on the syntax and semantics of Ivy, see [the Ivy documentation](docs). **This is an early preview of Ivy provided for experimentation only. Not for production use.**
 
 ## Introduction
 
@@ -40,7 +40,7 @@ The Ivy Playground opens on a view of the _contract template editor_, preloaded 
 
 You may edit the text of the contract, but first let’s look around at the other elements on the page.
 
-Beneath the contract editor is a box labeled “Compiled.” It shows the _opcodes_ that Chain Core uses as a compact internal representation of the contract. (This is explained in the Appendix.)
+Beneath the contract editor is a box labeled “Compiled.” It shows the _opcodes_ that Chain Core uses as a compact internal representation of the contract. (This is explained in [the Appendix](#appendix-contracts-programs-accounts-receivers-and-keys).)
 
 Above the contract editor are two buttons labeled “Load Template” and “Save.” The Save button lets you save contracts you create using the contract template editor. The Load Template button lets you load contracts you’ve previously saved, plus some prewritten samples we’ve provided, such as `LockWithPublicKey`.
 
@@ -67,7 +67,7 @@ Let’s take a look at the steps involved in using something like the `TradeOffe
 - She creates a program by setting the parameters of `TradeOffer` as follows:
   - `requestedAsset` is `USD` (US dollars)
   - `requestedAmount` is 110
-  - `sellerProgram` is the program where Alice can receive payment (payments and other transfers of value are always made “to” programs; see [the Appendix](#Appendix:-Contracts,-programs,-accounts,-receivers,-and-keys) for a discussion)
+  - `sellerProgram` is the program where Alice can receive payment (payments and other transfers of value are always made “to” programs; see [the Appendix](#appendix-contracts-programs-accounts-receivers-and-keys) for a discussion)
   - `sellerKey` is Alice’s public key
 - Alice creates a transaction paying 100 euros from her account into the `TradeOffer` program she just created
 
@@ -89,7 +89,7 @@ _Contract_ parameters (including the locked value) are specified as part of the 
 
 ### Loading, editing, and saving contract templates, continued
 
-Using the Load Template button, load the `LockWithPublicKey` contract template. Let’s see what happens when we make different kinds of changes. **Note** At any point, if you can’t find your way back from an error, simply reload the page in your browser, or reload the `LockWithPublicKey` contract with the Load Template button, to start over.
+Using the Load Template button, load the `LockWithPublicKey` contract template. Let’s see what happens when we make different kinds of changes. **Note:** At any point, if you can’t find your way back from an error, simply reload the page in your browser, or reload the `LockWithPublicKey` contract with the Load Template button, to start over.
 
 Where the first line says `locks value`, change it to read `locks x`. You should see:
 
@@ -235,9 +235,9 @@ In Chain Core, “key” is shorthand for a public-private key _pair_. A public 
 
 ### Programs
 
-A program (sometimes also called a control program) is a sequence of instructions that protects some value on the blockchain. Chain Core uses these instructions to test the validity of a transaction. Each program asks the question, “Does the transaction trying to unlock my value meet my conditions?” The conditions may be simple or complex. A typical simple program asks, “Does the transaction trying to unlock my value include a signature matching this specific public key?”
+A program (sometimes also called a control program) is a sequence of instructions that protects some value on the blockchain. Chain Core uses these instructions to test the validity of a transaction. Each program asks the question, “Does the transaction trying to unlock my value meet my conditions?” The conditions may be simple or complex. One typical program asks, “Does the transaction trying to unlock my value include a signature matching this specific public key?”
 
-Internally, Chain Core uses _opcodes_ to express the logic of a program compactly and efficiently. But writing programs with opcodes is difficult and error-prone. That’s why we have Ivy, a _high-level_ language for expressing contracts in a much safer and more intuitive way. The Ivy _compiler_ contained in Chain Core, converts contracts written in the Ivy language into low-level opcodes.
+Internally, Chain Core uses _opcodes_ to express the logic of a program compactly and efficiently. But writing programs with opcodes is difficult and error-prone. That’s why we have Ivy, a _high-level_ language for expressing contracts in a much safer and more intuitive way. The Ivy _compiler_, contained in Chain Core, converts contracts written in the Ivy language into low-level opcodes.
 
 ### Accounts
 
