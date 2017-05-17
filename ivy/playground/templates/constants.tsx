@@ -24,16 +24,16 @@ export const LOCK_WITH_MULTISIG = `contract LockWithMultiSig(publicKey1: PublicK
   }
 }`
 
-export const TRADE_OFFER = `contract TradeOffer(requestedAsset: Asset,
-                    requestedAmount: Amount,
-                    sellerProgram: Program,
-                    sellerKey: PublicKey) locks offered {
-  clause trade() requires payment: requestedAmount of requestedAsset {
-    lock payment with sellerProgram
+export const TRADE_OFFER = `contract TradeOffer(assetRequested: Asset,
+                    amountRequested: Amount,
+                    seller: Program,
+                    cancelKey: PublicKey) locks offered {
+  clause trade() requires payment: amountRequested of assetRequested {
+    lock payment with seller
     unlock offered
   }
   clause cancel(sellerSig: Signature) {
-    verify checkTxSig(sellerKey, sellerSig)
+    verify checkTxSig(cancelKey, sellerSig)
     unlock offered
   }
 }`
@@ -82,18 +82,18 @@ export const REVEAL_FACTORS = `contract RevealFactors(product: Integer) locks va
 
 export const CALL_OPTION = `contract CallOption(strikePrice: Amount,
                     strikeCurrency: Asset,
-                    sellerProgram: Program,
+                    seller: Program,
                     buyerKey: PublicKey,
                     deadline: Time) locks underlying {
   clause exercise(buyerSig: Signature) requires payment: strikePrice of strikeCurrency {
     verify before(deadline)
     verify checkTxSig(buyerKey, buyerSig)
-    lock payment with sellerProgram
+    lock payment with seller
     unlock underlying
   }
   clause expire() {
     verify after(deadline)
-    lock underlying with sellerProgram
+    lock underlying with seller
   }
 }`
 
