@@ -59,6 +59,9 @@ export const parseError = (err) => {
         'Check arguments to before() and after() function calls.'
       )
     }
+    case 'CH735': {
+      return 'The transaction failed validation.'
+    }
     default:
       return err.message
   }
