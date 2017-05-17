@@ -16,6 +16,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txfeed"
 	"chain/database/pg"
+	"chain/database/sinkdb"
 	"chain/errors"
 	"chain/net/http/authz"
 	"chain/net/http/httperror"
@@ -63,6 +64,7 @@ var errorFormatter = httperror.Formatter{
 		errNotAuthenticated:        {401, "CH009", "Request could not be authenticated"},
 		txbuilder.ErrMissingFields: {400, "CH010", "One or more fields are missing"},
 		authz.ErrNotAuthorized:     {403, "CH011", "Request is unauthorized"},
+		sinkdb.ErrConflict:         {409, "CH012", "Conflict processing request"},
 		asset.ErrDuplicateAlias:    {400, "CH050", "Alias already exists"},
 		account.ErrDuplicateAlias:  {400, "CH050", "Alias already exists"},
 		txfeed.ErrDuplicateAlias:   {400, "CH050", "Alias already exists"},
