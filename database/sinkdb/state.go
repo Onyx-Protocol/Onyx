@@ -2,6 +2,7 @@ package sinkdb
 
 import (
 	"bytes"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 
@@ -17,6 +18,7 @@ const (
 // state is a general-purpose data store designed to accumulate
 // and apply replicated updates from a raft log.
 type state struct {
+	mu           sync.Mutex
 	state        map[string][]byte
 	peers        map[uint64]string // id -> addr
 	appliedIndex uint64
@@ -34,16 +36,22 @@ func newState() *state {
 
 // SetPeerAddr sets the address for the given peer.
 func (s *state) SetPeerAddr(id uint64, addr string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.peers[id] = addr
 }
 
 // GetPeerAddr gets the current address for the given peer, if set.
 func (s *state) GetPeerAddr(id uint64) (addr string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.peers[id]
 }
 
 // RemovePeerAddr deletes the current address for the given peer if it exists.
 func (s *state) RemovePeerAddr(id uint64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	delete(s.peers, id)
 }
 
@@ -52,6 +60,9 @@ func (s *state) RemovePeerAddr(id uint64) {
 // when bootstrapping a new node from an existing cluster
 // or when recovering from a file on disk.
 func (s *state) RestoreSnapshot(data []byte, index uint64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.appliedIndex = index
 	//TODO (ameets): think about having sinkpb in state for restore
 	snapshot := &sinkpb.Snapshot{}
@@ -63,6 +74,9 @@ func (s *state) RestoreSnapshot(data []byte, index uint64) error {
 
 // Snapshot returns an encoded copy of s suitable for RestoreSnapshot.
 func (s *state) Snapshot() ([]byte, uint64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	data, err := proto.Marshal(&sinkpb.Snapshot{
 		State: s.state,
 		Peers: s.peers,
@@ -73,6 +87,9 @@ func (s *state) Snapshot() ([]byte, uint64, error) {
 // Apply applies a raft log entry payload to s. For conditional operations, it
 // returns whether the condition was satisfied.
 func (s *state) Apply(data []byte, index uint64) (satisfied bool, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if index < s.appliedIndex {
 		return false, errors.New("entry already applied")
 	}
@@ -135,17 +152,26 @@ func (s *state) Apply(data []byte, index uint64) (satisfied bool, err error) {
 
 // get performs a provisional read operation.
 func (s *state) get(key string) (value []byte, ok bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	value, ok = s.state[key]
 	return
 }
 
 // AppliedIndex returns the raft log index (applied index) of current state
 func (s *state) AppliedIndex() uint64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return s.appliedIndex
 }
 
 // NextNodeID generates an ID for the next node to join the cluster.
 func (s *state) NextNodeID() (id, version uint64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	id, n := proto.DecodeVarint(s.state[nextNodeID])
 	if n == 0 {
 		panic("raft: cannot decode nextNodeID")
