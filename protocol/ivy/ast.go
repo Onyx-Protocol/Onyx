@@ -12,6 +12,9 @@ type contract struct {
 	params  []*param
 	clauses []*clause
 	value   string
+
+	// decoration
+	recursive bool
 }
 
 type param struct {

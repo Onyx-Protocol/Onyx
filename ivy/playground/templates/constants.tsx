@@ -80,7 +80,10 @@ export const REVEAL_FACTORS = `contract RevealFactors(product: Integer) locks va
   }
 }`
 
-export const CALL_OPTION = `contract CallOption(strikePrice: Amount,
+export const CALL_OPTION = `
+
+
+contract CallOption(strikePrice: Amount,
                     strikeCurrency: Asset,
                     seller: Program,
                     buyerKey: PublicKey,
@@ -95,7 +98,10 @@ export const CALL_OPTION = `contract CallOption(strikePrice: Amount,
     verify after(deadline)
     lock underlying with seller
   }
-}`
+}
+
+
+`
 
 export const INITIAL_SOURCE_MAP = {
   LockWithPublicKey: LOCK_WITH_PUBLIC_KEY,

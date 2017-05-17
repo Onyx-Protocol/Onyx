@@ -11,11 +11,13 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/vm"
+	"chain/protocol/vmutil"
 )
 
 type (
 	CompileResult struct {
 		Name    string
+		Body    chainjson.HexBytes
 		Program chainjson.HexBytes
 		Value   string
 		Params  []ContractParam
@@ -65,7 +67,7 @@ type ContractArg struct {
 
 // Compile parses an Ivy contract from the supplied reader and
 // produces the compiled bytecode and other analysis.
-func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
+func Compile(r io.Reader, args *[]ContractArg) (CompileResult, error) {
 	inp, err := ioutil.ReadAll(r)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "reading input")
@@ -87,12 +89,20 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		return CompileResult{}, err
 	}
 
-	prog, labels, err := compileContract(c, args, globalEnv)
+	prog, labels, err := compileContract(c, globalEnv)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
+	var prog []byte
+	if args != nil {
+		prog, err = instantiate(c, *args, body)
+		if err != nil {
+			return CompileResult{}, errors.Wrap(err, "instantiating contract")
+		}
+	}
 	result := CompileResult{
 		Name:    c.name,
+		Body:    body,
 		Program: prog,
 		Params:  []ContractParam{},
 		Value:   c.value,
@@ -182,8 +192,14 @@ func compileContract(contract *contract, globalEnv *environ) ([]byte, map[uint32
 		return nil, nil, err
 	}
 
-	stack := []stackEntry{stackEntry(quineName)}
-	stack = addParamsToStack(stack, contract.params)
+	var stack []stackEntry
+
+	contract.recursive = checkRecursive(contract)
+
+	if contract.recursive {
+		stack = append(stack, stackEntry(quineName))
+	}
+	stack = addParamsToStack(stack, contract.params, true)
 
 	b := newBuilder()
 
@@ -268,6 +284,46 @@ func compileContract(contract *contract, globalEnv *environ) ([]byte, map[uint32
 		labels[jumpAddrs[targ]] = contract.clauses[i].name
 	}
 	return prog, labels, nil
+}
+
+func instantiate(contract *contract, args []ContractArg, body []byte) ([]byte, error) {
+	if len(args) != len(contract.params) {
+		return nil, fmt.Errorf("contract \"%s\" expects %d argument(s), got %d", contract.name, len(contract.params), len(args))
+	}
+	// xxx typecheck args against param types
+	b := vmutil.NewBuilder(false)
+	addArgs := func() {
+		for i := len(args) - 1; i >= 0; i-- {
+			a := args[i]
+			switch {
+			case a.B != nil:
+				var n int64
+				if *a.B {
+					n = 1
+				}
+				b.AddInt64(n)
+			case a.I != nil:
+				b.AddInt64(*a.I)
+			case a.S != nil:
+				b.AddData(*a.S)
+			}
+		}
+	}
+	if contract.recursive {
+		// <body> <argN> <argN-1> ... <arg1> <N+1> DUP PICK 0 CHECKPREDICATE
+		b.AddData(body)
+		addArgs()
+		b.AddInt64(int64(len(args) + 1))
+		b.AddOp(vm.OP_DUP).AddOp(vm.OP_PICK)
+	} else {
+		// <argN> <argN-1> ... <arg1> <N> <body> 0 CHECKPREDICATE
+		addArgs()
+		b.AddInt64(int64(len(args)))
+		b.AddData(body)
+	}
+	b.AddInt64(0)
+	b.AddOp(vm.OP_CHECKPREDICATE)
+	return b.Build()
 }
 
 func compileClause(b *builder, contractStack []stackEntry, contract *contract, env *environ, clause *clause) error {
@@ -468,33 +524,48 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		if bi == nil {
 			if e.fn.typ(env) == contractType {
 				if e.fn.String() != contract.name {
-					return fmt.Errorf("calling other contracts not yet supported")
+					return nil, fmt.Errorf("calling other contracts not yet supported")
 				}
 
 				// xxx typecheck args
 
-				// build the control program for this contract with its new
-				// params
+				// Build the control program for this contract with its new
+				// params. The format is:
+				//   <contractBody> <argN> <argN-1> ... <arg1> N+1 DUP PICK 0 CHECKPREDICATE
+				// The contract body can be found on the stack under quineName.
 				b.addData(nil)
 				stack = append(stack, stackEntry(e.String()))
+
+				_, err := compileRef(b, stack, counts, quineName)
+				if err != nil {
+					return nil, errors.Wrap(err, "compiling contract call")
+				}
+				b.addOp(vm.OP_CATPUSHDATA)
+
 				for i := len(e.args) - 1; i >= 0; i-- {
-					err := compileExpr(b, stack, contract, clause, env, e.args[i])
+					_, err = compileExpr(b, stack, contract, clause, env, counts, e.args[i])
 					if err != nil {
-						return errors.Wrap(err, "compiling contract call")
+						return nil, errors.Wrap(err, "compiling contract call")
 					}
 					b.addOp(vm.OP_CATPUSHDATA)
 				}
-				err := compileRef(b, stack, quineName)
-				if err != nil {
-					return errors.Wrap(err, "compiling contract call")
-				}
-				b.addOp(vm.OP_CATPUSHDATA)
+
+				// TODO(bobg): from this point the remaining data is known at
+				// compile time and can all go into a single CATPUSHDATA.
+
 				b.addInt64(int64(1 + len(e.args)))
 				b.addOp(vm.OP_CATPUSHDATA)
-				b.addData([]byte{byte(vm.OP_OVER), byte(vm.OP_CHECKPREDICATE)})
+
+				b.addData([]byte{byte(vm.OP_DUP), byte(vm.OP_PICK)})
 				b.addOp(vm.OP_CATPUSHDATA)
 
-				return nil
+				b.addData(vm.Int64Bytes(0))
+				b.addOp(vm.OP_CATPUSHDATA)
+
+				b.addData([]byte{byte(vm.OP_CHECKPREDICATE)})
+				b.addOp(vm.OP_CATPUSHDATA)
+
+				return stack, nil
 			}
 			return nil, fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
@@ -642,9 +713,9 @@ func compileRef(b *builder, stack []stackEntry, counts map[string]int, name stri
 	for depth := 0; depth < len(stack); depth++ {
 		if stack[len(stack)-depth-1].matches(name) {
 			var isFinal bool
-			if count, ok := counts[string(ref)]; ok && count > 0 {
+			if count, ok := counts[name]; ok && count > 0 {
 				count--
-				counts[string(ref)] = count
+				counts[name] = count
 				isFinal = count == 0
 			}
 
@@ -652,7 +723,7 @@ func compileRef(b *builder, stack []stackEntry, counts map[string]int, name stri
 			case 0:
 				if !isFinal {
 					b.addOp(vm.OP_DUP)
-					stack = append(stack, stackEntry(ref.String()))
+					stack = append(stack, stackEntry(name))
 				}
 			case 1:
 				if isFinal {

@@ -2,6 +2,21 @@ package ivy
 
 import "fmt"
 
+func checkRecursive(contract *contract) bool {
+	for _, clause := range contract.clauses {
+		for _, stmt := range clause.statements {
+			if l, ok := stmt.(*lockStatement); ok {
+				if c, ok := l.program.(*call); ok {
+					if references(c.fn, contract.name) {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 func prohibitValueParams(contract *contract) error {
 	for _, p := range contract.params {
 		if p.typ == valueType {

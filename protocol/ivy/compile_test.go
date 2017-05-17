@@ -151,9 +151,9 @@ func TestCompile(t *testing.T) {
 			"TrivialLock",
 			trivialLock,
 			CompileResult{
-				Name:    "TrivialLock",
-				Program: mustDecodeHex("51"),
-				Value:   "locked",
+				Name:  "TrivialLock",
+				Body:  mustDecodeHex("51"),
+				Value: "locked",
 				Clauses: []ClauseInfo{{
 					Name: "trivialUnlock",
 					Values: []ValueInfo{{
@@ -166,9 +166,9 @@ func TestCompile(t *testing.T) {
 			"LockWithPublicKey",
 			lockWithPublicKey,
 			CompileResult{
-				Name:    "LockWithPublicKey",
-				Program: mustDecodeHex("ae7cac"),
-				Value:   "locked",
+				Name:  "LockWithPublicKey",
+				Body:  mustDecodeHex("ae7cac"),
+				Value: "locked",
 				Params: []ContractParam{{
 					Name: "publicKey",
 					Typ:  "PublicKey",
@@ -189,9 +189,9 @@ func TestCompile(t *testing.T) {
 			"LockWithPublicKeyHash",
 			lockWithPKHash,
 			CompileResult{
-				Name:    "LockWithPublicKeyHash",
-				Program: mustDecodeHex("5279aa887cae7cac"),
-				Value:   "value",
+				Name:  "LockWithPublicKeyHash",
+				Body:  mustDecodeHex("5279aa887cae7cac"),
+				Value: "value",
 				Params: []ContractParam{{
 					Name: "pubKeyHash",
 					Typ:  "Sha3(PublicKey)",
@@ -220,9 +220,9 @@ func TestCompile(t *testing.T) {
 			"LockWith2of3Keys",
 			lockWith2of3Keys,
 			CompileResult{
-				Name:    "LockWith3Keys",
-				Program: mustDecodeHex("537a547a526bae71557a536c7cad"),
-				Value:   "locked",
+				Name:  "LockWith3Keys",
+				Body:  mustDecodeHex("537a547a526bae71557a536c7cad"),
+				Value: "locked",
 				Params: []ContractParam{{
 					Name: "pubkey1",
 					Typ:  "PublicKey",
@@ -252,9 +252,9 @@ func TestCompile(t *testing.T) {
 			"LockToOutput",
 			lockToOutput,
 			CompileResult{
-				Name:    "LockToOutput",
-				Program: mustDecodeHex("0000c3c251557ac1"),
-				Value:   "locked",
+				Name:  "LockToOutput",
+				Body:  mustDecodeHex("0000c3c251557ac1"),
+				Value: "locked",
 				Params: []ContractParam{{
 					Name: "address",
 					Typ:  "Program",
@@ -272,9 +272,9 @@ func TestCompile(t *testing.T) {
 			"TradeOffer",
 			tradeOffer,
 			CompileResult{
-				Name:    "TradeOffer",
-				Program: mustDecodeHex("547a641300000000007251557ac16323000000547a547aae7cac690000c3c251577ac1"),
-				Value:   "offered",
+				Name:  "TradeOffer",
+				Body:  mustDecodeHex("547a641300000000007251557ac16323000000547a547aae7cac690000c3c251577ac1"),
+				Value: "offered",
 				Params: []ContractParam{{
 					Name: "requestedAsset",
 					Typ:  "Asset",
@@ -315,9 +315,9 @@ func TestCompile(t *testing.T) {
 			"EscrowedTransfer",
 			escrowedTransfer,
 			CompileResult{
-				Name:    "EscrowedTransfer",
-				Program: mustDecodeHex("537a641b000000537a7cae7cac690000c3c251567ac1632a000000537a7cae7cac690000c3c251557ac1"),
-				Value:   "value",
+				Name:  "EscrowedTransfer",
+				Body:  mustDecodeHex("537a641b000000537a7cae7cac690000c3c251567ac1632a000000537a7cae7cac690000c3c251557ac1"),
+				Value: "value",
 				Params: []ContractParam{{
 					Name: "agent",
 					Typ:  "PublicKey",
@@ -355,9 +355,9 @@ func TestCompile(t *testing.T) {
 			"CollateralizedLoan",
 			collateralizedLoan,
 			CompileResult{
-				Name:    "CollateralizedLoan",
-				Program: mustDecodeHex("557a641c00000000007251567ac1695100c3c251567ac163280000007bc59f690000c3c251577ac1"),
-				Value:   "collateral",
+				Name:  "CollateralizedLoan",
+				Body:  mustDecodeHex("557a641c00000000007251567ac1695100c3c251567ac163280000007bc59f690000c3c251577ac1"),
+				Value: "collateral",
 				Params: []ContractParam{{
 					Name: "balanceAsset",
 					Typ:  "Asset",
@@ -404,9 +404,9 @@ func TestCompile(t *testing.T) {
 			"RevealPreimage",
 			revealPreimage,
 			CompileResult{
-				Name:    "RevealPreimage",
-				Program: mustDecodeHex("7caa87"),
-				Value:   "value",
+				Name:  "RevealPreimage",
+				Body:  mustDecodeHex("7caa87"),
+				Value: "value",
 				Params: []ContractParam{{
 					Name: "hash",
 					Typ:  "Sha3(String)",
@@ -432,9 +432,9 @@ func TestCompile(t *testing.T) {
 			"CallOptionWithSettlement",
 			callOptionWithSettlement,
 			CompileResult{
-				Name:    "CallOptionWithSettlement",
-				Program: mustDecodeHex("567a76529c64390000006427000000557ac6a06971ae7cac6900007b537a51557ac16349000000557ac59f690000c3c251577ac1634900000075577a547aae7cac69557a547aae7cac"),
-				Value:   "underlying",
+				Name:  "CallOptionWithSettlement",
+				Body:  mustDecodeHex("567a76529c64390000006427000000557ac6a06971ae7cac6900007b537a51557ac16349000000557ac59f690000c3c251577ac1634900000075577a547aae7cac69557a547aae7cac"),
+				Value: "underlying",
 				Params: []ContractParam{{
 					Name: "strikePrice",
 					Typ:  "Amount",
@@ -495,9 +495,9 @@ func TestCompile(t *testing.T) {
 			"PriceChanger",
 			priceChanger,
 			CompileResult{
-				Name:    "PriceChanger",
-				Program: mustDecodeHex("557a643000000057795379ae7cac690000c3c251005979895879895c79895b79895a798955890278c089c1633a000000000052795479515879c1"),
-				Value:   "offered",
+				Name:  "PriceChanger",
+				Body:  mustDecodeHex("557a6435000000557a5379ae7cac690000c3c251005a7989597a89597a895b7a895c7a89558902767989008901c089c1633e00000000007b537a51567ac1"),
+				Value: "offered",
 				Params: []ContractParam{{
 					Name: "askAmount",
 					Typ:  "Amount",
@@ -550,13 +550,16 @@ func TestCompile(t *testing.T) {
 			}
 			labels := got.Labels
 			got.Labels = nil // to make DeepEqual easier
-			gotProg, _ := vm.Disassemble(got.Program, labels)
+			gotBody, _ := vm.Disassemble(got.Body, labels)
+			gotProg, _ := vm.Disassemble(got.Program, nil)
 			if !testutil.DeepEqual(got, c.want) {
-				wantProg, _ := vm.Disassemble(c.want.Program, labels)
+				wantBody, _ := vm.Disassemble(c.want.Body, labels)
+				wantProg, _ := vm.Disassemble(c.want.Program, nil)
 				gotJSON, _ := json.Marshal(got)
 				wantJSON, _ := json.Marshal(c.want)
-				t.Errorf("got %s [prog: %s]\nwant %s [prog: %s]", string(gotJSON), gotProg, wantJSON, wantProg)
+				t.Errorf("got  %s\nwant %s\ngot body  %s\nwant body %s\ngot prog  %s\nwant prog %s", string(gotJSON), wantJSON, gotBody, wantBody, gotProg, wantProg)
 			} else {
+				t.Log(gotBody)
 				t.Log(gotProg)
 			}
 		})
