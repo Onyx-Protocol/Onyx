@@ -11,25 +11,21 @@ import (
 
 func TestRemovePeerAddr(t *testing.T) {
 	s := state{peers: map[uint64]string{1: "1.2.3.4:567"}}
-	want := state{peers: map[uint64]string{}}
+	wantPeers := map[uint64]string{}
 
 	s.RemovePeerAddr(1)
-	if !reflect.DeepEqual(s, want) {
-		t.Errorf("RemovePeerAddr(%d) => %v want %v", 1, s, want)
+	if !reflect.DeepEqual(s.peers, wantPeers) {
+		t.Errorf("RemovePeerAddr(%d) => %v want %v", 1, s.peers, wantPeers)
 	}
 }
 
 func TestSetPeerAddr(t *testing.T) {
 	s := newState()
-	want := &state{
-		state:   s.state,
-		peers:   map[uint64]string{1: "1.2.3.4:567"},
-		version: s.version,
-	}
+	wantPeers := map[uint64]string{1: "1.2.3.4:567"}
 
 	s.SetPeerAddr(1, "1.2.3.4:567")
-	if !reflect.DeepEqual(s, want) {
-		t.Errorf("s.SetPeerAddr(1, \"1.2.3.4:567\") => %v, want %v", s, want)
+	if !reflect.DeepEqual(s.peers, wantPeers) {
+		t.Errorf("s.SetPeerAddr(1, \"1.2.3.4:567\") => %v, want %v", s.peers, wantPeers)
 	}
 }
 
