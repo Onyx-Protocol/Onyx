@@ -136,50 +136,29 @@ These operate on numeric operands (`Integer` or `Amount`) and produce a numeric 
 Remaining expression types:
 
 - `(` _expr_ `)` is _expr_
-- _expr_ `(` _arguments_ `)` where _arguments_ is a comma-separated list of expressions is a function call; see [functions](#functions) below
+- _expr_ `(` _arguments_ `)` is a function call, where _arguments_ is a comma-separated list of expressions; see [functions](#functions) below
 - a bare identifier is a variable reference
-- `[` _exprs_ `]` where _exprs_ is a comma-separated list of expressions is a list literal (presently used only in `checkTxMultiSig`)
+- `[` _exprs_ `]` is a list literal, where _exprs_ is a comma-separated list of expressions (presently used only in `checkTxMultiSig`)
 - a sequence of numeric digits optionally preceded by `-` is an integer literal
 - a sequence of bytes between single quotes `'...'` is a string literal
 - the prefix `0x` followed by 2n hexadecimal digits is also a string literal representing n bytes
 
-### Limitations in Ivy expression syntax
+## Functions
 
-The syntax of Ivy expressions is intentionally limited (compared to conventional programming languages) in an attempt to minimize the chance of writing buggy contracts that could result in misdirected or unrecoverable value.
+Ivy includes several built-in functions for use in `verify` statements and elsewhere.
 
-If you find yourself wanting to write:
-
-```
-verify expr1 && expr2
-```
-
-write this instead:
-
-```
-verify expr1
-verify expr2
-```
-
-If you’d like to do this:
-
-```
-clause execute() {
-  verify expr1 || expr2
-  ...
-```
-
-write this instead:
-
-```
-clause execute1() {
-  verify expr1
-  ...
-}
-clause execute2() {
-  verify expr2
-  ...
-}
-```
+- `abs(n)` takes a number and produces its absolute value.
+- `min(x, y)` takes two numbers and produces the smaller one.
+- `max(x, y)` takes two numbers and produces the larger one.
+- `size(s)` takes an expression of any type and produces its `Integer` size in bytes.
+- `concat(s1, s2)` takes two strings and concatenates them to produce a new string.
+- `concatpush(s1, s2)` takes two strings and produces the concatenation of `s1` followed by the Chain VM opcodes needed to push `s2` onto the Chain VM stack. This is typically used to construct new VM programs out of pieces of other ones. See [the Chain VM specification](/protocol/specifications/vm1#catpushdata).
+- `before(t)` takes a `Time` and returns a `Boolean` telling whether the unlocking transaction has a timestamp prior to `t`.
+- `after(t)` takes a `Time` and returns a `Boolean` telling whether the unlocking transaction has a timestamp later than `t`.
+- `sha3(s)` takes a byte string and produces its SHA3-256 hash (with Ivy type `Hash`).
+- `sha256(s)` takes a byte string and produces its SHA-256 hash (with Ivy type `Hash`).
+- `checkTxSig(key, sig)` takes a `PublicKey` and a `Signature` and returns a `Boolean` telling whether `sig` matches both `key` _and_ the unlocking transaction.
+- `checkTxMultiSig([key1, key2, ...], [sig1, sig2, ...])` takes one list-literal of `PublicKeys` and another of `Signatures` and returns a `Boolean` that is true only when every `sig` matches both a `key` _and_ the unlocking transaction. Ordering matters: not every key needs a matching signature, but every signature needs a matching key, and those must be in the same order in their respective lists.
 
 ## Rules for Ivy contracts
 
@@ -190,3 +169,54 @@ An Ivy contract is correct only if it obeys all of the following rules.
 - Every clause parameter must be used in its clause.
 - Every clause must dispose of the contract value with a `lock` or an `unlock` statement.
 - Every clause must also dispose of all clause values, if any, with a `lock` statement for each.
+
+## Examples
+
+Here is `LockWithPublicKey`, one of the simplest possible contracts. Armed with the information in this document it should be easy to understand in detail how it works.
+
+```
+contract LockWithPublicKey(publicKey: PublicKey) locks value {
+  clause spend(sig: Signature) {
+    verify checkTxSig(publicKey, sig)
+    unlock value
+  }
+}
+```
+
+The name of this contract is `LockWithPublicKey`. It locks some value, called `value`. The transaction locking the value must specify an argument for `LockWithPublicKey`’s one parameter, `publicKey`.
+
+`LockWithPublicKey` has one clause, which means one way to unlock `value`: `spend`, which requires a `Signature` as an argument.
+
+The `verify` in `spend` checks that `sig`, the supplied `Signature`, matches both `publicKey` and the new transaction trying to unlock `value`. If that succeeds, `value` is unlocked.
+
+Here is a more challenging example: the `LoanCollateral` contract from [the Ivy playground](tutorial).
+
+```
+contract LoanCollateral(assetLoaned: Asset,
+                        amountLoaned: Amount,
+                        repaymentDue: Time,
+                        lender: Program,
+                        borrower: Program) locks collateral {
+  clause repay() requires payment: amountLoaned of assetLoaned {
+    lock payment with lender
+    lock collateral with borrower
+  }
+  clause default() {
+    verify after(repaymentDue)
+    lock collateral with lender
+  }
+}
+```
+
+The name of this contract is `LoanCollateral`. It locks some value called `collateral`. The transaction locking `collateral` with this contract must specify arguments for `LoanCollateral`’s five parameters: `assetLoaned`, `amountLoaned`, `repaymentDue`, `lender`, and `borrower`.
+
+The contract has two clauses, or two ways to unlock `collateral`:
+
+- `repay` requires no data but does require payment of `amountLoaned` units of `assetLoaned`
+- `default` requires no payment or data
+
+The intent of this contract is that `lender` has loaned `amountLoaned` units of `assetLoaned` to `borrower`, secured by `collateral`; and if the loan is repaid to `lender`, the collateral is returned to `borrower`, but if the repayment deadline passes, `lender` is entitled to claim `collateral` for him or herself.
+
+The statements in `repay` send the payment to the lender and the collateral to the borrower with a simple pair of `lock` statements. Recall that “sending” value “to” a blockchain participant actually means locking the payment with a program that allows the recipient to unlock it.
+
+The `verify` in `default` ensures that the deadline has passed and, if it has, the `lock` statement locks `collateral` with `lender`. Note that this does not happen automatically when the deadline passes. The lender (or someone) must explicitly unlock `collateral` by constructing a new transaction that invokes the `default` clause of `LoanCollateral`.
