@@ -1407,7 +1407,7 @@ and (-webkit-min-device-pixel-ratio: 2) {
   outline: none;
 }
 
-#version-alert {
+#version-alert, .force-version-alert {
   display: none;
   margin-bottom: 30px;
 }
