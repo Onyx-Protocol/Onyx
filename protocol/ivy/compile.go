@@ -89,7 +89,7 @@ func Compile(r io.Reader, args *[]ContractArg) (CompileResult, error) {
 		return CompileResult{}, err
 	}
 
-	prog, labels, err := compileContract(c, globalEnv)
+	body, labels, err := compileContract(c, globalEnv)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
