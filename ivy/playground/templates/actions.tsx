@@ -28,11 +28,9 @@ export const SET_SOURCE = 'templates/SET_SOURCE'
 export const setSource = (source: string) => {
   return (dispatch, getState) => {
     const type = SET_SOURCE
-    dispatch({
-      type,
-      source
-    })
+    dispatch({ type, source })
     dispatch(fetchCompiled(source))
+    dispatch(updateError())
   }
 }
 
