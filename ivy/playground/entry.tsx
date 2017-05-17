@@ -44,6 +44,8 @@ const store = createStore(
   composeEnhancers(applyMiddleware(thunk), applyMiddleware(routerMiddleware(history)), persistState())
 )
 
+const selected = templates.selectors.getSelectedTemplate(store.getState())
+store.dispatch(templates.actions.loadTemplate(selected))
 store.dispatch(assets.actions.fetch())
 store.dispatch(accounts.actions.fetch())
 render(
