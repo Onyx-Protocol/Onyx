@@ -16,7 +16,9 @@ The features and examples in the Ivy Playground demonstrate the kinds of things 
 
 ## Before you get started
 
-You’ll need to download and run a version of Chain Core Developer Edition that includes the experimental Ivy Playground feature. [xxx describe]
+You’ll need to download and run a version of Chain Core Developer Edition that includes the experimental Ivy Playground feature.
+
+<a href="../ivy-playground/install" class="downloadBtn btn success">Install Chain Core w/ Ivy</a>
 
 ## Setting up
 
