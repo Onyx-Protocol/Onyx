@@ -14,6 +14,7 @@ func pgbin() string {
 		"/usr/lib/postgresql/9.5/bin",
 		"/Applications/Postgres.app/Contents/Versions/9.6/bin",
 		"/Applications/Postgres.app/Contents/Versions/9.5/bin",
+		"/usr/pgsql-9.6/bin",
 	} {
 		if fi, err := os.Lstat(s); err == nil && fi.IsDir() {
 			return s
