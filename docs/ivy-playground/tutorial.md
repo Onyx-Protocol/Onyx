@@ -38,7 +38,7 @@ The Ivy Playground opens on a view of the _contract template editor_, preloaded 
 
 You may edit the text of the contract, but first let’s look around at the other elements on the page.
 
-Beneath the contract editor is a box labeled “Compiled.” It shows the _opcodes_ that Chain Core uses as a compact internal representation of the contract. (This is explained below. [xxx actually explain it below])
+Beneath the contract editor is a box labeled “Compiled.” It shows the _opcodes_ that Chain Core uses as a compact internal representation of the contract. (This is explained in the Appendix.)
 
 Above the contract editor are two buttons labeled “Load Template” and “Save.” The Save button lets you save contracts you create using the contract template editor. The Load Template button lets you load contracts you’ve previously saved, plus some prewritten samples we’ve provided, such as `LockWithPublicKey`.
 
@@ -65,7 +65,7 @@ Let’s take a look at the steps involved in using something like the `TradeOffe
 - She creates a program by setting the parameters of `TradeOffer` as follows:
   - `requestedAsset` is `USD` (US dollars)
   - `requestedAmount` is 110
-  - `sellerProgram` is the program where Alice can receive payment [xxx digression about create receiver]
+  - `sellerProgram` is the program where Alice can receive payment (payments and other transfers of value are always made “to” programs; see [the Appendix](#Appendix:-Contracts,-programs,-accounts,-receivers,-and-keys) for a discussion)
   - `sellerKey` is Alice’s public key
 - Alice creates a transaction paying 100 euros from her account into the `TradeOffer` program she just created
 
@@ -137,7 +137,7 @@ If you insert this clause after the `spend` clause, the Ivy Playground should lo
 
 ![sender undefined](sender_undefined.png)
 
-There’s still an error: `sender` is undefined. [xxx the actual error message in this case is “program in lock statement in clause "revert" has type "", must be Program,” can we improve that?] It must be specified at the time the first transaction is created, i.e. as a contract parameter, so that the later transaction can’t send `value` anywhere it chooses. Add `sender: Program` to the contract parameters, and the contract template is complete:
+There’s still an error: `sender` is undefined. It must be specified at the time the first transaction is created, i.e. as a contract parameter, so that the later transaction can’t send `value` anywhere it chooses. Add `sender: Program` to the contract parameters, and the contract template is complete:
 
 ![TimedPayment](timed_payment.png)
 
@@ -151,7 +151,7 @@ First, make sure you’ve created and saved the `TimedPayment` contract template
 
 Now take a look at the Value to Lock section. This is where we specify the source, amount, and type of value for the contract.
 
-In a new Ivy Playground you’ll see a button [xxx it’s actually a link, can we make it a button?] labeled “Seed Chain Core.” This defines some dummy accounts and asset types that you can use in the playground, and issues units of those assets to the accounts. Click “Seed Chain Core.”
+In a new Ivy Playground you’ll see a button labeled “Seed Chain Core.” This defines some dummy accounts and asset types that you can use in the playground, and issues units of those assets to the accounts. Click “Seed Chain Core.”
 
 Now that we have some accounts defined, and those accounts have balances we can use, let’s fund an instance of the `TimedPayment` contract. Supposing that Alice wants to send a timed payment of 10 pieces of gold to Bob:
 
@@ -191,7 +191,7 @@ The second part of this page gives us options for unlocking the payment: either 
 
 ...or with the `revert` clause, which requires only that the deadline has passed.
 
-Let’s see what happens if we try to unlock the value with `revert` _before_ the deadline. Select the `revert` clause and click “Unlock Value.” You should see the error “max\_time is less than min\_time,” [xxx ugh] indicating that the `verify after(deadline)` check in the `revert` clause failed.
+Let’s see what happens if we try to unlock the value with `revert` _before_ the deadline. Select the `revert` clause and click “Unlock Value.” You should see the error “max\_time is less than min\_time,” indicating that the `verify after(deadline)` check in the `revert` clause failed.
 
 ![unlock fail](unlock_fail.png)
 
@@ -222,3 +222,29 @@ Now that you have run through a complete example from end to end, look through t
 - `RevealFactors` The value in this contract can be unlocked by anyone able to provide two integers that multiply to a given product.
 
 - `CallOption` A seller locks some value with a time-limited promise to sell to a specific buyer at a specific price. Before the deadline, the buyer may choose to exercise the option. After the deadline, the seller may reclaim the offered value.
+
+## Appendix: Contracts, programs, accounts, receivers, and keys
+
+In Chain Core, “contracts,” “programs,” “accounts,” “receivers,” and “keys” are related but distinct concepts. The similarities and differences between these concepts can be confusing. This section tries to make it clear.
+
+### Keys
+
+In Chain Core, “key” is shorthand for a public-private key _pair_. A public key is published widely for everyone to use. The corresponding private key is kept secret. A _signature_ on a given document (such as a blockchain transaction) can be produced from a private key. Revealing the signature (but not the private key!) allows others to verify the signature matches the well-known _public_ key, and so could only have been produced by the owner of the private key.
+
+### Programs
+
+A program (sometimes also called a control program) is a sequence of instructions that protects some value on the blockchain. Chain Core uses these instructions to test the validity of a transaction. Each program asks the question, “Does the transaction trying to unlock my value meet my conditions?” The conditions may be simple or complex. A typical simple program asks, “Does the transaction trying to unlock my value include a signature matching this specific public key?”
+
+Internally, Chain Core uses _opcodes_ to express the logic of a program compactly and efficiently. But writing programs with opcodes is difficult and error-prone. That’s why we have Ivy, a _high-level_ language for expressing contracts in a much safer and more intuitive way. The Ivy _compiler_ contained in Chain Core, converts contracts written in the Ivy language into low-level opcodes.
+
+### Accounts
+
+An account controls a number of keys. Those wishing to send payments to an account can do so by locking them with a program that tests a signature against the recipient’s public key, as just described. The account wishing to spend those payments must prove its ownership by signing with the corresponding private key.
+
+### Receivers
+
+The keys in an account can produce an unlimited number of “derived keys.” In practice, for the sake of privacy, a distinct derived key is used for every transaction. A receiver is just a program that checks a signature against a distinct derived key for an account. The account owner, expecting a payment, generates a new receiver and sends it to the payer (for the payer to use in locking payment); meanwhile, Chain Core makes a note of the newly derived key so that when payment arrives, it can be unlocked with the correct signature.
+
+### Contract
+
+When a contract is instantiated with specific arguments, it is simply a program: a sequence of instructions that can be used to lock blockchain value. We also use “contract” to mean a template from which programs can be instantiated.
