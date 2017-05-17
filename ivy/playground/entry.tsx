@@ -44,8 +44,6 @@ const store = createStore(
   composeEnhancers(applyMiddleware(thunk), applyMiddleware(routerMiddleware(history)), persistState())
 )
 
-//store.dispatch(app.actions.reset())
-store.dispatch(templates.actions.loadTemplate(templates.constants.INITIAL_ID_LIST[0]))
 store.dispatch(assets.actions.fetch())
 store.dispatch(accounts.actions.fetch())
 render(

@@ -10,7 +10,7 @@ import { INITIAL_SOURCE_MAP, INITIAL_ID_LIST } from './constants'
 const INITIAL_STATE: TemplateState = {
   sourceMap: INITIAL_SOURCE_MAP,
   idList: INITIAL_ID_LIST,
-  source: '',
+  source: INITIAL_SOURCE_MAP[0],
   inputMap: undefined,
   compiled: undefined,
   error: undefined
