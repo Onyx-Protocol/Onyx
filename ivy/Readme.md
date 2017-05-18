@@ -15,6 +15,8 @@ $ brew install yarn
 
 ### Install Chain Core with necessary tags
 
+First, make sure you can build Chain Core from source by following the instructions at https://github.com/chain/chain#building-from-source.
+
 ```
 $ go install -tags "localhost_auth http_ok" chain/cmd/cored
 ```
