@@ -1,5 +1,12 @@
 ## Ivy
 
+```
+git clone https://github.com/chain/chain.git
+cd chain
+git checkout ivy
+cd ivy
+```
+
 To build, bundle, and develop with the playground, we recommend using [yarn](https://yarnpkg.com/en/):
 
 ```
