@@ -88,6 +88,7 @@ var errorFormatter = httperror.Formatter{
 		errNoClientTokens:              {400, "CH120", "Cannot enable client authentication with no client tokens"},
 		blocksigner.ErrConsensusChange: {400, "CH150", "Refuse to sign block with consensus change"},
 		errMissingAddr:                 {400, "CH160", "Address is missing"},
+		errInvalidAddr:                 {400, "CH161", "Address is invalid"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: {400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},
