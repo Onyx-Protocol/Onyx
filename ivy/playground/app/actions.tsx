@@ -14,7 +14,7 @@ export const reset = () => {
   return (dispatch, getState) => {
     let selected = templates.selectors.getSelectedTemplate(getState())
     if (selected === "" || templates.constants.INITIAL_SOURCE_MAP[selected] === undefined) {
-      selected = templates.constants.INITIAL_ID_LIST[0]
+      selected = templates.constants.INITIAL_ID_LIST[1]
     }
     dispatch({ type: RESET })
     dispatch(templates.actions.loadTemplate(selected))

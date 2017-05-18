@@ -1,5 +1,11 @@
 // Predefined contract templates
 
+export const BASE_TEMPLATE = `contract ContractName() locks value {
+  clause clauseName() {
+    unlock value
+  }
+}`
+
 export const LOCK_WITH_PUBLIC_KEY = `contract LockWithPublicKey(publicKey: PublicKey) locks value {
   clause spend(sig: Signature) {
     verify checkTxSig(publicKey, sig)
@@ -98,6 +104,7 @@ export const CALL_OPTION = `contract CallOption(strikePrice: Amount,
 }`
 
 export const INITIAL_SOURCE_MAP = {
+  ContractName: BASE_TEMPLATE,
   LockWithPublicKey: LOCK_WITH_PUBLIC_KEY,
   LockWithPublicKeyHash: LOCK_WITH_PUBLIC_KEY_HASH,
   LockWithMultiSig: LOCK_WITH_MULTISIG,
@@ -110,6 +117,7 @@ export const INITIAL_SOURCE_MAP = {
 }
 
 export const INITIAL_ID_LIST = [
+  "ContractName",
   "LockWithPublicKey",
   "LockWithPublicKeyHash",
   "LockWithMultiSig",
