@@ -42,6 +42,7 @@ const Navbar = (props: { path: string }) => {
           <li className="divider-vertical"></li>
           <li><a href="https://chain.com/docs/1.2/ivy-playground/docs" target="_blank">Docs</a></li>
           <li><a href="https://chain.com/docs/1.2/ivy-playground/tutorial" target="_blank">Tutorial</a></li>
+          <li><a href="../dashboard" target="_blank">Dashboard</a></li>
           <li className="dropdown">
             <a href="#" className="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Setup <span className="caret"></span></a>
             <ul className="dropdown-menu">
