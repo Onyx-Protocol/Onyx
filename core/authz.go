@@ -58,7 +58,8 @@ var policyByRoute = map[string][]string{
 	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring", "internal"},
 
 	"/debug/vars":          {"client-readwrite", "client-readonly", "monitoring"}, // should monitoring endpoints also be available to any other policy-holders?
-	"/debug/pprof":         {"client-readwrite", "client-readonly", "monitoring"},
+	"/debug/pprof/block":   {"client-readwrite", "client-readonly", "monitoring"},
+	"/debug/pprof/heap":    {"client-readwrite", "client-readonly", "monitoring"},
 	"/debug/pprof/profile": {"client-readwrite", "client-readonly", "monitoring"},
 	"/debug/pprof/symbol":  {"client-readwrite", "client-readonly", "monitoring"},
 	"/debug/pprof/trace":   {"client-readwrite", "client-readonly", "monitoring"},
