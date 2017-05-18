@@ -84,7 +84,7 @@ func Compile(r io.Reader, args *[]ContractArg) (CompileResult, error) {
 	for _, b := range builtins {
 		globalEnv.add(b.name, nilType, roleBuiltin)
 	}
-	err = globalEnv.add(c.name, contractType, roleContract)
+	err = globalEnv.addContract(c)
 	if err != nil {
 		return CompileResult{}, err
 	}
