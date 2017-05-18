@@ -51,14 +51,12 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		return errors.Wrap(err)
 	}
 
-	grant := authz.Grant{
+	_, err = a.grants.Store(ctx, &authz.Grant{
 		Policy:    "internal",
 		GuardType: "x509",
 		GuardData: guardData,
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 		Protected: true,
-	}
-
-	_, err = authz.StoreGrant(ctx, a.sdb, grant, GrantPrefix)
+	})
 	return errors.Wrap(err)
 }

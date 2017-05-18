@@ -12,6 +12,7 @@ import (
 	"chain/core/accesstoken"
 	"chain/database/pg/pgtest"
 	"chain/database/sinkdb/sinkdbtest"
+	"chain/net/http/authz"
 )
 
 func TestAuthz(t *testing.T) {
@@ -24,12 +25,13 @@ func TestAuthz(t *testing.T) {
 	mux.Handle("/raft/", sdb.RaftService())
 
 	var handler http.Handler = mux
-	handler = AuthHandler(handler, sdb, accessTokens, nil)
+	handler = AuthHandler(handler, sdb, accessTokens, nil, nil)
 
 	api := &API{
 		mux:          http.NewServeMux(),
 		sdb:          sdb,
 		accessTokens: accessTokens,
+		grants:       authz.NewStorage(sdb, GrantPrefix),
 	}
 	api.buildHandler()
 	mux.Handle("/", api)

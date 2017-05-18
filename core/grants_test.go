@@ -8,6 +8,7 @@ import (
 	"chain/core/accesstoken"
 	"chain/database/pg/pgtest"
 	"chain/database/sinkdb/sinkdbtest"
+	"chain/net/http/authz"
 )
 
 func TestCreatGrantValidation(t *testing.T) {
@@ -20,10 +21,12 @@ func TestCreatGrantValidation(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	sdb := sinkdbtest.NewDB(t)
 	api := &API{
 		mux:          http.NewServeMux(),
-		sdb:          sinkdbtest.NewDB(t),
+		sdb:          sdb,
 		accessTokens: accessTokens,
+		grants:       authz.NewStorage(sdb, GrantPrefix),
 	}
 
 	validCases := []apiGrant{
@@ -132,10 +135,12 @@ func TestDeleteGrants(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	sdb := sinkdbtest.NewDB(t)
 	api := &API{
 		mux:          http.NewServeMux(),
-		sdb:          sinkdbtest.NewDB(t),
+		sdb:          sdb,
 		accessTokens: accessTokens,
+		grants:       authz.NewStorage(sdb, GrantPrefix),
 	}
 
 	fixture := []apiGrant{
@@ -232,10 +237,12 @@ func TestDeleteGrantsByAccessToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	sdb := sinkdbtest.NewDB(t)
 	api := &API{
 		mux:          http.NewServeMux(),
-		sdb:          sinkdbtest.NewDB(t),
+		sdb:          sdb,
 		accessTokens: accessTokens,
+		grants:       authz.NewStorage(sdb, GrantPrefix),
 	}
 
 	// fixture data includes four grants:

@@ -2,9 +2,18 @@
 
 package main
 
-import "chain/core/config"
+import (
+	"chain/core"
+	"chain/core/config"
+	"chain/net/http/authz"
+)
 
-// See $CHAIN/net/http/authz/localhost_auth.go for the implementation.
 func init() {
 	config.BuildConfig.LocalhostAuth = true
+	for _, p := range core.Policies {
+		builtinGrants = append(builtinGrants, &authz.Grant{
+			Policy:    p,
+			GuardType: "localhost",
+		})
+	}
 }

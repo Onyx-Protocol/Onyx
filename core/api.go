@@ -65,6 +65,7 @@ type API struct {
 	indexer         *query.Indexer
 	txFeeds         *txfeed.Tracker
 	accessTokens    *accesstoken.CredentialStore
+	grants          *authz.Storage
 	config          *config.Config
 	submitter       txbuilder.Submitter
 	db              pg.DB
@@ -250,20 +251,22 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func AuthHandler(handler http.Handler, sdb *sinkdb.DB, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
-	authorizer := authz.NewAuthorizer(sdb, GrantPrefix, policyByRoute)
-
+func AuthHandler(handler http.Handler, sdb *sinkdb.DB, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config, extraGrants []*authz.Grant) http.Handler {
+	var subj *pkix.Name
 	rootCAs := x509.NewCertPool()
 	if tlsConfig != nil {
 		x509Cert, err := x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
 		if err != nil {
 			log.Fatalkv(context.Background(), log.KeyError, err)
 		}
-
-		authorizer.GrantInternal(x509Cert.Subject)
+		subj = &x509Cert.Subject
 		rootCAs = tlsConfig.ClientCAs
 	}
 
+	authorizer := authz.NewAuthorizer(
+		grantStorage(sdb, extraGrants, subj),
+		policyByRoute,
+	)
 	authenticator := authn.NewAPI(accessTokens, crosscoreRPCPrefix, rootCAs)
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
