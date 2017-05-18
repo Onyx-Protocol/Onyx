@@ -3,8 +3,8 @@
 // license that can be found in the LICENSE file at
 // https://github.com/golang/go/blob/master/LICENSE.
 
-// Vet is a simple checker for static errors in Go source code.
-// See doc.go for more information.
+// chainvet is a simple checker for static errors in Go source
+// code. See doc.go for more information.
 package main
 
 import (
@@ -54,7 +54,8 @@ func triStateFlag(name string, value triState, usage string) *triState {
 }
 
 // triState implements flag.Value, flag.Getter, and flag.boolFlag.
-// They work like boolean flags: we can say vet -printf as well as vet -printf=true
+// They work like boolean flags: we can say chainvet -printf as well
+// as chainvet -printf=true
 func (ts *triState) Get() interface{} {
 	return *ts == setTrue
 }
@@ -141,8 +142,8 @@ func register(name, usage string, fn func(*File, ast.Node), types ...ast.Node) {
 // Usage is a replacement usage function for the flags package.
 func Usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "\tvet [flags] directory...\n")
-	fmt.Fprintf(os.Stderr, "\tvet [flags] files... # Must be a single package\n")
+	fmt.Fprintf(os.Stderr, "\tchainvet [flags] directory...\n")
+	fmt.Fprintf(os.Stderr, "\tchainvet [flags] files... # Must be a single package\n")
 	fmt.Fprintf(os.Stderr, "This command complements 'go vet';\n")
 	fmt.Fprintf(os.Stderr, "it assumes that code is free of 'go vet' errors.\n")
 	fmt.Fprintf(os.Stderr, "For more information run\n")
@@ -354,7 +355,7 @@ func walkDir(root string) {
 // warnf formats the error to standard error, adding program
 // identification and a newline, but does not exit.
 func warnf(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "vet: "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, "chainvet: "+format+"\n", args...)
 	setExit(1)
 }
 
