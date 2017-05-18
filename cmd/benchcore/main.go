@@ -217,7 +217,6 @@ func main() {
 
 	log.Println("init database")
 	must(scpPut(db.addr, schema, "schema.sql", 0644))
-	must(scpPut(db.addr, corectlBin, "corectl", 0755))
 
 	tpl, err := template.New("initdb").Parse(initdbsh)
 	must(err)
@@ -225,27 +224,27 @@ func main() {
 	must(tpl.Execute(&buf, conf))
 	mustRunOn(db.addr, string(buf.Bytes()))
 
-	token, err := scpGet(db.addr, "token.txt")
-	token = bytes.TrimSpace(token)
-	must(err)
-	networkToken, err := scpGet(db.addr, "network-token.txt")
-	networkToken = bytes.TrimSpace(networkToken)
-	must(err)
-	fmt.Println(string(token))
-	fmt.Println(string(networkToken))
-
 	dbURL := "postgres://benchcore:benchcorepass@" + db.privAddr + "/core?sslmode=disable"
 	pubdbURL := "postgres://benchcore:benchcorepass@" + db.addr + "/core?sslmode=disable"
 
 	log.Println("init cored hosts")
 	must(scpPut(cored.addr, coredBin, "cored", 0755))
+	must(scpPut(cored.addr, corectlBin, "corectl", 0755))
 	go mustRunOn(cored.addr, coredsh, "dbURL", dbURL, "dbConns", conf.CoredMaxDBConns)
 	if *flagP {
 		writeFile("cored", coredBin)
 	}
+	mustRunOn(cored.addr, corectlsh)
+
+	tokenBytes, err := scpGet(cored.addr, "token.txt")
+	must(err)
+	tokenRW := strings.TrimSpace(string(tokenBytes))
+	tokenCrossCore, err := scpGet(cored.addr, "crosscore-token.txt")
+	must(err)
+	log.Printf("client-readwrite token: %s\n", tokenRW)
+	log.Printf("crosscore token: %s\n", string(tokenCrossCore))
 
 	log.Println("init client")
-	accessToken := string(token)
 	coreURL := "http://" + cored.privAddr + ":1999"
 	log.Println("core URL:", coreURL)
 	publicCoreURL := "http://" + cored.addr + ":1999"
@@ -254,7 +253,7 @@ func main() {
 	javaClass := strings.TrimSuffix(progName, ".java")
 	must(scpPut(client.addr, testJava, javaClass+".java", 0644))
 	if *flagP {
-		go profile(publicCoreURL, string(token))
+		go profile(publicCoreURL, tokenRW)
 	}
 
 	if *flagWith != "" {
@@ -265,7 +264,7 @@ func main() {
 
 	mustRunOn(client.addr, clientsh,
 		"coreURL", coreURL,
-		"apiToken", accessToken,
+		"apiToken", tokenRW,
 		"coreAddr", cored.privAddr,
 		"javaClass", javaClass,
 	)
@@ -334,8 +333,9 @@ func mustBuildCored() []byte {
 	}
 
 	date := time.Now().UTC().Format(time.RFC3339)
+	// TODO(jackson): support tls auth
 	cmd := exec.Command("go", "build",
-		"-tags", "http_ok lookback_auth no_reset",
+		"-tags", "http_ok localhost_auth no_reset",
 		"-ldflags", "-X main.buildDate="+date,
 		"-o", "/dev/stdout",
 		"chain/cmd/cored",
@@ -797,12 +797,6 @@ set -eo pipefail
 	core
 /usr/lib/postgresql/9.5/bin/psql --quiet -f $HOME/schema.sql core
 EOFPOSTGRES
-
-export DATABASE_URL='postgres://benchcore:benchcorepass@localhost/core'
-$HOME/corectl migrate
-$HOME/corectl config-generator
-$HOME/corectl create-token benchcore > $HOME/token.txt
-$HOME/corectl create-token -net benchcorenet > $HOME/network-token.txt
 `
 
 const coredsh = `#!/bin/bash
@@ -817,6 +811,15 @@ export GOTRACEBACK=crash
 ./cored 2>&1 | tee -a cored.log
 EOFUBUNTU
 EOFROOT
+`
+
+const corectlsh = `#!/bin/bash
+export COREURL=:1999
+
+./corectl wait
+./corectl config-generator
+./corectl create-token benchcore client-readwrite > $HOME/token.txt
+./corectl create-token benchcrosscore crosscore > $HOME/crosscore-token.txt
 `
 
 const clientsh = `#!/bin/bash
@@ -858,8 +861,11 @@ echo pinging
 ping -c 1 {{coreAddr}}
 echo pinged
 
+echo "Core URL: {{coreURL}}"
+echo "API Token: {{apiToken}}"
+
 echo curling "{{coreURL}}/debug/vars"
-curl -si -u {{apiToken}} "{{coreURL}}/debug/vars"
+curl -si -u "{{apiToken}}" "{{coreURL}}/debug/vars"
 echo curled
 export CHAIN_API_URL='{{coreURL}}/'
 export CHAIN_API_TOKEN='{{apiToken}}'
