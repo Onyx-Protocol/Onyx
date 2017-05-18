@@ -11,7 +11,7 @@ tempBuildPath=`mktemp -d`
 trap "rm -rf $tempBuildPath" EXIT
 
 headId=`git rev-parse HEAD`
-releaseTag="chain-core-server-1.2.0-ivy"
+releaseTag="chain-core-server-1.2.1-ivy"
 "${CHAIN}/bin/build-cored-release" $releaseTag $tempBuildPath
 
 cp -f $tempBuildPath/cored "${TARGET_DIR}/"
