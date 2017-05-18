@@ -6,6 +6,7 @@ import ReactTooltip from 'react-tooltip'
 // internal imports
 import Ace from './ace'
 import ErrorAlert from './errorAlert'
+import NewTemplate from './newTemplate'
 import LoadTemplate from './loadTemplate'
 import SaveTemplate from './saveTemplate'
 import Opcodes from './opcodes'
@@ -29,6 +30,7 @@ const Editor = ({ compiled, source }) => {
         <div className="panel-heading clearfix">
           <h1 className="panel-title pull-left">Contract Template</h1>
           <ul className="panel-heading-btns pull-right">
+            <li><NewTemplate /></li>
             <li><LoadTemplate /></li>
             <li><SaveTemplate /></li>
           </ul>

@@ -30,7 +30,7 @@ const LoadTemplate = ({ idList, selected, handleClick }) => {
     <div className="dropdown">
       <button className="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
         <span className="glyphicon glyphicon-open"></span>
-        Load Template
+        Load
       </button>
       <ul className="dropdown-menu" aria-labelledby="dropdownMenu1">
         {options}
