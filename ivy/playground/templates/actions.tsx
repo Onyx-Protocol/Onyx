@@ -10,7 +10,7 @@ import { CompiledTemplate } from './types'
 export const loadTemplate = (selected: string) => {
   return (dispatch, getState) => {
     if (!selected) {
-      selected = INITIAL_ID_LIST[0]
+      selected = INITIAL_ID_LIST[1]
     }
     const state = getState()
     const source = getSourceMap(state)[selected]
