@@ -84,7 +84,7 @@ function BooleanWidget(props: { input: BooleanInput, handleChange: (e)=>undefine
 
 function StringWidget(props: { input: StringInput, handleChange: (e)=>undefined }) {
   let options = [{label: "Generate String", value: "generateStringInput"},
-                 {label: "Provide String", value: "provideStringInput"}]
+                 {label: "Provide String (Hex)", value: "provideStringInput"}]
   let handleChange = (s: string) => undefined
   return <div>
     <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
