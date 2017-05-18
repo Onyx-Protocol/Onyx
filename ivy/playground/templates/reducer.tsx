@@ -5,12 +5,12 @@ import { InputMap } from '../inputs/types'
 
 // internal imports
 import { UPDATE_ERROR, SET_SOURCE, SAVE_TEMPLATE, FETCH_COMPILED } from './actions'
-import { LOCK_WITH_PUBLIC_KEY, INITIAL_SOURCE_MAP, INITIAL_ID_LIST } from './constants'
+import { INITIAL_SOURCE_MAP, INITIAL_ID_LIST } from './constants'
 
 const INITIAL_STATE: TemplateState = {
   sourceMap: INITIAL_SOURCE_MAP,
   idList: INITIAL_ID_LIST,
-  source: LOCK_WITH_PUBLIC_KEY,
+  source: INITIAL_SOURCE_MAP[INITIAL_ID_LIST[0]],
   inputMap: undefined,
   compiled: undefined,
   error: undefined
