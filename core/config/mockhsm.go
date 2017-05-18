@@ -18,9 +18,9 @@ func getOrCreateDevKey(ctx context.Context, db pg.DB, c *Config) (blockPub ed255
 		return nil, err
 	}
 	if created {
-		log.Printf(ctx, "Generated new block-signing key %s\n", corePub.Pub)
+		log.Printf(ctx, "Generated new block-signing key %x", corePub.Pub)
 	} else {
-		log.Printf(ctx, "Using block-signing key %s\n", corePub.Pub)
+		log.Printf(ctx, "Using block-signing key %x", corePub.Pub)
 	}
 	c.BlockPub = corePub.Pub
 
