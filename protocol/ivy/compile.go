@@ -194,6 +194,9 @@ func compileContract(contract *contract, globalEnv *environ) ([]byte, map[uint32
 
 	var stack []stackEntry
 
+	// TODO(bobg): when we handle multiple contracts per compilation,
+	// all must be decorated with the recursive flag before any are
+	// compiled.
 	contract.recursive = checkRecursive(contract)
 
 	if contract.recursive {
@@ -525,50 +528,90 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	case *call:
 		bi := referencedBuiltin(e.fn)
 		if bi == nil {
-			if e.fn.typ(env) == contractType {
-				if e.fn.String() != contract.name {
-					return nil, fmt.Errorf("calling other contracts not yet supported")
-				}
+			if v, ok := e.fn.(varRef); ok {
+				if entry := env.lookup(string(v)); entry != nil && entry.t == contractType {
+					b.addData(nil)
+					stack = append(stack, stackEntry(e.String()))
 
-				// xxx typecheck args
+					addArgs := func() error {
+						if len(e.args) != len(entry.c.params) {
+							return fmt.Errorf("contract \"%s\" expects %d argument(s), got %d", entry.c.name, len(entry.c.params), len(e.args))
+						}
 
-				// Build the control program for this contract with its new
-				// params. The format is:
-				//   <contractBody> <argN> <argN-1> ... <arg1> N+1 DUP PICK 0 CHECKPREDICATE
-				// The contract body can be found on the stack under quineName.
-				b.addData(nil)
-				stack = append(stack, stackEntry(e.String()))
-
-				_, err := compileRef(b, stack, counts, quineName)
-				if err != nil {
-					return nil, errors.Wrap(err, "compiling contract call")
-				}
-				b.addOp(vm.OP_CATPUSHDATA)
-
-				for i := len(e.args) - 1; i >= 0; i-- {
-					_, err = compileExpr(b, stack, contract, clause, env, counts, e.args[i])
-					if err != nil {
-						return nil, errors.Wrap(err, "compiling contract call")
+						for i := len(e.args) - 1; i >= 0; i-- {
+							arg := e.args[i]
+							if entry.c.params[i].typ != "" && arg.typ(env) != entry.c.params[i].typ {
+								return fmt.Errorf("argument %d to contract \"%s\" has type \"%s\", must be \"%s\"", i, entry.c.name, arg.typ(env), entry.c.params[i].typ)
+							}
+							_, err := compileExpr(b, stack, contract, clause, env, counts, arg)
+							if err != nil {
+								return err
+							}
+							b.addOp(vm.OP_CATPUSHDATA)
+						}
+						return nil
 					}
+
+					if entry.c == contract {
+						// Recursive call - cannot use entry.c.compiled
+						// <body> <argN> <argN-1> ... <arg1> <N+1> DUP PICK 0 CHECKPREDICATE
+
+						_, err := compileRef(b, stack, counts, quineName)
+						if err != nil {
+							return nil, errors.Wrap(err, "compiling contract call")
+						}
+						b.addOp(vm.OP_CATPUSHDATA)
+
+						err = addArgs()
+						if err != nil {
+							return nil, errors.Wrap(err, "compiling contract call")
+						}
+
+						b.addInt64(int64(1 + len(e.args)))
+						b.addOp(vm.OP_CATPUSHDATA)
+
+						b.addData([]byte{byte(vm.OP_DUP), byte(vm.OP_PICK)})
+						b.addOp(vm.OP_CATPUSHDATA)
+					} else {
+						if entry.c.recursive {
+							// <body> <argN> <argN-1> ... <arg1> <N+1> DUP PICK 0 CHECKPREDICATE
+
+							b.addData(entry.c.compiled)
+							b.addOp(vm.OP_CATPUSHDATA)
+
+							err := addArgs()
+							if err != nil {
+								return nil, errors.Wrap(err, "compiling contract call")
+							}
+
+							b.addInt64(int64(1 + len(e.args)))
+							b.addOp(vm.OP_CATPUSHDATA)
+
+							b.addData([]byte{byte(vm.OP_DUP), byte(vm.OP_PICK)})
+							b.addOp(vm.OP_CATPUSHDATA)
+						} else {
+							// <argN> <argN-1> ... <arg1> <N> <body> 0 CHECKPREDICATE
+
+							err := addArgs()
+							if err != nil {
+								return nil, errors.Wrap(err, "compiling contract call")
+							}
+
+							b.addInt64(int64(len(e.args)))
+							b.addOp(vm.OP_CATPUSHDATA)
+
+							b.addData(entry.c.compiled)
+							b.addOp(vm.OP_CATPUSHDATA)
+						}
+					}
+					b.addData(vm.Int64Bytes(0))
 					b.addOp(vm.OP_CATPUSHDATA)
+
+					b.addData([]byte{byte(vm.OP_CHECKPREDICATE)})
+					b.addOp(vm.OP_CATPUSHDATA)
+
+					return stack, nil
 				}
-
-				// TODO(bobg): from this point the remaining data is known at
-				// compile time and can all go into a single CATPUSHDATA.
-
-				b.addInt64(int64(1 + len(e.args)))
-				b.addOp(vm.OP_CATPUSHDATA)
-
-				b.addData([]byte{byte(vm.OP_DUP), byte(vm.OP_PICK)})
-				b.addOp(vm.OP_CATPUSHDATA)
-
-				b.addData(vm.Int64Bytes(0))
-				b.addOp(vm.OP_CATPUSHDATA)
-
-				b.addData([]byte{byte(vm.OP_CHECKPREDICATE)})
-				b.addOp(vm.OP_CATPUSHDATA)
-
-				return stack, nil
 			}
 			return nil, fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
