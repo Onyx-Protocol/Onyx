@@ -283,6 +283,9 @@ func compileContract(contract *contract, globalEnv *environ) ([]byte, map[uint32
 	for i, targ := range clauseTargets {
 		labels[jumpAddrs[targ]] = contract.clauses[i].name
 	}
+
+	contract.compiled = prog
+
 	return prog, labels, nil
 }
 

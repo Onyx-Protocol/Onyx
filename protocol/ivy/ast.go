@@ -15,6 +15,7 @@ type contract struct {
 
 	// decoration
 	recursive bool
+	compiled  []byte
 }
 
 type param struct {
