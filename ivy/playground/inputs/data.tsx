@@ -189,6 +189,7 @@ export const isValidInput = (id: string, inputMap: InputMap): boolean => {
     case "parameterInput":
     case "stringInput":
     case "hashInput":
+    case "generateHashInput":
     case "publicKeyInput":
     case "timeInput":
     case "signatureInput":
