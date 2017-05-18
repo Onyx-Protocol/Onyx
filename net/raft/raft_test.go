@@ -2,7 +2,10 @@ package raft
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
+	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -86,5 +89,30 @@ func TestReadIDError(t *testing.T) {
 		if err == nil {
 			t.Errorf("readID of %v => err = nil, want error", test)
 		}
+	}
+}
+
+func TestStartUninitialized(t *testing.T) {
+	ctx := context.Background()
+	dir, err := ioutil.TempDir("", "raft_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	sv, err := Start("", dir, http.DefaultClient, false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sv.Initialized() {
+		t.Error("expected Service.Initialized to be false")
+	}
+	err = sv.WaitRead(ctx)
+	if err != ErrUninitialized {
+		t.Errorf("sv.WaitRead() = %s, want %s", err, ErrUninitialized)
+	}
+	_, err = sv.Exec(ctx, []byte{})
+	if err != ErrUninitialized {
+		t.Errorf("sv.Exec() = %s, want %s", err, ErrUninitialized)
 	}
 }
