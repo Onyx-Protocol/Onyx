@@ -26,6 +26,8 @@ type validationState struct {
 
 	// The destination position, for validating ValueDestinations
 	destPos uint64
+
+	cache map[bc.Hash]error
 }
 
 var (
@@ -53,14 +55,25 @@ var (
 	errZeroTime              = errors.New("timerange has one or two bounds set to zero")
 )
 
-func checkValid(vs *validationState, e bc.Entry) error {
+func checkValid(vs *validationState, e bc.Entry) (err error) {
+	entryID := bc.EntryID(e)
+	var ok bool
+	if err, ok = vs.cache[entryID]; ok {
+		return err
+	}
+
+	defer func() {
+		vs.cache[entryID] = err
+	}()
+
 	switch e := e.(type) {
 	case *bc.TxHeader:
 		// This does only part of the work of validating a tx header. The
 		// block-related parts of tx validation are in ValidateBlock.
 		if e.MaxTimeMs > 0 {
 			if e.MaxTimeMs < e.MinTimeMs {
-				return errors.WithDetailf(errBadTimeRange, "min time %d, max time %d", e.MinTimeMs, e.MaxTimeMs)
+				err = errors.WithDetailf(errBadTimeRange, "min time %d, max time %d", e.MinTimeMs, e.MaxTimeMs)
+				return
 			}
 		}
 
@@ -68,42 +81,48 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			resultEntry := vs.tx.Entries[*resID]
 			vs2 := *vs
 			vs2.entryID = *resID
-			err := checkValid(&vs2, resultEntry)
+			err = checkValid(&vs2, resultEntry)
 			if err != nil {
-				return errors.Wrapf(err, "checking result %d", i)
+				err = errors.Wrapf(err, "checking result %d", i)
+				return
 			}
 		}
 
 		if e.Version == 1 {
 			if len(e.ResultIds) == 0 {
-				return errEmptyResults
+				err = errEmptyResults
+				return
 			}
 
 			if e.ExtHash != nil && !e.ExtHash.IsZero() {
-				return errNonemptyExtHash
+				err = errNonemptyExtHash
+				return
 			}
 		}
 
 	case *bc.Mux:
-		err := vm.Verify(NewTxVMContext(vs.tx, e, e.Program, e.WitnessArguments))
+		err = vm.Verify(NewTxVMContext(vs.tx, e, e.Program, e.WitnessArguments))
 		if err != nil {
-			return errors.Wrap(err, "checking mux program")
+			err = errors.Wrap(err, "checking mux program")
+			return
 		}
 
 		for i, src := range e.Sources {
 			vs2 := *vs
 			vs2.sourcePos = uint64(i)
-			err := checkValidSrc(&vs2, src)
+			err = checkValidSrc(&vs2, src)
 			if err != nil {
-				return errors.Wrapf(err, "checking mux source %d", i)
+				err = errors.Wrapf(err, "checking mux source %d", i)
+				return
 			}
 		}
 		for i, dest := range e.WitnessDestinations {
 			vs2 := *vs
 			vs2.destPos = uint64(i)
-			err := checkValidDest(&vs2, dest)
+			err = checkValidDest(&vs2, dest)
 			if err != nil {
-				return errors.Wrapf(err, "checking mux destination %d", i)
+				err = errors.Wrapf(err, "checking mux destination %d", i)
+				return
 			}
 		}
 
@@ -111,7 +130,8 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		for i, src := range e.Sources {
 			sum, ok := checked.AddInt64(parity[*src.Value.AssetId], int64(src.Value.Amount))
 			if !ok {
-				return errors.WithDetailf(errOverflow, "adding %d units of asset %x from mux source %d to total %d overflows int64", src.Value.Amount, src.Value.AssetId.Bytes(), i, parity[*src.Value.AssetId])
+				err = errors.WithDetailf(errOverflow, "adding %d units of asset %x from mux source %d to total %d overflows int64", src.Value.Amount, src.Value.AssetId.Bytes(), i, parity[*src.Value.AssetId])
+				return
 			}
 			parity[*src.Value.AssetId] = sum
 		}
@@ -119,103 +139,124 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		for i, dest := range e.WitnessDestinations {
 			sum, ok := parity[*dest.Value.AssetId]
 			if !ok {
-				return errors.WithDetailf(errNoSource, "mux destination %d, asset %x, has no corresponding source", i, dest.Value.AssetId.Bytes())
+				err = errors.WithDetailf(errNoSource, "mux destination %d, asset %x, has no corresponding source", i, dest.Value.AssetId.Bytes())
+				return
 			}
 
 			diff, ok := checked.SubInt64(sum, int64(dest.Value.Amount))
 			if !ok {
-				return errors.WithDetailf(errOverflow, "subtracting %d units of asset %x from mux destination %d from total %d underflows int64", dest.Value.Amount, dest.Value.AssetId.Bytes(), i, sum)
+				err = errors.WithDetailf(errOverflow, "subtracting %d units of asset %x from mux destination %d from total %d underflows int64", dest.Value.Amount, dest.Value.AssetId.Bytes(), i, sum)
+				return
 			}
 			parity[*dest.Value.AssetId] = diff
 		}
 
 		for assetID, amount := range parity {
 			if amount != 0 {
-				return errors.WithDetailf(errUnbalanced, "asset %x sources - destinations = %d (should be 0)", assetID.Bytes(), amount)
+				err = errors.WithDetailf(errUnbalanced, "asset %x sources - destinations = %d (should be 0)", assetID.Bytes(), amount)
+				return
 			}
 		}
 
 		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
-			return errNonemptyExtHash
+			err = errNonemptyExtHash
+			return
 		}
 
 	case *bc.Nonce:
-		err := vm.Verify(NewTxVMContext(vs.tx, e, e.Program, e.WitnessArguments))
+		err = vm.Verify(NewTxVMContext(vs.tx, e, e.Program, e.WitnessArguments))
 		if err != nil {
-			return errors.Wrap(err, "checking nonce program")
+			err = errors.Wrap(err, "checking nonce program")
+			return
 		}
-		tr, err := vs.tx.TimeRange(*e.TimeRangeId)
+		var tr *bc.TimeRange
+		tr, err = vs.tx.TimeRange(*e.TimeRangeId)
 		if err != nil {
-			return errors.Wrap(err, "getting nonce timerange")
+			err = errors.Wrap(err, "getting nonce timerange")
+			return
 		}
 		vs2 := *vs
 		vs2.entryID = *e.TimeRangeId
 		err = checkValid(&vs2, tr)
 		if err != nil {
-			return errors.Wrap(err, "checking nonce timerange")
+			err = errors.Wrap(err, "checking nonce timerange")
+			return
 		}
 
 		if tr.MinTimeMs == 0 || tr.MaxTimeMs == 0 {
-			return errZeroTime
+			err = errZeroTime
+			return
 		}
 
 		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
-			return errNonemptyExtHash
+			err = errNonemptyExtHash
+			return
 		}
 
 	case *bc.Output:
 		vs2 := *vs
 		vs2.sourcePos = 0
-		err := checkValidSrc(&vs2, e.Source)
+		err = checkValidSrc(&vs2, e.Source)
 		if err != nil {
-			return errors.Wrap(err, "checking output source")
+			err = errors.Wrap(err, "checking output source")
+			return
 		}
 
 		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
-			return errNonemptyExtHash
+			err = errNonemptyExtHash
+			return
 		}
 
 	case *bc.Retirement:
 		vs2 := *vs
 		vs2.sourcePos = 0
-		err := checkValidSrc(&vs2, e.Source)
+		err = checkValidSrc(&vs2, e.Source)
 		if err != nil {
-			return errors.Wrap(err, "checking retirement source")
+			err = errors.Wrap(err, "checking retirement source")
+			return
 		}
 
 		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
-			return errNonemptyExtHash
+			err = errNonemptyExtHash
+			return
 		}
 
 	case *bc.TimeRange:
 		if e.MinTimeMs > vs.tx.MinTimeMs {
-			return errBadTimeRange
+			err = errBadTimeRange
+			return
 		}
 		if e.MaxTimeMs > 0 && e.MaxTimeMs < vs.tx.MaxTimeMs {
-			return errBadTimeRange
+			err = errBadTimeRange
+			return
 		}
 		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
-			return errNonemptyExtHash
+			err = errNonemptyExtHash
+			return
 		}
 
 	case *bc.Issuance:
 		if *e.WitnessAssetDefinition.InitialBlockId != vs.blockchainID {
-			return errors.WithDetailf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", vs.blockchainID.Bytes(), e.WitnessAssetDefinition.InitialBlockId.Bytes())
+			err = errors.WithDetailf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", vs.blockchainID.Bytes(), e.WitnessAssetDefinition.InitialBlockId.Bytes())
+			return
 		}
 
 		computedAssetID := e.WitnessAssetDefinition.ComputeAssetID()
 		if computedAssetID != *e.Value.AssetId {
-			return errors.WithDetailf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID.Bytes(), e.Value.AssetId.Bytes())
+			err = errors.WithDetailf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID.Bytes(), e.Value.AssetId.Bytes())
+			return
 		}
 
 		anchor, ok := vs.tx.Entries[*e.AnchorId]
 		if !ok {
-			return errors.Wrapf(bc.ErrMissingEntry, "entry for issuance anchor %x not found", e.AnchorId.Bytes())
+			err = errors.Wrapf(bc.ErrMissingEntry, "entry for issuance anchor %x not found", e.AnchorId.Bytes())
+			return
 		}
 
-		err := vm.Verify(NewTxVMContext(vs.tx, e, e.WitnessAssetDefinition.IssuanceProgram, e.WitnessArguments))
+		err = vm.Verify(NewTxVMContext(vs.tx, e, e.WitnessAssetDefinition.IssuanceProgram, e.WitnessArguments))
 		if err != nil {
-			return errors.Wrap(err, "checking issuance program")
+			err = errors.Wrap(err, "checking issuance program")
+			return
 		}
 
 		var anchored *bc.Hash
@@ -230,50 +271,60 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			anchored = a.WitnessAnchoredId
 
 		default:
-			return errors.WithDetailf(bc.ErrEntryType, "issuance anchor has type %T, should be nonce, spend, or issuance", anchor)
+			err = errors.WithDetailf(bc.ErrEntryType, "issuance anchor has type %T, should be nonce, spend, or issuance", anchor)
+			return
 		}
 
 		if *anchored != vs.entryID {
-			return errors.WithDetailf(errMismatchedReference, "issuance %x anchor is for %x", vs.entryID.Bytes(), anchored.Bytes())
+			err = errors.WithDetailf(errMismatchedReference, "issuance %x anchor is for %x", vs.entryID.Bytes(), anchored.Bytes())
+			return
 		}
 
 		anchorVS := *vs
 		anchorVS.entryID = *e.AnchorId
 		err = checkValid(&anchorVS, anchor)
 		if err != nil {
-			return errors.Wrap(err, "checking issuance anchor")
+			err = errors.Wrap(err, "checking issuance anchor")
+			return
 		}
 
 		destVS := *vs
 		destVS.destPos = 0
 		err = checkValidDest(&destVS, e.WitnessDestination)
 		if err != nil {
-			return errors.Wrap(err, "checking issuance destination")
+			err = errors.Wrap(err, "checking issuance destination")
+			return
 		}
 
 		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
-			return errNonemptyExtHash
+			err = errNonemptyExtHash
+			return
 		}
 
 	case *bc.Spend:
 		if e.SpentOutputId == nil {
-			return errors.Wrap(errMissingField, "spend without spent output ID")
+			err = errors.Wrap(errMissingField, "spend without spent output ID")
+			return
 		}
-		spentOutput, err := vs.tx.Output(*e.SpentOutputId)
+		var spentOutput *bc.Output
+		spentOutput, err = vs.tx.Output(*e.SpentOutputId)
 		if err != nil {
-			return errors.Wrap(err, "getting spend prevout")
+			err = errors.Wrap(err, "getting spend prevout")
+			return
 		}
 		err = vm.Verify(NewTxVMContext(vs.tx, e, spentOutput.ControlProgram, e.WitnessArguments))
 		if err != nil {
-			return errors.Wrap(err, "checking control program")
+			err = errors.Wrap(err, "checking control program")
+			return
 		}
 
-		eq, err := spentOutput.Source.Value.Equal(e.WitnessDestination.Value)
+		var eq bool
+		eq, err = spentOutput.Source.Value.Equal(e.WitnessDestination.Value)
 		if err != nil {
-			return err
+			return
 		}
 		if !eq {
-			return errors.WithDetailf(
+			err = errors.WithDetailf(
 				errMismatchedValue,
 				"previous output is for %d unit(s) of %x, spend wants %d unit(s) of %x",
 				spentOutput.Source.Value.Amount,
@@ -281,24 +332,29 @@ func checkValid(vs *validationState, e bc.Entry) error {
 				e.WitnessDestination.Value.Amount,
 				e.WitnessDestination.Value.AssetId.Bytes(),
 			)
+			return
 		}
 
 		vs2 := *vs
 		vs2.destPos = 0
 		err = checkValidDest(&vs2, e.WitnessDestination)
 		if err != nil {
-			return errors.Wrap(err, "checking spend destination")
+			err = errors.Wrap(err, "checking spend destination")
+			return
 		}
 
 		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
-			return errNonemptyExtHash
+			err = errNonemptyExtHash
+			return
 		}
 
 	default:
-		return fmt.Errorf("entry has unexpected type %T", e)
+		err = fmt.Errorf("entry has unexpected type %T", e)
+		return
 	}
 
-	return nil
+	err = nil
+	return
 }
 
 func checkValidBlockHeader(bh *bc.BlockHeader) error {
@@ -507,6 +563,8 @@ func ValidateTx(tx *bc.Tx, initialBlockID bc.Hash) error {
 		blockchainID: initialBlockID,
 		tx:           tx,
 		entryID:      tx.ID,
+
+		cache: make(map[bc.Hash]error),
 	}
 	return checkValid(vs, tx.TxHeader)
 }
