@@ -71,6 +71,24 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
               addParameterInput(inputs, hashParam as ClauseParameterType, "clauseParameters." + clause.name + "." + param.name)
               break
             }
+            case "Sha256(PublicKey)": {
+              const hashParam = {
+                type: "hashType",
+                inputType: "PublicKey",
+                hashFunction: "sha256" as HashFunction
+              }
+              addParameterInput(inputs, hashParam as ClauseParameterType, "clauseParameters." + clause.name + "." + param.name)
+              break
+            }
+            case "Sha256(String)": {
+              const hashParam = {
+                type: "hashType",
+                inputType: "String",
+                hashFunction: "sha256" as HashFunction
+              }
+              addParameterInput(inputs, hashParam as ClauseParameterType, "clauseParameters." + clause.name + "." + param.name)
+              break
+            }
             default:
               addParameterInput(inputs, param.type as ClauseParameterType, "clauseParameters." + clause.name + "." + param.name)
           }
