@@ -12,6 +12,7 @@ import Reset from './reset'
 import Seed from './seed'
 
 const logo = require('../../static/images/logo.png')
+const symbol = require('../../static/images/chain-symbol.svg')
 
 const mapStateToProps = (state) => {
   const location = state.routing.location
@@ -52,6 +53,16 @@ const Navbar = (props: { path: string }) => {
             </ul>
           </li>
         </ul>
+        <div className="welcome" hidden>
+        <div className="welcome-content">
+          <img src={symbol}/>
+          <h1>Welcome to Ivy Playground!</h1>
+          <p>We've seeded your Chain Core with a few accounts and assets to help you get started. You can create more by visiting the Dashboard.</p>
+          <p>The <a href="https:/chain.com/docs/1.2/ivy-playground/tutorial" target="_blank">tutorial</a> is a great place to start, which you can visit any time by clicking the link in the top right. Enjoy!</p>
+          <button className="btn btn-primary btn-xl">Let's Go!</button>
+        </div>
+        <div className="welcome-screen-block"></div>
+         </div>
       </div>
     </nav>
   )
