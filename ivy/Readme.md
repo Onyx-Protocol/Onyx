@@ -21,6 +21,13 @@ First, make sure you can build Chain Core from source by following the instructi
 $ go install -tags "localhost_auth http_ok" chain/cmd/cored
 ```
 
+### Install Chain Core SDK (necessary to run playground in development mode):
+
+```
+cd $CHAIN/sdk/node
+npm install
+```
+
 ### Run playground in development mode:
 
 ```
@@ -28,6 +35,7 @@ $ cored
 ```
 
 ```
+cd $CHAIN/ivy
 $ yarn install
 $ yarn start
 ```
