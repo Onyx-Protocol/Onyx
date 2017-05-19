@@ -19,7 +19,7 @@ export const fetch = () => {
       items.push(item)
       next();
     }).then(() => {
-      if (items.length == 0) {
+      if (items.filter(item => item.alias === "Escrow Agent").length == 0) {
         dispatch(seed())
       }
       const getBalances = items.map(item => {
