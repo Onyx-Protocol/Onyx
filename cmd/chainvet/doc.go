@@ -10,11 +10,7 @@ Printf calls whose arguments do not align with the format string. chainvet
 uses heuristics that do not guarantee all reports are genuine problems,
 but it can find errors not caught by the compilers.
 
-It can be invoked three ways:
-
-By package, from the go tool:
-	chainvet package/path/name
-vets the package whose path is provided.
+It can be invoked two ways:
 
 By files:
 	chainvet source/directory/*.go
@@ -43,6 +39,14 @@ Parity of log.Write and log.Fatal
 Flag: -logparity
 
 Calls to chain/log.Write that have an odd number of key/value arguments.
+
+
+Use of http.DefaultClient
+
+Flag: -defaulthttp
+
+Calls to http.DefaultClient in Chain packages that should be using a
+TLS-configured http client.
 
 
 Other flags
