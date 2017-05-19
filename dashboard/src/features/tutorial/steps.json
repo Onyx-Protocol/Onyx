@@ -1,7 +1,7 @@
 [
   {
     "component": "TutorialModal",
-    "title": "Welcome to Chain Core w/ Ivy Playground!",
+    "title": "Chain Core with Ivy Playground",
     "button": "Chain Core Tutorial",
     "dismiss": "Skip",
     "route": "mockhsms",
