@@ -44,6 +44,7 @@ import (
 	"chain/net/http/authz"
 	"chain/net/http/limit"
 	"chain/net/http/reqid"
+	"chain/net/raft"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
@@ -168,8 +169,21 @@ func main() {
 	}
 
 	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
-	sdb, err := sinkdb.Open(*listenAddr, raftDir, *bootURL, httpClient, tlsConfig != nil)
+	sdb, err := sinkdb.Open(*listenAddr, raftDir, httpClient, tlsConfig != nil)
 	if err != nil {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+	}
+
+	// sdb.Open won't initialize or join a cluster for the first time.
+	// If there is no cluster configured, create or join one depending on
+	// the bootURL environment variable.
+	// TODO(jackson): Move into initialize and join RPCs called from corectl.
+	if *bootURL == "" {
+		err = sdb.RaftService().Init()
+	} else {
+		err = sdb.RaftService().Join(*bootURL)
+	}
+	if err != nil && errors.Root(err) != raft.ErrExistingCluster {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 

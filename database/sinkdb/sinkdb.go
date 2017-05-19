@@ -17,28 +17,12 @@ import (
 var ErrConflict = errors.New("transaction conflict")
 
 // Open initializes the key-value store and returns a database handle.
-func Open(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*DB, error) {
+func Open(laddr, dir string, httpClient *http.Client, useTLS bool) (*DB, error) {
 	state := newState()
 	sv, err := raft.Start(laddr, dir, httpClient, useTLS, state)
 	if err != nil {
 		return nil, err
 	}
-
-	// raft.Start won't initialize or join a cluster for the first time.
-	// If there is no cluster configured, create or join one depending on
-	// the passed in bootURL.
-	// TODO(jackson): Move into initialize and join RPCs called from corectl.
-	if !sv.Initialized() {
-		if bootURL == "" {
-			err = sv.Init()
-		} else {
-			err = sv.Join(bootURL)
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	db := &DB{state: state, raft: sv}
 	return db, nil
 }

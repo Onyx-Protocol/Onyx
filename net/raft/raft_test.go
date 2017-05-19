@@ -104,8 +104,8 @@ func TestStartUninitialized(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if sv.Initialized() {
-		t.Error("expected Service.Initialized to be false")
+	if sv.initialized() {
+		t.Error("expected Service.initialized to be false")
 	}
 	err = sv.WaitRead(ctx)
 	if err != ErrUninitialized {

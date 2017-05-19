@@ -15,7 +15,7 @@ import (
 const dataDirectoryPrefix = `chain-syncdbtest`
 
 // NewDB creates a new sinkdb instance with a random temporary
-// storage directory.
+// storage directory and a new single-node raft cluster.
 func NewDB(t testing.TB) *sinkdb.DB {
 	gcDataDirectories() // clean up old data directories from previous tests
 
@@ -23,7 +23,11 @@ func NewDB(t testing.TB) *sinkdb.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sdb, err := sinkdb.Open("", tempDir, "", new(http.Client), false)
+	sdb, err := sinkdb.Open("", tempDir, new(http.Client), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sdb.RaftService().Init()
 	if err != nil {
 		t.Fatal(err)
 	}

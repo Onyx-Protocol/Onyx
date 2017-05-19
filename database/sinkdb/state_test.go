@@ -47,11 +47,14 @@ func TestAllowedMember(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	sdb, err := Open("", raftDir, "", new(http.Client), false)
+	sdb, err := Open("", raftDir, new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	err = sdb.RaftService().Init()
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = sdb.Exec(context.Background(), AddAllowedMember("1234"))
 	if err != nil {
 		t.Fatal("unexpected error", err)

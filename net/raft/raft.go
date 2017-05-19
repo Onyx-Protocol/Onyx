@@ -235,10 +235,10 @@ func (sv *Service) startLocked(id uint64, raftNode raft.Node, walobj *wal.WAL) {
 	go runTicks(sv.raftNode)
 }
 
-// Initialized returns whether the service's raft cluster is
+// initialized returns whether the service's raft cluster is
 // initialized. If not initialized, Exec and WaitRead will
 // error with ErrUninitialized.
-func (sv *Service) Initialized() bool {
+func (sv *Service) initialized() bool {
 	sv.startMu.Lock()
 	defer sv.startMu.Unlock()
 	return sv.raftNode != nil
@@ -438,7 +438,7 @@ func runTicks(rn raft.Node) {
 // Exec proposes the provided instruction and waits for it to be
 // satisfied.
 func (sv *Service) Exec(ctx context.Context, instruction []byte) (satisfied bool, err error) {
-	if !sv.Initialized() {
+	if !sv.initialized() {
 		return false, ErrUninitialized
 	}
 
@@ -499,7 +499,7 @@ func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 // won't have changed the value again, but it is guaranteed not to
 // read stale data.)
 func (sv *Service) WaitRead(ctx context.Context) error {
-	if !sv.Initialized() {
+	if !sv.initialized() {
 		return ErrUninitialized
 	}
 
@@ -591,7 +591,7 @@ func (sv *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
-	if !sv.Initialized() {
+	if !sv.initialized() {
 		http.Error(w, ErrUninitialized.Error(), 400)
 		return
 	}
@@ -611,7 +611,7 @@ func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
 }
 
 func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
-	if !sv.Initialized() {
+	if !sv.initialized() {
 		http.Error(w, ErrUninitialized.Error(), 400)
 		return
 	}
