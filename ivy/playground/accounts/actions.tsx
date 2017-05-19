@@ -7,6 +7,7 @@ import { client } from '../core'
 // internal imports
 import { FETCH } from './constants'
 import { Item } from './types'
+import { seed } from '../app/actions'
 
 export const fetch = () => {
   return (dispatch, getState) => {
@@ -18,6 +19,9 @@ export const fetch = () => {
       items.push(item)
       next();
     }).then(() => {
+      if (items.length == 0) {
+        dispatch(seed())
+      }
       const getBalances = items.map(item => {
         return client.balances.query({
           filter: 'account_alias=$1',
