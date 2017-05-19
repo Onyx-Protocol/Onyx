@@ -461,7 +461,13 @@ export const getLockActions = createSelector(
 
 export const getError = createSelector(
   getState,
-  state => parseError(state.error)
+  (state: ContractsState) => {
+    const error = state.error
+    if (typeof error === 'string') {
+      return error
+    }
+    return parseError(error)
+  }
 )
 
 export const isFirstTime = createSelector(

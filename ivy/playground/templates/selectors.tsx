@@ -16,7 +16,13 @@ export const getTemplateState = (state: AppState): TemplateState => state.templa
 
 export const getError = createSelector(
   getTemplateState,
-  state => parseError(state.error)
+  (state: TemplateState) => {
+    const error = state.error
+    if (typeof error === 'string') {
+      return error
+    }
+    return parseError(error)
+  }
 )
 
 export const getSourceMap = createSelector(
