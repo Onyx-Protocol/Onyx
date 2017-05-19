@@ -24,6 +24,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+a, a:hover, a:focus, a:active {
+  color: #00BFAA;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 h1,h2,h3,h4,h5 {
   color: #20252d;
 }
@@ -212,6 +220,12 @@ select:hover {
 .btn-lg {
   font-size: 20px;
   padding: 8px 16px;
+}
+
+.btn-xl {
+  font-size: 26px;
+  padding: 10px 20px;
+  min-width: 200px;
 }
 
 .btn-primary {
@@ -479,4 +493,54 @@ section h4 {
 
 .ace_function, .ace_variable, .ace_language {
   color: #BFD472 !important;
+}
+
+/*Welcome*/
+
+.welcome-screen-block {
+  position: fixed;
+  top:0;
+  right:0;
+  bottom:0;
+  left:0;
+  background: #20252d;
+  opacity: 0.75;
+}
+
+.welcome-content {
+  width:640px;
+  background: white;
+  border-radius: 2px;
+  z-index: 999;
+  position: fixed;
+  top: 50%;
+  margin-top: -236px;
+  left:50%;
+  margin-left: -300px;
+  font-family: 'Nitti Grotesk';
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+}
+
+.welcome-content img {
+  width: 80px;
+  margin-bottom: 20px;
+}
+
+.welcome-content h1 {
+  font-family: 'Nitti';
+  font-size: 31px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.welcome-content p{
+  text-align: left;
+  padding: 0 40px 10px;
+  font-size: 16px;
+  font-weight: normal;
+}
+.welcome-content .btn {
+  margin-top: 20px;
 }
