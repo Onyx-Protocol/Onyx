@@ -7,8 +7,8 @@
   * [Confidential issuance](#confidential-issuance)
   * [Upgrading to confidential assets](#upgrading-to-confidential-assets)
   * [Creating disclosure](#creating-disclosure)
-  * [Trackable addresses](#trackable-addresses)
 * [Data structures](#data-structures)
+* [Annotations](#annotations)
 * [Actions](#actions)
 * [Encryption](#encryption)
 * [API specification](#api-specification)
@@ -46,17 +46,15 @@ Addressed problems:
     1. Export "disclosure"
     2. Import "disclosure"
     3. Per-output disclosure:
-        1. Asset ID - on/off
-        2. Amount - on/off
-        3. Payload - on/off
+        1. Account - on/off (proving linkability to an account with forward secrecy)
+        2. Asset ID - on/off
+        3. Amount - on/off
+        4. Payload - on/off
     4. Per-transaction disclosure:
         1. Select output(s)
         2. Toggle assetid/amount/payload for the transaction
     5. Per-account disclosure (for tracking accounts):
-        1. Xpub - for tracking, always on.
-        2. Asset ID - on/off
-        3. Amount - on/off
-        4. Payload - on/off
+        1. URL of this Core for streaming individual disclosures.
     6. Disclosure is encrypted directly to the other core's public key, so it's safe to carry around.
         1. Core's pubkey is blinded using ChainKD to prevent linkability to the same Core by counter-parties.
 
@@ -221,57 +219,6 @@ Alice wants to have read access to Bob's transactions.
 7. Alice imports the encrypted disclosure to Alice's Core.
 8. Core derives the decryption key from its root key, verifies the proofs and imports the keys.
 9. If the disclosure is at account level, Core begins watching the blockchain for that account and indexing past (?) and future transactions.
-
-
-
-### Trackable addresses
-
-(This is similar to Stealth Addresses proposal, but compatible with usage by the recipient.)
-
-To make accounts to be trackable without exchanging receivers it is possible
-to embed a random selector within the control program.
-
-To make it compatible with sequential key derivation, the random selector is
-deterministically produced from the index and an xpub.
-
-Scheme overview:
-
-1. Alice is an auditor, Bob is an account holder.
-2. Bob generates a receiver with a sequence number N.
-3. Bob deterministically derives a random selector to be used with ChainKD:
-
-        selector = SHA3(xpub || uint64le(N)[0,16]
-
-4. Bob derives a one-time key using that selector:
-
-        pubkey = ChainKD-ND(xpub, selector)
-
-5. Bob creates a control program where pubkey is annotated with the selector:
-
-        <pubkey> <selector> DROP CHECKSIG
-
-    This easily extends to multisig programs: each individual pubkey
-    is annotated with `<selector> DROP` opcode in case of multi-party signing:
-
-        <pk1> <sel1> DROP 
-        <pk2> <sel2> DROP 
-        <pk3> <sel3> DROP
-        2 3 CHECKMULTISIG
-
-    In case all keys are derived by one party, a shared selector may be used for all keys:
-
-        <pk1> <pk2> <pk3> <selector> DROP
-        2 3 CHECKMULTISIG
-
-6. Bob sends receiver to a sender Sandy.
-7. Sandy makes payment to that address.
-8. Alice scans all outputs on blockchain, trying to check if any given public
-   key is derived from the xpub using an associated nonce.
-9. Network cannot link two outputs to the same xpub because nonces are random and
-   no one except Alice and Bob has xpub that contains "derivation key" entropy used
-   to produce child keys.
-
-Note: it is possible to save bandwidth by using 64-bit nonces instead of 128-bit ones at a slightly higher risk of collisions (still, negligible in practice). Nonce collisions link two outputs to the same account and may make accounting slightly more complicated by requiring linking through reference data (which could be a requirement anyway).
 
 
 
@@ -471,7 +418,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
         type: "disclosure1",                     # version of the cleartext disclosure
         items: [
             {
-                scope: "output"/"retirement"/"issuance"/"account",  # type of the scope
+                scope: "output"/"retirement"/"issuance",
                 ...
             },
             {
@@ -511,6 +458,18 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
 
 
 
+## Annotations
+
+
+TBD: such as `is_readable`, `asset_id_committment`, etc
+
+TBD: what do you see on decrypted vs encrypted outputs
+
+TBD: also, how does reference data show up with the two states: encrypted and decrypted.
+
+TBD: add annotated issuances/inputs/outputs/retirements to the Swagger spec.
+
+TBD: add encryption API and spec for tx reference data.
 
 
 
