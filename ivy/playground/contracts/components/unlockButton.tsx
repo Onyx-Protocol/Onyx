@@ -1,7 +1,18 @@
+// external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
+
+// internal imports
 import { spend } from '../actions'
-import { areSpendInputsValid } from '../selectors'
+import { areSpendInputsValid, getIsCalling } from '../selectors'
+
+const mapStateToProps = (state) => {
+  let enabled = areSpendInputsValid(state)
+  if (getIsCalling(state)) {
+    enabled = false
+  }
+  return { enabled }
+}
 
 const mapDispatchToProps = (dispatch) => ({
   handleSpendClick() {
@@ -14,6 +25,6 @@ const UnlockButton = (props: {enabled: boolean, handleSpendClick: (e)=>undefined
 }
 
 export default connect(
-  (state) => ({ enabled: areSpendInputsValid(state) }),
+  mapStateToProps,
   mapDispatchToProps
 )(UnlockButton)
