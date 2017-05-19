@@ -59,10 +59,18 @@ export const updateError = (error?) => {
   }
 }
 
+export const UPDATE_IS_CALLING = 'contracts/UPDATE_IS_CALLING'
+
+export const updateIsCalling = (isCalling: boolean) => {
+  const type = UPDATE_IS_CALLING
+  return { type, isCalling }
+}
+
 export const CREATE_CONTRACT = 'contracts/CREATE_CONTRACT'
 
 export const create = () => {
   return (dispatch, getState) => {
+    dispatch(updateIsCalling(true))
     const state = getState()
     const inputMap = getInputMap(state)
     if (inputMap === undefined) throw "create should not have been called when inputMap is undefined"
@@ -121,9 +129,11 @@ export const create = () => {
       })
       dispatch(fetch())
       dispatch(setSource(source))
+      dispatch(updateIsCalling(false))
       dispatch(push(prefixRoute('/unlock')))
     }).catch(err => {
       console.log(err)
+      dispatch(updateIsCalling(false))
       dispatch(updateCreateError(err))
     })
   }
@@ -133,6 +143,7 @@ export const SPEND_CONTRACT = "contracts/SPEND_CONTRACT"
 
 export const spend = () => {
   return(dispatch, getState) => {
+    dispatch(updateIsCalling(true))
     const state = getState()
     const contract = getSpendContract(state)
     const outputId = contract.outputId
@@ -162,9 +173,11 @@ export const spend = () => {
         unlockTxid: result.id
       })
       dispatch(fetch())
+      dispatch(updateIsCalling(false))
       dispatch(push(prefixRoute('/unlock')))
     }).catch(err => {
       console.log(err)
+      dispatch(updateIsCalling(false))
       dispatch(updateError(err))
     })
   }

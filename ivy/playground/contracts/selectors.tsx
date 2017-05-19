@@ -59,6 +59,11 @@ export const getContractMap = createSelector(
   (state: ContractsState) => state.contractMap
 )
 
+export const getIsCalling = createSelector(
+  getState,
+  (state: ContractsState) => state.isCalling
+)
+
 export const getContract = (state: AppState, contractId: string) => {
   const contractMap = getContractMap(state)
   return contractMap[contractId]

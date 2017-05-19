@@ -36,6 +36,7 @@ export type ContractsState = {
   spentIdList: string[],
   spendContractId: string,
   selectedClauseIndex: number,
+  isCalling: boolean,
   error?
 }
 

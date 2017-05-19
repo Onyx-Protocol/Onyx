@@ -12,7 +12,7 @@ import { addDefaultInput, getPublicKeys } from '../inputs/data'
 import { Contract } from './types'
 
 // internal imports
-import { CREATE_CONTRACT, SPEND_CONTRACT, UPDATE_ERROR,
+import { CREATE_CONTRACT, SPEND_CONTRACT, UPDATE_ERROR, UPDATE_IS_CALLING,
          UPDATE_CLAUSE_INPUT, SET_CLAUSE_INDEX, CLOSE_MODAL } from './actions'
 
 export const INITIAL_STATE: ContractsState = {
@@ -22,6 +22,7 @@ export const INITIAL_STATE: ContractsState = {
   spentIdList: [],
   spendContractId: "",
   selectedClauseIndex: 0,
+  isCalling: false,
   error: undefined
 }
 
@@ -179,6 +180,11 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       return {
         ...state,
         firstTime: false
+      }
+    case UPDATE_IS_CALLING: {
+      return {
+        ...state,
+        isCalling: action.isCalling
       }
     }
     case "@@router/LOCATION_CHANGE":
