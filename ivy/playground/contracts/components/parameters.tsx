@@ -9,7 +9,7 @@ import { Item as Account } from '../../accounts/types'
 import { getItemMap as getAssetMap, getItemList as getAssets } from '../../assets/selectors'
 import { getBalanceMap, getItemList as getAccounts, getBalanceSelector } from '../../accounts/selectors'
 import { getClauseValueId, getState as getContractsState } from '../../contracts/selectors'
-import { getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
+import { getError as getCreateError, getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
 import { getRequiredAssetAmount, getSpendContract } from '../../contracts/selectors'
 import { seed } from '../../app/actions'
 
@@ -26,10 +26,9 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
 import { validateInput, computeDataForInput, getChild,
          getParameterIdentifier, getInputContext } from '../../inputs/data'
 
-
 // internal imports
 import { updateInput, updateClauseInput } from '../actions'
-import { getError, getSpendInputMap, getClauseParameterIds } from '../selectors'
+import { getError as getSpendError, getSpendInputMap, getClauseParameterIds } from '../selectors'
 
 function getChildWidget(input: ComplexInput) {
   return getWidget(getChild(input))
@@ -47,14 +46,19 @@ function ParameterWidget(props: { input: ParameterInput, handleChange: (e)=>unde
   )
 }
 
-function GenerateStringWidget(props: { id: string, input: GenerateStringInput, handleChange: (e)=>undefined}) {
-  return <div>
-    <div className="input-group">
-      <div className="input-group-addon">Length</div>
-      <input type="text" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
+function GenerateStringWidget(props: { id: string,
+                                       input: GenerateStringInput,
+                                       errorClass: string,
+                                       handleChange: (e)=>undefined}) {
+  return (
+    <div>
+      <div className={"input-group " + props.errorClass}>
+        <div className="input-group-addon">Length</div>
+        <input type="text" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
+      </div>
+      <ComputedValue computeFor={props.id} />
     </div>
-    <ComputedValue computeFor={props.id} />
-  </div>
+  )
 }
 
 function NumberWidget(props: { input: NumberInput | AmountInput,
@@ -68,14 +72,17 @@ function TimestampTimeWidget(props: { input: TimeInput, handleChange: (e)=>undef
   </div>
 }
 
-function AmountWidget(props: { input: AmountInput
+function AmountWidget(props: { input: AmountInput,
+                               errorClass: string,
                                handleChange: (e)=>undefined }) {
-  return <div className="form-group">
-    <div className="input-group">
-    <div className="input-group-addon">Amount</div>
-    <NumberWidget input={props.input} handleChange={props.handleChange} />
+  return (
+    <div className={"form-group " + props.errorClass}>
+      <div className="input-group">
+        <div className="input-group-addon">Amount</div>
+        <NumberWidget input={props.input} handleChange={props.handleChange} />
+      </div>
     </div>
-  </div>
+  )
 }
 
 function BooleanWidget(props: { input: BooleanInput, handleChange: (e)=>undefined }) {
@@ -83,46 +90,9 @@ function BooleanWidget(props: { input: BooleanInput, handleChange: (e)=>undefine
 }
 
 function StringWidget(props: { input: StringInput, handleChange: (e)=>undefined }) {
-  let options = [{label: "Generate String", value: "generateStringInput"},
-                 {label: "Provide String (Hex)", value: "provideStringInput"}]
-  let handleChange = (s: string) => undefined
-  return <div>
-    <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
-    {getChildWidget(props.input)}
-  </div>
-}
-
-function TextWidget(props: { input: ProvideStringInput | ProvideHashInput |
-                                    ProvidePublicKeyInput | ProvideSignatureInput |
-                                    ProvidePrivateKeyInput
-                             handleChange: (e)=>undefined }) {
-  return <div className = "form-group"><input type="text" key={props.input.name} className="form-control string-input" value={props.input.value} onChange={props.handleChange} /></div>
-}
-
-function HashWidget(props: { input: HashInput, handleChange: (e)=>undefined }) {
-  let options = [{label: "Generate Hash", value: "generateHashInput"},
-                 {label: "Provide Hash", value: "provideHashInput"}]
-  let handleChange = (s: string) => undefined
-  return <div>
-    <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
-    {getChildWidget(props.input)}
-  </div>
-}
-
-function GenerateHashWidget(props: { id: string, input: GenerateHashInput, handleChange: (e)=>undefined}) {
-  return <div>
-      <ComputedValue computeFor={props.id} />
-      <div className="nested">
-      <div className="description">{props.input.hashType.hashFunction} of:</div>
-      <label className="type-label">{typeToString(props.input.hashType.inputType)}</label>
-      {getChildWidget(props.input)}
-  </div></div>
-}
-
-function PublicKeyWidget(props: { input: PublicKeyInput, handleChange: (e)=>undefined }) {
-  let options = [{label: "Generate Public Key", value: "accountInput"},
-                 {label: "Provide Public Key", value: "provideStringInput"}]
-  let handleChange = (s: string) => undefined
+  const options = [{label: "Generate String", value: "generateStringInput"},
+                   {label: "Provide String (Hex)", value: "provideStringInput"}]
+  const handleChange = (s: string) => undefined
   return (
     <div>
       <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
@@ -131,34 +101,94 @@ function PublicKeyWidget(props: { input: PublicKeyInput, handleChange: (e)=>unde
   )
 }
 
-function GeneratePublicKeyWidget(props: { id: string, input: GeneratePublicKeyInput, handleChange: (e)=>undefined}) {
-  let options = [{label: "Generate Private Key", value: "generatePrivateKeyInput"},
-                 {label: "Provide Private Key", value: "providePrivateKeyInput"}]
-  return <div>
+function TextWidget(props: { input: ProvideStringInput | ProvideHashInput |
+                                    ProvidePublicKeyInput | ProvideSignatureInput |
+                                    ProvidePrivateKeyInput,
+                             errorClass: string,
+                             handleChange: (e)=>undefined }) {
+  return (
+    <div className={"form-group " + props.errorClass}>
+      <input type="text" key={props.input.name} className="form-control string-input" value={props.input.value} onChange={props.handleChange} />
+    </div>
+  )
+}
+
+function HashWidget(props: { input: HashInput, handleChange: (e)=>undefined }) {
+  const options = [{label: "Generate Hash", value: "generateHashInput"},
+                   {label: "Provide Hash", value: "provideHashInput"}]
+  const handleChange = (s: string) => undefined
+  return (
+    <div>
+      <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
+      {getChildWidget(props.input)}
+    </div>
+  )
+}
+
+function GenerateHashWidget(props: { id: string,
+                                     input: GenerateHashInput,
+                                     handleChange: (e)=>undefined}) {
+  return (
+    <div>
       <ComputedValue computeFor={props.id} />
       <div className="nested">
-      <div className="description">derived from:</div>
-      <label className="type-label">PrivateKey</label>
-    <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
-    {getChildWidget(props.input)}
-  </div></div>
+        <div className="description">{props.input.hashType.hashFunction} of:</div>
+        <label className="type-label">{typeToString(props.input.hashType.inputType)}</label>
+        {getChildWidget(props.input)}
+      </div>
+    </div>
+  )
 }
 
-function GenerateSignatureWidget(props: { input: GenerateSignatureInput, handleChange: (e)=>undefined,
-                                          computedValue: string }) {
-  return <div>{props.computedValue ? <pre>{props.computedValue}</pre> : <span />}
+function PublicKeyWidget(props: { input: PublicKeyInput,
+                                  handleChange: (e)=>undefined }) {
+  const options = [{label: "Generate Public Key", value: "accountInput"},
+                   {label: "Provide Public Key", value: "provideStringInput"}]
+  const handleChange = (s: string) => undefined
+  return (
+    <div>
+      <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
+      {getChildWidget(props.input)}
+    </div>
+  )
+}
+
+function GeneratePublicKeyWidget(props: { id: string,
+                                          input: GeneratePublicKeyInput,
+                                          handleChange: (e)=>undefined}) {
+  const options = [{label: "Generate Private Key", value: "generatePrivateKeyInput"},
+                   {label: "Provide Private Key", value: "providePrivateKeyInput"}]
+  return (
+    <div>
+      <ComputedValue computeFor={props.id} />
       <div className="nested">
-      <div className="description">signed using:</div>
-      <label className="type-label">PrivateKey</label>
-    {getChildWidget(props.input)}
-  </div></div>
+        <div className="description">derived from:</div>
+        <label className="type-label">PrivateKey</label>
+        <RadioSelect options={options} selected={props.input.value} name={props.input.name} handleChange={props.handleChange} />
+        {getChildWidget(props.input)}
+      </div>
+    </div>
+  )
 }
 
-function SignatureWidget(props: { input: SignatureInput, handleChange: (e)=>undefined,
+function GenerateSignatureWidget(props: { input: GenerateSignatureInput,
+                                          handleChange: (e)=>undefined,
                                           computedValue: string }) {
-  return <div>
-    {getChildWidget(props.input)}
-  </div>
+  return (
+    <div>{props.computedValue ? <pre>{props.computedValue}</pre> : <span />}
+      <div className="nested">
+        <div className="description">signed using:</div>
+        <label className="type-label">PrivateKey</label>
+        {getChildWidget(props.input)}
+      </div>
+    </div>
+  )
+}
+
+function SignatureWidget(props: { input: SignatureInput,
+                                  handleChange: (e)=>undefined,
+                                  computedValue: string }) {
+  return <div>{getChildWidget(props.input)}</div>
 }
 
 function GeneratePrivateKeyWidget(props: { input: GeneratePrivateKeyInput, handleChange: (e)=>undefined }) {
@@ -166,10 +196,18 @@ function GeneratePrivateKeyWidget(props: { input: GeneratePrivateKeyInput, handl
 }
 
 function TimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
-  return <div>
-    {getChildWidget(props.input)}
-  </div>
+  return <div>{getChildWidget(props.input)}</div>
 }
+
+const EmptyCoreAlert = connect(
+  (state) => ({ balanceMap: getBalanceMap(state) }),
+  (dispatch) => ({
+    handleClick(e) {
+      e.preventDefault()
+      dispatch(seed())
+    }
+  })
+)(EmptyCoreAlertUnconnected)
 
 function EmptyCoreAlertUnconnected({ handleClick, balanceMap }) {
   if (Object.keys(balanceMap).length === 0) {
@@ -182,17 +220,9 @@ function EmptyCoreAlertUnconnected({ handleClick, balanceMap }) {
   return <small/>
 }
 
-let EmptyCoreAlert = connect(
-  (state) => ({ balanceMap: getBalanceMap(state) }),
-  (dispatch) => {
-    return {
-      handleClick(e) {
-        e.preventDefault()
-        dispatch(seed())
-      }
-    }
-  }
-)(EmptyCoreAlertUnconnected)
+const InsufficientFundsAlert = connect(
+  (state, ownProps: { namePrefix: string }) => ({ balance: getBalanceSelector(ownProps.namePrefix)(state), inputMap: getInputMap(state), contracts: getContractsState(state) })
+)(InsufficientFundsAlertUnconnected)
 
 function InsufficientFundsAlertUnconnected({ namePrefix, balance, inputMap, contracts }) {
   let amountInput
@@ -216,9 +246,9 @@ function InsufficientFundsAlertUnconnected({ namePrefix, balance, inputMap, cont
   return jsx
 }
 
-let InsufficientFundsAlert = connect(
-  (state, ownProps: { namePrefix: string }) => ({ balance: getBalanceSelector(ownProps.namePrefix)(state), inputMap: getInputMap(state), contracts: getContractsState(state) })
-)(InsufficientFundsAlertUnconnected)
+const BalanceWidget = connect(
+  (state, ownProps: { namePrefix: string }) => ({ balance: getBalanceSelector(ownProps.namePrefix)(state) })
+)(BalanceWidgetUnconnected)
 
 function BalanceWidgetUnconnected({ namePrefix, balance }) {
   let jsx = <small/>
@@ -227,10 +257,6 @@ function BalanceWidgetUnconnected({ namePrefix, balance }) {
   }
   return jsx
 }
-
-let BalanceWidget = connect(
-  (state, ownProps: { namePrefix: string }) => ({ balance: getBalanceSelector(ownProps.namePrefix)(state) })
-)(BalanceWidgetUnconnected)
 
 function ValueWidget(props: { input: ValueInput, handleChange: (e)=>undefined }) {
   return (
@@ -246,14 +272,17 @@ function ValueWidget(props: { input: ValueInput, handleChange: (e)=>undefined })
 }
 
 function ProgramWidget(props: { input: ProgramInput, handleChange: (e)=>undefined }) {
-  return <div>
-    {getChildWidget(props.input)}
-  </div>
+  return <div>{getChildWidget(props.input)}</div>
 }
 
+const AccountAliasWidget = connect(
+  (state) => ({ accounts: getAccounts(state) })
+)(AccountAliasWidgetUnconnected)
+
 function AccountAliasWidgetUnconnected(props: { input: AccountAliasInput,
-                                     handleChange: (e)=>undefined,
-                                     accounts: Account[]}) {
+                                                errorClass: string,
+                                                handleChange: (e)=>undefined,
+                                                accounts: Account[]}) {
   const options = props.accounts.map(account => <option key={account.id} value={account.id}>{account.alias}</option>)
   if (options.length === 0) {
     options.push(<option key="" value="">No Accounts Available</option>)
@@ -261,7 +290,7 @@ function AccountAliasWidgetUnconnected(props: { input: AccountAliasInput,
     options.unshift(<option key="" value="">Select Account</option>)
   }
   return (
-    <div className="form-group">
+    <div className={"form-group " + props.errorClass}>
       <div className="input-group">
         <div className="input-group-addon">Account</div>
         <select id={props.input.name} className="form-control with-addon" value={props.input.value} onChange={props.handleChange}>
@@ -272,11 +301,12 @@ function AccountAliasWidgetUnconnected(props: { input: AccountAliasInput,
   )
 }
 
-let AccountAliasWidget = connect(
-  (state) => ({ accounts: getAccounts(state) })
-)(AccountAliasWidgetUnconnected)
+const AssetAliasWidget = connect(
+  (state) => ({ assets: getAssets(state) })
+)(AssetAliasWidgetUnconnected)
 
 function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
+                                              errorClass: string,
                                               handleChange: (e)=>undefined,
                                               assets: Asset[]}) {
   const options = props.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.alias}</option>)
@@ -286,7 +316,7 @@ function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
     options.unshift(<option key="" value="">Select Asset</option>)
   }
   return (
-    <div className="form-group">
+    <div className={"form-group " + props.errorClass}>
       <div className="input-group">
         <div className="input-group-addon">Asset</div>
         <select id={props.input.name} className="form-control with-addon" value={props.input.value} onChange={props.handleChange}>
@@ -297,21 +327,22 @@ function AssetAliasWidgetUnconnected(props: { input: AssetAliasInput,
   )
 }
 
-let AssetAliasWidget = connect(
-  (state) => ({ assets: getAssets(state) })
-)(AssetAliasWidgetUnconnected)
-
 function ChoosePublicKeyWidget(props: { input: ChoosePublicKeyInput,
+                                        errorClass: string,
                                         handleChange: (e)=>undefined }) {
-  if (props.input.keyMap === undefined) throw 'keyMap is undefined'
-  let options : any[] = []
-  let map: {[s: string]: KeyData} = props.input.keyMap
-  for (let key in map) {
+  if (props.input.keyMap === undefined) {
+    throw 'keyMap is undefined'
+  }
+
+  const options : any[] = []
+  const map: {[s: string]: KeyData} = props.input.keyMap
+  for (const key in map) {
     options.push(<option key={key} value={key}>{key}</option>)
   }
   options.unshift(<option key="" value="">Select Public Key</option>)
+
   return (
-    <div className="form-group">
+    <div className={"form-group " + props.errorClass}>
       <div className="input-group">
         <div className="input-group-addon">Public Key</div>
         <select id={props.input.name} className="form-control with-addon" value={props.input.value} onChange={props.handleChange}>
@@ -356,29 +387,38 @@ function getWidgetType(type: InputType): ((props: { input: Input, handleChange: 
   }
 }
 
-function mapToInputProps(state, inputsById: {[s: string]: Input}, id: string) {
-  let input = inputsById[id]
-  if (input === undefined) throw "bad input ID: " + id
+function mapToInputProps(showError: boolean, inputsById: {[s: string]: Input}, id: string) {
+  const input = inputsById[id]
+  if (input === undefined) {
+    throw "bad input ID: " + id
+  }
+
+  let errorClass = ''
+  const hasInputError = !validateInput(input)
+  if (showError && hasInputError) {
+    errorClass = 'has-error'
+  }
   if (input.type === "generateSignatureInput") {
     return {
-      input: input,
+      input,
+      errorClass,
       computedValue: "",
     }
   }
+
   return {
-    input: input,
+    input,
+    errorClass
   }
 }
 
-function mapStateToSpendInputProps(state, ownProps: { id: string }) {
-  let inputsById = getSpendInputMap(state)
-  return mapToInputProps(state, inputsById, ownProps.id)
-}
-
 function mapStateToContractInputProps(state, ownProps: { id: string }) {
-  let inputMap = getInputMap(state)
-  if (inputMap === undefined) throw "inputMap should not be undefined when contract inputs are being rendered"
-  return mapToInputProps(state, inputMap, ownProps.id)
+  const inputMap = getInputMap(state)
+  if (inputMap === undefined) {
+    throw "inputMap should not be undefined when contract inputs are being rendered"
+  }
+  const showError = !!getCreateError(state)
+  return mapToInputProps(showError, inputMap, ownProps.id)
 }
 
 function mapDispatchToContractInputProps(dispatch, ownProps: { id: string }) {
@@ -387,6 +427,12 @@ function mapDispatchToContractInputProps(dispatch, ownProps: { id: string }) {
       dispatch(updateInput(ownProps.id, e.target.value.toString()))
     }
   }
+}
+
+function mapStateToSpendInputProps(state, ownProps: { id: string }) {
+  const inputsById = getSpendInputMap(state)
+  const showError = !!getSpendError(state)
+  return mapToInputProps(showError, inputsById, ownProps.id)
 }
 
 function mapDispatchToSpendInputProps(dispatch, ownProps: { id: string} ) {
@@ -415,13 +461,13 @@ function mapToComputedProps(state, ownProps: { computeFor: string} ) {
   }
 }
 
-function ComputedValueUnconnected(props: { value: string }) {
-  return props.value? <pre>{props.value}</pre> : <span />
-}
-
 const ComputedValue = connect(
   mapToComputedProps,
 )(ComputedValueUnconnected)
+
+function ComputedValueUnconnected(props: { value: string }) {
+  return props.value? <pre>{props.value}</pre> : <span />
+}
 
 export function getWidget(id: string): JSX.Element {
   let inputContext = id.split(".").shift() as InputContext
@@ -451,6 +497,10 @@ function mapStateToContractParametersProps(state) {
   }
 }
 
+export const ContractParameters = connect(
+  mapStateToContractParametersProps
+)(ContractParametersUnconnected)
+
 function ContractParametersUnconnected(props: { parameterIds: string[] }) {
   if (props.parameterIds.length === 0) return <div />
   const parameterInputs = props.parameterIds.map((id) => {
@@ -465,9 +515,9 @@ function ContractParametersUnconnected(props: { parameterIds: string[] }) {
   )
 }
 
-export const ContractParameters = connect(
-  mapStateToContractParametersProps
-)(ContractParametersUnconnected)
+export const ClauseParameters = connect(
+  (state) => ({ parameterIds: getClauseParameterIds(state) })
+)(ClauseParametersUnconnected)
 
 function ClauseParametersUnconnected(props: { parameterIds: string[] }) {
   if (props.parameterIds.length === 0) return <div />
@@ -481,11 +531,6 @@ function ClauseParametersUnconnected(props: { parameterIds: string[] }) {
   </form></section>
 }
 
-export const ClauseParameters = connect(
-  (state) => ({ parameterIds: getClauseParameterIds(state) })
-)(ClauseParametersUnconnected)
-
-
 function mapStateToClauseValueProps(state) {
   return {
     valueId: getClauseValueId(state),
@@ -495,6 +540,10 @@ function mapStateToClauseValueProps(state) {
     spendInputMap: getSpendInputMap(state)
   }
 }
+
+export const ClauseValue = connect(
+  mapStateToClauseValueProps
+)(ClauseValueUnconnected)
 
 function ClauseValueUnconnected(props: { spendInputMap, balanceMap, assetAmount, assetMap, valueId: string }) {
   if (props.valueId === undefined || props.assetAmount === undefined) {
@@ -530,15 +579,15 @@ function ClauseValueUnconnected(props: { spendInputMap, balanceMap, assetAmount,
   }
 }
 
-export const ClauseValue = connect(
-  mapStateToClauseValueProps
-)(ClauseValueUnconnected)
-
 function mapStateToContractValueProps(state) {
   return {
     valueId: getContractValueId(state)
   }
 }
+
+export const ContractValue = connect(
+  mapStateToContractValueProps
+)(ContractValueUnconnected)
 
 function ContractValueUnconnected(props: { valueId: string }) {
   if (props.valueId === undefined) {
@@ -553,6 +602,3 @@ function ContractValueUnconnected(props: { valueId: string }) {
   )
 }
 
-export const ContractValue = connect(
-  mapStateToContractValueProps
-)(ContractValueUnconnected)

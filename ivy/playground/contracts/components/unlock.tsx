@@ -26,13 +26,17 @@ const mapStateToProps = (state) => {
 }
 
 const ErrorAlert = (props: { error: string }) => {
-  return (
-    <div style={{margin: '25px 0 0 0'}} className="alert alert-danger" role="alert">
-      <span className="sr-only">Error:</span>
-      <span className="glyphicon glyphicon-exclamation-sign" style={{marginRight: "5px"}}></span>
-      {props.error}
-    </div>
-  )
+  let jsx = <small />
+  if (props.error) {
+    jsx = (
+      <div style={{margin: '25px 0'}} className="alert alert-danger" role="alert">
+        <span className="sr-only">Error:</span>
+        <span className="glyphicon glyphicon-exclamation-sign" style={{marginRight: "5px"}}></span>
+        {props.error}
+      </div>
+    )
+  }
+  return jsx
 }
 
 export const Unlock = ({ error, display }) => {
@@ -58,7 +62,6 @@ export const Unlock = ({ error, display }) => {
         <ClauseValue />
         <ClauseParameters />
         <UnlockDestination />
-        { error ? <ErrorAlert error={error} /> : <div/> }
       </div>
     )
 
@@ -75,6 +78,7 @@ export const Unlock = ({ error, display }) => {
         <Section name="Unlocking Details">
           {details}
         </Section>
+        <ErrorAlert error={error} />
         {button}
       </div>
     </DocumentTitle>

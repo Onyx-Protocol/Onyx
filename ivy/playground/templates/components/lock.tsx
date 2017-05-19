@@ -22,13 +22,17 @@ const mapStateToProps = (state) => {
 }
 
 const ErrorAlert = (props: { error: string }) => {
-  return (
-    <div style={{margin: '25px 0 0 0'}} className="alert alert-danger" role="alert">
-      <span className="sr-only">Error:</span>
-      <span className="glyphicon glyphicon-exclamation-sign" style={{marginRight: "5px"}}></span>
-      {props.error}
-    </div>
-  )
+  let jsx = <small />
+  if (props.error) {
+    jsx = (
+      <div style={{margin: '25px 0'}} className="alert alert-danger" role="alert">
+        <span className="sr-only">Error:</span>
+        <span className="glyphicon glyphicon-exclamation-sign" style={{marginRight: "5px"}}></span>
+        {props.error}
+      </div>
+    )
+  }
+  return jsx
 }
 
 const Lock = ({ source, instantiable, error }) => {
@@ -46,9 +50,9 @@ const Lock = ({ source, instantiable, error }) => {
             <ContractParameters />
           </div>
           <div className="form-wrapper">
-            { error ? <ErrorAlert error={error} /> : <div/> }
           </div>
         </Section>
+        <ErrorAlert error={error} />
         <LockButton />
       </div>
     )
