@@ -11,13 +11,13 @@ import { ContractParameters, ContractValue } from '../../contracts/components/pa
 // internal imports
 import Editor from './editor'
 import LockButton from './lockButton'
-import { getError, getSource, getContractParameters, getCompiled } from '../selectors'
+import { getLockError, getSource, getContractParameters, getCompiled } from '../selectors'
 
 const mapStateToProps = (state) => {
   const source = getSource(state)
   const contractParameters = getContractParameters(state)
   const instantiable = contractParameters && contractParameters.length > 0
-  const error = getError(state)
+  const error = getLockError(state)
   return { source, instantiable, error }
 }
 

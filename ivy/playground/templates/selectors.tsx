@@ -14,7 +14,7 @@ import { INITIAL_ID_LIST } from './constants'
 
 export const getTemplateState = (state: AppState): TemplateState => state.templates
 
-export const getError = createSelector(
+export const getLockError = createSelector(
   getTemplateState,
   (state: TemplateState) => {
     const error = state.error

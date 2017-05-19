@@ -459,7 +459,7 @@ export const getLockActions = createSelector(
   }
 )
 
-export const getError = createSelector(
+export const getUnlockError = createSelector(
   getState,
   (state: ContractsState) => {
     const error = state.error

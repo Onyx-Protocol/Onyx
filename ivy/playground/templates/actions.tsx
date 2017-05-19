@@ -18,11 +18,11 @@ export const loadTemplate = (selected: string) => {
   }
 }
 
-export const UPDATE_ERROR = 'templates/UPDATE_ERROR'
+export const UPDATE_LOCK_ERROR = 'templates/UPDATE_LOCK_ERROR'
 
-export const updateError = (error?) => {
+export const updateLockError = (error?) => {
   return {
-    type: UPDATE_ERROR,
+    type: UPDATE_LOCK_ERROR,
     error
   }
 }
@@ -34,7 +34,7 @@ export const setSource = (source: string) => {
     const type = SET_SOURCE
     dispatch({ type, source })
     dispatch(fetchCompiled(source))
-    dispatch(updateError())
+    dispatch(updateLockError())
   }
 }
 

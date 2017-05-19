@@ -7,7 +7,7 @@ import { getItem } from '../accounts/selectors';
 import { fetch } from '../accounts/actions';
 import {
   setSource,
-  updateError as updateCreateError,
+  updateLockError,
 } from '../templates/actions'
 import {
   areInputsValid,
@@ -52,11 +52,11 @@ import {
   WitnessComponent
 } from '../core/types'
 
-export const UPDATE_ERROR = 'contracts/UPDATE_ERROR'
+export const UPDATE_UNLOCK_ERROR = 'contracts/UPDATE_UNLOCK_ERROR'
 
-export const updateError = (error?) => {
+export const updateUnlockError = (error?) => {
   return {
-    type: UPDATE_ERROR,
+    type: UPDATE_UNLOCK_ERROR,
     error
   }
 }
@@ -76,7 +76,7 @@ export const create = () => {
     const state = getState()
     if (!areInputsValid(state)) {
       dispatch(updateIsCalling(false))
-      return dispatch(updateCreateError('One or more arguments to the contract are invalid.'))
+      return dispatch(updateLockError('One or more arguments to the contract are invalid.'))
     }
 
     const inputMap = getInputMap(state)
@@ -141,7 +141,7 @@ export const create = () => {
     }).catch(err => {
       console.log(err)
       dispatch(updateIsCalling(false))
-      dispatch(updateCreateError(err))
+      dispatch(updateLockError(err))
     })
   }
 }
@@ -154,7 +154,7 @@ export const spend = () => {
     const state = getState()
     if (!areSpendInputsValid(state)) {
       dispatch(updateIsCalling(false))
-      return dispatch(updateError('One or more clause arguments are invalid.'))
+      return dispatch(updateUnlockError('One or more clause arguments are invalid.'))
     }
 
     const contract = getSpendContract(state)
@@ -190,7 +190,7 @@ export const spend = () => {
     }).catch(err => {
       console.log(err)
       dispatch(updateIsCalling(false))
-      dispatch(updateError(err))
+      dispatch(updateUnlockError(err))
     })
   }
 }
@@ -213,7 +213,7 @@ export const updateInput = (name: string, newValue: string) => {
       name: name,
       newValue: newValue
     })
-    dispatch(updateCreateError())
+    dispatch(updateLockError())
   }
 }
 
@@ -229,7 +229,7 @@ export const updateClauseInput = (name: string, newValue: string) => {
       name: name,
       newValue: newValue
     })
-    dispatch(updateError())
+    dispatch(updateUnlockError())
   }
 }
 
