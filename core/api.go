@@ -349,9 +349,9 @@ func (a *API) leaderSignHandler(f func(context.Context, *legacy.Block) ([]byte, 
 }
 
 // forwardToLeader forwards the current request to the core's leader
-// process. It propagates the same credentials used in the current
-// request. For that reason, it cannot be used outside of a request-
-// handling context.
+// process. It relies on a.httpClient's TLS configuration for authenticating
+// with the leader cored. The internal policy must be authorized for the
+// provided path.
 func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
 	addr, err := a.leader.Address(ctx)
 	if err != nil {
@@ -366,24 +366,9 @@ func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}
 	}
 
 	l := &rpc.Client{
-		BaseURL: "http://" + addr,
+		BaseURL: "https://" + addr,
 		Client:  a.httpClient,
 	}
-	if a.useTLS {
-		l.BaseURL = "https://" + addr
-	}
-
-	// Forward the request credentials if we have them.
-	// TODO(jackson): Don't use the incoming request's credentials and
-	// have an alternative authentication scheme between processes of the
-	// same Core. For now, we only call the leader for the purpose of
-	// forwarding a request, so this is OK.
-	req := httpjson.Request(ctx)
-	user, pass, ok := req.BasicAuth()
-	if ok {
-		l.AccessToken = fmt.Sprintf("%s:%s", user, pass)
-	}
-
 	return l.Call(ctx, path, body, resp)
 }
 

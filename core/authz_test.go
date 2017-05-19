@@ -107,7 +107,7 @@ func TestAuthz(t *testing.T) {
 			"crosscore":           false,
 			"crosscore-signblock": true,
 			"monitoring":          false,
-			"internal":            false,
+			"internal":            true,
 			"public":              false,
 		},
 		"/info": map[string]bool{
