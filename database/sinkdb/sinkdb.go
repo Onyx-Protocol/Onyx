@@ -17,9 +17,9 @@ import (
 var ErrConflict = errors.New("transaction conflict")
 
 // Open initializes the key-value store and returns a database handle.
-func Open(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*DB, error) {
+func Open(laddr, dir string, httpClient *http.Client, useTLS bool) (*DB, error) {
 	state := newState()
-	sv, err := raft.Start(laddr, dir, bootURL, httpClient, useTLS, state)
+	sv, err := raft.Start(laddr, dir, httpClient, useTLS, state)
 	if err != nil {
 		return nil, err
 	}

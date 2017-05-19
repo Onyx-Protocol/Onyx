@@ -49,19 +49,36 @@ const (
 	contentType = "application/octet-stream"
 )
 
+var (
+	// ErrExistingCluster is returned from Init or Join when the Service
+	// is already connected to a raft cluster.
+	ErrExistingCluster = errors.New("already connected to a raft cluster")
+
+	// ErrUninitialized is returned when the Service is not yet connected
+	// to any cluster.
+	ErrUninitialized = errors.New("no raft cluster configured")
+)
+
 var crcTable = crc32.MakeTable(crc32.Castagnoli)
 
 // Service performs raft coordination.
 type Service struct {
 	// config
 	dir     string
-	id      uint64
+	laddr   string
 	mux     *http.ServeMux
 	rctxReq chan rctxReq
 	wctxReq chan wctxReq
 	donec   chan struct{}
 	client  *http.Client
 	useTLS  bool
+
+	// config set during init/join/restart. immutable once set.
+	// it is ok to read without keeping startMu locked in
+	// code paths where Service is known to be initialized.
+	startMu  sync.Mutex
+	raftNode raft.Node
+	id       uint64
 
 	errMu sync.Mutex
 	err   error
@@ -73,7 +90,6 @@ type Service struct {
 	// All client code accesses the cluster state via our Service
 	// object, which keeps a local, in-memory copy of the
 	// complete current state.
-	raftNode    raft.Node
 	raftStorage *raft.MemoryStorage
 
 	// The actual replicated data set.
@@ -138,23 +154,20 @@ type nodeJoin struct {
 //   http.ListenAndServe(addr, nil)
 //
 // Param dir is the filesystem location for all persistent storage
-// for this raft node. If it doesn't exist, Start will create it.
+// for this raft node. If dir exists and is populated, the returned
+// Service will be immediately ready for use.
 // It has three entries:
 //   id    file containing the node's member id (never changes)
 //   snap  file containing the last complete state snapshot
 //   wal   dir containing the write-ahead log
 //
-// Param bootURL gives the location of an existing cluster
-// for the local process to join.
-// It can be either the concrete address of any
-// single cluster member or it can point to a load balancer
-// for the whole cluster, if one exists.
-// An empty bootURL means to start a fresh empty cluster.
-// It is ignored when recovering from existing state in dir.
+// If dir doesn't exist or is empty, the caller must configure the
+// Service before using it by either calling Init to initialize a
+// new raft cluster or Join to join an existing raft cluster.
 //
 // The returned *Service will use httpClient for outbound
 // connections to peers.
-func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool, state State) (*Service, error) {
+func Start(laddr, dir string, httpClient *http.Client, useTLS bool, state State) (*Service, error) {
 	// TODO(tessr): configure raft service using run options
 	ctx := context.Background()
 
@@ -167,6 +180,7 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool, sta
 	}
 	sv := &Service{
 		dir:         dir,
+		laddr:       laddr,
 		mux:         http.NewServeMux(),
 		raftStorage: raft.NewMemoryStorage(),
 		state:       state,
@@ -186,71 +200,115 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool, sta
 	if err != nil {
 		return nil, err
 	}
-
-	recover := walobj != nil
-	if recover {
-		sv.id, err = readID(sv.dir)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	} else if bootURL != "" {
-		walobj, err = sv.join(laddr, bootURL) // sets sv.id and state
-		if err != nil {
-			return nil, err
-		}
-
-	} else {
-		// brand new cluster!
-		sv.id = 1
+	// If there's no WAL, then this is a new node. The caller is responsible
+	// for calling either Init to initialize a new cluster or Join to join
+	// an existing cluster.
+	if walobj == nil {
+		return sv, nil
 	}
 
-	c := &raft.Config{
-		ID:              sv.id,
-		ElectionTick:    electionTick,
-		HeartbeatTick:   heartbeatTick,
-		Storage:         sv.raftStorage,
-		Applied:         state.AppliedIndex(),
-		MaxSizePerMsg:   4096,
-		MaxInflightMsgs: 256,
-		Logger:          &raft.DefaultLogger{Logger: stdlog.New(ioutil.Discard, "", 0)},
+	id, err := readID(sv.dir)
+	if err != nil {
+		return nil, errors.Wrap(err)
 	}
 
-	if recover {
-		sv.raftNode = raft.RestartNode(c)
-		triggerElection(ctx, sv)
-	} else if bootURL != "" {
-		sv.raftNode = raft.RestartNode(c)
-	} else {
-		log.Printkv(ctx, "raftid", c.ID)
-		err = writeID(sv.dir, c.ID)
-		if err != nil {
-			return nil, err
-		}
-		err = os.Remove(sv.walDir())
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		walobj, err = wal.Create(sv.walDir(), nil)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		sv.raftNode = raft.StartNode(c, []raft.Peer{{ID: 1, Context: []byte(laddr)}})
+	raftNode := raft.RestartNode(sv.config(id))
+	err = raftNode.Campaign(ctx)
+	if err != nil {
+		log.Error(ctx, err, "election failed") // ok to continue
 	}
 
-	go sv.runUpdates(walobj)
-	go runTicks(sv.raftNode)
+	// Start the algorithm. It is okay to not lock startMu since
+	// sv hasn't escaped yet.
+	sv.startLocked(id, raftNode, walobj)
 
 	return sv, nil
 }
 
-// triggerElection is useful for triggering elections in cases where Raft may
-// think there's no leader. It should only be used when election failures are
-// okay, since it will log errors but won't return them.
-func triggerElection(ctx context.Context, sv *Service) {
-	err := sv.raftNode.Campaign(context.Background())
-	if err != nil {
-		log.Error(ctx, err, "election failed")
+// startLocked begins the raft algorithm. It requires sv.startMu
+// to already be locked.
+func (sv *Service) startLocked(id uint64, raftNode raft.Node, walobj *wal.WAL) {
+	sv.id = id
+	sv.raftNode = raftNode
+
+	go sv.runUpdates(walobj)
+	go runTicks(sv.raftNode)
+}
+
+// initialized returns whether the service's raft cluster is
+// initialized. If not initialized, Exec and WaitRead will
+// error with ErrUninitialized.
+func (sv *Service) initialized() bool {
+	sv.startMu.Lock()
+	defer sv.startMu.Unlock()
+	return sv.raftNode != nil
+}
+
+func (sv *Service) config(id uint64) *raft.Config {
+	return &raft.Config{
+		ID:              id,
+		ElectionTick:    electionTick,
+		HeartbeatTick:   heartbeatTick,
+		Storage:         sv.raftStorage,
+		Applied:         sv.state.AppliedIndex(),
+		MaxSizePerMsg:   4096,
+		MaxInflightMsgs: 256,
+		Logger:          &raft.DefaultLogger{Logger: stdlog.New(ioutil.Discard, "", 0)},
 	}
+}
+
+// Init initializes a new Raft cluster.
+func (sv *Service) Init() error {
+	const firstNodeID = 1
+
+	sv.startMu.Lock()
+	defer sv.startMu.Unlock()
+
+	if sv.raftNode != nil {
+		return ErrExistingCluster
+	}
+
+	log.Printkv(context.Background(), "raftid", firstNodeID)
+	err := writeID(sv.dir, firstNodeID)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(sv.walDir())
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	walobj, err := wal.Create(sv.walDir(), nil)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	peers := []raft.Peer{{ID: firstNodeID, Context: []byte(sv.laddr)}}
+	raftNode := raft.StartNode(sv.config(firstNodeID), peers)
+	sv.startLocked(firstNodeID, raftNode, walobj)
+	return nil
+}
+
+// Join connects to an existing Raft cluster.
+// bootURL gives the location of an existing cluster
+// for the local process to join. It can be either
+// the concrete address of any single cluster member
+// or it can point to a load balancer for the whole
+// cluster, if one exists.
+func (sv *Service) Join(bootURL string) error {
+	sv.startMu.Lock()
+	defer sv.startMu.Unlock()
+
+	if sv.raftNode != nil {
+		return ErrExistingCluster
+	}
+
+	id, walobj, err := sv.join(sv.laddr, bootURL) // sets state
+	if err != nil {
+		return err
+	}
+	raftNode := raft.RestartNode(sv.config(id))
+	sv.startLocked(id, raftNode, walobj)
+	return nil
 }
 
 // Err returns a serious error preventing this process from
@@ -380,6 +438,10 @@ func runTicks(rn raft.Node) {
 // Exec proposes the provided instruction and waits for it to be
 // satisfied.
 func (sv *Service) Exec(ctx context.Context, instruction []byte) (satisfied bool, err error) {
+	if !sv.initialized() {
+		return false, ErrUninitialized
+	}
+
 	prop := proposal{Wctx: randID(), Instruction: instruction}
 	data, err := json.Marshal(prop)
 	if err != nil {
@@ -437,6 +499,10 @@ func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 // won't have changed the value again, but it is guaranteed not to
 // read stale data.)
 func (sv *Service) WaitRead(ctx context.Context) error {
+	if !sv.initialized() {
+		return ErrUninitialized
+	}
+
 	for {
 		err := sv.waitRead(ctx)
 		if isTimeout(err) {
@@ -525,6 +591,11 @@ func (sv *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
+	if !sv.initialized() {
+		http.Error(w, ErrUninitialized.Error(), 400)
+		return
+	}
+
 	b, err := ioutil.ReadAll(http.MaxBytesReader(w, req.Body, maxRaftReqSize))
 	if err != nil {
 		http.Error(w, "cannot read req: "+err.Error(), 400)
@@ -540,6 +611,11 @@ func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
 }
 
 func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
+	if !sv.initialized() {
+		http.Error(w, ErrUninitialized.Error(), 400)
+		return
+	}
+
 	var x struct{ Addr string }
 	err := json.NewDecoder(req.Body).Decode(&x)
 	if err != nil {
@@ -589,81 +665,78 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 // It requests an existing member to propose a configuration change
 // adding the local process as a new member, then retrieves its new ID
 // and a snapshot of the cluster state and applies it to sv.
-// It also sets sv.id.
-func (sv *Service) join(addr, baseURL string) (*wal.WAL, error) {
-
+func (sv *Service) join(addr, baseURL string) (id uint64, walobj *wal.WAL, err error) {
 	reqURL := strings.TrimRight(baseURL, "/") + "/raft/join"
 	b, _ := json.Marshal(struct{ Addr string }{addr})
 	resp, err := sv.client.Post(reqURL, contentType, bytes.NewReader(b))
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return 0, nil, errors.Wrap(err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		errmsg, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not parse response from boot server")
+			return 0, nil, errors.Wrap(err, "could not parse response from boot server")
 		}
 		defer resp.Body.Close()
-		return nil, fmt.Errorf("boot server responded with status %d: %s", resp.StatusCode, errmsg)
+		return 0, nil, fmt.Errorf("boot server responded with status %d: %s", resp.StatusCode, errmsg)
 	}
 
 	var x nodeJoin
 	err = json.NewDecoder(resp.Body).Decode(&x)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return 0, nil, errors.Wrap(err)
 	}
-	sv.id = x.ID
+	id = x.ID
 	var raftSnap raftpb.Snapshot
 	err = decodeSnapshot(x.Snap, &raftSnap)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return 0, nil, errors.Wrap(err)
 	}
 
 	ctx := context.Background()
 	err = sv.raftStorage.ApplySnapshot(raftSnap)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return 0, nil, errors.Wrap(err)
 	}
 
-	log.Printkv(ctx, "raftid", sv.id)
-	err = writeID(sv.dir, sv.id)
+	log.Printkv(ctx, "raftid", id)
+	err = writeID(sv.dir, id)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
 	err = os.Remove(sv.walDir())
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return 0, nil, errors.Wrap(err)
 	}
-	wal, err := wal.Create(sv.walDir(), nil)
+	walobj, err = wal.Create(sv.walDir(), nil)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return 0, nil, errors.Wrap(err)
 	}
 
 	if !raft.IsEmptySnap(raftSnap) {
 		err := sv.saveSnapshot(&raftSnap)
 		if err != nil {
-			return nil, errors.Wrap(err)
+			return 0, nil, errors.Wrap(err)
 		}
-		err = wal.SaveSnapshot(walpb.Snapshot{
+		err = walobj.SaveSnapshot(walpb.Snapshot{
 			Index: raftSnap.Metadata.Index,
 			Term:  raftSnap.Metadata.Term,
 		})
 		if err != nil {
-			return nil, errors.Wrap(err)
+			return 0, nil, errors.Wrap(err)
 		}
 		err = sv.state.RestoreSnapshot(raftSnap.Data, raftSnap.Metadata.Index)
 		if err != nil {
-			return nil, errors.Wrap(err)
+			return 0, nil, errors.Wrap(err)
 		}
 		sv.confState = raftSnap.Metadata.ConfState
 		sv.snapIndex = raftSnap.Metadata.Index
 	}
 	log.Printkv(ctx, "at", "joined", "appliedindex", raftSnap.Metadata.Index)
-
-	return wal, nil
+	return id, walobj, nil
 }
 
 func encodeSnapshot(snapshot *raftpb.Snapshot) ([]byte, error) {
