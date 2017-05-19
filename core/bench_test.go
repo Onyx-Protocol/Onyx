@@ -88,7 +88,7 @@ func BenchmarkBuildTx(b *testing.B) {
 				coretest.SignTxTemplate(b, ctx, tpl, &testutil.TestXPrv)
 				func() {
 					dbtx := pgtest.NewTx(b)
-					defer dbtx.Rollback()
+					defer dbtx.Rollback(ctx)
 
 					err := txbuilder.FinalizeTx(ctx, chain, generator, tpl.Transaction)
 					if err != nil {
