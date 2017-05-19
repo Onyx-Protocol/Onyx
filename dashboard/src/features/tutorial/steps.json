@@ -1,12 +1,12 @@
 [
   {
     "component": "TutorialModal",
-    "title": "Welcome to Chain Core!",
-    "button": "Start 5-minute tutorial",
+    "title": "Welcome to Chain Core w/ Ivy Playground!",
+    "button": "Chain Core Tutorial",
     "dismiss": "Skip",
     "route": "mockhsms",
     "content": [
-      "Would you like a brief tutorial? This guide will walk you through the basic functions available in the Chain Core Dashboard."
+      "Get started by running the Chain Core tutorial to learn the fundamentals, or jump right into the Ivy Playground to start designing contracts."
     ]
   },
   {
