@@ -6,13 +6,9 @@ import { connect } from 'react-redux'
 import { spend } from '../actions'
 import { areSpendInputsValid, getIsCalling } from '../selectors'
 
-const mapStateToProps = (state) => {
-  let enabled = areSpendInputsValid(state)
-  if (getIsCalling(state)) {
-    enabled = false
-  }
-  return { enabled }
-}
+const mapStateToProps = (state) => ({
+  isCalling: getIsCalling(state)
+})
 
 const mapDispatchToProps = (dispatch) => ({
   handleSpendClick() {
@@ -20,8 +16,8 @@ const mapDispatchToProps = (dispatch) => ({
   }
 })
 
-const UnlockButton = (props: {enabled: boolean, handleSpendClick: (e)=>undefined} ) => {
-  return <button className="btn btn-primary btn-lg form-button" disabled={!props.enabled} onClick={props.handleSpendClick}>Unlock Value</button>
+const UnlockButton = (props: {isCalling: boolean, handleSpendClick: (e)=>undefined} ) => {
+  return <button className="btn btn-primary btn-lg form-button" disabled={props.isCalling} onClick={props.handleSpendClick}>Unlock Value</button>
 }
 
 export default connect(

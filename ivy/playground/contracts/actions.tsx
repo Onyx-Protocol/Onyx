@@ -10,6 +10,7 @@ import {
   updateError as updateCreateError,
 } from '../templates/actions'
 import {
+  areInputsValid,
   getSource,
   getContractValue,
   getInputMap,
@@ -20,6 +21,7 @@ import { getPromisedInputMap } from '../inputs/data'
 
 // internal imports
 import {
+  areSpendInputsValid,
   getSpendContract,
   getSpendContractId,
   getSelectedClauseIndex,
@@ -72,6 +74,11 @@ export const create = () => {
   return (dispatch, getState) => {
     dispatch(updateIsCalling(true))
     const state = getState()
+    if (!areInputsValid(state)) {
+      dispatch(updateIsCalling(false))
+      return dispatch(updateCreateError('One or more arguments to the contract are invalid.'))
+    }
+
     const inputMap = getInputMap(state)
     if (inputMap === undefined) throw "create should not have been called when inputMap is undefined"
 
@@ -145,6 +152,11 @@ export const spend = () => {
   return(dispatch, getState) => {
     dispatch(updateIsCalling(true))
     const state = getState()
+    if (!areSpendInputsValid(state)) {
+      dispatch(updateIsCalling(false))
+      return dispatch(updateError('One or more clause arguments are invalid.'))
+    }
+
     const contract = getSpendContract(state)
     const outputId = contract.outputId
     const lockedValueAction: SpendUnspentOutput = {
