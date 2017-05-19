@@ -39,7 +39,6 @@ const Navbar = (props: { path: string, firstTime: boolean, closeModal: ()=>undef
             <img src={logo} />
           </a>
         </div>
-        <ReactTooltip id="seedButtonTooltip" place="bottom" type="error" effect="solid"/>
         <ul className="nav navbar-nav navbar-right">
           <li className={props.path === 'unlock' ? '' : 'active'} ><Link to={prefixRoute('/')}>Lock Value</Link></li>
           <li className={props.path === 'unlock' ? 'active' : ''} ><Link to={prefixRoute('/unlock')}>Unlock Value</Link></li>
@@ -52,7 +51,6 @@ const Navbar = (props: { path: string, firstTime: boolean, closeModal: ()=>undef
             <ul className="dropdown-menu">
               {/* Reset and Seed return <li> elements */}
               <Reset />
-              <Seed />
             </ul>
           </li>
         </ul>
