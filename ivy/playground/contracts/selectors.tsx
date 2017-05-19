@@ -459,6 +459,11 @@ export const getError = createSelector(
   state => parseError(state.error)
 )
 
+export const isFirstTime = createSelector(
+  getState,
+  state => state.firstTime
+)
+
 export const generateInputMap = (compiled: CompiledTemplate): InputMap => {
   let inputs: Input[] = []
   for (const param of compiled.params) {

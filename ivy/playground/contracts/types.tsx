@@ -31,6 +31,7 @@ export type ContractMap = { [s: string]: Contract }
 
 export type ContractsState = {
   contractMap: ContractMap,
+  firstTime: boolean,
   idList: string[],
   spentIdList: string[],
   spendContractId: string,

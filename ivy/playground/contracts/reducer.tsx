@@ -17,6 +17,7 @@ import { CREATE_CONTRACT, SPEND_CONTRACT, UPDATE_ERROR,
 
 export const INITIAL_STATE: ContractsState = {
   contractMap: {},
+  firstTime: true,
   idList: [],
   spentIdList: [],
   spendContractId: "",

@@ -18,6 +18,14 @@ export const loadTemplate = (selected: string) => {
   }
 }
 
+export const CLOSE_MODAL = 'CLOSE_MODAL'
+
+export const closeModal = () => {
+  return {
+    type: CLOSE_MODAL
+  }
+}
+
 export const UPDATE_ERROR = 'templates/UPDATE_ERROR'
 
 export const updateError = (error?) => {

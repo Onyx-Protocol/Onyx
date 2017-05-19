@@ -2,11 +2,12 @@
 import * as React from 'react'
 import DocumentTitle from 'react-document-title'
 import { connect } from 'react-redux'
+import { Modal } from 'react-modal'
 
 // ivy imports
 import Section from '../../app/components/section'
 import { Contract } from '../types'
-import { getError, getContractMap, getSpendContractId } from '../../contracts/selectors'
+import { getError, getContractMap, getSpendContractId, isFirstTime } from '../../contracts/selectors'
 
 // internal imports
 import SpendInputs from './argsDisplay'
@@ -21,8 +22,9 @@ const mapStateToProps = (state) => {
   const error = getError(state)
   const map = getContractMap(state)
   const id = getSpendContractId(state)
+  const firstTime = isFirstTime(state)
   const display = map[id] !== undefined
-  return { error, display }
+  return { error, display, firstTime }
 }
 
 const ErrorAlert = (props: { error: string }) => {
@@ -35,7 +37,7 @@ const ErrorAlert = (props: { error: string }) => {
   )
 }
 
-export const Unlock = ({ error, display }) => {
+export const Unlock = ({ error, display, firstTime }) => {
   let summary = (<div className="table-placeholder">No Contract Found</div>)
   let details = (<div className="table-placeholder">No Details Found</div>)
   let button
@@ -66,6 +68,7 @@ export const Unlock = ({ error, display }) => {
       <UnlockButton />
     )
   }
+
   return (
     <DocumentTitle title="Unlock Value">
       <div>

@@ -36,6 +36,7 @@
     "react-ace": "^4.1.6",
     "react-document-title": "^2.0.2",
     "react-dom": "^15.4.2",
+    "react-modal": "^1.7.7",
     "react-redux": "^5.0.3",
     "react-router-dom": "^4.0.0",
     "react-router-redux": "next",
