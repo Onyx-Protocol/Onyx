@@ -33,7 +33,7 @@ $ yarn start
 ```
 
 ```
-$ open http://localhost:8080/
+$ open http://localhost:8081/
 ```
 
 ### Bundle changes to playround into cored:
