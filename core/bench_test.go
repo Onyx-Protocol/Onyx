@@ -69,28 +69,21 @@ func BenchmarkBuildTx(b *testing.B) {
 	}
 
 	for _, c := range cases {
+		actions := prepareActions(c.numAssets, c.numIssuances)
 		name := fmt.Sprintf("%d-asset--%d-issuance", c.numAssets, c.numIssuances)
 		b.Run(name+"--build", func(b *testing.B) {
-			actions := prepareActions(c.numAssets, c.numIssuances)
 			for i := 0; i < b.N; i++ {
-				b.StartTimer()
 				doBuild(actions)
-				b.StopTimer()
 			}
 		})
 		b.Run(name+"--build-sign", func(b *testing.B) {
-			actions := prepareActions(c.numAssets, c.numIssuances)
 			for i := 0; i < b.N; i++ {
-				b.StartTimer()
 				tpl := doBuild(actions)
 				coretest.SignTxTemplate(b, ctx, tpl, &testutil.TestXPrv)
-				b.StopTimer()
 			}
 		})
 		b.Run(name+"--build-sign-finalize", func(b *testing.B) {
-			actions := prepareActions(c.numAssets, c.numIssuances)
 			for i := 0; i < b.N; i++ {
-				b.StartTimer()
 				tpl := doBuild(actions)
 				coretest.SignTxTemplate(b, ctx, tpl, &testutil.TestXPrv)
 				func() {
@@ -102,7 +95,6 @@ func BenchmarkBuildTx(b *testing.B) {
 						b.Fatal(err)
 					}
 				}()
-				b.StopTimer()
 			}
 		})
 	}
