@@ -1,4 +1,4 @@
 
 module Chain::Rev
-	ID = "main/rev3130".freeze
+	ID = "1.2-stable/rev3131".freeze
 end
