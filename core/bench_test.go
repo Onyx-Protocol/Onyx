@@ -61,7 +61,7 @@ func BenchmarkBuildTx(b *testing.B) {
 	}
 
 	doBuild := func(actions []txbuilder.Action) *txbuilder.Template {
-		tpl, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Minute))
+		tpl, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -90,7 +90,7 @@ func BenchmarkBuildTx(b *testing.B) {
 					dbtx := pgtest.NewTx(b)
 					defer dbtx.Rollback()
 
-					err := txbuilder.FinalizeTx(ctx, chain, generator, tpl.Transaction)
+					err := txbuilder.FinalizeTx(ctx, chain, generator, tpl.Transaction, false)
 					if err != nil {
 						b.Fatal(err)
 					}
