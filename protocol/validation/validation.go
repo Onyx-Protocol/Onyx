@@ -58,8 +58,7 @@ var (
 
 func checkValid(vs *validationState, e bc.Entry) (err error) {
 	entryID := bc.EntryID(e)
-	var ok bool
-	if err, ok = vs.cache[entryID]; ok {
+	if err, ok := vs.cache[entryID]; ok {
 		return err
 	}
 
