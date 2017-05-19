@@ -418,6 +418,19 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, error) {
 	switch e := expr.(type) {
 	case *binaryExpr:
+		// Do typechecking after compiling subexpressions (because other
+		// compilation errors are more interesting than type mismatch
+		// errors).
+
+		stack, err := compileExpr(b, stack, contract, clause, env, counts, e.left)
+		if err != nil {
+			return nil, errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
+		}
+		stack, err = compileExpr(b, stack, contract, clause, env, counts, e.right)
+		if err != nil {
+			return nil, errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
+		}
+
 		lType := e.left.typ(env)
 		if e.op.left != "" && lType != e.op.left {
 			return nil, fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
@@ -446,27 +459,24 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			}
 		}
 
-		stack, err := compileExpr(b, stack, contract, clause, env, counts, e.left)
-		if err != nil {
-			return nil, errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
-		}
-		stack, err = compileExpr(b, stack, contract, clause, env, counts, e.right)
-		if err != nil {
-			return nil, errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
-		}
 		for _, op := range e.op.opcodes {
 			b.addOp(op)
 		}
 		stack = append(stack[:len(stack)-2], stackEntry(e.String()))
 
 	case *unaryExpr:
-		if e.op.operand != "" && e.expr.typ(env) != e.op.operand {
-			return nil, fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(env), e.op.operand)
-		}
+		// Do typechecking after compiling subexpression (because other
+		// compilation errors are more interesting than type mismatch
+		// errors).
+
 		var err error
 		stack, err = compileExpr(b, stack, contract, clause, env, counts, e.expr)
 		if err != nil {
 			return nil, errors.Wrapf(err, "in \"%s\" expression", e.op.op)
+		}
+
+		if e.op.operand != "" && e.expr.typ(env) != e.op.operand {
+			return nil, fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(env), e.op.operand)
 		}
 		for _, op := range e.op.opcodes {
 			b.addOp(op)
@@ -486,23 +496,19 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			return nil, fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
 
-		// type-checking
 		if len(e.args) != len(bi.args) {
 			return nil, fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", bi.name, len(e.args), len(bi.args))
-		}
-		for i, actual := range e.args {
-			if bi.args[i] != "" && actual.typ(env) != bi.args[i] {
-				return nil, fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
-			}
 		}
 
 		// WARNING WARNING WOOP WOOP
 		// special-case hack
 		// WARNING WARNING WOOP WOOP
 		if bi.name == "checkTxMultiSig" {
-			// type checking should have done this for us, but just in case:
-			if len(e.args) != 2 {
-				// xxx err
+			if _, ok := e.args[0].(listExpr); !ok {
+				return nil, fmt.Errorf("checkTxMultiSig expects list literals, got %T for argument 0", e.args[0])
+			}
+			if _, ok := e.args[1].(listExpr); !ok {
+				return nil, fmt.Errorf("checkTxMultiSig expects list literals, got %T for argument 1", e.args[1])
 			}
 
 			var err error
@@ -554,6 +560,16 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			}
 			k += k2
 		}
+
+		// Do typechecking after compiling subexpressions (because other
+		// compilation errors are more interesting than type mismatch
+		// errors).
+		for i, actual := range e.args {
+			if bi.args[i] != "" && actual.typ(env) != bi.args[i] {
+				return nil, fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
+			}
+		}
+
 		for _, op := range bi.opcodes {
 			b.addOp(op)
 		}
