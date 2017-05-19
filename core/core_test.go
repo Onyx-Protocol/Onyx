@@ -23,8 +23,8 @@ func TestForwardToLeader(t *testing.T) {
 			t.Fatalf("unexpected call to %s", req.URL.Path)
 		}
 		username, password, ok := req.BasicAuth()
-		if !ok || username != "example" || password != "password" {
-			t.Fatalf("Got basic auth %s:%s, want example:password", username, password)
+		if ok && username != "" && password != "" {
+			t.Error("request credentials shouldn't be forwarded")
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		fmt.Fprintln(rw, `{
