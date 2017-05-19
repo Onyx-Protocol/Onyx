@@ -12,21 +12,21 @@ import (
 // Generate code for the Grant and GrantList types.
 //go:generate protoc -I. -I$CHAIN/.. --go_out=. grant.proto
 
-// Storage provides persistent storage for grant objects.
-type Storage struct {
+// Store provides persistent storage for grant objects.
+type Store struct {
 	sdb       *sinkdb.DB
 	keyPrefix string
 }
 
-// NewStorage returns a new *Storage storing grants
+// NewStore returns a new *Store storing grants
 // in db under keyPrefix.
 // It implements the Loader interface.
-func NewStorage(db *sinkdb.DB, keyPrefix string) *Storage {
-	return &Storage{db, keyPrefix}
+func NewStore(db *sinkdb.DB, keyPrefix string) *Store {
+	return &Store{db, keyPrefix}
 }
 
 // Load satisfies the Loader interface.
-func (s *Storage) Load(ctx context.Context, policy []string) ([]*Grant, error) {
+func (s *Store) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 	var grants []*Grant
 	for _, p := range policy {
 		var grantList GrantList
@@ -44,7 +44,7 @@ func (s *Storage) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 // If a grant equivalent to g is already stored,
 // Save has no effect and returns a copy of the existing grant.
 // Otherwise, if successful, it returns g.
-func (s *Storage) Save(ctx context.Context, g *Grant) (*Grant, error) {
+func (s *Store) Save(ctx context.Context, g *Grant) (*Grant, error) {
 	key := s.keyPrefix + g.Policy
 	if g.CreatedAt == "" {
 		g.CreatedAt = time.Now().UTC().Format(time.RFC3339)

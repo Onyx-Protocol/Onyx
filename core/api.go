@@ -65,7 +65,7 @@ type API struct {
 	indexer         *query.Indexer
 	txFeeds         *txfeed.Tracker
 	accessTokens    *accesstoken.CredentialStore
-	grants          *authz.Storage
+	grants          *authz.Store
 	config          *config.Config
 	submitter       txbuilder.Submitter
 	db              pg.DB
@@ -264,7 +264,7 @@ func AuthHandler(handler http.Handler, sdb *sinkdb.DB, accessTokens *accesstoken
 	}
 
 	authorizer := authz.NewAuthorizer(
-		grantStorage(sdb, extraGrants, subj),
+		grantStore(sdb, extraGrants, subj),
 		policyByRoute,
 	)
 	authenticator := authn.NewAPI(accessTokens, crosscoreRPCPrefix, rootCAs)

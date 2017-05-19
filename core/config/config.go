@@ -284,7 +284,7 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string, ht
 // TODO(tessr): make all of this atomic in raft, so we don't get halfway through
 // a postgres->raft migration and fail, losing the second half of the migration
 func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
-	store := authz.NewStorage(sdb, GrantPrefix)
+	store := authz.NewStore(sdb, GrantPrefix)
 	const q = `SELECT id, type, created FROM access_tokens`
 	var tokens []*accesstoken.Token
 	err := pg.ForQueryRows(ctx, db, q, func(id string, maybeType sql.NullString, created time.Time) {

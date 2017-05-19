@@ -26,7 +26,7 @@ func TestCreatGrantValidation(t *testing.T) {
 		mux:          http.NewServeMux(),
 		sdb:          sdb,
 		accessTokens: accessTokens,
-		grants:       authz.NewStorage(sdb, GrantPrefix),
+		grants:       authz.NewStore(sdb, GrantPrefix),
 	}
 
 	validCases := []apiGrant{
@@ -140,7 +140,7 @@ func TestDeleteGrants(t *testing.T) {
 		mux:          http.NewServeMux(),
 		sdb:          sdb,
 		accessTokens: accessTokens,
-		grants:       authz.NewStorage(sdb, GrantPrefix),
+		grants:       authz.NewStore(sdb, GrantPrefix),
 	}
 
 	fixture := []apiGrant{
@@ -242,7 +242,7 @@ func TestDeleteGrantsByAccessToken(t *testing.T) {
 		mux:          http.NewServeMux(),
 		sdb:          sdb,
 		accessTokens: accessTokens,
-		grants:       authz.NewStorage(sdb, GrantPrefix),
+		grants:       authz.NewStore(sdb, GrantPrefix),
 	}
 
 	// fixture data includes four grants:

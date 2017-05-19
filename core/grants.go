@@ -51,7 +51,7 @@ func (s *extraGrantLoader) Load(ctx context.Context, policy []string) ([]*authz.
 	return g, nil
 }
 
-func grantStorage(sdb *sinkdb.DB, extra []*authz.Grant, subj *pkix.Name) authz.Loader {
+func grantStore(sdb *sinkdb.DB, extra []*authz.Grant, subj *pkix.Name) authz.Loader {
 	ext := map[string][]*authz.Grant{
 		"public": {{GuardType: "any", Policy: "public"}},
 	}
@@ -68,7 +68,7 @@ func grantStorage(sdb *sinkdb.DB, extra []*authz.Grant, subj *pkix.Name) authz.L
 		})
 	}
 	return &extraGrantLoader{
-		loader: authz.NewStorage(sdb, GrantPrefix),
+		loader: authz.NewStore(sdb, GrantPrefix),
 		extra:  ext,
 	}
 }
