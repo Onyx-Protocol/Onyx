@@ -102,18 +102,6 @@ export const getParameterIds = createSelector(
   }
 )
 
-export const areInputsValid = createSelector(
-  getInputMap,
-  getParameterIds,
-  (inputMap, parameterIds) => {
-    if (inputMap === undefined || parameterIds === undefined) return false
-    const invalid = parameterIds.filter(id => {
-      return !isValidInput(id, inputMap)
-    })
-    return invalid.length === 0
-  }
-)
-
 export const getContractValueId = createSelector(
   getCompiled,
   (compiled) => compiled && ("contractValue." + compiled.value)
@@ -143,6 +131,21 @@ export const getContractValue = createSelector(
     })
     if (sources.length !== 1) return undefined
     return sources[0]
+  }
+)
+
+export const areInputsValid = createSelector(
+  getInputMap,
+  getParameterIds,
+  getContractValueId,
+  (inputMap, parameterIds, contractValueId) => {
+    if (inputMap === undefined || parameterIds === undefined || contractValueId === undefined) {
+      return false
+    }
+    const invalid = [...parameterIds, contractValueId].filter(id => {
+      return !isValidInput(id, inputMap)
+    })
+    return invalid.length === 0
   }
 )
 
