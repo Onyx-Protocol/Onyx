@@ -10,9 +10,9 @@ go env
 PATH=$(go env GOPATH)/bin:$PATH:$CHAIN/bin
 cd $CHAIN
 go vet $(go list ./...|grep -v vendor)
-go install chain/cmd/vet
-vet .
-go install chain/log # needed before testing ./cmd/vet below
+go install chain/cmd/chainvet
+chainvet .
+go install chain/log # needed before testing ./cmd/chainvet below
 go test -cover $(go list ./...|grep -v vendor)
 go generate $(go list ./...|grep -v vendor)
 git diff --exit-code # make sure generated files are in sync
