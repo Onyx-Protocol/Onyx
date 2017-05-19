@@ -6,7 +6,7 @@ import { connect } from 'react-redux'
 // ivy imports
 import Section from '../../app/components/section'
 import { Contract } from '../types'
-import { getError, getContractMap, getSpendContractId } from '../../contracts/selectors'
+import { getUnlockError, getContractMap, getSpendContractId } from '../../contracts/selectors'
 
 // internal imports
 import SpendInputs from './argsDisplay'
@@ -18,7 +18,7 @@ import { ClauseValue, ClauseParameters, getWidget } from './parameters'
 import { ContractValue } from './argsDisplay'
 
 const mapStateToProps = (state) => {
-  const error = getError(state)
+  const error = getUnlockError(state)
   const map = getContractMap(state)
   const id = getSpendContractId(state)
   const display = map[id] !== undefined

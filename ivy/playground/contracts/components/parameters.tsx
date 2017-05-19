@@ -9,7 +9,7 @@ import { Item as Account } from '../../accounts/types'
 import { getItemMap as getAssetMap, getItemList as getAssets } from '../../assets/selectors'
 import { getBalanceMap, getItemList as getAccounts, getBalanceSelector } from '../../accounts/selectors'
 import { getClauseValueId, getState as getContractsState } from '../../contracts/selectors'
-import { getError as getCreateError, getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
+import { getLockError, getParameterIds, getInputMap, getContractValueId } from '../../templates/selectors'
 import { getRequiredAssetAmount, getSpendContract } from '../../contracts/selectors'
 import { seed } from '../../app/actions'
 
@@ -28,7 +28,7 @@ import { validateInput, computeDataForInput, getChild,
 
 // internal imports
 import { updateInput, updateClauseInput } from '../actions'
-import { getError as getSpendError, getSpendInputMap, getClauseParameterIds } from '../selectors'
+import { getUnlockError, getSpendInputMap, getClauseParameterIds } from '../selectors'
 
 function getChildWidget(input: ComplexInput) {
   return getWidget(getChild(input))
@@ -417,7 +417,7 @@ function mapStateToContractInputProps(state, ownProps: { id: string }) {
   if (inputMap === undefined) {
     throw "inputMap should not be undefined when contract inputs are being rendered"
   }
-  const showError = !!getCreateError(state)
+  const showError = !!getLockError(state)
   return mapToInputProps(showError, inputMap, ownProps.id)
 }
 
@@ -431,7 +431,7 @@ function mapDispatchToContractInputProps(dispatch, ownProps: { id: string }) {
 
 function mapStateToSpendInputProps(state, ownProps: { id: string }) {
   const inputsById = getSpendInputMap(state)
-  const showError = !!getSpendError(state)
+  const showError = !!getUnlockError(state)
   return mapToInputProps(showError, inputsById, ownProps.id)
 }
 
