@@ -29,7 +29,7 @@
         <scene sceneID="dfz-VO-LQk">
             <objects>
                 <windowController storyboardIdentifier="dashboard" id="PHB-hs-gDl" customClass="DashboardWindowController" customModule="Chain_Core" customModuleProvider="target" sceneMemberID="viewController">
-                    <window key="window" title="Chain Core" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" showsToolbarButton="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingIdentifier="dashboardWindow" id="v19-jh-QlX">
+                    <window key="window" title="Chain Core" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" showsToolbarButton="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingIdentifier="mainwindow" tabbingMode="preferred" id="v19-jh-QlX">
                         <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
                         <windowPositionMask key="initialPositionMask" topStrut="YES" bottomStrut="YES"/>
                         <rect key="contentRect" x="1" y="400" width="1100" height="680"/>
@@ -42,7 +42,7 @@
                 </windowController>
                 <customObject id="pz3-bH-avl" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="594" y="318"/>
+            <point key="canvasLocation" x="594" y="312"/>
         </scene>
         <!--Dashboard View Controller-->
         <scene sceneID="LCn-KM-p0T">
@@ -189,7 +189,7 @@
                 </viewController>
                 <customObject id="kUJ-1I-Ipg" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="594" y="1168"/>
+            <point key="canvasLocation" x="594" y="1175"/>
         </scene>
         <!--View Controller-->
         <scene sceneID="qij-K2-cCG">
@@ -204,6 +204,25 @@
                 </viewController>
             </objects>
             <point key="canvasLocation" x="1275" y="-308"/>
+        </scene>
+        <!--Window Controller-->
+        <scene sceneID="xYY-Oq-feE">
+            <objects>
+                <windowController storyboardIdentifier="webcontent" id="m3q-GO-6Db" customClass="WebContentWindowController" customModule="Chain_Core" customModuleProvider="target" sceneMemberID="viewController">
+                    <window key="window" title="Chain Core" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" showsToolbarButton="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingIdentifier="mainwindow" tabbingMode="preferred" id="uoN-7s-q3h">
+                        <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+                        <windowPositionMask key="initialPositionMask" topStrut="YES" bottomStrut="YES"/>
+                        <rect key="contentRect" x="1" y="400" width="1100" height="680"/>
+                        <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1177"/>
+                        <value key="minSize" type="size" width="970" height="530"/>
+                    </window>
+                    <connections>
+                        <segue destination="fDF-ep-z9O" kind="relationship" relationship="window.shadowedContentViewController" id="GBh-JB-5Ma"/>
+                    </connections>
+                </windowController>
+                <customObject id="hsP-48-HRu" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1804" y="312"/>
         </scene>
         <!--Application-->
         <scene sceneID="JPo-4y-FX3">
@@ -598,6 +617,36 @@
                 <customObject id="Ady-hI-5gd" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="129" y="-302"/>
+        </scene>
+        <!--Web Content View Controller-->
+        <scene sceneID="T0P-cX-spA">
+            <objects>
+                <viewController id="fDF-ep-z9O" customClass="WebContentViewController" customModule="Chain_Core" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" id="e3M-Qf-XGl">
+                        <rect key="frame" x="0.0" y="0.0" width="1024" height="700"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <subviews>
+                            <box boxType="custom" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="7LM-bb-uyd" userLabel="White bg">
+                                <rect key="frame" x="0.0" y="0.0" width="1024" height="700"/>
+                                <view key="contentView" id="Zsz-DL-VwA">
+                                    <rect key="frame" x="0.0" y="0.0" width="1024" height="700"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                </view>
+                                <color key="borderColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <color key="fillColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                            </box>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="7LM-bb-uyd" firstAttribute="top" secondItem="e3M-Qf-XGl" secondAttribute="top" id="Fil-ln-MYx"/>
+                            <constraint firstAttribute="trailing" secondItem="7LM-bb-uyd" secondAttribute="trailing" id="PWE-2F-7q1"/>
+                            <constraint firstItem="7LM-bb-uyd" firstAttribute="leading" secondItem="e3M-Qf-XGl" secondAttribute="leading" id="Zs1-AN-Oe1"/>
+                            <constraint firstAttribute="bottom" secondItem="7LM-bb-uyd" secondAttribute="bottom" id="ugM-aU-fcz"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <customObject id="hcJ-Vf-5Kx" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1804" y="1175"/>
         </scene>
     </scenes>
     <resources>
