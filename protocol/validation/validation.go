@@ -26,6 +26,9 @@ type validationState struct {
 
 	// The destination position, for validating ValueDestinations
 	destPos uint64
+
+	// Memoized per-entry validation results
+	cache map[bc.Hash]error
 }
 
 var (
@@ -53,7 +56,17 @@ var (
 	errZeroTime              = errors.New("timerange has one or two bounds set to zero")
 )
 
-func checkValid(vs *validationState, e bc.Entry) error {
+func checkValid(vs *validationState, e bc.Entry) (err error) {
+	entryID := bc.EntryID(e)
+	var ok bool
+	if err, ok = vs.cache[entryID]; ok {
+		return err
+	}
+
+	defer func() {
+		vs.cache[entryID] = err
+	}()
+
 	switch e := e.(type) {
 	case *bc.TxHeader:
 		// This does only part of the work of validating a tx header. The
@@ -68,7 +81,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			resultEntry := vs.tx.Entries[*resID]
 			vs2 := *vs
 			vs2.entryID = *resID
-			err := checkValid(&vs2, resultEntry)
+			err = checkValid(&vs2, resultEntry)
 			if err != nil {
 				return errors.Wrapf(err, "checking result %d", i)
 			}
@@ -85,7 +98,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		}
 
 	case *bc.Mux:
-		err := vm.Verify(NewTxVMContext(vs.tx, e, e.Program, e.WitnessArguments))
+		err = vm.Verify(NewTxVMContext(vs.tx, e, e.Program, e.WitnessArguments))
 		if err != nil {
 			return errors.Wrap(err, "checking mux program")
 		}
@@ -93,7 +106,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		for i, src := range e.Sources {
 			vs2 := *vs
 			vs2.sourcePos = uint64(i)
-			err := checkValidSrc(&vs2, src)
+			err = checkValidSrc(&vs2, src)
 			if err != nil {
 				return errors.Wrapf(err, "checking mux source %d", i)
 			}
@@ -101,7 +114,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		for i, dest := range e.WitnessDestinations {
 			vs2 := *vs
 			vs2.destPos = uint64(i)
-			err := checkValidDest(&vs2, dest)
+			err = checkValidDest(&vs2, dest)
 			if err != nil {
 				return errors.Wrapf(err, "checking mux destination %d", i)
 			}
@@ -140,7 +153,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		}
 
 	case *bc.Nonce:
-		err := vm.Verify(NewTxVMContext(vs.tx, e, e.Program, e.WitnessArguments))
+		err = vm.Verify(NewTxVMContext(vs.tx, e, e.Program, e.WitnessArguments))
 		if err != nil {
 			return errors.Wrap(err, "checking nonce program")
 		}
@@ -166,7 +179,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 	case *bc.Output:
 		vs2 := *vs
 		vs2.sourcePos = 0
-		err := checkValidSrc(&vs2, e.Source)
+		err = checkValidSrc(&vs2, e.Source)
 		if err != nil {
 			return errors.Wrap(err, "checking output source")
 		}
@@ -178,7 +191,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 	case *bc.Retirement:
 		vs2 := *vs
 		vs2.sourcePos = 0
-		err := checkValidSrc(&vs2, e.Source)
+		err = checkValidSrc(&vs2, e.Source)
 		if err != nil {
 			return errors.Wrap(err, "checking retirement source")
 		}
@@ -213,7 +226,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrapf(bc.ErrMissingEntry, "entry for issuance anchor %x not found", e.AnchorId.Bytes())
 		}
 
-		err := vm.Verify(NewTxVMContext(vs.tx, e, e.WitnessAssetDefinition.IssuanceProgram, e.WitnessArguments))
+		err = vm.Verify(NewTxVMContext(vs.tx, e, e.WitnessAssetDefinition.IssuanceProgram, e.WitnessArguments))
 		if err != nil {
 			return errors.Wrap(err, "checking issuance program")
 		}
@@ -507,6 +520,8 @@ func ValidateTx(tx *bc.Tx, initialBlockID bc.Hash) error {
 		blockchainID: initialBlockID,
 		tx:           tx,
 		entryID:      tx.ID,
+
+		cache: make(map[bc.Hash]error),
 	}
 	return checkValid(vs, tx.TxHeader)
 }
