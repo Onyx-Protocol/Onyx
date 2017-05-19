@@ -6,6 +6,7 @@ import ReactTooltip from 'react-tooltip'
 
 // ivy imports
 import { prefixRoute } from '../../core'
+import { isFirstTime } from '../../contracts/selectors'
 
 // internal imports
 import Reset from './reset'
@@ -13,6 +14,8 @@ import Seed from './seed'
 
 const logo = require('../../static/images/logo.png')
 const symbol = require('../../static/images/chain-symbol.svg')
+
+import { closeModal } from '../../contracts/actions'
 
 const mapStateToProps = (state) => {
   const location = state.routing.location
@@ -24,10 +27,10 @@ const mapStateToProps = (state) => {
   if (pathname[1] === "ivy") {
     pathname.shift()
   }
-  return { path: pathname[1] }
+  return { path: pathname[1], firstTime: isFirstTime(state) }
 }
 
-const Navbar = (props: { path: string }) => {
+const Navbar = (props: { path: string, firstTime: boolean, closeModal: ()=>undefined }) => {
   return (
     <nav className="navbar navbar-inverse navbar-static-top navbar-fixed-top">
       <div className="container fixedcontainer">
@@ -53,13 +56,13 @@ const Navbar = (props: { path: string }) => {
             </ul>
           </li>
         </ul>
-        <div className="welcome" hidden>
+        <div className="welcome" hidden={!props.firstTime}>
         <div className="welcome-content">
           <img src={symbol}/>
           <h1>Welcome to Ivy Playground!</h1>
           <p>We've seeded your Chain Core with a few accounts and assets to help you get started. You can create more by visiting the Dashboard.</p>
           <p>The <a href="https:/chain.com/docs/1.2/ivy-playground/tutorial" target="_blank">tutorial</a> is a great place to start, which you can visit any time by clicking the link in the top right. Enjoy!</p>
-          <button className="btn btn-primary btn-xl">Let's Go!</button>
+          <button className="btn btn-primary btn-xl" onClick={props.closeModal}>Let's Go!</button>
         </div>
         <div className="welcome-screen-block"></div>
          </div>
@@ -69,5 +72,6 @@ const Navbar = (props: { path: string }) => {
 }
 
 export default connect(
-  mapStateToProps
+  mapStateToProps,
+  { closeModal }
 )(Navbar)
