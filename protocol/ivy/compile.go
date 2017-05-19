@@ -169,15 +169,6 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 		}
 	}
 
-	err = prohibitValueParams(contract)
-	if err != nil {
-		return nil, nil, err
-	}
-	err = requireAllParamsUsedInClauses(contract.params, contract.clauses)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	stack := addParamsToStack(nil, contract.params, true)
 
 	b := newBuilder()
@@ -277,37 +268,37 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 	for i, targ := range clauseTargets {
 		labels[jumpAddrs[targ]] = contract.clauses[i].name
 	}
+
+	err = prohibitValueParams(contract)
+	if err != nil {
+		return nil, nil, err
+	}
+	err = requireAllParamsUsedInClauses(contract.params, contract.clauses)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return prog, labels, nil
 }
 
 func compileClause(b *builder, contractStack []stackEntry, contract *contract, env *environ, clause *clause) error {
+	var err error
+
 	// copy env to leave outerEnv unchanged
 	env = newEnviron(env)
 	for _, p := range clause.params {
-		err := env.add(p.name, p.typ, roleClauseParam)
+		err = env.add(p.name, p.typ, roleClauseParam)
 		if err != nil {
 			return err
 		}
 	}
 	for _, req := range clause.reqs {
-		err := env.add(req.name, valueType, roleClauseValue)
+		err = env.add(req.name, valueType, roleClauseValue)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := requireAllValuesDisposedOnce(contract, clause)
-	if err != nil {
-		return err
-	}
-	err = typeCheckClause(contract, clause, env)
-	if err != nil {
-		return err
-	}
-	err = requireAllParamsUsedInClause(clause.params, clause)
-	if err != nil {
-		return err
-	}
 	assignIndexes(clause)
 	stack := addParamsToStack(nil, clause.params, false)
 	stack = append(stack, contractStack...)
@@ -412,6 +403,20 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 			}
 		}
 	}
+
+	err = requireAllValuesDisposedOnce(contract, clause)
+	if err != nil {
+		return err
+	}
+	err = typeCheckClause(contract, clause, env)
+	if err != nil {
+		return err
+	}
+	err = requireAllParamsUsedInClause(clause.params, clause)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
