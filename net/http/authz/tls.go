@@ -7,8 +7,9 @@ import (
 )
 
 // PKIXName represents a PKIX Distinguished Name.
-// It is the same as Name in package crypto/x509/pkix,
-// but with JSON tags.
+// It is the same type as Name in package crypto/x509/pkix,
+// but with JSON tags
+// declaring the X.500 standard "short name" for each field.
 type PKIXName struct {
 	Country            []string `json:"C,omitempty"`
 	Organization       []string `json:"O,omitempty"`
