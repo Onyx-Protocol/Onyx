@@ -41,6 +41,7 @@ import (
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
+	"chain/net/http/authz"
 	"chain/net/http/limit"
 	"chain/net/http/reqid"
 	"chain/protocol"
@@ -80,6 +81,9 @@ var (
 	// By default, a core is not able to reset its data.
 	// This feature can be turned on with the reset build tag.
 	resetIfAllowedAndRequested = func(pg.DB, *sinkdb.DB) {}
+
+	// See localhost_auth.go.
+	builtinGrants []*authz.Grant
 )
 
 func init() {
@@ -207,7 +211,7 @@ func main() {
 	mux.Handle("/", &coreHandler)
 
 	var handler http.Handler = mux
-	handler = core.AuthHandler(handler, sdb, accessTokens, tlsConfig)
+	handler = core.AuthHandler(handler, sdb, accessTokens, tlsConfig, builtinGrants)
 	handler = core.RedirectHandler(handler)
 	handler = reqid.Handler(handler)
 

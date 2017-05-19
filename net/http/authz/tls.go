@@ -6,8 +6,11 @@ import (
 	"strings"
 )
 
-// Same as crypto/x509/pkix.Name but with JSON tags.
-type pkixDN struct {
+// PKIXName represents a PKIX Distinguished Name.
+// It is the same type as Name in package crypto/x509/pkix,
+// but with JSON tags
+// declaring the X.500 standard "short name" for each field.
+type PKIXName struct {
 	Country            []string `json:"C,omitempty"`
 	Organization       []string `json:"O,omitempty"`
 	OrganizationalUnit []string `json:"OU,omitempty"`
@@ -39,7 +42,7 @@ func ValidX509SubjectField(s string) bool {
 }
 
 func x509GuardData(data []byte) pkix.Name {
-	var v struct{ Subject pkixDN }
+	var v struct{ Subject PKIXName }
 	err := json.Unmarshal(data, &v)
 	if err != nil {
 		// We should create only well-formed guard data,
@@ -48,14 +51,6 @@ func x509GuardData(data []byte) pkix.Name {
 		panic(err)
 	}
 	return pkix.Name(v.Subject)
-}
-
-func encodeX509GuardData(subj pkix.Name) []byte {
-	v := struct {
-		Subject pkixDN `json:"subject"`
-	}{pkixDN(subj)}
-	d, _ := json.Marshal(v)
-	return d
 }
 
 func matchesX509(pat, x pkix.Name) bool {

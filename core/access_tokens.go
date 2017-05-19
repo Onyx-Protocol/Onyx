@@ -31,19 +31,19 @@ func (a *API) createAccessToken(ctx context.Context, x struct{ ID, Type string }
 		return nil, errors.Wrap(err)
 	}
 
-	var grant authz.Grant
+	var grant *authz.Grant
 
 	// Type is deprecated; however, for backward compatibility, using the
 	// Type field will create a grant associated with this new token.
 	switch x.Type {
 	case "client":
-		grant = authz.Grant{
+		grant = &authz.Grant{
 			GuardType: "access_token",
 			GuardData: guardData,
 			Policy:    "client-readwrite",
 		}
 	case "network":
-		grant = authz.Grant{
+		grant = &authz.Grant{
 			GuardType: "access_token",
 			GuardData: guardData,
 			Policy:    "crosscore",
@@ -52,7 +52,7 @@ func (a *API) createAccessToken(ctx context.Context, x struct{ ID, Type string }
 		// We've already returned if x.Type wasn't specified, so this must be a bad type.
 		return nil, accesstoken.ErrBadType
 	}
-	_, err = authz.StoreGrant(ctx, a.sdb, grant, GrantPrefix)
+	_, err = a.grants.Save(ctx, grant)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
