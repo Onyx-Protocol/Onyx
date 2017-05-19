@@ -41,7 +41,7 @@ func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilde
 		SELECT source_id, asset_id, amount, source_pos, control_program, ref_data_hash
 		FROM utxos WHERE output_id=$1
 	`
-	err := a.store.DB.QueryRow(ctx, q, a.OutputID).Scan(&sourceID, &assetID, &amount, &sourcePos, &controlProgram, &refDataHash)
+	err := a.store.DB.QueryRowContext(ctx, q, a.OutputID).Scan(&sourceID, &assetID, &amount, &sourcePos, &controlProgram, &refDataHash)
 	if err != nil {
 		return errors.Wrap(err)
 	}
