@@ -10,6 +10,7 @@ import { isValidInput, getData } from '../inputs/data'
 
 // internal imports
 import { TemplateState, SourceMap } from './types'
+import { INITIAL_ID_LIST } from './constants'
 
 export const getTemplateState = (state: AppState): TemplateState => state.templates
 
@@ -26,6 +27,11 @@ export const getSourceMap = createSelector(
 export const getSource = createSelector(
   getTemplateState,
   (state: TemplateState): string => state.source
+)
+
+export const getProtectedIdList = createSelector(
+  getTemplateState,
+  (state: TemplateState): string[] => state.protectedIdList
 )
 
 export const getTemplateIds = createSelector(
@@ -164,8 +170,8 @@ export const getSelectedTemplate = createSelector(
 
 export const getSaveability = createSelector(
   getCompiled,
-  getSourceMap,
-  (compiled, sourceMap) => {
+  getProtectedIdList,
+  (compiled, protectedIds) => {
     if (compiled === undefined) return {
       saveable: false,
       error: "Contract template has not been compiled."
@@ -174,10 +180,17 @@ export const getSaveability = createSelector(
       saveable: false,
       error: "Contract template is not valid Ivy."
     }
+
     let name = compiled.name
-    if (sourceMap[name] !== undefined) return {
+    if (INITIAL_ID_LIST.indexOf(name) !== -1) return {
       saveable: false,
-      error: "There is already a contract template saved with that name."
+      error: "Cannot edit predefined templates. Rename before saving."
+    }
+    if (protectedIds.indexOf(name) !== -1) {
+      return {
+        saveable: false,
+        error: "Cannot edit " + name + " because it has already been used to lock value."
+      }
     }
     return {
       saveable: true,

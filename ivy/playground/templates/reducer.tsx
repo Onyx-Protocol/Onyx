@@ -10,6 +10,7 @@ import { INITIAL_SOURCE_MAP, INITIAL_ID_LIST } from './constants'
 const INITIAL_STATE: TemplateState = {
   sourceMap: INITIAL_SOURCE_MAP,
   idList: INITIAL_ID_LIST,
+  protectedIdList: [],
 
   // The first ID corresponds to the base template.
   source: INITIAL_SOURCE_MAP[INITIAL_ID_LIST[1]],
@@ -66,8 +67,14 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
       }
     }
     case CREATE_CONTRACT: {
+      const templateId = action.template.name
+      const protectedIdList = [...state.protectedIdList]
+      if (protectedIdList.indexOf(templateId) === -1) {
+        protectedIdList.push(templateId)
+      }
       return {
         ...state,
+        protectedIdList,
         error: undefined
       }
     }

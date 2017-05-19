@@ -43,6 +43,7 @@ export type CompiledTemplate = {
 export type TemplateState = {
   sourceMap: SourceMap,
   idList: string[],
+  protectedIdList: string[],
   source: string,
   inputMap?: InputMap,
   compiled?: CompiledTemplate,
