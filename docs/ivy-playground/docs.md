@@ -172,7 +172,7 @@ An Ivy contract is correct only if it obeys all of the following rules.
 
 ## Examples
 
-Here is `LockWithPublicKey`, one of the simplest possible contracts. Armed with the information in this document it should be easy to understand in detail how it works.
+Here is `LockWithPublicKey`, one of the simplest possible contracts. Armed with the information in this document we can understand in detail how it works.
 
 ```
 contract LockWithPublicKey(publicKey: PublicKey) locks value {
