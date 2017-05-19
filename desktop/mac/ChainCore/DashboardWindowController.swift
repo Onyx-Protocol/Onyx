@@ -18,7 +18,7 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate {
     override func windowDidLoad() {
         super.windowDidLoad()
 
-        if UserDefaults.standard.object(forKey: "NSWindow Frame \(self.windowFrameAutosaveName)") == nil {
+        if UserDefaults.standard.object(forKey: "NSWindow Frame \(self.windowFrameAutosaveName ?? "dashboard")") == nil {
             let screenFrame = NSScreen.main()!.frame
             var windowFrame = self.window!.frame
 
@@ -38,7 +38,7 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate {
         }
 
         if #available(OSX 10.12, *) {
-            NSWindow.allowsAutomaticWindowTabbing = false
+            NSWindow.allowsAutomaticWindowTabbing = true
         }
 
         viewController.statusLabel.stringValue = "Version \(Bundle.main.infoDictionary![kCFBundleVersionKey as String] ?? "")"
@@ -48,6 +48,7 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate {
             if ServerManager.shared.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.066) {
                     self.viewController.loadDashboard()
+                    AppDelegate.shared.openWebContent(title: "Ivy Playground", url: URL(string:"http://localhost:1999/ivy")!, inBackground: true)
                 }
 
             } else if let error = ServerManager.shared.error {

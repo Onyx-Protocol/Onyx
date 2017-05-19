@@ -1,102 +1,90 @@
 import Cocoa
 import WebKit
 
+class WebContentWindowController: NSWindowController, NSWindowDelegate {
 
-class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler {
+    var title: String? {
+        didSet {
+            self.window?.title = title ?? ""
+        }
+    }
+    var url: URL? {
+        didSet {
+            if let u = url {
+                if self.window != nil {
+                    self.viewController.doLoadWebView(url: u)
+                }
+            }
+        }
+    }
 
-    @IBOutlet weak var preloadView: NSView!
-    @IBOutlet weak var iconView: NSImageView!
-    @IBOutlet weak var titleLabel: NSTextField!
-    @IBOutlet weak var subtitleLabel: NSTextField!
-    @IBOutlet weak var qualifierLabel: NSTextField!
-    @IBOutlet weak var statusLabel: NSTextField!
+    var viewController: WebContentViewController {
+        return self.contentViewController as! WebContentViewController
+    }
+
+    var showingError:Bool = false
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        self.windowFrameAutosaveName = "WebViewWindowPosition_16_20"; // the setting in IB does not help
+    }
+
+    override func windowDidLoad() {
+        super.windowDidLoad()
+
+        if UserDefaults.standard.object(forKey: "NSWindow Frame \(self.windowFrameAutosaveName ?? "n/a")") == nil {
+            let screenFrame = NSScreen.main()!.frame
+            var windowFrame = self.window!.frame
+
+            // make window frame size proportional to the screen:
+            let sizeRatio:CGFloat = 0.66
+            windowFrame.size.width = min(max(1150, round(sizeRatio*screenFrame.size.width)), screenFrame.size.width)
+            windowFrame.size.height = round(1.1*sizeRatio*screenFrame.size.height) // screens nowadays are too narrow vertically - make the window a bit higher
+
+            let topToBottomRatio:CGFloat = 0.55 // per HIG we want top space be 50% of the space below window
+
+            // H = bottom*ratio + h + bottom
+            // bottom = (H - h)/(ratio+1)
+            windowFrame.origin.x = (screenFrame.size.width - windowFrame.size.width)/2
+            windowFrame.origin.y = (screenFrame.size.height - windowFrame.size.height)/(1.0 + topToBottomRatio)
+
+            self.window?.setFrame(windowFrame, display: true)
+        }
+
+        if #available(OSX 10.12, *) {
+            NSWindow.allowsAutomaticWindowTabbing = true
+        }
+
+        if let url = self.url {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.066) {
+                self.viewController.doLoadWebView(url: url)
+            }
+        }
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        AppDelegate.shared.closeWebContent(title: title ?? "")
+    }
+}
+
+
+
+
+
+class WebContentViewController: NSViewController, WebUIDelegate, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler {
 
     @IBOutlet weak var webViewOld: WebView!
     @IBOutlet weak var webView: WKWebView!
 
-    @IBOutlet weak var progressBarConstraint: NSLayoutConstraint!
-    @IBOutlet weak var progressTrackView: NSBox!
-
-    func beginAnimatingProgress() {
-        progressBarConstraint.constant = 1
-
-        NSAnimationContext.runAnimationGroup({ (ctx) in
-            ctx.allowsImplicitAnimation = true
-            ctx.duration = 4.50 // this is an estimated duration.
-            ctx.timingFunction = CAMediaTimingFunction(name: kCAMediaTimingFunctionEaseInEaseOut)
-            progressBarConstraint.animator().constant = 0.8 * progressTrackView.frame.size.width
-        }, completionHandler: {
-
-        })
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        progressBarConstraint.constant = 1.0
-
-        self.subtitleLabel.stringValue = editionSubtitle()
-        self.qualifierLabel.stringValue = qualifierSubtitle()
-
-        self.subtitleLabel.font = NSFont(name: "Nitti-Bold", size: 22)
-        self.qualifierLabel.font = NSFont(name: "Nitti-Medium", size: 22)
-        self.titleLabel.font    = NSFont(name: "NittiGrotesk-Bold", size: 60)
-        self.statusLabel.font   = NSFont(name: "NittiGrotesk-Medium", size: 16)
-
-        self.subtitleLabel.attributedStringValue = NSAttributedString(string: self.subtitleLabel.stringValue, attributes: [
-            NSKernAttributeName: 0.6
-        ])
-        self.titleLabel.attributedStringValue = NSAttributedString(string: self.titleLabel.stringValue, attributes: [
-            NSKernAttributeName: 1.5
-        ])
-    }
-
-    func showLicense() {
-
-    }
-
-    func unloadDashboard() {
-        preloadView.isHidden = false
-        progressBarConstraint.constant = 1.0
-
-        webView?.navigationDelegate = nil
-        webView?.uiDelegate = nil
-        webView?.removeFromSuperview()
-        webView = nil
-
-        webViewOld?.uiDelegate = nil
-        webViewOld?.removeFromSuperview()
-        webViewOld = nil
-    }
-
-    func loadDashboard() {
-
-        // Make sure progress bar animation finishes smoothly.
-        NSAnimationContext.runAnimationGroup({ (ctx) in
-            ctx.allowsImplicitAnimation = true
-            ctx.duration = 0.25
-            ctx.timingFunction = CAMediaTimingFunction(name: kCAMediaTimingFunctionEaseOut)
-            progressBarConstraint.animator().constant = progressTrackView.frame.size.width
-        }, completionHandler: {
-            self.doLoadDashboard()
-        })
     }
 
     func userAgent() -> String {
         return "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String] ?? "")"
     }
 
-    func editionSubtitle() -> String {
-        // "Developer Edition" by default
-        return Bundle.main.infoDictionary!["ChainCoreEdition"] as? String ?? ""
-    }
-
-    func qualifierSubtitle() -> String {
-        // "" by default
-        return Bundle.main.infoDictionary!["ChainCoreQualifier"] as? String ?? ""
-    }
-
-    func doLoadModernDashboard() {
+    func doLoadModernWebView(url: URL) {
         if #available(OSX 10.10, *) {
             if webView != nil {
                 return
@@ -126,11 +114,10 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
             wv.translatesAutoresizingMaskIntoConstraints = true
 
             self.view.addSubview(wv)
-            self.preloadView.isHidden = true
             wv.uiDelegate = self
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
-                wv.load(URLRequest(url: ChainCore.shared.dashboardURL))
+                wv.load(URLRequest(url: url))
             })
 
             //            // Debug:
@@ -144,7 +131,7 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         }
     }
 
-    func doLoadLegacyDashboard() {
+    func doLoadLegacyWebView(url: URL) {
         if webViewOld != nil {
             return
         }
@@ -152,23 +139,22 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         wv.autoresizingMask = [.viewWidthSizable, .viewHeightSizable]
         wv.translatesAutoresizingMaskIntoConstraints = true
         self.view.addSubview(wv)
-        self.preloadView.isHidden = true
 
         wv.uiDelegate = self
         wv.customUserAgent = userAgent()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
-            wv.mainFrame.load(URLRequest(url: ChainCore.shared.dashboardURL))
+            wv.mainFrame.load(URLRequest(url: url))
         })
 
         webViewOld = wv
     }
 
-    func doLoadDashboard() {
+    func doLoadWebView(url: URL) {
         if #available(OSX 10.10, *) {
-            doLoadModernDashboard()
+            doLoadModernWebView(url: url)
         } else {
-            doLoadLegacyDashboard()
+            doLoadLegacyWebView(url: url)
         }
     }
 
@@ -198,8 +184,8 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
     }
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if let url = navigationAction.request.url, url.absoluteString.contains("/ivy") {
-            AppDelegate.shared.openWebContent(title: NSLocalizedString("Ivy Playground", comment: ""), url: url)
+        if let url = navigationAction.request.url, url.absoluteString.contains("/dashboard") {
+            AppDelegate.shared.dashboardWindowController?.window?.makeKeyAndOrderFront(nil)
             return nil
         }
 
@@ -248,16 +234,16 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         webView?.reload(sender)
         webViewOld?.reload(sender)
     }
-
+    
     @IBAction func goBack(_ sender: Any?) {
         webView?.goBack(sender)
         webViewOld?.goBack(sender)
     }
-
+    
     @IBAction func goForward(_ sender: Any?) {
         webView?.goForward(sender)
         webViewOld?.goForward(sender)
     }
-
+    
 }
 
