@@ -13,10 +13,11 @@ import { Contract } from './types'
 
 // internal imports
 import { CREATE_CONTRACT, SPEND_CONTRACT, UPDATE_ERROR,
-         UPDATE_CLAUSE_INPUT, SET_CLAUSE_INDEX,  } from './actions'
+         UPDATE_CLAUSE_INPUT, SET_CLAUSE_INDEX, CLOSE_MODAL } from './actions'
 
 export const INITIAL_STATE: ContractsState = {
   contractMap: {},
+  firstTime: true,
   idList: [],
   spentIdList: [],
   spendContractId: "",
@@ -172,6 +173,12 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
       return {
         ...state,
         error: action.error
+      }
+    }
+    case CLOSE_MODAL: {
+      return {
+        ...state,
+        firstTime: false
       }
     }
     case "@@router/LOCATION_CHANGE":
