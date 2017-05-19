@@ -40,11 +40,11 @@ func (s *Storage) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 	return grants, nil
 }
 
-// Store stores g.
+// Save stores g.
 // If a grant equivalent to g is already stored,
-// Store has no effect and returns a copy of the existing grant.
+// Save has no effect and returns a copy of the existing grant.
 // Otherwise, if successful, it returns g.
-func (s *Storage) Store(ctx context.Context, g *Grant) (*Grant, error) {
+func (s *Storage) Save(ctx context.Context, g *Grant) (*Grant, error) {
 	key := s.keyPrefix + g.Policy
 	if g.CreatedAt == "" {
 		g.CreatedAt = time.Now().UTC().Format(time.RFC3339)

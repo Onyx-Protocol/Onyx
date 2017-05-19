@@ -316,7 +316,7 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 		case "network":
 			grant.Policy = "crosscore"
 		}
-		_, err = store.Store(ctx, &grant)
+		_, err = store.Save(ctx, &grant)
 		if err != nil {
 			return errors.Wrap(err)
 		}

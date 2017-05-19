@@ -129,7 +129,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		return nil, errors.Wrap(err)
 	}
 
-	g, err := a.grants.Store(ctx, &authz.Grant{
+	g, err := a.grants.Save(ctx, &authz.Grant{
 		GuardType: x.GuardType,
 		GuardData: guardData,
 		Policy:    x.Policy,

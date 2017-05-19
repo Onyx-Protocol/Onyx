@@ -51,7 +51,7 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		return errors.Wrap(err)
 	}
 
-	_, err = a.grants.Store(ctx, &authz.Grant{
+	_, err = a.grants.Save(ctx, &authz.Grant{
 		Policy:    "internal",
 		GuardType: "x509",
 		GuardData: guardData,
