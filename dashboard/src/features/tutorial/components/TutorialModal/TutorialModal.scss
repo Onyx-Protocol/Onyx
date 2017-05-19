@@ -13,7 +13,6 @@
 }
 
 .content {
-  border: solid $highlight-tutorial 1px;
   background: $background-emphasis-color;
   position: absolute;
   top: 10%;
@@ -21,6 +20,7 @@
   width: 500px;
   max-height: 80%;
   overflow: scroll;
+  border-radius:3px;
 
   .header {
     background-color: $highlight-tutorial;
@@ -78,15 +78,23 @@
 
   .footer {
     margin: $gutter-size;
-    text-align: right;
+    text-align: left;
 
     .dismiss {
       text-align: right;
       margin-right: $gutter-size/2;
       background-color: $background-color;
       border: 1px solid $highlight-tutorial;
-      border-radius: 2px;
+      border-radius: 3px;
       color: $highlight-tutorial;
+    }
+
+    button {
+      margin-right: $gutter-size/2;
+    }
+
+    button a {
+      color: white;
     }
 
     .next {
