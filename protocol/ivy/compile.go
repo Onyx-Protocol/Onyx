@@ -148,17 +148,19 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 }
 
 func compileContract(contract *contract, args []ContractArg, globalEnv *environ) ([]byte, map[uint32]string, error) {
+	var err error
+
 	if len(contract.clauses) == 0 {
 		return nil, nil, fmt.Errorf("empty contract")
 	}
 	env := newEnviron(globalEnv)
 	for _, p := range contract.params {
-		err := env.add(p.name, p.typ, roleContractParam)
+		err = env.add(p.name, p.typ, roleContractParam)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
-	err := env.add(contract.value, valueType, roleContractValue)
+	err = env.add(contract.value, valueType, roleContractValue)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -188,85 +190,87 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 		}
 	}
 
+	var prog []byte
+	var labels map[uint32]string
+
 	if len(contract.clauses) == 1 {
 		err = compileClause(b, stack, contract, env, contract.clauses[0])
 		if err != nil {
 			return nil, nil, err
 		}
-		prog, err := b.build()
-		return prog, nil, err
-	}
-
-	endTarget := b.newJumpTarget()
-	clauseTargets := make([]int, len(contract.clauses))
-	for i := range contract.clauses {
-		clauseTargets[i] = b.newJumpTarget()
-	}
-
-	if len(stack) > 0 {
-		// A clause selector is at the bottom of the stack. Roll it to the
-		// top.
-		b.addInt64(int64(len(stack)))
-		b.addOp(vm.OP_ROLL) // stack: [<clause params> <contract params> <clause selector>]
-	}
-
-	// clauses 2..N-1
-	for i := len(contract.clauses) - 1; i >= 2; i-- {
-		b.addOp(vm.OP_DUP)            // stack: [... <clause selector> <clause selector>]
-		b.addInt64(int64(i))          // stack: [... <clause selector> <clause selector> <i>]
-		b.addOp(vm.OP_NUMEQUAL)       // stack: [... <clause selector> <i == clause selector>]
-		b.addJumpIf(clauseTargets[i]) // stack: [... <clause selector>]
-	}
-
-	// clause 1
-	b.addJumpIf(clauseTargets[1]) // consumes the clause selector
-
-	// no jump needed for clause 0
-
-	for i, clause := range contract.clauses {
-		b.setJumpTarget(clauseTargets[i])
-
-		// An inner builder is used for each clause body in order to get
-		// any final VERIFY instruction left off, and the bytes of its
-		// program appended to the outer builder.
-		//
-		// (Building the clause in the outer builder, then adding a JUMP
-		// to endTarget, would cause the omitted VERIFY to be added.)
-		//
-		// This only works as long as the inner program contains no jumps,
-		// whose absolute addresses would be invalidated by this
-		// operation. Luckily we don't generate jumps in clause
-		// bodies... yet.
-		//
-		// TODO(bobg): when we _do_ generate jumps in clause bodies, we'll
-		// need a cleverer way to remove the trailing VERIFY.
-		b2 := newBuilder()
-
-		if i > 1 {
-			// Clauses 0 and 1 have no clause selector on top of the
-			// stack. Clauses 2 and later do.
-			b2.addOp(vm.OP_DROP)
+		prog, err = b.build()
+	} else {
+		endTarget := b.newJumpTarget()
+		clauseTargets := make([]int, len(contract.clauses))
+		for i := range contract.clauses {
+			clauseTargets[i] = b.newJumpTarget()
 		}
 
-		err = compileClause(b2, stack, contract, env, clause)
+		if len(stack) > 0 {
+			// A clause selector is at the bottom of the stack. Roll it to the
+			// top.
+			b.addInt64(int64(len(stack)))
+			b.addOp(vm.OP_ROLL) // stack: [<clause params> <contract params> <clause selector>]
+		}
+
+		// clauses 2..N-1
+		for i := len(contract.clauses) - 1; i >= 2; i-- {
+			b.addOp(vm.OP_DUP)            // stack: [... <clause selector> <clause selector>]
+			b.addInt64(int64(i))          // stack: [... <clause selector> <clause selector> <i>]
+			b.addOp(vm.OP_NUMEQUAL)       // stack: [... <clause selector> <i == clause selector>]
+			b.addJumpIf(clauseTargets[i]) // stack: [... <clause selector>]
+		}
+
+		// clause 1
+		b.addJumpIf(clauseTargets[1]) // consumes the clause selector
+
+		// no jump needed for clause 0
+
+		for i, clause := range contract.clauses {
+			b.setJumpTarget(clauseTargets[i])
+
+			// An inner builder is used for each clause body in order to get
+			// any final VERIFY instruction left off, and the bytes of its
+			// program appended to the outer builder.
+			//
+			// (Building the clause in the outer builder, then adding a JUMP
+			// to endTarget, would cause the omitted VERIFY to be added.)
+			//
+			// This only works as long as the inner program contains no jumps,
+			// whose absolute addresses would be invalidated by this
+			// operation. Luckily we don't generate jumps in clause
+			// bodies... yet.
+			//
+			// TODO(bobg): when we _do_ generate jumps in clause bodies, we'll
+			// need a cleverer way to remove the trailing VERIFY.
+			b2 := newBuilder()
+
+			if i > 1 {
+				// Clauses 0 and 1 have no clause selector on top of the
+				// stack. Clauses 2 and later do.
+				b2.addOp(vm.OP_DROP)
+			}
+
+			err = compileClause(b2, stack, contract, env, clause)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "compiling clause \"%s\"", clause.name)
+			}
+			b.addFrom(b2)
+			if i < len(contract.clauses)-1 {
+				b.addJump(endTarget)
+			}
+		}
+		b.setJumpTarget(endTarget)
+		prog, err = b.build()
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "compiling clause %d", i)
+			return nil, nil, err
 		}
-		b.addFrom(b2)
-		if i < len(contract.clauses)-1 {
-			b.addJump(endTarget)
+		jumpAddrs := b.jumpAddrs()
+		labels = make(map[uint32]string)
+		labels[jumpAddrs[endTarget]] = "_end"
+		for i, targ := range clauseTargets {
+			labels[jumpAddrs[targ]] = contract.clauses[i].name
 		}
-	}
-	b.setJumpTarget(endTarget)
-	prog, err := b.build()
-	if err != nil {
-		return nil, nil, err
-	}
-	jumpAddrs := b.jumpAddrs()
-	labels := make(map[uint32]string)
-	labels[jumpAddrs[endTarget]] = "_end"
-	for i, targ := range clauseTargets {
-		labels[jumpAddrs[targ]] = contract.clauses[i].name
 	}
 
 	err = prohibitValueParams(contract)
