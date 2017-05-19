@@ -11,19 +11,26 @@ import (
 	"chain/net/http/authz"
 )
 
-var errMissingAddr = errors.New("missing address")
+var (
+	errMissingAddr = errors.New("missing address")
+	errInvalidAddr = errors.New("invalid address")
+)
 
 func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) error {
 	if x.Addr == "" {
 		return errMissingAddr
 	}
-	// TODO(kr): create this and the below grant together atomically
-	err := a.sdb.Exec(ctx, sinkdb.AddAllowedMember(x.Addr))
+	hostname, _, err := net.SplitHostPort(x.Addr)
 	if err != nil {
-		return errors.Wrap(err)
+		newerr := errors.Sub(errInvalidAddr, err)
+		if addrErr, ok := err.(*net.AddrError); ok {
+			newerr = errors.WithDetail(newerr, addrErr.Err)
+		}
+		return newerr
 	}
 
-	hostname, _, err := net.SplitHostPort(x.Addr)
+	// TODO(kr): create this and the below grant together atomically
+	err = a.sdb.Exec(ctx, sinkdb.AddAllowedMember(x.Addr))
 	if err != nil {
 		return errors.Wrap(err)
 	}
