@@ -425,13 +425,15 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 }
 
 func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, error) {
+	var err error
+
 	switch e := expr.(type) {
 	case *binaryExpr:
 		// Do typechecking after compiling subexpressions (because other
 		// compilation errors are more interesting than type mismatch
 		// errors).
 
-		stack, err := compileExpr(b, stack, contract, clause, env, counts, e.left)
+		stack, err = compileExpr(b, stack, contract, clause, env, counts, e.left)
 		if err != nil {
 			return nil, errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
 		}
