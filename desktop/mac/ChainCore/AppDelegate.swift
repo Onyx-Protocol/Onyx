@@ -24,33 +24,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, SUUpdaterDelegate {
             webcontentWindowControllers[title] = wc
 
             webcontentWindowControllers[title]?.showWindow(nil)
+            if #available(OSX 10.12, *) {
+                dashboardWindowController?.window?.addTabbedWindow((webcontentWindowControllers[title]?.window)!, ordered: .above)
+            }
         }
         webcontentWindowControllers[title]?.url = url
         webcontentWindowControllers[title]?.title = title
-        if !inBackground {
-            webcontentWindowControllers[title]?.showWindow(nil)
-        }
-
-        if #available(OSX 10.12, *) {
-            dashboardWindowController?.window?.addTabbedWindow((webcontentWindowControllers[title]?.window)!, ordered: .above)
-        }
 
         if inBackground {
             // restore previously current window as the key window
             currentwindow?.makeKeyAndOrderFront(nil)
+        } else {
+            webcontentWindowControllers[title]?.window?.makeKeyAndOrderFront(nil)
         }
     }
 
     func closeWebContent(title: String) {
-        webcontentWindowControllers[title]?.close()
-        webcontentWindowControllers.removeValue(forKey: title)
-
-        if webcontentWindowControllers.count == 0 {
-            if #available(OSX 10.12, *) {
-                //dashboardWindowController?.window?.toggleTabBar(nil)
-            }
-            dashboardWindowController?.window?.title = NSLocalizedString("Chain Core", comment: "")
-        }
+        webcontentWindowControllers[title]?.window?.orderOut(nil)
     }
 
     @IBAction func openDashboard(_ sender: AnyObject?) {
@@ -168,7 +158,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SUUpdaterDelegate {
 	
 	
 	func applicationDidBecomeActive(_ notification: Notification) {
-        dashboardWindowController?.showWindow(nil)
+        if NSApp.keyWindow == nil {
+            dashboardWindowController?.showWindow(nil)
+        }
 	}
 	
 
