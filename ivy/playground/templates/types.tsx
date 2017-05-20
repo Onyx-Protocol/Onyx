@@ -47,5 +47,6 @@ export type TemplateState = {
   source: string,
   inputMap?: InputMap,
   compiled?: CompiledTemplate,
+  showLockInputErrors: boolean,
   error?
 }

@@ -13,7 +13,7 @@ import { Contract } from './types'
 
 // internal imports
 import { CREATE_CONTRACT, SPEND_CONTRACT, UPDATE_UNLOCK_ERROR, UPDATE_IS_CALLING,
-         UPDATE_CLAUSE_INPUT, SET_CLAUSE_INDEX, CLOSE_MODAL } from './actions'
+         SHOW_UNLOCK_INPUT_ERRORS, UPDATE_CLAUSE_INPUT, SET_CLAUSE_INDEX, CLOSE_MODAL } from './actions'
 
 export const INITIAL_STATE: ContractsState = {
   contractMap: {},
@@ -23,6 +23,7 @@ export const INITIAL_STATE: ContractsState = {
   spendContractId: "",
   selectedClauseIndex: 0,
   isCalling: false,
+  showUnlockInputErrors: false,
   error: undefined
 }
 
@@ -182,6 +183,12 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
         firstTime: false
       }
     }
+    case SHOW_UNLOCK_INPUT_ERRORS: {
+      return {
+        ...state,
+        showUnlockInputErrors: action.result
+      }
+    }
     case UPDATE_IS_CALLING: {
       return {
         ...state,
@@ -198,9 +205,15 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
           ...state,
           spendContractId: path[2],
           selectedClauseIndex: 0,
+          showUnlockInputErrors: false,
+          error: undefined
         }
       }
-      return state
+      return {
+        ...state,
+        showUnlockInputErrors: false,
+        error: undefined
+      }
     default:
       return state
   }

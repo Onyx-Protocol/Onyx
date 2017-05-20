@@ -97,6 +97,11 @@ export const getSpendContract = createSelector(
   }
 )
 
+export const getShowUnlockInputErrors = createSelector(
+  getState,
+  (state: ContractsState): boolean => state.showUnlockInputErrors
+)
+
 export const getInputSelector = (id: string) => {
   return createSelector(
     getInputMap,
