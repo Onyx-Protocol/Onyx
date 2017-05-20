@@ -1,7 +1,6 @@
 // external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
-import ReactTooltip from 'react-tooltip'
 
 // internal imports
 import Ace from './ace'
@@ -25,7 +24,6 @@ const mapStateToProps = (state) => {
 const Editor = ({ compiled, source }) => {
   return (
     <div>
-      <ReactTooltip id="saveButtonTooltip" place="bottom" type="error" effect="solid"/>
       <div className="panel panel-default">
         <div className="panel-heading clearfix">
           <h1 className="panel-title pull-left">Contract Template</h1>

@@ -1,6 +1,7 @@
-import * as React from 'react'
 // external imports
+import * as React from 'react'
 import { connect } from 'react-redux'
+import ReactTooltip from 'react-tooltip'
 
 // internal imports
 import { saveTemplate } from '../actions'
@@ -31,12 +32,15 @@ const SaveTemplate = ({ handleClick, saveability }) => {
     )
   } else {
     return (
-      <div data-for="saveButtonTooltip" data-tip={saveability.error}>
-        <button className="btn btn-primary" disabled={true}>
-          <span className="glyphicon glyphicon-floppy-disk"></span>
-          Save
-        </button>
-     </div>
+      <div>
+        <ReactTooltip id="saveButtonTooltip" place="bottom" type="error" effect="solid"/>
+        <div data-for="saveButtonTooltip" data-tip={saveability.error}>
+          <button className="btn btn-primary" disabled={true}>
+            <span className="glyphicon glyphicon-floppy-disk"></span>
+            Save
+          </button>
+        </div>
+      </div>
     )
   }
 }
