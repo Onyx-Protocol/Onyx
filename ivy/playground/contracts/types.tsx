@@ -37,6 +37,7 @@ export type ContractsState = {
   spendContractId: string,
   selectedClauseIndex: number,
   isCalling: boolean,
+  showUnlockInputErrors: boolean,
   error?
 }
 

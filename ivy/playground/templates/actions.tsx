@@ -18,6 +18,15 @@ export const loadTemplate = (selected: string) => {
   }
 }
 
+export const SHOW_LOCK_INPUT_ERRORS = 'templates/SHOW_LOCK_INPUT_ERRORS'
+
+export const showLockInputErrors = (result: boolean) => {
+  return {
+    type: SHOW_LOCK_INPUT_ERRORS,
+    result
+  }
+}
+
 export const UPDATE_LOCK_ERROR = 'templates/UPDATE_LOCK_ERROR'
 
 export const updateLockError = (error?) => {

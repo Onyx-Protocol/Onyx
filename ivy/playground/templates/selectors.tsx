@@ -69,6 +69,11 @@ export const getInputList = createSelector(
   }
 )
 
+export const getShowLockInputErrors = createSelector(
+  getTemplateState,
+  (state: TemplateState): boolean => state.showLockInputErrors
+)
+
 export const getCompiled = createSelector(
   getTemplateState,
   (state) => state.compiled

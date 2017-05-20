@@ -4,8 +4,9 @@ import { CREATE_CONTRACT, UPDATE_INPUT } from '../contracts/actions'
 import { InputMap } from '../inputs/types'
 
 // internal imports
-import { UPDATE_LOCK_ERROR, SET_SOURCE, SAVE_TEMPLATE, FETCH_COMPILED } from './actions'
 import { INITIAL_SOURCE_MAP, INITIAL_ID_LIST } from './constants'
+import { SHOW_LOCK_INPUT_ERRORS, UPDATE_LOCK_ERROR, SET_SOURCE,
+         SAVE_TEMPLATE, FETCH_COMPILED } from './actions'
 
 const INITIAL_STATE: TemplateState = {
   sourceMap: INITIAL_SOURCE_MAP,
@@ -16,6 +17,7 @@ const INITIAL_STATE: TemplateState = {
   source: INITIAL_SOURCE_MAP[INITIAL_ID_LIST[1]],
   inputMap: undefined,
   compiled: undefined,
+  showLockInputErrors: false,
   error: undefined
 }
 
@@ -84,6 +86,18 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
         error: action.error
       }
     }
+    case SHOW_LOCK_INPUT_ERRORS: {
+      return {
+        ...state,
+        showLockInputErrors: action.result
+      }
+    }
+    case "@@router/LOCATION_CHANGE":
+      return {
+        ...state,
+        showLockInputErrors: false,
+        error: undefined
+      }
     default:
       return state
   }

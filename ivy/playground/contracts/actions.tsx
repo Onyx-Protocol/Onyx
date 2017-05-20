@@ -8,6 +8,7 @@ import { fetch } from '../accounts/actions';
 import {
   setSource,
   updateLockError,
+  showLockInputErrors
 } from '../templates/actions'
 import {
   areInputsValid,
@@ -52,6 +53,15 @@ import {
   WitnessComponent
 } from '../core/types'
 
+export const SHOW_UNLOCK_INPUT_ERRORS = 'contracts/SHOW_UNLOCK_INPUT_ERRORS'
+
+export const showUnlockInputErrors = (result: boolean) => {
+  return {
+    type: SHOW_UNLOCK_INPUT_ERRORS,
+    result
+  }
+}
+
 export const UPDATE_UNLOCK_ERROR = 'contracts/UPDATE_UNLOCK_ERROR'
 
 export const updateUnlockError = (error?) => {
@@ -76,6 +86,7 @@ export const create = () => {
     const state = getState()
     if (!areInputsValid(state)) {
       dispatch(updateIsCalling(false))
+      dispatch(showLockInputErrors(true))
       return dispatch(updateLockError('One or more arguments to the contract are invalid.'))
     }
 
@@ -137,11 +148,13 @@ export const create = () => {
       dispatch(fetch())
       dispatch(setSource(source))
       dispatch(updateIsCalling(false))
+      dispatch(showLockInputErrors(false))
       dispatch(push(prefixRoute('/unlock')))
     }).catch(err => {
       console.log(err)
       dispatch(updateIsCalling(false))
       dispatch(updateLockError(err))
+      dispatch(showLockInputErrors(true))
     })
   }
 }
@@ -154,6 +167,7 @@ export const spend = () => {
     const state = getState()
     if (!areSpendInputsValid(state)) {
       dispatch(updateIsCalling(false))
+      dispatch(showUnlockInputErrors(true))
       return dispatch(updateUnlockError('One or more clause arguments are invalid.'))
     }
 
@@ -186,11 +200,13 @@ export const spend = () => {
       })
       dispatch(fetch())
       dispatch(updateIsCalling(false))
+      dispatch(showUnlockInputErrors(false))
       dispatch(push(prefixRoute('/unlock')))
     }).catch(err => {
       console.log(err)
       dispatch(updateIsCalling(false))
       dispatch(updateUnlockError(err))
+      dispatch(showUnlockInputErrors(true))
     })
   }
 }
