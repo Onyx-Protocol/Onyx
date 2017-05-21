@@ -48,7 +48,8 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate {
             if ServerManager.shared.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.066) {
                     self.viewController.loadDashboard()
-                    AppDelegate.shared.openWebContent(title: "Ivy Playground", url: URL(string:"http://localhost:1999/ivy")!, inBackground: true)
+                    // Do not open Ivy Playground by default.
+                    //AppDelegate.shared.openWebContent(title: "Ivy Playground", url: URL(string:"http://localhost:1999/ivy")!, inBackground: true)
                 }
 
             } else if let error = ServerManager.shared.error {
