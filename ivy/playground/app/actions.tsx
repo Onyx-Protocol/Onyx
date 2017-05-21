@@ -30,6 +30,7 @@ export const seed = () => {
     return client.mockHsm.keys.create().then(key => {
       signer.addKey(key.xpub, client.mockHsm.signerConnection)
       const createEntities = [
+
         client.assets.create({
           alias: 'USD',
           rootXpubs: [key.xpub],
@@ -41,6 +42,24 @@ export const seed = () => {
           rootXpubs: [key.xpub],
           quorum: 1,
         }),
+
+        client.assets.create({
+          alias: 'EUR',
+          rootXpubs: [key.xpub],
+          quorum: 1,
+        }),
+
+        client.assets.create({
+          alias: 'Acme Stock',
+          rootXpubs: [key.xpub],
+          quorum: 1,
+        }),
+
+        client.accounts.create({
+          alias: 'FX Dealer',
+          rootXpubs: [key.xpub],
+          quorum: 1
+        })
 
         client.accounts.create({
           alias: 'Escrow Agent',
@@ -65,24 +84,58 @@ export const seed = () => {
       return client.transactions.build(builder => {
         builder.issue({
           assetAlias: 'Gold',
-          amount: 10000
+          amount: 1000
         })
 
         builder.controlWithAccount({
           accountAlias: 'Alice',
           assetAlias: 'Gold',
-          amount: 10000
+          amount: 1000
+        })
+
+        builder.issue({
+          assetAlias: 'Acme Stock',
+          amount: 1000
+        })
+
+        builder.controlWithAccount({
+          accountAlias: 'Bob',
+          assetAlias: 'Acme Stock',
+          amount: 1000
         })
 
         builder.issue({
           assetAlias: 'USD',
-          amount: 10000
+          amount: 30000
         })
 
         builder.controlWithAccount({
           accountAlias: 'Bob',
           assetAlias: 'USD',
           amount: 10000
+        })
+
+        builder.controlWithAccount({
+          accountAlias: 'FX Dealer',
+          assetAlias: 'USD',
+          amount: 20000
+        })
+
+        builder.issue({
+          assetAlias: 'EUR',
+          amount: 30000
+        })
+
+        builder.controlWithAccount({
+          accountAlias: 'Alice',
+          assetAlias: 'EUR',
+          amount: 10000
+        })
+
+        builder.controlWithAccount({
+          accountAlias: 'FX Dealer',
+          assetAlias: 'EUR',
+          amount: 20000
         })
       })
     }).then(issuance => {
