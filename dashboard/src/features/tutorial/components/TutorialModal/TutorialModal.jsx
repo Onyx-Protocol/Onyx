@@ -33,7 +33,7 @@ class TutorialModal extends React.Component {
               })}
             </div>
             <div className={styles.footer}>
-              <button className={`btn btn-primary ${styles.next}`}><a href="/ivy" target="_blank">Visit Ivy Playground</a></button>
+              <a href="/ivy" target="_blank"><button className={`btn btn-primary ${styles.next}`}>Visit Ivy playground</button></a>
               {this.props.button && <Link to={this.props.route}>
                   <button key='showNext' className={`btn btn-primary ${styles.dismiss}`} onClick={this.props.handleNext}>
                     {this.props.button}
