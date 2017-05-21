@@ -58,8 +58,8 @@ const Navbar = (props: { path: string, firstTime: boolean, closeModal: ()=>undef
         <div className="welcome-content">
           <img src={symbol}/>
           <h1>Welcome to Ivy Playground!</h1>
-          <p>We've seeded your Chain Core with a few accounts and assets to help you get started. You can create more by visiting the Dashboard.</p>
-          <p>The <a href="https:/chain.com/docs/1.2/ivy-playground/tutorial" target="_blank">tutorial</a> is a great place to start, which you can visit any time by clicking the link in the top right. Enjoy!</p>
+          <p>The <a href="https:/chain.com/docs/1.2/ivy-playground/tutorial" target="_blank">tutorial</a> is a great place to start. It will teach how to write a contract in Ivy, and then lock and unlock assets with it.</p>
+          <p>The Ivy Playground interacts with Chain Core and the MockHSM to build and sign transactions. We created a few accounts and assets to help you get started. Enjoy!</p>
           <button className="btn btn-primary btn-xl" onClick={props.closeModal}>Let's Go!</button>
         </div>
         <div className="welcome-screen-block"></div>
