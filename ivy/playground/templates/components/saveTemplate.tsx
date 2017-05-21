@@ -8,7 +8,7 @@ import { saveTemplate } from '../actions'
 import { getSaveability } from '../selectors'
 
 const mapStateToProps = (state) => {
-  let saveability = getSaveability(state)
+  const saveability = getSaveability(state)
   return {
     saveability
   }

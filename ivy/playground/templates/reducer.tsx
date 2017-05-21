@@ -15,6 +15,12 @@ const INITIAL_STATE: TemplateState = {
 
   // The first ID corresponds to the base template.
   source: INITIAL_SOURCE_MAP[INITIAL_ID_LIST[1]],
+
+  // Keeps track of whether the source has changed.
+  // Used to determine whether to disable save button.
+  // Resets to false after every save.
+  sourceChanged: false,
+
   inputMap: undefined,
   compiled: undefined,
   showLockInputErrors: false,
@@ -40,19 +46,28 @@ export default function reducer(state: TemplateState = INITIAL_STATE, action): T
     }
     case SET_SOURCE: {
       const source = action.source
+      const sourceChanged = action.sourceChanged
       return {
         ...state,
-        source
+        source,
+        sourceChanged
       }
     }
     case SAVE_TEMPLATE: {
       const compiled = state.compiled
-      if ((compiled === undefined) ||
-          (compiled.error !== "") ||
-          (state.sourceMap[compiled.name] !== undefined)) return state // this shouldn't happen
+      if (compiled === undefined) {
+        // This shouldn't happen.
+        // Check appeases typescript.
+        return state
+      }
+      const idList = [...state.idList]
+      if (idList.indexOf(compiled.name) === -1) {
+        idList.push(compiled.name)
+      }
       return {
         ...state,
-        idList: [...state.idList, compiled.name],
+        idList,
+        sourceChanged: false,
         sourceMap: {
           ...state.sourceMap,
           [compiled.name]: compiled.source

@@ -35,6 +35,11 @@ export const getSource = createSelector(
   (state: TemplateState): string => state.source
 )
 
+export const getSourceChanged = createSelector(
+  getTemplateState,
+  (state: TemplateState): boolean => state.sourceChanged
+)
+
 export const getProtectedIdList = createSelector(
   getTemplateState,
   (state: TemplateState): string[] => state.protectedIdList
@@ -79,7 +84,21 @@ export const getCompiled = createSelector(
   (state) => state.compiled
 )
 
- export const getContractParameters = createSelector(
+export const hasSourceChanged = (source) => {
+  return createSelector(
+    getSourceMap,
+    (sourceMap) => {
+      for (const key in sourceMap) {
+        if (sourceMap[key] === source) {
+          return false
+        }
+      }
+      return true
+    }
+  )
+}
+
+export const getContractParameters = createSelector(
   getCompiled,
   (compiled) => {
     if (compiled === undefined) {
@@ -184,8 +203,9 @@ export const getSelectedTemplate = createSelector(
 
 export const getSaveability = createSelector(
   getCompiled,
+  getSourceChanged,
   getProtectedIdList,
-  (compiled, protectedIds) => {
+  (compiled, sourceChanged, protectedIds) => {
     if (compiled === undefined) return {
       saveable: false,
       error: "Contract template has not been compiled."
@@ -195,7 +215,7 @@ export const getSaveability = createSelector(
       error: "Contract template is not valid Ivy."
     }
 
-    let name = compiled.name
+    const name = compiled.name
     if (INITIAL_ID_LIST.indexOf(name) !== -1) return {
       saveable: false,
       error: "Cannot edit predefined templates. Rename before saving."
@@ -204,6 +224,12 @@ export const getSaveability = createSelector(
       return {
         saveable: false,
         error: "Cannot edit " + name + " because it has already been used to lock value."
+      }
+    }
+    if (!sourceChanged) {
+      return {
+        saveable: false,
+        error: "Template source has not changed."
       }
     }
     return {
