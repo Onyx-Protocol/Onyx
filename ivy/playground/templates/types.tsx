@@ -45,6 +45,7 @@ export type TemplateState = {
   idList: string[],
   protectedIdList: string[],
   source: string,
+  sourceChanged: boolean,
   inputMap?: InputMap,
   compiled?: CompiledTemplate,
   showLockInputErrors: boolean,

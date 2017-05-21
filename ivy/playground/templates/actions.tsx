@@ -4,7 +4,7 @@ import { generateInputMap } from '../contracts/selectors'
 
 // internal imports
 import { INITIAL_ID_LIST } from './constants'
-import { getSourceMap } from './selectors'
+import { getSourceMap, hasSourceChanged } from './selectors'
 import { CompiledTemplate } from './types'
 
 export const loadTemplate = (selected: string) => {
@@ -41,7 +41,8 @@ export const SET_SOURCE = 'templates/SET_SOURCE'
 export const setSource = (source: string) => {
   return (dispatch, getState) => {
     const type = SET_SOURCE
-    dispatch({ type, source })
+    const sourceChanged = hasSourceChanged(source)(getState())
+    dispatch({ type, source, sourceChanged })
     dispatch(fetchCompiled(source))
     dispatch(updateLockError())
   }
