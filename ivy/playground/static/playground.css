@@ -508,13 +508,13 @@ section h4 {
 }
 
 .welcome-content {
-  width:640px;
+  width:600px;
   background: white;
   border-radius: 2px;
   z-index: 999;
   position: fixed;;
   top: 10%;
-  left: calc(50% - 320px);
+  left: calc(50% - 300px);
   font-family: 'Nitti Grotesk';
   padding: 40px;
   text-align: center;
@@ -522,20 +522,20 @@ section h4 {
 }
 
 .welcome-content img {
-  width: 80px;
-  margin-bottom: 20px;
+  width: 70px;
+  margin-bottom: 15px;
 }
 
 .welcome-content h1 {
   font-family: 'Nitti';
-  font-size: 31px;
+  font-size: 30px;
   text-align: center;
   margin-bottom: 20px;
 }
 
 .welcome-content p{
   text-align: left;
-  padding: 0 40px 10px;
+  padding: 0 28px 10px;
   font-size: 17px;
   font-weight: normal;
 }
