@@ -512,11 +512,9 @@ section h4 {
   background: white;
   border-radius: 2px;
   z-index: 999;
-  position: fixed;
-  top: 50%;
-  margin-top: -236px;
-  left:50%;
-  margin-left: -300px;
+  position: fixed;;
+  top: 10%;
+  left: calc(50% - 320px);
   font-family: 'Nitti Grotesk';
   padding: 40px;
   text-align: center;
