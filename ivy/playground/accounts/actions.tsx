@@ -19,9 +19,6 @@ export const fetch = () => {
       items.push(item)
       next();
     }).then(() => {
-      if (items.filter(item => item.alias === "Escrow Agent").length == 0) {
-        dispatch(seed())
-      }
       const getBalances = items.map(item => {
         return client.balances.query({
           filter: 'account_alias=$1',
