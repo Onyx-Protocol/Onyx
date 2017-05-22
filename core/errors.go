@@ -21,6 +21,7 @@ import (
 	"chain/net/http/authz"
 	"chain/net/http/httperror"
 	"chain/net/http/httpjson"
+	"chain/net/raft"
 	"chain/protocol"
 )
 
@@ -89,6 +90,8 @@ var errorFormatter = httperror.Formatter{
 		blocksigner.ErrConsensusChange: {400, "CH150", "Refuse to sign block with consensus change"},
 		errMissingAddr:                 {400, "CH160", "Address is missing"},
 		errInvalidAddr:                 {400, "CH161", "Address is invalid"},
+		raft.ErrAddressNotAllowed:      {400, "CH162", "Address is not allowed"},
+		raft.ErrUninitialized:          {400, "CH163", "No cluster configured"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: {400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},
