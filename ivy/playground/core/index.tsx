@@ -135,7 +135,7 @@ export const createUnlockingTx = (actions: types.Action[],
         return currMax
       }
       const mintime = new Date(mintimes.reduce(findMax, mintimes[0]))
-      if (mintime.getSeconds() > new Date().getSeconds()) {
+      if (mintime.getTime() > (new Date()).getTime()) {
         throw "This clause cannot be called until " + mintime
       }
       minTime = new Date((mintime.setSeconds(mintime.getSeconds() + 1)))
@@ -149,7 +149,7 @@ export const createUnlockingTx = (actions: types.Action[],
         return currMin
       }
       const maxtime = maxtimes.reduce(findMin, maxtimes[0])
-      if (maxtime.getSeconds() < new Date().getSeconds()) {
+      if (maxtime.getTime() < (new Date()).getTime()) {
         throw "This clause cannot be called after " + maxtime
       }
       maxTime = new Date((maxtime.setSeconds(maxtime.getSeconds() - 1)))
