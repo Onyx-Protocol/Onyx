@@ -45,7 +45,7 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *legacy.
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
-	if tx.Tx.MaxTimeMs < c.TimestampMS() {
+	if tx.Tx.MaxTimeMs > 0 && tx.Tx.MaxTimeMs < c.TimestampMS() {
 		return errors.Wrap(ErrRejected, "tx expired")
 	}
 
