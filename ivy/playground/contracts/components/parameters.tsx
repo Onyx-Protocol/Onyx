@@ -590,7 +590,6 @@ export const ContractValue = connect(
 )(ContractValueUnconnected)
 
 function ContractValueUnconnected(props: { valueId: string }) {
-  console.log('We in here')
   if (props.valueId === undefined) {
     return <div></div>
   }
