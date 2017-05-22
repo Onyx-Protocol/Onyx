@@ -10,4 +10,5 @@ export type ItemMap = {
 export type State = {
   itemMap: ItemMap,
   idList: string[],
+  shouldSeed: boolean
 }
