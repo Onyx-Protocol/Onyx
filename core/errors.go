@@ -92,6 +92,8 @@ var errorFormatter = httperror.Formatter{
 		errInvalidAddr:                 {400, "CH161", "Address is invalid"},
 		raft.ErrAddressNotAllowed:      {400, "CH162", "Address is not allowed"},
 		raft.ErrUninitialized:          {400, "CH163", "No cluster configured"},
+		raft.ErrExistingCluster:        {400, "CH164", "Already connected to a cluster"},
+		raft.ErrPeerUninitialized:      {400, "CH165", "Peer node is uninitialized"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: {400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},

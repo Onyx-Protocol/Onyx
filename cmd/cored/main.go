@@ -70,7 +70,6 @@ var (
 	rpsRemoteAddr = env.Int("RATELIMIT_REMOTE_ADDR", 0) // reqs/sec
 	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
 	home          = core.HomeDirFromEnvironment()
-	bootURL       = env.String("BOOTURL", "")
 
 	version string // initialized in init()
 
@@ -126,6 +125,7 @@ func main() {
 	fmt.Printf("localhost_auth: %t\n", config.BuildConfig.LocalhostAuth)
 	fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
 	fmt.Printf("http_ok: %t\n", config.BuildConfig.HTTPOk)
+	fmt.Printf("cluster_init: %t\n", config.BuildConfig.ClusterInit)
 
 	if *v {
 		return
@@ -175,17 +175,13 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
-	// sdb.Open won't initialize or join a cluster for the first time.
-	// If there is no cluster configured, create or join one depending on
-	// the bootURL environment variable.
-	// TODO(jackson): Move into initialize and join RPCs called from corectl.
-	if *bootURL == "" {
+	// In Developer Edition, automatically create a new cluster if
+	// there's no existing raft cluster.
+	if config.BuildConfig.ClusterInit {
 		err = sdb.RaftService().Init()
-	} else {
-		err = sdb.RaftService().Join(*bootURL)
-	}
-	if err != nil && errors.Root(err) != raft.ErrExistingCluster {
-		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+		if err != nil && errors.Root(err) != raft.ErrExistingCluster {
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+		}
 	}
 
 	driver := pg.NewDriver()

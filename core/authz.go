@@ -54,6 +54,8 @@ var policyByRoute = map[string][]string{
 	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
 	"/delete-access-token":        {"client-readwrite"},
 	"/add-allowed-member":         {"internal"},
+	"/init-cluster":               {"internal"},
+	"/join-cluster":               {"internal"},
 	"/configure":                  {"client-readwrite", "internal"},
 	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring", "internal"},
 
