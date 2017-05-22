@@ -76,6 +76,37 @@ func (s *Store) Save(ctx context.Context, g *Grant) (*Grant, error) {
 	return g, nil
 }
 
+// Delete deletes from policy all stored grants for which delete returns true.
+func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) bool) error {
+	key := s.keyPrefix + policy
+
+	var grantList GrantList
+	found, err := s.sdb.Get(ctx, key, &grantList)
+	if err != nil || !found {
+		return errors.Wrap(err) // if !found, errors.Wrap(err) is nil
+	}
+
+	var keep []*Grant
+	for _, g := range grantList.Grants {
+		if !delete(g) {
+			keep = append(keep, g)
+		}
+	}
+
+	// We didn't match any grants, don't need to do an update. Return success
+	if len(keep) == len(grantList.Grants) {
+		return nil
+	}
+
+	gList := &GrantList{Grants: keep}
+	err = s.sdb.Exec(ctx, sinkdb.Set(key, gList))
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
 func EqualGrants(a, b Grant) bool {
 	return a.GuardType == b.GuardType && bytes.Equal(a.GuardData, b.GuardData) && a.Protected == b.Protected
 }
