@@ -158,6 +158,16 @@ func (c *Chain) Height() uint64 {
 	return c.state.height
 }
 
+// TimestampMS returns the latest known block timestamp.
+func (c *Chain) TimestampMS() uint64 {
+	c.state.cond.L.Lock()
+	defer c.state.cond.L.Unlock()
+	if c.state.block == nil {
+		return 0
+	}
+	return c.state.block.TimestampMS
+}
+
 // State returns the most recent state available. It will not be current
 // unless the current process is the leader. Callers should examine the
 // returned block header's height if they need to verify the current state.
