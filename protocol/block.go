@@ -88,6 +88,15 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot 
 			continue
 		}
 
+		// Filter out transactions that are not yet valid, or no longer
+		// valid, per the block's timestamp.
+		if tx.Tx.MinTimeMs > 0 && tx.Tx.MinTimeMs > b.TimestampMS {
+			continue
+		}
+		if tx.Tx.MaxTimeMs > 0 && tx.Tx.MaxTimeMs < b.TimestampMS {
+			continue
+		}
+
 		// Filter out double-spends etc.
 		err = newSnapshot.ApplyTx(tx.Tx)
 		if err != nil {
