@@ -277,15 +277,11 @@ func compileContract(contract *Contract, args []ContractArg, globalEnv *environ)
 	if err != nil {
 		return nil, nil, err
 	}
-<<<<<<< HEAD
-	err = requireAllParamsUsedInClauses(contract.Params, contract.Clauses)
-=======
 	err = prohibitSigParams(contract)
 	if err != nil {
 		return nil, nil, err
 	}
 	err = requireAllParamsUsedInClauses(contract.params, contract.clauses)
->>>>>>> forbid contract parameters of type Signature
 	if err != nil {
 		return nil, nil, err
 	}
