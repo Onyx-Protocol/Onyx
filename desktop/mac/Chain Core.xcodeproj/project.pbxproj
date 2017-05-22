@@ -395,7 +395,7 @@
 		20927EB71ECA36AA00E8CE8D /* IvyPlaygroundRelease */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APP_VERSION = "1.2.1-ivy";
+				APP_VERSION = "1.2.2-ivy";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CHAIN_CORE_QUALIFIER = "with Ivy Playground";
 				CLANG_ENABLE_MODULES = YES;
@@ -473,7 +473,7 @@
 		20BD2BEB1ECF692C0016FED5 /* IvyPlaygroundDebug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APP_VERSION = "1.2.1-ivy";
+				APP_VERSION = "1.2.2-ivy";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CHAIN_CORE_QUALIFIER = "with Ivy Playground";
 				CLANG_ENABLE_MODULES = YES;
@@ -501,7 +501,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APP_VERSION = 1.2.0;
+				APP_VERSION = 1.2.2;
 				CHAIN_CORE_EDITION = "DEVELOPER EDITION";
 				CHAIN_CORE_QUALIFIER = "";
 				CLANG_ANALYZER_NONNULL = YES;
