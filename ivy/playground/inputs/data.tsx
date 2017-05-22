@@ -349,8 +349,6 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
     case "publicKeyInput":
       return "accountInput"
       // return "generatePublicKeyInput"
-    case "signatureInput":
-      return "choosePublicKeyInput"
       // return "generateSignatureInput"
     case "generateSignatureInput":
       return "providePrivateKeyInput"
@@ -367,6 +365,7 @@ export function getDefaultContractParameterValue(inputType: InputType): string {
     case "assetInput":
     case "amountInput":
       return ""
+    case "signatureInput":
     case "choosePublicKeyInput":
     case "generatePrivateKeyInput":
       throw inputType + ' should not be allowed'

@@ -59,7 +59,7 @@ export const seed = () => {
           alias: 'FX Dealer',
           rootXpubs: [key.xpub],
           quorum: 1
-        })
+        }),
 
         client.accounts.create({
           alias: 'Escrow Agent',
