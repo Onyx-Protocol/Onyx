@@ -281,7 +281,7 @@ func compileContract(contract *Contract, args []ContractArg, globalEnv *environ)
 	if err != nil {
 		return nil, nil, err
 	}
-	err = requireAllParamsUsedInClauses(contract.params, contract.clauses)
+	err = requireAllParamsUsedInClauses(contract.Params, contract.Clauses)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -2,19 +2,19 @@ package ivy
 
 import "fmt"
 
-func prohibitSigParams(contract *contract) error {
-	for _, p := range contract.params {
-		if p.typ == sigType {
-			return fmt.Errorf("Contract parameter \"%s\" has type Signature, but contract parameters cannot have type Signature", p.name)
+func prohibitSigParams(contract *Contract) error {
+	for _, p := range contract.Params {
+		if p.Type == sigType {
+			return fmt.Errorf("Contract parameter \"%s\" has type Signature, but contract parameters cannot have type Signature", p.Name)
 		}
 	}
 	return nil
 }
 
-func prohibitValueParams(contract *contract) error {
-	for _, p := range contract.params {
-		if p.typ == valueType {
-			return fmt.Errorf("Value-typed contract parameter \"%s\" must appear in a \"locks\" clause", p.name)
+func prohibitValueParams(contract *Contract) error {
+	for _, p := range contract.Params {
+		if p.Type == valueType {
+			return fmt.Errorf("Value-typed contract parameter \"%s\" must appear in a \"locks\" clause", p.Name)
 		}
 	}
 	for _, c := range contract.Clauses {
