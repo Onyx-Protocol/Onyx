@@ -132,6 +132,16 @@ export const seed = () => {
           )
         }
 
+        if (!accountsMap['Carol']) {
+          createEntities.push(
+            client.accounts.create({
+              alias: 'Carol',
+              rootXpubs: [key.xpub],
+              quorum: 1
+            })
+          )
+        }
+
         if (!accountsMap['Bob']) {
           createEntities.push(
             client.accounts.create({
@@ -163,11 +173,17 @@ export const seed = () => {
           if (!assetsMap['USD']) {
             builder.issue({
               assetAlias: 'USD',
-              amount: 30000
+              amount: 40000
             })
 
             builder.controlWithAccount({
               accountAlias: 'Bob',
+              assetAlias: 'USD',
+              amount: 10000
+            })
+
+            builder.controlWithAccount({
+              accountAlias: 'Carol',
               assetAlias: 'USD',
               amount: 10000
             })
@@ -208,11 +224,17 @@ export const seed = () => {
           if (!assetsMap['EUR']) {
             builder.issue({
               assetAlias: 'EUR',
-              amount: 30000
+              amount: 40000
             })
 
             builder.controlWithAccount({
               accountAlias: 'Alice',
+              assetAlias: 'EUR',
+              amount: 10000
+            })
+
+            builder.controlWithAccount({
+              accountAlias: 'Carol',
               assetAlias: 'EUR',
               amount: 10000
             })
@@ -238,7 +260,7 @@ export const seed = () => {
       }).then(res => {
         const type = SEED
         dispatch({ type })
-      }).catch(err => { 
+      }).catch(err => {
         if (err.toString() !== "no need to create transaction") {
           process.nextTick(() => { throw err })
         }
