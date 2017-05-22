@@ -28,6 +28,7 @@ import (
 
 	"chain/errors"
 	"chain/log"
+	"chain/net/http/httperror"
 )
 
 // TODO(kr): do we need a "client" mode?
@@ -57,6 +58,27 @@ var (
 	// ErrUninitialized is returned when the Service is not yet connected
 	// to any cluster.
 	ErrUninitialized = errors.New("no raft cluster configured")
+
+	// ErrAddressNotAllowed is returned from Join when the node's address
+	// is not in the provided cluster's allowed address list.
+	ErrAddressNotAllowed = errors.New("address is not allowed")
+
+	// ErrPeerUninitialized is returned when a peer node indicates it's
+	// not yet initialized.
+	ErrPeerUninitialized = errors.New("peer is uninitialized")
+)
+
+var (
+	errBadRequest  = errors.New("bad request")
+	errorFormatter = httperror.Formatter{
+		Default:     httperror.Info{500, "CH000", "Chain API Error"},
+		IsTemporary: func(info httperror.Info, _ error) bool { return info.ChainCode == "CH000" },
+		Errors: map[error]httperror.Info{
+			errBadRequest:        {400, "CH003", "Invalid request body"},
+			ErrAddressNotAllowed: {400, "CH162", "Address is not allowed"},
+			ErrUninitialized:     {400, "CH163", "No cluster configured"},
+		},
+	}
 )
 
 var crcTable = crc32.MakeTable(crc32.Castagnoli)
@@ -592,19 +614,21 @@ func (sv *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
 	if !sv.initialized() {
-		http.Error(w, ErrUninitialized.Error(), 400)
+		errorFormatter.Write(req.Context(), w, ErrUninitialized)
 		return
 	}
 
 	b, err := ioutil.ReadAll(http.MaxBytesReader(w, req.Body, maxRaftReqSize))
 	if err != nil {
-		http.Error(w, "cannot read req: "+err.Error(), 400)
+		err = errors.Sub(errBadRequest, err)
+		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
 	var m raftpb.Message
 	err = m.Unmarshal(b)
 	if err != nil {
-		http.Error(w, "cannot unmarshal: "+err.Error(), 400)
+		err = errors.Sub(errBadRequest, err)
+		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
 	sv.raftNode.Step(req.Context(), m)
@@ -612,20 +636,21 @@ func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
 
 func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 	if !sv.initialized() {
-		http.Error(w, ErrUninitialized.Error(), 400)
+		errorFormatter.Write(req.Context(), w, ErrUninitialized)
 		return
 	}
 
 	var x struct{ Addr string }
 	err := json.NewDecoder(req.Body).Decode(&x)
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		err = errors.Sub(errBadRequest, err)
+		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
 
 	newID, err := sv.allocNodeID(req.Context())
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
 
@@ -633,11 +658,13 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 	// the membership list.
 	err = sv.WaitRead(req.Context())
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
 	if !sv.state.IsAllowedMember(x.Addr) {
-		http.Error(w, "this address is not allowed. please add this address to the allowed member list", 400)
+		const detail = "Add this address to the allowed member list before attempting to join the cluster."
+		err = errors.WithDetail(ErrAddressNotAllowed, detail)
+		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
 
@@ -648,14 +675,14 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		Context: []byte(x.Addr),
 	})
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
 
 	snap := sv.getSnapshot()
 	snapData, err := encodeSnapshot(snap)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
 	json.NewEncoder(w).Encode(nodeJoin{newID, snapData})
@@ -675,12 +702,17 @@ func (sv *Service) join(addr, baseURL string) (id uint64, walobj *wal.WAL, err e
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		errmsg, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return 0, nil, errors.Wrap(err, "could not parse response from boot server")
+		err = fmt.Errorf("boot server responded with status %d", resp.StatusCode)
+		if errResponse, ok := httperror.Parse(resp.Body); ok {
+			switch errResponse.ChainCode {
+			case "CH162":
+				err = errors.WithDetail(ErrAddressNotAllowed, errResponse.Detail)
+			case "CH163":
+				const detail = "Initialize the boot node before attempting to join its cluster."
+				err = errors.WithDetail(ErrPeerUninitialized, detail)
+			}
 		}
-		defer resp.Body.Close()
-		return 0, nil, fmt.Errorf("boot server responded with status %d: %s", resp.StatusCode, errmsg)
+		return 0, nil, errors.Wrap(err, "joining cluster")
 	}
 
 	var x nodeJoin

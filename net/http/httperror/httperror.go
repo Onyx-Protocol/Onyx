@@ -4,6 +4,8 @@ package httperror
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 
 	"chain/errors"
@@ -30,6 +32,16 @@ type Response struct {
 	Detail    string                 `json:"detail,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
 	Temporary bool                   `json:"temporary"`
+}
+
+// Parse reads an error Response from the provided reader.
+func Parse(r io.Reader) (*Response, bool) {
+	var resp Response
+	err := json.NewDecoder(r).Decode(&resp)
+	if err != nil || resp.ChainCode == "" {
+		return nil, false
+	}
+	return &resp, true
 }
 
 // Formatter defines rules for mapping errors to the Chain error

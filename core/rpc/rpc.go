@@ -148,10 +148,8 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 		}
 
 		// Attach formatted error message, if available
-		var errData httperror.Response
-		err := json.NewDecoder(resp.Body).Decode(&errData)
-		if err == nil && errData.ChainCode != "" {
-			resErr.ErrorData = &errData
+		if errData, ok := httperror.Parse(resp.Body); ok {
+			resErr.ErrorData = errData
 		}
 
 		return nil, resErr
