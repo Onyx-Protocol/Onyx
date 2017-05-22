@@ -46,8 +46,7 @@ const store = createStore(
 
 const selected = templates.selectors.getSelectedTemplate(store.getState())
 store.dispatch(templates.actions.loadTemplate(selected))
-store.dispatch(assets.actions.fetch())
-store.dispatch(accounts.actions.fetch())
+store.dispatch(app.actions.seed())
 render(
   <Provider store={store}>
     <DocumentTitle title='Ivy Playground'>
