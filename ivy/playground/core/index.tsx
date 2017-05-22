@@ -123,26 +123,10 @@ export const createUnlockingTx = (actions: types.Action[],
                                   witness: types.WitnessComponent[],
                                   mintimes,
                                   maxtimes): Promise<{id: string}> => {
-  return client.transactions.build(builder => {
-    actions.forEach(action => {
-      switch (action.type) {
-        case "spendFromAccount":
-          builder.spendFromAccount(action)
-          break
-        case "controlWithReceiver":
-          builder.controlWithReceiver(action)
-          break
-        case "controlWithAccount":
-          builder.controlWithAccount(action)
-          break
-        case "spendUnspentOutput":
-          builder.spendAnyUnspentOutput(action)
-          break
-        default:
-          break
-      }
-    })
+  let minTime
+  let maxTime
 
+  return Promise.resolve().then(() => {
     if (mintimes.length > 0) {
       const findMax = (currMax, currVal) => {
         if (currVal.getTime() > currMax.getTime()) {
@@ -151,7 +135,10 @@ export const createUnlockingTx = (actions: types.Action[],
         return currMax
       }
       const mintime = new Date(mintimes.reduce(findMax, mintimes[0]))
-      builder.minTime = new Date((mintime.setSeconds(mintime.getSeconds() + 1)))
+      if (mintime.getSeconds() > new Date().getSeconds()) {
+        throw "This clause cannot be called until " + mintime
+      }
+      minTime = new Date((mintime.setSeconds(mintime.getSeconds() + 1)))
     }
 
     if (maxtimes.length > 0) {
@@ -162,8 +149,40 @@ export const createUnlockingTx = (actions: types.Action[],
         return currMin
       }
       const maxtime = maxtimes.reduce(findMin, maxtimes[0])
-      builder.maxTime = new Date((maxtime.setSeconds(maxtime.getSeconds() - 1)))
+      if (maxtime.getSeconds() < new Date().getSeconds()) {
+        throw "This clause cannot be called after " + maxtime
+      }
+      maxTime = new Date((maxtime.setSeconds(maxtime.getSeconds() - 1)))
     }
+  }).then(() => {
+    return client.transactions.build(builder => {
+      actions.forEach(action => {
+        switch (action.type) {
+          case "spendFromAccount":
+            builder.spendFromAccount(action)
+            break
+          case "controlWithReceiver":
+            builder.controlWithReceiver(action)
+            break
+          case "controlWithAccount":
+            builder.controlWithAccount(action)
+            break
+          case "spendUnspentOutput":
+            builder.spendAnyUnspentOutput(action)
+            break
+          default:
+            break
+        }
+      })
+
+      if (minTime !== undefined) {
+        builder.minTime = minTime
+      }
+
+      if (maxTime !== undefined) {
+        builder.maxTime = maxTime
+      }
+    })
   }).then((tpl) => {
     tpl.includesContract = true
     // TODO(boymanjor): Can we depend on contract being on first utxo?
