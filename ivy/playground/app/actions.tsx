@@ -82,6 +82,16 @@ export const seed = () => {
           )
         }
 
+        if (!assetsMap['Snickers Token']) {
+          createEntities.push(
+            client.assets.create({
+              alias: 'Snickers Token',
+              rootXpubs: [key.xpub],
+              quorum: 1,
+            })
+          )
+        }
+
         if (!assetsMap['Gold']) {
           createEntities.push(
             client.assets.create({
@@ -106,6 +116,26 @@ export const seed = () => {
           createEntities.push(
             client.assets.create({
               alias: 'Acme Stock',
+              rootXpubs: [key.xpub],
+              quorum: 1,
+            })
+          )
+        }
+
+        if (!accountsMap['Vending Machine']) {
+          createEntities.push(
+            client.accounts.create({
+              alias: 'Vending Machine',
+              rootXpubs: [key.xpub],
+              quorum: 1,
+            })
+          )
+        }
+
+        if (!accountsMap['Vendor']) {
+          createEntities.push(
+            client.accounts.create({
+              alias: 'Vendor',
               rootXpubs: [key.xpub],
               quorum: 1,
             })
@@ -166,7 +196,8 @@ export const seed = () => {
         if (assetsMap['USD'] &&
             assetsMap['Gold'] &&
             assetsMap['EUR'] &&
-            assetsMap['Acme Stock']) {
+            assetsMap['Acme Stock'] &&
+            assetsMap['Snickers Token']) {
               throw "no need to create transaction"
             }
         return client.transactions.build(builder => {
@@ -192,6 +223,19 @@ export const seed = () => {
               accountAlias: 'FX Dealer',
               assetAlias: 'USD',
               amount: 20000
+            })
+          }
+
+          if (!assetsMap['Snickers Token']) {
+            builder.issue({
+              assetAlias: 'Snickers Token',
+              amount: 10
+            })
+
+            builder.controlWithAccount({
+              accountAlias: 'Vendor',
+              assetAlias: 'Snickers Token',
+              amount: 10
             })
           }
 
