@@ -47,7 +47,7 @@ func TestAllowedMember(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	sdb, err := Open("", raftDir, new(http.Client), false)
+	sdb, err := Open("", raftDir, new(http.Client))
 	if err != nil {
 		t.Fatal(err)
 	}

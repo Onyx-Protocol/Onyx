@@ -93,7 +93,6 @@ type Service struct {
 	wctxReq chan wctxReq
 	donec   chan struct{}
 	client  *http.Client
-	useTLS  bool
 
 	// config set during init/join/restart. immutable once set.
 	// it is ok to read without keeping startMu locked in
@@ -189,7 +188,7 @@ type nodeJoin struct {
 //
 // The returned *Service will use httpClient for outbound
 // connections to peers.
-func Start(laddr, dir string, httpClient *http.Client, useTLS bool, state State) (*Service, error) {
+func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, error) {
 	// TODO(tessr): configure raft service using run options
 	ctx := context.Background()
 
@@ -210,7 +209,6 @@ func Start(laddr, dir string, httpClient *http.Client, useTLS bool, state State)
 		rctxReq:     make(chan rctxReq),
 		wctxReq:     make(chan wctxReq),
 		client:      httpClient,
-		useTLS:      useTLS,
 	}
 	sv.stateCond.L = &sv.stateMu
 
@@ -859,16 +857,13 @@ func (sv *Service) send(msgs []raftpb.Message) {
 			log.Printkv(context.Background(), "no-addr-for-peer", msg.To)
 			continue
 		}
-		sendmsg(addr, data, sv.client, sv.useTLS)
+		sendmsg(addr, data, sv.client)
 	}
 }
 
 // best effort. if it fails, oh well -- that's why we're using raft.
-func sendmsg(addr string, data []byte, client *http.Client, useTLS bool) {
-	url := "http://" + addr + "/raft/msg"
-	if useTLS {
-		url = "https://" + addr + "/raft/msg"
-	}
+func sendmsg(addr string, data []byte, client *http.Client) {
+	url := "https://" + addr + "/raft/msg"
 	resp, err := client.Post(url, contentType, bytes.NewReader(data))
 	if err != nil {
 		log.Printkv(context.Background(), "warning", err)

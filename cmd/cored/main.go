@@ -170,7 +170,7 @@ func main() {
 	}
 
 	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
-	sdb, err := sinkdb.Open(*listenAddr, raftDir, httpClient, tlsConfig != nil)
+	sdb, err := sinkdb.Open(*listenAddr, raftDir, httpClient)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
