@@ -60,7 +60,7 @@ Software packages are mutually compatible if they share the same major and minor
 
 #### Deprecations and breaking changes
 
-Deprecations and breaking changes can occur when the minor version changes. To the greatest extent possible, breaking changes in server packages will be preceded by a deprecation announcement and at least one minor version cycle of continued support.
+Deprecations and breaking changes can occur when the minor version changes. Breaking changes in server packages will be preceded by a deprecation announcement and at least one minor version cycle of continued support.
 
 Breaking changes may be introduced at any time in client packages (such as SDKs). However, since server packages are backward-compatible with the previous minor version of client packages, you can safely upgrade your server packages without breaking your application code.
 
