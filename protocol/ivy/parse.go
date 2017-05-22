@@ -29,7 +29,7 @@ func (p *parser) errorf(format string, args ...interface{}) {
 }
 
 // parse is the main entry point to the parser
-func parse(buf []byte) (c *contract, err error) {
+func parse(buf []byte) (c *Contract, err error) {
 	defer func() {
 		if val := recover(); val != nil {
 			if e, ok := val.(parserErr); ok {
@@ -47,7 +47,7 @@ func parse(buf []byte) (c *contract, err error) {
 // parse functions
 
 // contract name(p1, p2: t1, p3: t2) locks value { ... }
-func parseContract(p *parser) *contract {
+func parseContract(p *parser) *Contract {
 	consumeKeyword(p, "contract")
 	name := consumeIdentifier(p)
 	params := parseParams(p)
@@ -56,12 +56,12 @@ func parseContract(p *parser) *contract {
 	consumeTok(p, "{")
 	clauses := parseClauses(p)
 	consumeTok(p, "}")
-	return &contract{name, params, clauses, value}
+	return &Contract{name, params, clauses, value}
 }
 
 // (p1, p2: t1, p3: t2)
-func parseParams(p *parser) []*param {
-	var params []*param
+func parseParams(p *parser) []*Param {
+	var params []*Param
 	consumeTok(p, "(")
 	first := true
 	for !peekTok(p, ")") {
@@ -77,8 +77,8 @@ func parseParams(p *parser) []*param {
 	return params
 }
 
-func parseClauses(p *parser) []*clause {
-	var clauses []*clause
+func parseClauses(p *parser) []*Clause {
+	var clauses []*Clause
 	for !peekTok(p, "}") {
 		c := parseClause(p)
 		clauses = append(clauses, c)
@@ -86,19 +86,19 @@ func parseClauses(p *parser) []*clause {
 	return clauses
 }
 
-func parseParamsType(p *parser) []*param {
+func parseParamsType(p *parser) []*Param {
 	firstName := consumeIdentifier(p)
-	params := []*param{&param{name: firstName}}
+	params := []*Param{&Param{Name: firstName}}
 	for peekTok(p, ",") {
 		consumeTok(p, ",")
 		name := consumeIdentifier(p)
-		params = append(params, &param{name: name})
+		params = append(params, &Param{Name: name})
 	}
 	consumeTok(p, ":")
 	typ := consumeIdentifier(p)
 	for _, parm := range params {
 		if tdesc, ok := types[typ]; ok {
-			parm.typ = tdesc
+			parm.Type = tdesc
 		} else {
 			p.errorf("unknown type %s", typ)
 		}
@@ -106,14 +106,14 @@ func parseParamsType(p *parser) []*param {
 	return params
 }
 
-func parseClause(p *parser) *clause {
-	var c clause
+func parseClause(p *parser) *Clause {
+	var c Clause
 	consumeKeyword(p, "clause")
-	c.name = consumeIdentifier(p)
-	c.params = parseParams(p)
+	c.Name = consumeIdentifier(p)
+	c.Params = parseParams(p)
 	if peekKeyword(p) == "requires" {
 		consumeKeyword(p, "requires")
-		c.reqs = parseClauseRequirements(p)
+		c.Reqs = parseClauseRequirements(p)
 	}
 	consumeTok(p, "{")
 	c.statements = parseStatements(p)
@@ -121,8 +121,8 @@ func parseClause(p *parser) *clause {
 	return &c
 }
 
-func parseClauseRequirements(p *parser) []*clauseRequirement {
-	var result []*clauseRequirement
+func parseClauseRequirements(p *parser) []*ClauseRequirement {
+	var result []*ClauseRequirement
 	first := true
 	for {
 		switch {
@@ -133,7 +133,7 @@ func parseClauseRequirements(p *parser) []*clauseRequirement {
 		default:
 			return result
 		}
-		var req clauseRequirement
+		var req ClauseRequirement
 		req.name = consumeIdentifier(p)
 		consumeTok(p, ":")
 		req.amountExpr = parseExpr(p)
@@ -243,7 +243,7 @@ func parseExpr3(p *parser) expression {
 	e := parseExpr4(p)
 	if peekTok(p, "(") {
 		args := parseArgs(p)
-		return &call{fn: e, args: args}
+		return &callExpr{fn: e, args: args}
 	}
 	return e
 }

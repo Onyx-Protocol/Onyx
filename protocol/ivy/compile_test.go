@@ -208,7 +208,7 @@ func TestCompile(t *testing.T) {
 					Values: []ValueInfo{{
 						Name: "value",
 					}},
-					HashCalls: []hashCall{{
+					HashCalls: []HashCall{{
 						HashType: "sha3",
 						Arg:      "pubKey",
 						ArgType:  "PublicKey",
@@ -420,7 +420,7 @@ func TestCompile(t *testing.T) {
 					Values: []ValueInfo{{
 						Name: "value",
 					}},
-					HashCalls: []hashCall{{
+					HashCalls: []HashCall{{
 						HashType: "sha3",
 						Arg:      "string",
 						ArgType:  "String",

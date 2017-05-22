@@ -41,7 +41,7 @@ type (
 
 		// Records each call to a hash function and the type of the
 		// argument passed in
-		HashCalls []hashCall `json:"hash_calls"`
+		HashCalls []HashCall `json:"hash_calls"`
 	}
 
 	ClauseArg struct {
@@ -82,7 +82,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	for _, b := range builtins {
 		globalEnv.add(b.name, nilType, roleBuiltin)
 	}
-	err = globalEnv.add(c.name, contractType, roleContract)
+	err = globalEnv.add(c.Name, contractType, roleContract)
 	if err != nil {
 		return CompileResult{}, err
 	}
@@ -92,23 +92,23 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
 	result := CompileResult{
-		Name:    c.name,
+		Name:    c.Name,
 		Program: prog,
 		Params:  []ContractParam{},
-		Value:   c.value,
+		Value:   c.Value,
 		Labels:  labels,
 	}
-	for _, param := range c.params {
-		result.Params = append(result.Params, ContractParam{Name: param.name, Typ: string(param.bestType())})
+	for _, param := range c.Params {
+		result.Params = append(result.Params, ContractParam{Name: param.Name, Typ: string(param.bestType())})
 	}
 
-	for _, clause := range c.clauses {
+	for _, clause := range c.Clauses {
 		info := ClauseInfo{
-			Name:      clause.name,
+			Name:      clause.Name,
 			Args:      []ClauseArg{},
-			Mintimes:  clause.mintimes,
-			Maxtimes:  clause.maxtimes,
-			HashCalls: clause.hashCalls,
+			Mintimes:  clause.MinTimes,
+			Maxtimes:  clause.MaxTimes,
+			HashCalls: clause.HashCalls,
 		}
 		if info.Mintimes == nil {
 			info.Mintimes = []string{}
@@ -117,8 +117,8 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 			info.Maxtimes = []string{}
 		}
 
-		for _, p := range clause.params {
-			info.Args = append(info.Args, ClauseArg{Name: p.name, Typ: string(p.bestType())})
+		for _, p := range clause.Params {
+			info.Args = append(info.Args, ClauseArg{Name: p.Name, Typ: string(p.bestType())})
 		}
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {
@@ -127,8 +127,8 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 					Name:    s.locked.String(),
 					Program: s.program.String(),
 				}
-				if s.locked.String() != c.value {
-					for _, r := range clause.reqs {
+				if s.locked.String() != c.Value {
+					for _, r := range clause.Reqs {
 						if s.locked.String() == r.name {
 							valueInfo.Asset = r.assetExpr.String()
 							valueInfo.Amount = r.amountExpr.String()
@@ -138,7 +138,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 				}
 				info.Values = append(info.Values, valueInfo)
 			case *unlockStatement:
-				valueInfo := ValueInfo{Name: c.value}
+				valueInfo := ValueInfo{Name: c.Value}
 				info.Values = append(info.Values, valueInfo)
 			}
 		}
@@ -147,31 +147,31 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	return result, nil
 }
 
-func compileContract(contract *contract, args []ContractArg, globalEnv *environ) ([]byte, map[uint32]string, error) {
+func compileContract(contract *Contract, args []ContractArg, globalEnv *environ) ([]byte, map[uint32]string, error) {
 	var err error
 
-	if len(contract.clauses) == 0 {
+	if len(contract.Clauses) == 0 {
 		return nil, nil, fmt.Errorf("empty contract")
 	}
 	env := newEnviron(globalEnv)
-	for _, p := range contract.params {
-		err = env.add(p.name, p.typ, roleContractParam)
+	for _, p := range contract.Params {
+		err = env.add(p.Name, p.Type, roleContractParam)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
-	err = env.add(contract.value, valueType, roleContractValue)
+	err = env.add(contract.Value, valueType, roleContractValue)
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, c := range contract.clauses {
-		err = env.add(c.name, nilType, roleClause)
+	for _, c := range contract.Clauses {
+		err = env.add(c.Name, nilType, roleClause)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
 
-	stack := addParamsToStack(nil, contract.params, true)
+	stack := addParamsToStack(nil, contract.Params, true)
 
 	b := newBuilder()
 	for i := len(args) - 1; i >= 0; i-- {
@@ -193,16 +193,16 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 	var prog []byte
 	var labels map[uint32]string
 
-	if len(contract.clauses) == 1 {
-		err = compileClause(b, stack, contract, env, contract.clauses[0])
+	if len(contract.Clauses) == 1 {
+		err = compileClause(b, stack, contract, env, contract.Clauses[0])
 		if err != nil {
 			return nil, nil, err
 		}
 		prog, err = b.build()
 	} else {
 		endTarget := b.newJumpTarget()
-		clauseTargets := make([]int, len(contract.clauses))
-		for i := range contract.clauses {
+		clauseTargets := make([]int, len(contract.Clauses))
+		for i := range contract.Clauses {
 			clauseTargets[i] = b.newJumpTarget()
 		}
 
@@ -214,7 +214,7 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 		}
 
 		// clauses 2..N-1
-		for i := len(contract.clauses) - 1; i >= 2; i-- {
+		for i := len(contract.Clauses) - 1; i >= 2; i-- {
 			b.addOp(vm.OP_DUP)            // stack: [... <clause selector> <clause selector>]
 			b.addInt64(int64(i))          // stack: [... <clause selector> <clause selector> <i>]
 			b.addOp(vm.OP_NUMEQUAL)       // stack: [... <clause selector> <i == clause selector>]
@@ -226,7 +226,7 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 
 		// no jump needed for clause 0
 
-		for i, clause := range contract.clauses {
+		for i, clause := range contract.Clauses {
 			b.setJumpTarget(clauseTargets[i])
 
 			// An inner builder is used for each clause body in order to get
@@ -253,10 +253,10 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 
 			err = compileClause(b2, stack, contract, env, clause)
 			if err != nil {
-				return nil, nil, errors.Wrapf(err, "compiling clause \"%s\"", clause.name)
+				return nil, nil, errors.Wrapf(err, "compiling clause \"%s\"", clause.Name)
 			}
 			b.addFrom(b2)
-			if i < len(contract.clauses)-1 {
+			if i < len(contract.Clauses)-1 {
 				b.addJump(endTarget)
 			}
 		}
@@ -269,7 +269,7 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 		labels = make(map[uint32]string)
 		labels[jumpAddrs[endTarget]] = "_end"
 		for i, targ := range clauseTargets {
-			labels[jumpAddrs[targ]] = contract.clauses[i].name
+			labels[jumpAddrs[targ]] = contract.Clauses[i].Name
 		}
 	}
 
@@ -277,7 +277,7 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 	if err != nil {
 		return nil, nil, err
 	}
-	err = requireAllParamsUsedInClauses(contract.params, contract.clauses)
+	err = requireAllParamsUsedInClauses(contract.Params, contract.Clauses)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -285,18 +285,18 @@ func compileContract(contract *contract, args []ContractArg, globalEnv *environ)
 	return prog, labels, nil
 }
 
-func compileClause(b *builder, contractStack []stackEntry, contract *contract, env *environ, clause *clause) error {
+func compileClause(b *builder, contractStack []stackEntry, contract *Contract, env *environ, clause *Clause) error {
 	var err error
 
 	// copy env to leave outerEnv unchanged
 	env = newEnviron(env)
-	for _, p := range clause.params {
-		err = env.add(p.name, p.typ, roleClauseParam)
+	for _, p := range clause.Params {
+		err = env.add(p.Name, p.Type, roleClauseParam)
 		if err != nil {
 			return err
 		}
 	}
-	for _, req := range clause.reqs {
+	for _, req := range clause.Reqs {
 		err = env.add(req.name, valueType, roleClauseValue)
 		if err != nil {
 			return err
@@ -304,12 +304,12 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 	}
 
 	assignIndexes(clause)
-	stack := addParamsToStack(nil, clause.params, false)
+	stack := addParamsToStack(nil, clause.Params, false)
 	stack = append(stack, contractStack...)
 
 	// a count of the number of times each variable is referenced
 	counts := make(map[string]int)
-	for _, req := range clause.reqs {
+	for _, req := range clause.Reqs {
 		req.assetExpr.countVarRefs(counts)
 		req.amountExpr.countVarRefs(counts)
 	}
@@ -322,19 +322,19 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 		case *verifyStatement:
 			stack, err = compileExpr(b, stack, contract, clause, env, counts, stmt.expr)
 			if err != nil {
-				return errors.Wrapf(err, "in verify statement in clause \"%s\"", clause.name)
+				return errors.Wrapf(err, "in verify statement in clause \"%s\"", clause.Name)
 			}
 			b.addOp(vm.OP_VERIFY)
 			stack = stack[:len(stack)-1]
 
 			// special-case reporting of certain function calls
-			if c, ok := stmt.expr.(*call); ok && len(c.args) == 1 {
+			if c, ok := stmt.expr.(*callExpr); ok && len(c.args) == 1 {
 				if b := referencedBuiltin(c.fn); b != nil {
 					switch b.name {
 					case "before":
-						clause.maxtimes = append(clause.maxtimes, c.args[0].String())
+						clause.MaxTimes = append(clause.MaxTimes, c.args[0].String())
 					case "after":
-						clause.mintimes = append(clause.mintimes, c.args[0].String())
+						clause.MinTimes = append(clause.MinTimes, c.args[0].String())
 					}
 				}
 			}
@@ -351,7 +351,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 			// TODO: permit more complex expressions for locked,
 			// like "lock x+y with foo" (?)
 
-			if stmt.locked.String() == contract.value {
+			if stmt.locked.String() == contract.Value {
 				// amount
 				b.addOp(vm.OP_AMOUNT)
 				stack = append(stack, stackEntry("<amount>"))
@@ -360,27 +360,27 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 				b.addOp(vm.OP_ASSET)
 				stack = append(stack, stackEntry("<asset>"))
 			} else {
-				var req *clauseRequirement
-				for _, r := range clause.reqs {
+				var req *ClauseRequirement
+				for _, r := range clause.Reqs {
 					if stmt.locked.String() == r.name {
 						req = r
 						break
 					}
 				}
 				if req == nil {
-					return fmt.Errorf("unknown value \"%s\" in lock statement in clause \"%s\"", stmt.locked, clause.name)
+					return fmt.Errorf("unknown value \"%s\" in lock statement in clause \"%s\"", stmt.locked, clause.Name)
 				}
 
 				// amount
 				stack, err = compileExpr(b, stack, contract, clause, env, counts, req.amountExpr)
 				if err != nil {
-					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
+					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.Name)
 				}
 
 				// asset
 				stack, err = compileExpr(b, stack, contract, clause, env, counts, req.assetExpr)
 				if err != nil {
-					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
+					return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.Name)
 				}
 			}
 
@@ -391,7 +391,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 			// prog
 			stack, err = compileExpr(b, stack, contract, clause, env, counts, stmt.program)
 			if err != nil {
-				return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.name)
+				return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.Name)
 			}
 
 			b.addOp(vm.OP_CHECKOUTPUT)
@@ -416,7 +416,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 	if err != nil {
 		return err
 	}
-	err = requireAllParamsUsedInClause(clause.params, clause)
+	err = requireAllParamsUsedInClause(clause.Params, clause)
 	if err != nil {
 		return err
 	}
@@ -424,7 +424,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, e
 	return nil
 }
 
-func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, error) {
+func compileExpr(b *builder, stack []stackEntry, contract *Contract, clause *Clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, error) {
 	var err error
 
 	switch e := expr.(type) {
@@ -494,11 +494,11 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		}
 		stack = append(stack[:len(stack)-1], stackEntry(e.String()))
 
-	case *call:
+	case *callExpr:
 		bi := referencedBuiltin(e.fn)
 		if bi == nil {
 			if e.fn.typ(env) == contractType {
-				if e.fn.String() != contract.name {
+				if e.fn.String() != contract.Name {
 					return nil, fmt.Errorf("calling other contracts not yet supported")
 				}
 				// xxx TODO contract composition
@@ -590,7 +590,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		// special-case reporting
 		switch bi.name {
 		case "sha3", "sha256":
-			clause.hashCalls = append(clause.hashCalls, hashCall{bi.name, e.args[0].String(), string(e.args[0].typ(env))})
+			clause.HashCalls = append(clause.HashCalls, HashCall{bi.name, e.args[0].String(), string(e.args[0].typ(env))})
 		}
 
 	case varRef:
@@ -630,7 +630,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 	return stack, nil
 }
 
-func compileArg(b *builder, stack []stackEntry, contract *contract, clause *clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, int, error) {
+func compileArg(b *builder, stack []stackEntry, contract *Contract, clause *Clause, env *environ, counts map[string]int, expr expression) ([]stackEntry, int, error) {
 	var n int
 	if list, ok := expr.(listExpr); ok {
 		for i := 0; i < len(list); i++ {
