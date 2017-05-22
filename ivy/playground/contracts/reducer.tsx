@@ -168,7 +168,9 @@ export default function reducer(state: ContractsState = INITIAL_STATE, action): 
     case SET_CLAUSE_INDEX: {
       return {
         ...state,
-        selectedClauseIndex: action.selectedClauseIndex
+        selectedClauseIndex: action.selectedClauseIndex,
+        error: undefined,
+        showUnlockInputErrors: false
       }
     }
     case UPDATE_UNLOCK_ERROR: {
