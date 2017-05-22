@@ -7,46 +7,46 @@ import (
 	"strings"
 )
 
-type contract struct {
-	name    string
-	params  []*param
-	clauses []*clause
-	value   string
+type Contract struct {
+	Name    string
+	Params  []*Param
+	Clauses []*Clause
+	Value   string
 }
 
-type param struct {
-	name string
-	typ  typeDesc
+type Param struct {
+	Name string
+	Type typeDesc
 
 	// decoration
 	inferredType typeDesc
 }
 
-func (p param) bestType() typeDesc {
+func (p Param) bestType() typeDesc {
 	if p.inferredType != nilType {
 		return p.inferredType
 	}
-	return p.typ
+	return p.Type
 }
 
-type clause struct {
-	name       string
-	params     []*param
+type Clause struct {
+	Name       string
+	Params     []*Param
 	statements []statement
-	reqs       []*clauseRequirement
+	Reqs       []*ClauseRequirement
 
 	// decorations
-	mintimes, maxtimes []string
-	hashCalls          []hashCall
+	MinTimes, MaxTimes []string
+	HashCalls          []HashCall
 }
 
-type hashCall struct {
+type HashCall struct {
 	HashType string `json:"hash_type"`
 	Arg      string `json:"arg"`
 	ArgType  string `json:"arg_type"`
 }
 
-type clauseRequirement struct {
+type ClauseRequirement struct {
 	name                  string
 	assetExpr, amountExpr expression
 }
@@ -125,12 +125,12 @@ func (e unaryExpr) countVarRefs(counts map[string]int) {
 	e.expr.countVarRefs(counts)
 }
 
-type call struct {
+type callExpr struct {
 	fn   expression
 	args []expression
 }
 
-func (e call) String() string {
+func (e callExpr) String() string {
 	var argStrs []string
 	for _, a := range e.args {
 		argStrs = append(argStrs, a.String())
@@ -138,7 +138,7 @@ func (e call) String() string {
 	return fmt.Sprintf("%s(%s)", e.fn, strings.Join(argStrs, ", "))
 }
 
-func (e call) typ(env *environ) typeDesc {
+func (e callExpr) typ(env *environ) typeDesc {
 	if b := referencedBuiltin(e.fn); b != nil {
 		switch b.name {
 		case "sha3":
@@ -173,7 +173,7 @@ func (e call) typ(env *environ) typeDesc {
 	return nilType
 }
 
-func (e call) countVarRefs(counts map[string]int) {
+func (e callExpr) countVarRefs(counts map[string]int) {
 	e.fn.countVarRefs(counts)
 	for _, a := range e.args {
 		a.countVarRefs(counts)

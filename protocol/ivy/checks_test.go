@@ -3,8 +3,8 @@ package ivy
 import "testing"
 
 func TestRequireAllParamsUsedInClauses(t *testing.T) {
-	clauses := []*clause{
-		&clause{
+	clauses := []*Clause{
+		&Clause{
 			statements: []statement{
 				&verifyStatement{expr: varRef("foo")},
 				&verifyStatement{
@@ -19,7 +19,7 @@ func TestRequireAllParamsUsedInClauses(t *testing.T) {
 				},
 			},
 		},
-		&clause{
+		&Clause{
 			statements: []statement{
 				&verifyStatement{expr: varRef("foo")},
 				&verifyStatement{
@@ -57,9 +57,9 @@ func TestRequireAllParamsUsedInClauses(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			var params []*param
+			var params []*Param
 			for _, p := range c.params {
-				params = append(params, &param{name: p})
+				params = append(params, &Param{Name: p})
 			}
 			err := requireAllParamsUsedInClauses(params, clauses)
 			if err == nil && c.want == "" {
