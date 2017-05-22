@@ -72,6 +72,8 @@ var (
 	home          = core.HomeDirFromEnvironment()
 	bootURL       = env.String("BOOTURL", "")
 
+	version string // initialized in init()
+
 	// build vars; initialized by the linker
 	buildTag    = "?"
 	buildCommit = "?"
@@ -88,7 +90,6 @@ var (
 )
 
 func init() {
-	var version string
 	if buildTag != "?" {
 		// build tag with chain-core-server- prefix indicates official release
 		version = strings.TrimPrefix(buildTag, "chain-core-server-")
@@ -270,9 +271,9 @@ func main() {
 	}
 	expvar.NewString("processID").Set(processID)
 
-	log.SetPrefix("cored-" + buildTag + ": ")
+	log.SetPrefix("cored-" + version + ": ")
 	log.SetFlags(log.Lshortfile)
-	chainlog.SetPrefix(append([]interface{}{"app", "cored", "buildtag", buildTag, "processID", processID}, race...)...)
+	chainlog.SetPrefix(append([]interface{}{"app", "cored", "version", version, "processID", processID}, race...)...)
 	chainlog.SetOutput(logWriter())
 
 	var h http.Handler
@@ -356,7 +357,7 @@ func launchConfiguredCore(ctx context.Context, sdb *sinkdb.DB, db *sql.DB, conf 
 		if localSigner != nil {
 			signers = append(signers, localSigner)
 		}
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainId.String(), conf, httpClient) {
+		for _, signer := range remoteSignerInfo(ctx, processID, conf.BlockchainId.String(), conf, httpClient) {
 			signers = append(signers, signer)
 		}
 		c.MaxIssuanceWindow = bc.MillisDuration(conf.MaxIssuanceWindowMs)
@@ -369,7 +370,7 @@ func launchConfiguredCore(ctx context.Context, sdb *sinkdb.DB, db *sql.DB, conf 
 			AccessToken:  conf.GeneratorAccessToken,
 			Username:     processID,
 			CoreID:       conf.Id,
-			BuildTag:     buildTag,
+			Version:      version,
 			BlockchainID: conf.BlockchainId.String(),
 			Client:       httpClient,
 		}))
@@ -394,7 +395,7 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 			AccessToken:  conf.BlockHsmAccessToken,
 			Username:     processID,
 			CoreID:       conf.Id,
-			BuildTag:     buildTag,
+			Version:      version,
 			BlockchainID: conf.BlockchainId.String(),
 			Client:       httpClient,
 		}}
@@ -424,7 +425,7 @@ func (h *remoteHSM) Sign(ctx context.Context, pk ed25519.PublicKey, bh *legacy.B
 	return
 }
 
-func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config, httpClient *http.Client) (a []*remoteSigner) {
+func remoteSignerInfo(ctx context.Context, processID, blockchainID string, conf *config.Config, httpClient *http.Client) (a []*remoteSigner) {
 	for _, signer := range conf.Signers {
 		u, err := url.Parse(signer.Url)
 		if err != nil {
@@ -438,7 +439,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			AccessToken:  signer.AccessToken,
 			Username:     processID,
 			CoreID:       conf.Id,
-			BuildTag:     buildTag,
+			Version:      version,
 			BlockchainID: blockchainID,
 			Client:       httpClient,
 		}

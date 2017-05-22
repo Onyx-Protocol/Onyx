@@ -36,7 +36,7 @@ func coreEnv(prefix string) (*rpc.Client, core) {
 		BaseURL:     url,
 		AccessToken: clientTok,
 		Username:    "testnet-resetter", // for user-agent, not auth
-		BuildTag:    "none",
+		Version:     "none",
 	}
 
 	return client, core

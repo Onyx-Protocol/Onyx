@@ -35,7 +35,7 @@ type Client struct {
 	BaseURL      string
 	AccessToken  string
 	Username     string
-	BuildTag     string
+	Version      string
 	BlockchainID string
 	CoreID       string
 
@@ -45,8 +45,8 @@ type Client struct {
 }
 
 func (c Client) userAgent() string {
-	return fmt.Sprintf("Chain; process=%s; buildtag=%s; blockchainID=%s",
-		c.Username, c.BuildTag, c.BlockchainID)
+	return fmt.Sprintf("Chain; process=%s; version=%s; blockchainID=%s",
+		c.Username, c.Version, c.BlockchainID)
 }
 
 // ErrStatusCode is an error returned when an rpc fails with a non-200
