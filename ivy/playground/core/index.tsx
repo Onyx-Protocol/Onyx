@@ -120,9 +120,9 @@ export const createLockingTx = (actions: types.Action[]): Promise<Object> => {
 
 // Satisfies created contract and transfers value.
 export const createUnlockingTx = (actions: types.Action[],
-                               witness: types.WitnessComponent[],
-                               mintimes,
-                               maxtimes): Promise<{id: string}> => {
+                                  witness: types.WitnessComponent[],
+                                  mintimes,
+                                  maxtimes): Promise<{id: string}> => {
   return client.transactions.build(builder => {
     actions.forEach(action => {
       switch (action.type) {
@@ -151,7 +151,7 @@ export const createUnlockingTx = (actions: types.Action[],
         return currMax
       }
       const mintime = new Date(mintimes.reduce(findMax, mintimes[0]))
-      builder.minTime = new Date(mintime.setSeconds(mintime.getSeconds() + 1))
+      builder.minTime = new Date((mintime.setSeconds(mintime.getSeconds() + 1))/1000)
     }
 
     if (maxtimes.length > 0) {
@@ -162,7 +162,7 @@ export const createUnlockingTx = (actions: types.Action[],
         return currMin
       }
       const maxtime = maxtimes.reduce(findMin, maxtimes[0])
-      builder.maxTime = new Date(maxtime.setSeconds(maxtime.getSeconds() - 1))
+      builder.maxTime = new Date((maxtime.setSeconds(maxtime.getSeconds() - 1))/1000)
     }
   }).then((tpl) => {
     tpl.includesContract = true

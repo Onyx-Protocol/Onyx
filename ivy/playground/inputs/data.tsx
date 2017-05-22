@@ -57,7 +57,11 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
     case "parameterInput": 
     case "stringInput":
     case "hashInput":
-    case "timeInput":
+    case "timeInput": {
+      const data = getData(getChild(input), inputsById)
+      const timestamp = new Date(data)
+      return timestamp.getSeconds()
+    }
     case "signatureInput":
       return getData(getChild(input), inputsById)
     case "programInput":
