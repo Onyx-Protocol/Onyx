@@ -27,14 +27,6 @@ export const SEED: string = "app/SEED"
 
 export const seed = () => {
   return (dispatch, getState) => {
-    // let state = getState()
-    // let shouldSeed = accounts.selectors.getShouldSeed(state)
-    // console.log(shouldSeed)
-    // if (!shouldSeed) {
-    //   dispatch(accounts.actions.fetch())
-    //   return dispatch(assets.actions.fetch())
-    // }
-
     const accountsList: { alias: string }[] = []
     const accountsPromise = client.accounts.queryAll({
       pageSize: 100
@@ -161,7 +153,6 @@ export const seed = () => {
         }
         return Promise.all(createEntities)
       }).then(entities => {
-        console.log(assetsMap)
         if (assetsMap['USD'] &&
             assetsMap['Gold'] &&
             assetsMap['EUR'] &&
@@ -247,12 +238,13 @@ export const seed = () => {
       }).then(res => {
         const type = SEED
         dispatch({ type })
-        dispatch(accounts.actions.fetch())
-        dispatch(assets.actions.fetch())
       }).catch(err => { 
         if (err.toString() !== "no need to create transaction") {
           process.nextTick(() => { throw err })
         }
+      }).then(() => {
+        dispatch(accounts.actions.fetch())
+        dispatch(assets.actions.fetch())
       })
     })
   }
