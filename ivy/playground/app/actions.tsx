@@ -27,10 +27,13 @@ export const SEED: string = "app/SEED"
 
 export const seed = () => {
   return (dispatch, getState) => {
-    if (!accounts.selectors.getShouldSeed(getState())) {
-      dispatch(accounts.actions.fetch())
-      return dispatch(assets.actions.fetch())
-    }
+    // let state = getState()
+    // let shouldSeed = accounts.selectors.getShouldSeed(state)
+    // console.log(shouldSeed)
+    // if (!shouldSeed) {
+    //   dispatch(accounts.actions.fetch())
+    //   return dispatch(assets.actions.fetch())
+    // }
 
     const accountsList: { alias: string }[] = []
     const accountsPromise = client.accounts.queryAll({
@@ -41,6 +44,9 @@ export const seed = () => {
     })
 
     const assetsList: { alias: string }[] = []
+
+    let assetsMap: { [s: string]: { alias: string } } = {}
+    let accountsMap: { [s: string]: { alias: string } } = {}
     const assetsPromise = client.assets.queryAll({
       filter: "is_local='yes'",
       pageSize: 100
@@ -49,7 +55,7 @@ export const seed = () => {
       next();
     })
     return Promise.all([accountsPromise, assetsPromise]).then(() => {
-      const accountsMap: { [s: string]: { alias: string } } = accountsList.reduce((map, account) => {
+      accountsMap = accountsList.reduce((map, account) => {
         if (map[account.alias]) {
           return map
         }
@@ -59,7 +65,7 @@ export const seed = () => {
         }
       }, {})
 
-      const assetsMap: { [s: string]: { alias: string } } = assetsList.reduce((map, asset) => {
+      assetsMap = assetsList.reduce((map, asset) => {
         if (map[asset.alias]) {
           return map
         }
@@ -70,8 +76,6 @@ export const seed = () => {
       }, {})
       return Promise.resolve([accountsMap, assetsMap])
     }).then(maps => {
-      const accountsMap = maps[0]
-      const assetsMap = maps[1]
       return client.mockHsm.keys.create().then(key => {
         signer.addKey(key.xpub, client.mockHsm.signerConnection)
         const createEntities: Promise<Object>[] = []
@@ -157,62 +161,77 @@ export const seed = () => {
         }
         return Promise.all(createEntities)
       }).then(entities => {
+        console.log(assetsMap)
+        if (assetsMap['USD'] &&
+            assetsMap['Gold'] &&
+            assetsMap['EUR'] &&
+            assetsMap['Acme Stock']) {
+              throw "no need to create transaction"
+            }
         return client.transactions.build(builder => {
-          builder.issue({
-            assetAlias: 'Gold',
-            amount: 1000
-          })
+          if (!assetsMap['USD']) {
+            builder.issue({
+              assetAlias: 'USD',
+              amount: 30000
+            })
 
-          builder.controlWithAccount({
-            accountAlias: 'Alice',
-            assetAlias: 'Gold',
-            amount: 1000
-          })
+            builder.controlWithAccount({
+              accountAlias: 'Bob',
+              assetAlias: 'USD',
+              amount: 10000
+            })
 
-          builder.issue({
-            assetAlias: 'Acme Stock',
-            amount: 1000
-          })
+            builder.controlWithAccount({
+              accountAlias: 'FX Dealer',
+              assetAlias: 'USD',
+              amount: 20000
+            })
+          }
 
-          builder.controlWithAccount({
-            accountAlias: 'Bob',
-            assetAlias: 'Acme Stock',
-            amount: 1000
-          })
+          if (!assetsMap['Gold']) {
+            builder.issue({
+              assetAlias: 'Gold',
+              amount: 1000
+            })
 
-          builder.issue({
-            assetAlias: 'USD',
-            amount: 30000
-          })
+            builder.controlWithAccount({
+              accountAlias: 'Alice',
+              assetAlias: 'Gold',
+              amount: 1000
+            })
+          }
 
-          builder.controlWithAccount({
-            accountAlias: 'Bob',
-            assetAlias: 'USD',
-            amount: 10000
-          })
+          if (!assetsMap['Acme Stock']) {
+            builder.issue({
+              assetAlias: 'Acme Stock',
+              amount: 1000
+            })
 
-          builder.controlWithAccount({
-            accountAlias: 'FX Dealer',
-            assetAlias: 'USD',
-            amount: 20000
-          })
+            builder.controlWithAccount({
+              accountAlias: 'Bob',
+              assetAlias: 'Acme Stock',
+              amount: 1000
+            })
+          }
 
-          builder.issue({
-            assetAlias: 'EUR',
-            amount: 30000
-          })
+          if (!assetsMap['EUR']) {
+            builder.issue({
+              assetAlias: 'EUR',
+              amount: 30000
+            })
 
-          builder.controlWithAccount({
-            accountAlias: 'Alice',
-            assetAlias: 'EUR',
-            amount: 10000
-          })
+            builder.controlWithAccount({
+              accountAlias: 'Alice',
+              assetAlias: 'EUR',
+              amount: 10000
+            })
 
-          builder.controlWithAccount({
-            accountAlias: 'FX Dealer',
-            assetAlias: 'EUR',
-            amount: 20000
-          })
+            builder.controlWithAccount({
+              accountAlias: 'FX Dealer',
+              assetAlias: 'EUR',
+              amount: 20000
+            })
+          }
         })
       }).then(issuance => {
         issuance.signingInstructions.forEach((instruction) => {
@@ -230,9 +249,11 @@ export const seed = () => {
         dispatch({ type })
         dispatch(accounts.actions.fetch())
         dispatch(assets.actions.fetch())
-      }).catch(err =>
-        process.nextTick(() => { throw err })
-      )
+      }).catch(err => { 
+        if (err.toString() !== "no need to create transaction") {
+          process.nextTick(() => { throw err })
+        }
+      })
     })
   }
 }
