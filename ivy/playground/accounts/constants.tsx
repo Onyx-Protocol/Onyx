@@ -5,6 +5,7 @@ export const NAME: string = "accounts"
 export const INITIAL_STATE: State = {
   itemMap: {},
   idList: [],
-  balanceMap: {}
+  balanceMap: {},
+  shouldSeed: true
 }
 

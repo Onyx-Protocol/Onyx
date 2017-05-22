@@ -27,6 +27,11 @@ export const SEED: string = "app/SEED"
 
 export const seed = () => {
   return (dispatch, getState) => {
+    if (!accounts.selectors.getShouldSeed(getState())) {
+      dispatch(accounts.actions.fetch())
+      return dispatch(assets.actions.fetch())
+    }
+
     const accountsList: { alias: string }[] = []
     const accountsPromise = client.accounts.queryAll({
       pageSize: 100

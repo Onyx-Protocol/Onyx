@@ -66,6 +66,11 @@ export const getBalanceSelector = (namePrefix: string) => {
   )
 }
 
+export const getShouldSeed = createSelector(
+  getState,
+  (state: State) => state.shouldSeed
+)
+
 export const getItem = (id) => {
   return createSelector(
     getState,

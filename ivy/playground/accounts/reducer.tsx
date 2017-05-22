@@ -1,3 +1,7 @@
+// ivy imports
+import { SEED } from '../app/actions'
+
+// internal imports
 import { FETCH, INITIAL_STATE } from './constants'
 import { Item, ItemMap, State } from './types'
 
@@ -38,8 +42,24 @@ export default function reducer(state: State = INITIAL_STATE, action): State {
           [acct.id]: balances
         }
       }, {})
-      return { itemMap, idList, balanceMap }
+      return {
+        itemMap,
+        idList,
+        balanceMap,
+        shouldSeed: false
+      }
     }
-    default: return state
+    case SEED: {
+      return {
+        ...state,
+        shouldSeed: false
+      }
+    }
+    default: {
+      return {
+        ...state,
+        shouldSeed: false
+      }
+    }
   }
 }
