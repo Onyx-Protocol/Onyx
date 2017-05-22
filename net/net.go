@@ -63,12 +63,12 @@ func (d *Dialer) DialTimeout(network, addr string, timeout time.Duration) (net.C
 // uses package etcdname in addition to the local resolver.
 // See func Dial for a description of the network and addr parameters.
 func (d *Dialer) Dial(network, addr string) (net.Conn, error) {
-	host, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		return nil, err
-	}
-
 	if knownNetworks[network] {
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, err
+		}
+
 		addrs, source, err := lookupHost(host)
 		if err != nil {
 			return nil, err
