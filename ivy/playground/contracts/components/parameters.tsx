@@ -66,10 +66,14 @@ function NumberWidget(props: { input: NumberInput | AmountInput,
   return <input type="text" className="form-control" style={{width: 200}} key={props.input.name} value={props.input.value} onChange={props.handleChange} />
 }
 
-function TimestampTimeWidget(props: { input: TimeInput, handleChange: (e)=>undefined }) {
-  return <div className = "form-group">
-    <input type="datetime-local" key={props.input.name} className="form-control" value={props.input.value} onChange={props.handleChange} />
-  </div>
+function TimestampTimeWidget(props: { input: TimeInput,
+                                      errorClass: string,
+                                      handleChange: (e)=>undefined }) {
+  return (
+    <div className={"form-group " + props.errorClass}>
+      <input type="datetime-local" placeholder="yyyy-mm-ddThh:mm:ss" key={props.input.name} className="form-control" value={props.input.value} onChange={props.handleChange} />
+    </div>
+  )
 }
 
 function AmountWidget(props: { input: AmountInput,
