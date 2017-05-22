@@ -60,7 +60,17 @@ Software packages are mutually compatible if they share the same major and minor
 
 #### Deprecations and breaking changes
 
-Deprecations and breaking changes can occur when the minor version changes. If a feature is deprecated, it will remain functional for at least one minor version before being removed.
+Deprecations and breaking changes can occur when the minor version changes. To the greatest extent possible, breaking changes in server packages will be preceded by a deprecation announcement and at least one minor version cycle of continued support.
+
+Breaking changes may be introduced at any time in client packages (such as SDKs). However, since server packages are backward-compatible with the previous minor version of client packages, you can safely upgrade your server packages without breaking your application code.
+
+#### Upgrading example
+
+Chain Core is a quickly growing product, but the versioning scheme is designed to allow for a smooth upgrade process. To demonstrate this, here's an example of how to perform a minor-vesrion upgrade of Chain Core and the client SDK. Assume we're using Chain Core 1.1 and SDK 1.1, and wish to upgrade to 1.2.
+
+1. Upgrade Chain Core to 1.2, the next minor version of server software. The versioning rules specify that it the new version is backward-compatible with 1.1 SDKs, so your application code should continue to work.
+2. In a development environment, upgrade your SDKs to 1.2. Adjust your application code to account for any interface changes in the new SDK version.
+3. Deploy your upgraded application code from the previous step.
 
 ## Network versioning
 
