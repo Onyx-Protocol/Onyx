@@ -260,7 +260,7 @@ export const validateInput = (input: Input): boolean => {
       if (isNaN(numberValue)) return false
       return (numberValue >= MIN_NUMBER && numberValue <= MAX_NUMBER)
     case "timestampTimeInput":
-      return (input.value !== "")
+      return !Number.isNaN(Date.parse(input.value))
     case "amountInput":
       numberValue = parseInt(input.value, 10)
       if (isNaN(numberValue)) return false
