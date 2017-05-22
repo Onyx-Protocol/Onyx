@@ -15,10 +15,12 @@ import { getLockError, getSource, getContractParameters, getCompiled } from '../
 
 const mapStateToProps = (state) => {
   const source = getSource(state)
+  const compiled = getCompiled(state)
+  const instantiable = compiled && compiled.error === ''
   const contractParameters = getContractParameters(state)
-  const instantiable = contractParameters && contractParameters.length > 0
+  const hasParams = contractParameters && contractParameters.length > 0
   const error = getLockError(state)
-  return { source, instantiable, error }
+  return { source, instantiable, hasParams, error }
 }
 
 const ErrorAlert = (props: { error: string }) => {
@@ -35,16 +37,13 @@ const ErrorAlert = (props: { error: string }) => {
   return jsx
 }
 
-const Lock = ({ source, instantiable, error }) => {
+const Lock = ({ source, instantiable, hasParams, error }) => {
   let instantiate
+  let contractParams
   if (instantiable) {
-    instantiate = (
-      <div>
-        <Section name="Value to Lock">
-          <div className="form-wrapper">
-            <ContractValue />
-          </div>
-        </Section>
+    contractParams = <div />
+    if (hasParams) {
+      contractParams = (
         <Section name="Contract Arguments">
           <div className="form-wrapper">
             <ContractParameters />
@@ -52,6 +51,16 @@ const Lock = ({ source, instantiable, error }) => {
           <div className="form-wrapper">
           </div>
         </Section>
+      )
+    }
+    instantiate = (
+      <div>
+        <Section name="Value to Lock">
+          <div className="form-wrapper">
+            <ContractValue />
+          </div>
+        </Section>
+        {contractParams}
         <ErrorAlert error={error} />
         <LockButton />
       </div>
