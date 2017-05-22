@@ -54,14 +54,14 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
   let input = inputsById[inputId]
   if (!validateInput(input)) throw "invalid input: " + input.name
   switch (input.type) {
-    case "parameterInput": 
-    case "stringInput":
-    case "hashInput":
     case "timeInput": {
       const data = getData(getChild(input), inputsById)
       const timestamp = new Date(data)
       return timestamp.getSeconds()
     }
+    case "parameterInput":
+    case "stringInput":
+    case "hashInput":
     case "signatureInput":
       return getData(getChild(input), inputsById)
     case "programInput":
