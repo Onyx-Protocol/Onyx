@@ -151,7 +151,7 @@ export const createUnlockingTx = (actions: types.Action[],
         return currMax
       }
       const mintime = new Date(mintimes.reduce(findMax, mintimes[0]))
-      builder.minTime = new Date((mintime.setSeconds(mintime.getSeconds() + 1))/1000)
+      builder.minTime = new Date((mintime.setSeconds(mintime.getSeconds() + 1)))
     }
 
     if (maxtimes.length > 0) {
@@ -162,7 +162,7 @@ export const createUnlockingTx = (actions: types.Action[],
         return currMin
       }
       const maxtime = maxtimes.reduce(findMin, maxtimes[0])
-      builder.maxTime = new Date((maxtime.setSeconds(maxtime.getSeconds() - 1))/1000)
+      builder.maxTime = new Date((maxtime.setSeconds(maxtime.getSeconds() - 1)))
     }
   }).then((tpl) => {
     tpl.includesContract = true
