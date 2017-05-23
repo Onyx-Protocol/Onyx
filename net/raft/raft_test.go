@@ -100,7 +100,7 @@ func TestStartUninitialized(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	sv, err := Start("", dir, http.DefaultClient, false, nil)
+	sv, err := Start("", dir, http.DefaultClient, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
