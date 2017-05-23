@@ -129,13 +129,10 @@ func RunUnconfigured(ctx context.Context, db pg.DB, sdb *sinkdb.DB, routableAddr
 		accessTokens: &accesstoken.CredentialStore{DB: db},
 		grants:       authz.NewStore(sdb, GrantPrefix),
 		mux:          http.NewServeMux(),
+		addr:         routableAddress,
 	}
 	for _, opt := range opts {
 		opt(a)
-	}
-	err := a.addAllowedMember(ctx, struct{ Addr string }{routableAddress})
-	if err != nil {
-		panic("failed to add self to member list: " + err.Error())
 	}
 
 	// Construct the complete http.Handler once.
@@ -218,11 +215,6 @@ func Run(
 	// When this cored becomes leader, run a.lead to perform
 	// leader-only Core duties.
 	a.leader = leader.Run(ctx, db, routableAddress, a.lead)
-
-	err = a.addAllowedMember(ctx, struct{ Addr string }{routableAddress})
-	if err != nil {
-		return nil, err
-	}
 
 	// Construct the complete http.Handler once.
 	a.buildHandler()

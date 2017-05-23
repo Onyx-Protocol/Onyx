@@ -40,7 +40,7 @@ SDKTARGET=chain-test
 	export DATABASE_URL="postgres:///it-core?sslmode=disable"
 	createdb it-core
 	go install -tags "http_ok localhost_auth no_reset" chain/cmd/cored chain/cmd/corectl
-	corectl migrate
+	corectl init
 	corectl config-generator
 	cored | tee $initlog &
 	cd $CHAIN/sdk/java

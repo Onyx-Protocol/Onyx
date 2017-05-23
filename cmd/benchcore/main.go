@@ -817,6 +817,7 @@ const corectlsh = `#!/bin/bash
 export COREURL=:1999
 
 ./corectl wait
+./corectl init
 ./corectl config-generator
 ./corectl create-token benchcore client-readwrite > $HOME/token.txt
 ./corectl create-token benchcrosscore crosscore > $HOME/crosscore-token.txt

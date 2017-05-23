@@ -180,6 +180,8 @@ func (a *API) buildHandler() {
 	m.Handle("/list-access-tokens", jsonHandler(a.listAccessTokens))
 	m.Handle("/delete-access-token", jsonHandler(a.deleteAccessToken))
 	m.Handle("/add-allowed-member", jsonHandler(a.addAllowedMember))
+	m.Handle("/init-cluster", jsonHandler(a.initCluster))
+	m.Handle("/join-cluster", jsonHandler(a.joinCluster))
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
 

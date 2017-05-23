@@ -51,6 +51,7 @@ var (
 		MockHSM       bool `json:"is_mockhsm"`
 		Reset         bool `json:"is_reset"`
 		HTTPOk        bool `json:"is_http_ok"`
+		InitCluster   bool `json:"is_init_cluster"`
 	}
 )
 
@@ -63,8 +64,7 @@ func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 	found, err := sdb.Get(ctx, "/core/config", c)
 	if err != nil {
 		return nil, errors.Wrap(err)
-	}
-	if found {
+	} else if found {
 		return c, nil
 	}
 
@@ -205,6 +205,17 @@ func Configure(ctx context.Context, db pg.DB, sdb *sinkdb.DB, httpClient *http.C
 			blockPub = ed25519.PublicKey(c.BlockPub)
 		}
 		signingKeys = append(signingKeys, blockPub)
+	}
+
+	// Read the config to ensure that sdb is initialized before
+	// we start writing blocks to Postgres.
+	// TODO(jackson): make configuration idempotent so that we
+	// don't need this.
+	found, err := sdb.Get(ctx, "/core/config", &Config{})
+	if err != nil {
+		return errors.Wrap(err) // likely uninitialized
+	} else if found {
+		return errors.Wrap(sinkdb.ErrConflict) // already configured
 	}
 
 	if c.IsGenerator {

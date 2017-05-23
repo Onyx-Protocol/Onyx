@@ -61,6 +61,8 @@ var commands = map[string]*command{
 	"reset":                {reset},
 	"grant":                {grant},
 	"revoke":               {revoke},
+	"join":                 {joinCluster},
+	"init":                 {initCluster},
 	"allow-address":        {allowRaftMember},
 	"wait":                 {wait},
 }
@@ -379,6 +381,28 @@ func allowRaftMember(client *rpc.Client, args []string) {
 	}
 
 	err := client.Call(context.Background(), "/add-allowed-member", req, nil)
+	dieOnRPCError(err)
+}
+
+// initCluster initializes a new Chain Core cluster.
+func initCluster(client *rpc.Client, args []string) {
+	if len(args) != 0 {
+		fatalln("error: init takes no args")
+	}
+	err := client.Call(context.Background(), "/init-cluster", nil, nil)
+	dieOnRPCError(err)
+}
+
+// joinCluster connects to an existing Chain Core cluster at the
+// provided boot address.
+func joinCluster(client *rpc.Client, args []string) {
+	const usage = "usage: corectl join [boot address]"
+	if len(args) != 1 {
+		fatalln(usage)
+	}
+
+	req := map[string]string{"boot_address": args[0]}
+	err := client.Call(context.Background(), "/join-cluster", req, nil)
 	dieOnRPCError(err)
 }
 

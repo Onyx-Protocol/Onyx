@@ -20,8 +20,10 @@ waitForLeader() {(
 )}
 
 PATH=$(go env GOPATH)/bin:$PATH:$CHAIN/bin
-go install -tags 'http_ok localhost_auth' chain/cmd/{cored,corectl}
+go install -tags 'http_ok localhost_auth init_cluster' chain/cmd/{cored,corectl}
 initlog=`mktemp`
 cored 2>&1 | tee $initlog &
+
+corectl wait
 waitForLeader
 corectl config-generator
