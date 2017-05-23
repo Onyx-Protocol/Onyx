@@ -58,7 +58,10 @@ type ContractArg struct {
 }
 
 // Compile parses an Ivy contract from the supplied reader and
-// produces the compiled bytecode and other analysis.
+// produces the compiled bytecode and other analysis. If args is
+// non-empty - or it's empty and the contract takes no arguments -
+// then the contract body and args are instantiated and the result
+// placed in the contract's Program field.
 func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
 	inp, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -86,6 +89,13 @@ func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
 		return nil, errors.Wrap(err, "compiling contract")
 	}
 
+	if len(contract.Params) == 0 || len(args) > 0 {
+		contract.Program, err = instantiate(contract, args, contract.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "instantiating contract")
+		}
+	}
+
 	for _, clause := range contract.Clauses {
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {
@@ -96,7 +106,7 @@ func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
 				}
 				if s.locked.String() != contract.Value {
 					for _, r := range clause.Reqs {
-						if s.locked.String() == r.name {
+						if s.locked.String() == r.Name {
 							valueInfo.Asset = r.assetExpr.String()
 							valueInfo.Amount = r.amountExpr.String()
 							break
@@ -281,10 +291,12 @@ func compileClause(b *builder, contractStk stack, contract *Contract, env *envir
 		}
 	}
 	for _, req := range clause.Reqs {
-		err = env.add(req.name, valueType, roleClauseValue)
+		err = env.add(req.Name, valueType, roleClauseValue)
 		if err != nil {
 			return err
 		}
+		req.Asset = req.assetExpr.String()
+		req.Amount = req.amountExpr.String()
 	}
 
 	assignIndexes(clause)
@@ -343,9 +355,9 @@ func compileClause(b *builder, contractStk stack, contract *Contract, env *envir
 				stk = b.addAmount(stk)
 				stk = b.addAsset(stk)
 			} else {
-				var req *ClauseRequirement
+				var req *ClauseReq
 				for _, r := range clause.Reqs {
-					if stmt.locked.String() == r.name {
+					if stmt.locked.String() == r.Name {
 						req = r
 						break
 					}

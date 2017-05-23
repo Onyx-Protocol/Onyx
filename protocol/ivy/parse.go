@@ -121,8 +121,8 @@ func parseClause(p *parser) *Clause {
 	return &c
 }
 
-func parseClauseRequirements(p *parser) []*ClauseRequirement {
-	var result []*ClauseRequirement
+func parseClauseRequirements(p *parser) []*ClauseReq {
+	var result []*ClauseReq
 	first := true
 	for {
 		switch {
@@ -133,8 +133,8 @@ func parseClauseRequirements(p *parser) []*ClauseRequirement {
 		default:
 			return result
 		}
-		var req ClauseRequirement
-		req.name = consumeIdentifier(p)
+		var req ClauseReq
+		req.Name = consumeIdentifier(p)
 		consumeTok(p, ":")
 		req.amountExpr = parseExpr(p)
 		consumeKeyword(p, "of")

@@ -110,7 +110,7 @@ func requireAllValuesDisposedOnce(contract *Contract, clause *Clause) error {
 		return err
 	}
 	for _, req := range clause.Reqs {
-		err = valueDisposedOnce(req.name, clause)
+		err = valueDisposedOnce(req.Name, clause)
 		if err != nil {
 			return err
 		}

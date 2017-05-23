@@ -64,13 +64,13 @@ func propagateType(contract *Contract, clause *Clause, env *environ, t typeDesc,
 		entry.t = t
 		for _, p := range contract.Params {
 			if p.Name == string(v) {
-				p.inferredType = t
+				p.InferredType = t
 				return
 			}
 		}
 		for _, p := range clause.Params {
 			if p.Name == string(v) {
-				p.inferredType = t
+				p.InferredType = t
 				return
 			}
 		}

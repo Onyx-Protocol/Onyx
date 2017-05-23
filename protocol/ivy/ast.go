@@ -15,9 +15,17 @@ type Contract struct {
 	Clauses []*Clause `json:"clauses"`
 	Value   string    `json:"value"`
 
-	Body    chainjson.HexBytes `json:"body_bytecode"`
-	Opcodes string             `json:"body_opcodes,omitempty"`
+	// Optimized bytecode of the contract body. Not a complete program!
+	// Use instantiate to turn this into a program.
+	Body chainjson.HexBytes `json:"body_bytecode"`
 
+	// The string of opcodes corresponding to Body.
+	Opcodes string `json:"body_opcodes,omitempty"`
+
+	// The bytecode of the program instantiated from Body.
+	Program chainjson.HexBytes `json:"program,omitempty"`
+
+	// Whether this contract calls itself.
 	recursive bool
 }
 
@@ -25,38 +33,55 @@ type Param struct {
 	Name string   `json:"name"`
 	Type typeDesc `json:"declared_type"`
 
-	inferredType typeDesc
-}
-
-func (p Param) bestType() typeDesc {
-	if p.inferredType != nilType {
-		return p.inferredType
-	}
-	return p.Type
+	// InferredType, if available, is a more-specific type than Type,
+	// above, inferred from the logic of the contract.
+	InferredType typeDesc `json:"inferred_type,omitempty"`
 }
 
 type Clause struct {
-	Name   string               `json:"name"`
-	Params []*Param             `json:"params,omitempty"`
-	Reqs   []*ClauseRequirement `json:"reqs,omitempty"`
+	Name   string       `json:"name"`
+	Params []*Param     `json:"params,omitempty"`
+	Reqs   []*ClauseReq `json:"reqs,omitempty"`
 
 	statements []statement
 
-	MinTimes  []string   `json:"mintimes,omitempty"`
-	MaxTimes  []string   `json:"maxtimes,omitempty"`
+	// Expressions passed to after() in this clause.
+	MinTimes []string `json:"mintimes,omitempty"`
+
+	// Expressions passed to before() in this clause.
+	MaxTimes []string `json:"maxtimes,omitempty"`
+
+	// Hash functions and their arguments used in this clause.
 	HashCalls []HashCall `json:"hash_calls,omitempty"`
-	Values []ValueInfo
+
+	// Each value unlocked or relocked in this clause.
+	Values []ValueInfo `json:"values"`
 }
 
+// HashCall describes a call to a hash function.
 type HashCall struct {
+	// HashType is "sha3" or "sha256".
 	HashType string `json:"hash_type"`
-	Arg      string `json:"arg"`
-	ArgType  string `json:"arg_type"`
+
+	// Arg is the expression passed to the hash function.
+	Arg string `json:"arg"`
+
+	// ArgType is the type of Arg.
+	ArgType string `json:"arg_type"`
 }
 
-type ClauseRequirement struct {
-	name                  string
+// ClauseReq describes a payment requirement of a clause (one of the
+// things after the "requires" keyword).
+type ClauseReq struct {
+	Name string `json:"name"`
+
 	assetExpr, amountExpr expression
+
+	// Asset is the expression describing the required asset.
+	Asset string `json:"asset"`
+
+	// Amount is the expression describing the required amount.
+	Amount string `json:"amount"`
 }
 
 type statement interface {

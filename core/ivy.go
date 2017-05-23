@@ -13,8 +13,8 @@ type (
 	}
 
 	compileResp struct {
-		Contracts []*ivy.Contract `json:"contracts"`
-		Error     string          `json:"error"`
+		Contracts []*ivy.Contract `json:"contracts,omitempty"`
+		Error     string          `json:"error,omitempty"`
 	}
 )
 
