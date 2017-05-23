@@ -1,85 +1,120 @@
 package ivy
 
 import (
-	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"fmt"
+	"strconv"
 )
 
-// builder is just like vmutil.Builder but it holds back any OP_VERIFY
-// instructions unless/until something is added after it. An OP_VERIFY
-// added at the end is left off entirely.
 type builder struct {
-	b             *vmutil.Builder
-	verifyPending bool
+	items         []builderItem
+	pendingVerify *builderItem
 }
 
-func newBuilder() *builder {
-	return &builder{b: vmutil.NewBuilder(true)}
+type builderItem struct {
+	opcodes string
+	stk     stack
 }
 
-func (b *builder) addInt64(n int64) *builder {
-	b.resolve()
-	b.b.AddInt64(n)
-	return b
+func (b *builder) add(opcodes string, newstack stack) stack {
+	item := &builderItem{opcodes: opcodes, stk: newstack}
+	b.items = append(b.items, item)
+	return newstack
 }
 
-func (b *builder) addData(data []byte) *builder {
-	b.resolve()
-	b.b.AddData(data)
-	return b
+func (b *builder) addRoll(stk stack, n int) stack {
+	return b.add("ROLL", stk.roll(n))
 }
 
-func (b *builder) addRawBytes(data []byte) *builder {
-	b.resolve()
-	b.b.AddRawBytes(data)
-	return b
+func (b *builder) addDup(stk stack) stack {
+	return b.add("DUP", stk.dup())
 }
 
-func (b *builder) addOp(op vm.Op) *builder {
-	b.resolve()
-	if op == vm.OP_VERIFY {
-		b.verifyPending = true
-	} else {
-		b.b.AddOp(op)
+func (b *builder) addInt64(stk stack, n int64) stack {
+	s := strconv.FormatInt(n, 10)
+	return b.add(s, stk.add(s))
+}
+
+func (b *builder) addNumEqual(stk stack, desc string) stack {
+	return b.add("NUMEQUAL", stk.dropN(2).add(desc))
+}
+
+func (b *builder) addJumpIf(stk stack, label string) stack {
+	return b.add(fmt.Sprintf("JUMPIF:$%s", label), stk.drop())
+}
+
+func (b *builder) addJumpTarget(stk stack, label string) stack {
+	return b.add("$"+label, stk)
+}
+
+func (b *builder) addDrop(stk stack) stack {
+	return b.add("DROP", stk.drop())
+}
+
+func (b *builder) forgetPendingVerify() {
+	b.pendingVerify = nil
+}
+
+func (b *builder) addJump(stk stack, label string) stack {
+	return b.add(fmt.Sprintf("JUMP:$%s", label), stk)
+}
+
+func (b *builder) addVerify(stk stack) stack {
+	return b.add("VERIFY", stk.drop())
+}
+
+func (b *builder) addData(stk stack, data []byte) stack {
+	// xxx simplest string representation of data
+	return b.add(s, stk.add(s))
+}
+
+func (b *builder) addAmount(stk stack) stack {
+	return b.add("AMOUNT", stk.add("<amount>"))
+}
+
+func (b *builder) addAsset(stk stack) stack {
+	return b.add("ASSET", stk.add("<asset>"))
+}
+
+func (b *builder) addCheckOutput(stk stack, desc string) {
+	return b.add("CHECKOUTPUT", stk.dropN(6).add(desc))
+}
+
+func (b *builder) addBoolean(stk stack, val bool) stack {
+	if val {
+		return b.add("TRUE", stk.add("true"))
 	}
-	return b
+	return b.add("FALSE", stk.add("false"))
 }
 
-func (b *builder) newJumpTarget() int {
-	return b.b.NewJumpTarget()
+func (b *builder) addOps(stk stack, ops string, desc string) {
+	return b.add(ops, stk.add(desc))
 }
 
-func (b *builder) setJumpTarget(target int) *builder {
-	b.b.SetJumpTarget(target)
-	return b
+func (b *builder) addToAltStack(stk stack) (stack, string) {
+	t := stk.top()
+	return b.add("TOALTSTACK", stk.drop()), t
 }
 
-func (b *builder) addJump(target int) *builder {
-	b.b.AddJump(target)
-	return b
+func (b *builder) addTxSigHash(stk stack) stack {
+	return b.add("TXSIGHASH", stk.add("<txsighash>"))
 }
 
-func (b *builder) addJumpIf(target int) *builder {
-	b.b.AddJumpIf(target)
-	return b
+func (b *builder) addFromAltStack(stk stack, alt string) stack {
+	return b.add("FROMALTSTACK", stk.add(alt))
 }
 
-func (b *builder) addFrom(other *builder) *builder {
-	b.b.AddFrom(other.b)
-	return b
+func (b *builder) addSwap(stk stack) stack {
+	return b.add("SWAP", stk.swap())
 }
 
-func (b *builder) build() ([]byte, error) {
-	return b.b.Build()
+func (b *builder) checkMultisig(stk stack, n int, desc string) stack {
+	return b.add("CHECKMULTISIG", stk.dropN(n).add(desc))
 }
 
-func (b *builder) jumpAddrs() map[int]uint32 {
-	return b.b.JumpAddrs()
+func (b *builder) addOver(stk stack) stack {
+	return b.add("OVER", stk.over())
 }
 
-func (b *builder) resolve() {
-	if b.verifyPending {
-		b.b.AddOp(vm.OP_VERIFY)
-		b.verifyPending = false
-	}
+func (b *builder) addPick(stk stack, n int) stack {
+	return b.add("PICK", stk.pick(n))
 }
