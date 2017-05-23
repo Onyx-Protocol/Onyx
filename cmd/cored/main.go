@@ -252,7 +252,7 @@ func main() {
 	resetIfAllowedAndRequested(db, sdb)
 
 	conf, err := config.Load(ctx, db, sdb)
-	if err != nil {
+	if err != nil && errors.Root(err) != raft.ErrUninitialized {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 

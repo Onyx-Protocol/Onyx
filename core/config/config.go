@@ -24,7 +24,6 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/authz"
-	"chain/net/raft"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -63,9 +62,7 @@ var (
 func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 	c := new(Config)
 	found, err := sdb.Get(ctx, "/core/config", c)
-	if errors.Root(err) == raft.ErrUninitialized {
-		return nil, nil
-	} else if err != nil {
+	if err != nil {
 		return nil, errors.Wrap(err)
 	} else if found {
 		return c, nil
