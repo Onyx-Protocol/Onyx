@@ -56,7 +56,7 @@ func parseContract(p *parser) *Contract {
 	consumeTok(p, "{")
 	clauses := parseClauses(p)
 	consumeTok(p, "}")
-	return &Contract{name, params, clauses, value}
+	return &Contract{Name: name, Params: params, Clauses: clauses, Value: value}
 }
 
 // (p1, p2: t1, p3: t2)

@@ -6,17 +6,21 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/davecgh/go-spew/spew"
+
 	chainjson "chain/encoding/json"
 	"chain/errors"
+	"chain/protocol/vm"
 )
 
 type (
 	CompileResult struct {
 		Name    string
-		Program chainjson.HexBytes
 		Value   string
 		Params  []ContractParam
 		Clauses []ClauseInfo
+		Body    chainjson.HexBytes
+		Opcodes string
 	}
 
 	ContractParam struct {
@@ -83,16 +87,16 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 		return CompileResult{}, err
 	}
 
-	prog, labels, err := compileContract(c, args, globalEnv)
+	err = compileContract(c, globalEnv)
 	if err != nil {
 		return CompileResult{}, errors.Wrap(err, "compiling contract")
 	}
 	result := CompileResult{
 		Name:    c.Name,
-		Program: prog,
 		Params:  []ContractParam{},
 		Value:   c.Value,
-		Labels:  labels,
+		Body:    c.Body,
+		Opcodes: c.Opcodes,
 	}
 	for _, param := range c.Params {
 		result.Params = append(result.Params, ContractParam{Name: param.Name, Typ: string(param.bestType())})
@@ -143,41 +147,41 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	return result, nil
 }
 
-func compileContract(contract *Contract, args []ContractArg, globalEnv *environ) ([]byte, error) {
+func compileContract(contract *Contract, globalEnv *environ) error {
 	var err error
 
 	if len(contract.Clauses) == 0 {
-		return nil, nil, fmt.Errorf("empty contract")
+		return fmt.Errorf("empty contract")
 	}
 	env := newEnviron(globalEnv)
 	for _, p := range contract.Params {
 		err = env.add(p.Name, p.Type, roleContractParam)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 	}
 	err = env.add(contract.Value, valueType, roleContractValue)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 	for _, c := range contract.Clauses {
 		err = env.add(c.Name, nilType, roleClause)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 	}
 
 	err = prohibitValueParams(contract)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 	err = prohibitSigParams(contract)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 	err = requireAllParamsUsedInClauses(contract.Params, contract.Clauses)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
 	var stk stack
@@ -191,31 +195,13 @@ func compileContract(contract *Contract, args []ContractArg, globalEnv *environ)
 		stk = stk.add(p.Name)
 	}
 
-	b := newBuilder()
-	for i := len(args) - 1; i >= 0; i-- {
-		a := args[i]
-		switch {
-		case a.B != nil:
-			var n int64
-			if *a.B {
-				n = 1
-			}
-			b.addInt64(n)
-		case a.I != nil:
-			b.addInt64(*a.I)
-		case a.S != nil:
-			b.addData(*a.S)
-		}
-	}
-
-	var prog []byte
+	b := &builder{}
 
 	if len(contract.Clauses) == 1 {
 		err = compileClause(b, stk, contract, env, contract.Clauses[0])
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
-		prog, err = b.build()
 	} else {
 		if len(contract.Params) > 0 {
 			// A clause selector is at the bottom of the stack. Roll it to the
@@ -247,7 +233,7 @@ func compileContract(contract *Contract, args []ContractArg, globalEnv *environ)
 
 			err = compileClause(b, stk, contract, env, clause)
 			if err != nil {
-				return nil, nil, errors.Wrapf(err, "compiling clause \"%s\"", clause.Name)
+				return errors.Wrapf(err, "compiling clause \"%s\"", clause.Name)
 			}
 			b.forgetPendingVerify()
 			if i < len(contract.Clauses)-1 {
@@ -255,13 +241,20 @@ func compileContract(contract *Contract, args []ContractArg, globalEnv *environ)
 			}
 		}
 		b.addJumpTarget(stk, "_end")
-		prog, err = b.build()
-		if err != nil {
-			return nil, nil, err
-		}
 	}
 
-	return prog, labels, nil
+	fmt.Printf("* builder:\n%s", spew.Sdump(b))
+
+	opcodes := b.opcodes()
+	prog, err := vm.Assemble(opcodes)
+	if err != nil {
+		return err
+	}
+
+	contract.Body = prog
+	contract.Opcodes = opcodes
+
+	return nil
 }
 
 func compileClause(b *builder, contractStk stack, contract *Contract, env *environ, clause *Clause) error {
@@ -285,7 +278,7 @@ func compileClause(b *builder, contractStk stack, contract *Contract, env *envir
 	assignIndexes(clause)
 
 	var stk stack
-	for _, p := range clause.params {
+	for _, p := range clause.Params {
 		// NOTE: the order of clause params is not reversed, unlike
 		// contract params (and also unlike the arguments to Ivy
 		// function-calls).
@@ -410,21 +403,21 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 
 		stk, err = compileExpr(b, stk, contract, clause, env, counts, e.left)
 		if err != nil {
-			return nil, errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
+			return stk, errors.Wrapf(err, "in left operand of \"%s\" expression", e.op.op)
 		}
 		stk, err = compileExpr(b, stk, contract, clause, env, counts, e.right)
 		if err != nil {
-			return nil, errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
+			return stk, errors.Wrapf(err, "in right operand of \"%s\" expression", e.op.op)
 		}
 
 		lType := e.left.typ(env)
 		if e.op.left != "" && lType != e.op.left {
-			return nil, fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
+			return stk, fmt.Errorf("in \"%s\", left operand has type \"%s\", must be \"%s\"", e, lType, e.op.left)
 		}
 
 		rType := e.right.typ(env)
 		if e.op.right != "" && rType != e.op.right {
-			return nil, fmt.Errorf("in \"%s\", right operand has type \"%s\", must be \"%s\"", e, rType, e.op.right)
+			return stk, fmt.Errorf("in \"%s\", right operand has type \"%s\", must be \"%s\"", e, rType, e.op.right)
 		}
 
 		switch e.op.op {
@@ -437,11 +430,11 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 				} else if rType == hashType && isHashSubtype(lType) {
 					propagateType(contract, clause, env, lType, e.right)
 				} else {
-					return nil, fmt.Errorf("type mismatch in \"%s\": left operand has type \"%s\", right operand has type \"%s\"", e, lType, rType)
+					return stk, fmt.Errorf("type mismatch in \"%s\": left operand has type \"%s\", right operand has type \"%s\"", e, lType, rType)
 				}
 			}
 			if lType == "Boolean" {
-				return nil, fmt.Errorf("in \"%s\": using \"%s\" on Boolean values not allowed", e, e.op.op)
+				return stk, fmt.Errorf("in \"%s\": using \"%s\" on Boolean values not allowed", e, e.op.op)
 			}
 		}
 
@@ -455,11 +448,11 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		var err error
 		stk, err = compileExpr(b, stk, contract, clause, env, counts, e.expr)
 		if err != nil {
-			return nil, errors.Wrapf(err, "in \"%s\" expression", e.op.op)
+			return stk, errors.Wrapf(err, "in \"%s\" expression", e.op.op)
 		}
 
 		if e.op.operand != "" && e.expr.typ(env) != e.op.operand {
-			return nil, fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(env), e.op.operand)
+			return stk, fmt.Errorf("in \"%s\", operand has type \"%s\", must be \"%s\"", e, e.expr.typ(env), e.op.operand)
 		}
 		b.addOps(stk.drop(), e.op.opcodes, e.String())
 
@@ -468,16 +461,16 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		if bi == nil {
 			if e.fn.typ(env) == contractType {
 				if e.fn.String() != contract.Name {
-					return nil, fmt.Errorf("calling other contracts not yet supported")
+					return stk, fmt.Errorf("calling other contracts not yet supported")
 				}
 				// xxx TODO contract composition
-				return nil, nil
+				return stk, nil
 			}
-			return nil, fmt.Errorf("unknown function \"%s\"", e.fn)
+			return stk, fmt.Errorf("unknown function \"%s\"", e.fn)
 		}
 
 		if len(e.args) != len(bi.args) {
-			return nil, fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", bi.name, len(e.args), len(bi.args))
+			return stk, fmt.Errorf("wrong number of args for \"%s\": have %d, want %d", bi.name, len(e.args), len(bi.args))
 		}
 
 		// WARNING WARNING WOOP WOOP
@@ -485,17 +478,17 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		// WARNING WARNING WOOP WOOP
 		if bi.name == "checkTxMultiSig" {
 			if _, ok := e.args[0].(listExpr); !ok {
-				return nil, fmt.Errorf("checkTxMultiSig expects list literals, got %T for argument 0", e.args[0])
+				return stk, fmt.Errorf("checkTxMultiSig expects list literals, got %T for argument 0", e.args[0])
 			}
 			if _, ok := e.args[1].(listExpr); !ok {
-				return nil, fmt.Errorf("checkTxMultiSig expects list literals, got %T for argument 1", e.args[1])
+				return stk, fmt.Errorf("checkTxMultiSig expects list literals, got %T for argument 1", e.args[1])
 			}
 
 			var k1, k2 int
 
 			stk, k1, err = compileArg(b, stk, contract, clause, env, counts, e.args[1])
 			if err != nil {
-				return nil, err
+				return stk, err
 			}
 
 			// stack: [... sigM ... sig1 M]
@@ -506,7 +499,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 
 			stk, k2, err = compileArg(b, stk, contract, clause, env, counts, e.args[0])
 			if err != nil {
-				return nil, err
+				return stk, err
 			}
 
 			// stack: [... sigM ... sig1 txsighash pubkeyN ... pubkey1 N]
@@ -526,7 +519,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 			var err error
 			stk, k2, err = compileArg(b, stk, contract, clause, env, counts, a)
 			if err != nil {
-				return nil, errors.Wrapf(err, "compiling argument %d in call expression", i)
+				return stk, errors.Wrapf(err, "compiling argument %d in call expression", i)
 			}
 			k += k2
 		}
@@ -536,7 +529,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		// errors).
 		for i, actual := range e.args {
 			if bi.args[i] != "" && actual.typ(env) != bi.args[i] {
-				return nil, fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
+				return stk, fmt.Errorf("argument %d to \"%s\" has type \"%s\", must be \"%s\"", i, bi.name, actual.typ(env), bi.args[i])
 			}
 		}
 
@@ -558,7 +551,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		stk = b.addData(stk, []byte(e))
 
 	case booleanLiteral:
-		stk = b.addBoolean(stk, e)
+		stk = b.addBoolean(stk, bool(e))
 
 	case listExpr:
 		// Lists are excluded here because they disobey the invariant of
@@ -566,7 +559,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		// exactly one. (A list pushes its items and its length on the
 		// stack.) But they're OK as function-call arguments because the
 		// function (presumably) consumes all the stack items added.
-		return nil, fmt.Errorf("encountered list outside of function-call context")
+		return stk, fmt.Errorf("encountered list outside of function-call context")
 	}
 	return stk, nil
 }
@@ -579,7 +572,7 @@ func compileArg(b *builder, stk stack, contract *Contract, clause *Clause, env *
 			var err error
 			stk, err = compileExpr(b, stk, contract, clause, env, counts, elt)
 			if err != nil {
-				return nil, 0, err
+				return stk, 0, err
 			}
 			n++
 		}
@@ -593,9 +586,9 @@ func compileArg(b *builder, stk stack, contract *Contract, clause *Clause, env *
 }
 
 func compileRef(b *builder, stk stack, counts map[string]int, ref varRef) (stack, error) {
-	depth := stk.find(ref)
+	depth := stk.find(string(ref))
 	if depth < 0 {
-		return nil, fmt.Errorf("undefined reference: \"%s\"", ref)
+		return stk, fmt.Errorf("undefined reference: \"%s\"", ref)
 	}
 
 	var isFinal bool
@@ -618,12 +611,12 @@ func compileRef(b *builder, stk stack, counts map[string]int, ref varRef) (stack
 		}
 	default:
 		if isFinal {
-			stk = b.addRoll(depth)
+			stk = b.addRoll(stk, depth)
 		} else {
-			stk = b.addPick(depth)
+			stk = b.addPick(stk, depth)
 		}
 	}
-	return stack, nil
+	return stk, nil
 }
 
 func (a *ContractArg) UnmarshalJSON(b []byte) error {

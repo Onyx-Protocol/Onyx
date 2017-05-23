@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	chainjson "chain/encoding/json"
 )
 
 type Contract struct {
@@ -12,6 +14,9 @@ type Contract struct {
 	Params  []*Param
 	Clauses []*Clause
 	Value   string
+
+	Body    chainjson.HexBytes
+	Opcodes string
 }
 
 type Param struct {

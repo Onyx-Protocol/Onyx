@@ -1,12 +1,14 @@
 package ivy
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type builder struct {
-	items         []builderItem
+	items         []*builderItem
 	pendingVerify *builderItem
 }
 
@@ -16,12 +18,21 @@ type builderItem struct {
 }
 
 func (b *builder) add(opcodes string, newstack stack) stack {
+	if b.pendingVerify != nil {
+		b.items = append(b.items, b.pendingVerify)
+		b.pendingVerify = nil
+	}
 	item := &builderItem{opcodes: opcodes, stk: newstack}
-	b.items = append(b.items, item)
+	if opcodes == "VERIFY" {
+		b.pendingVerify = item
+	} else {
+		b.items = append(b.items, item)
+	}
 	return newstack
 }
 
 func (b *builder) addRoll(stk stack, n int) stack {
+	b.addInt64(stk, int64(n))
 	return b.add("ROLL", stk.roll(n))
 }
 
@@ -63,7 +74,15 @@ func (b *builder) addVerify(stk stack) stack {
 }
 
 func (b *builder) addData(stk stack, data []byte) stack {
-	// xxx simplest string representation of data
+	var s string
+	switch len(data) {
+	case 0:
+		s = "0"
+	case 1:
+		s = strconv.FormatInt(int64(data[0]), 10)
+	default:
+		s = hex.EncodeToString(data)
+	}
 	return b.add(s, stk.add(s))
 }
 
@@ -75,7 +94,7 @@ func (b *builder) addAsset(stk stack) stack {
 	return b.add("ASSET", stk.add("<asset>"))
 }
 
-func (b *builder) addCheckOutput(stk stack, desc string) {
+func (b *builder) addCheckOutput(stk stack, desc string) stack {
 	return b.add("CHECKOUTPUT", stk.dropN(6).add(desc))
 }
 
@@ -86,7 +105,7 @@ func (b *builder) addBoolean(stk stack, val bool) stack {
 	return b.add("FALSE", stk.add("false"))
 }
 
-func (b *builder) addOps(stk stack, ops string, desc string) {
+func (b *builder) addOps(stk stack, ops string, desc string) stack {
 	return b.add(ops, stk.add(desc))
 }
 
@@ -107,7 +126,7 @@ func (b *builder) addSwap(stk stack) stack {
 	return b.add("SWAP", stk.swap())
 }
 
-func (b *builder) checkMultisig(stk stack, n int, desc string) stack {
+func (b *builder) addCheckMultisig(stk stack, n int, desc string) stack {
 	return b.add("CHECKMULTISIG", stk.dropN(n).add(desc))
 }
 
@@ -116,5 +135,14 @@ func (b *builder) addOver(stk stack) stack {
 }
 
 func (b *builder) addPick(stk stack, n int) stack {
+	b.addInt64(stk, int64(n))
 	return b.add("PICK", stk.pick(n))
+}
+
+func (b *builder) opcodes() string {
+	var ops []string
+	for _, item := range b.items {
+		ops = append(ops, item.opcodes)
+	}
+	return strings.Join(ops, " ")
 }

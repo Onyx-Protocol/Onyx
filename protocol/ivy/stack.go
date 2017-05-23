@@ -1,30 +1,36 @@
 package ivy
 
 type (
-	stack      *stackEntry
+	stack struct {
+		*stackEntry
+	}
 	stackEntry struct {
 		str  string
 		prev *stackEntry
 	}
 )
 
+func (stk stack) isEmpty() bool {
+	return stk.stackEntry == nil
+}
+
 func (stk stack) top() string {
-	if stk == nil {
+	if stk.isEmpty() {
 		return ""
 	}
-	return (*stackEntry)(stk).str
+	return stk.str
 }
 
 func (stk stack) add(str string) stack {
 	e := &stackEntry{
 		str:  str,
-		prev: stk,
+		prev: stk.stackEntry,
 	}
-	return stack(e)
+	return stack{e}
 }
 
 func (stk stack) addFromStack(other stack) stack {
-	if other == nil {
+	if other.isEmpty() {
 		return stk
 	}
 	res := stk.addFromStack(other.drop())
@@ -32,8 +38,8 @@ func (stk stack) addFromStack(other stack) stack {
 }
 
 func (stk stack) drop() stack {
-	if stk != nil {
-		stk = (*stackEntry)(stk).prev
+	if !stk.isEmpty() {
+		stk = stack{stk.prev}
 	}
 	return stk
 }
@@ -47,10 +53,10 @@ func (stk stack) dropN(n int) stack {
 }
 
 func (stk stack) find(str string) int {
-	if stk == nil {
+	if stk.isEmpty() {
 		return -1
 	}
-	if (*stackEntry)(stk).str == str {
+	if stk.str == str {
 		return 0
 	}
 	res := stk.drop().find(str)
@@ -60,13 +66,17 @@ func (stk stack) find(str string) int {
 	return res + 1
 }
 
-func (stk stack) roll(n int) stk {
-	if n == 0 {
-		return stk
+func (stk stack) roll(n int) stack {
+	var x func(stack, int) (stack, string)
+	x = func(stk stack, n int) (stack, string) {
+		if n == 0 {
+			return stk.drop(), stk.top()
+		}
+		stk2, entry := x(stk.drop(), n-1)
+		return stk2.add(stk.top()), entry
 	}
-	t := stk.top()
-	stk = stk.roll(n - 1)
-	return stk.add(t).swap()
+	stk, entry := x(stk, n)
+	return stk.add(entry)
 }
 
 func (stk stack) swap() stack {
@@ -79,4 +89,28 @@ func (stk stack) swap() stack {
 
 func (stk stack) dup() stack {
 	return stk.add(stk.top())
+}
+
+func (stk stack) over() stack {
+	t := stk.drop().top()
+	return stk.add(t)
+}
+
+func (stk stack) pick(n int) stack {
+	t := stk.dropN(n).top()
+	return stk.add(t)
+}
+
+func (stk stack) String() string {
+	if stk.stackEntry == nil {
+		return "[]"
+	}
+	var x func(stk stack) string
+	x = func(stk stack) string {
+		if stk.stackEntry == nil {
+			return ""
+		}
+		return x(stk.drop()) + " " + stk.stackEntry.str
+	}
+	return "[..." + x(stk) + "]"
 }
