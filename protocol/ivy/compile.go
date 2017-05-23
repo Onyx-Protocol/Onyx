@@ -9,16 +9,12 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/vm"
+	"chain/protocol/vmutil"
 )
 
 type (
 	CompileResult struct {
-		Name    string
-		Value   string
-		Params  []ContractParam
-		Clauses []ClauseInfo
-		Body    chainjson.HexBytes
-		Opcodes string
+		Contracts []*Contract `json:"contracts"`
 	}
 
 	ContractParam struct {
@@ -63,14 +59,14 @@ type ContractArg struct {
 
 // Compile parses an Ivy contract from the supplied reader and
 // produces the compiled bytecode and other analysis.
-func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
+func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
 	inp, err := ioutil.ReadAll(r)
 	if err != nil {
-		return CompileResult{}, errors.Wrap(err, "reading input")
+		return nil, errors.Wrap(err, "reading input")
 	}
-	c, err := parse(inp)
+	contract, err := parse(inp)
 	if err != nil {
-		return CompileResult{}, errors.Wrap(err, "parse error")
+		return nil, errors.Wrap(err, "parse error")
 	}
 
 	globalEnv := newEnviron(nil)
@@ -80,44 +76,17 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 	for _, b := range builtins {
 		globalEnv.add(b.name, nilType, roleBuiltin)
 	}
-	err = globalEnv.add(c.Name, contractType, roleContract)
+	err = globalEnv.add(contract.Name, contractType, roleContract)
 	if err != nil {
-		return CompileResult{}, err
+		return nil, err
 	}
 
-	err = compileContract(c, globalEnv)
+	err = compileContract(contract, globalEnv)
 	if err != nil {
-		return CompileResult{}, errors.Wrap(err, "compiling contract")
-	}
-	result := CompileResult{
-		Name:    c.Name,
-		Params:  []ContractParam{},
-		Value:   c.Value,
-		Body:    c.Body,
-		Opcodes: c.Opcodes,
-	}
-	for _, param := range c.Params {
-		result.Params = append(result.Params, ContractParam{Name: param.Name, Typ: string(param.bestType())})
+		return nil, errors.Wrap(err, "compiling contract")
 	}
 
-	for _, clause := range c.Clauses {
-		info := ClauseInfo{
-			Name:      clause.Name,
-			Args:      []ClauseArg{},
-			Mintimes:  clause.MinTimes,
-			Maxtimes:  clause.MaxTimes,
-			HashCalls: clause.HashCalls,
-		}
-		if info.Mintimes == nil {
-			info.Mintimes = []string{}
-		}
-		if info.Maxtimes == nil {
-			info.Maxtimes = []string{}
-		}
-
-		for _, p := range clause.Params {
-			info.Args = append(info.Args, ClauseArg{Name: p.Name, Typ: string(p.bestType())})
-		}
+	for _, clause := range contract.Clauses {
 		for _, stmt := range clause.statements {
 			switch s := stmt.(type) {
 			case *lockStatement:
@@ -125,7 +94,7 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 					Name:    s.locked.String(),
 					Program: s.program.String(),
 				}
-				if s.locked.String() != c.Value {
+				if s.locked.String() != contract.Value {
 					for _, r := range clause.Reqs {
 						if s.locked.String() == r.name {
 							valueInfo.Asset = r.assetExpr.String()
@@ -134,15 +103,55 @@ func Compile(r io.Reader, args []ContractArg) (CompileResult, error) {
 						}
 					}
 				}
-				info.Values = append(info.Values, valueInfo)
+				clause.Values = append(clause.Values, valueInfo)
 			case *unlockStatement:
-				valueInfo := ValueInfo{Name: c.Value}
-				info.Values = append(info.Values, valueInfo)
+				valueInfo := ValueInfo{Name: contract.Value}
+				clause.Values = append(clause.Values, valueInfo)
 			}
 		}
-		result.Clauses = append(result.Clauses, info)
 	}
-	return result, nil
+
+	return []*Contract{contract}, nil
+}
+
+func instantiate(contract *Contract, args []ContractArg, body []byte) ([]byte, error) {
+	if len(args) != len(contract.Params) {
+		return nil, fmt.Errorf("contract \"%s\" expects %d argument(s), got %d", contract.Name, len(contract.Params), len(args))
+	}
+	// xxx typecheck args against param types
+	b := vmutil.NewBuilder(false)
+	addArgs := func() {
+		for i := len(args) - 1; i >= 0; i-- {
+			a := args[i]
+			switch {
+			case a.B != nil:
+				var n int64
+				if *a.B {
+					n = 1
+				}
+				b.AddInt64(n)
+			case a.I != nil:
+				b.AddInt64(*a.I)
+			case a.S != nil:
+				b.AddData(*a.S)
+			}
+		}
+	}
+	if contract.recursive {
+		// <body> <argN> <argN-1> ... <arg1> <N+1> DUP PICK 0 CHECKPREDICATE
+		b.AddData(body)
+		addArgs()
+		b.AddInt64(int64(len(args) + 1))
+		b.AddOp(vm.OP_DUP).AddOp(vm.OP_PICK)
+	} else {
+		// <argN> <argN-1> ... <arg1> <N> <body> 0 CHECKPREDICATE
+		addArgs()
+		b.AddInt64(int64(len(args)))
+		b.AddData(body)
+	}
+	b.AddInt64(0)
+	b.AddOp(vm.OP_CHECKPREDICATE)
+	return b.Build()
 }
 
 func compileContract(contract *Contract, globalEnv *environ) error {

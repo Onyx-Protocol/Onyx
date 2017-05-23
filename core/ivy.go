@@ -3,9 +3,7 @@ package core
 import (
 	"strings"
 
-	chainjson "chain/encoding/json"
 	"chain/protocol/ivy"
-	"chain/protocol/vm"
 )
 
 type (
@@ -15,33 +13,15 @@ type (
 	}
 
 	compileResp struct {
-		Name    string              `json:"name"`
-		Source  string              `json:"source"`
-		Program chainjson.HexBytes  `json:"program"`
-		Params  []ivy.ContractParam `json:"params"`
-		Value   string              `json:"value"`
-		Clauses []ivy.ClauseInfo    `json:"clause_info"`
-		Opcodes string              `json:"opcodes"`
-		Error   string              `json:"error"`
+		Contracts []*ivy.Contract `json:"contracts"`
+		Error     string          `json:"error"`
 	}
 )
 
-func compileIvy(req compileReq) (compileResp, error) {
-	var resp compileResp
+func compileIvy(req compileReq) compileResp {
 	compiled, err := ivy.Compile(strings.NewReader(req.Contract), req.Args)
-	if err == nil {
-		resp.Name = compiled.Name
-		resp.Source = req.Contract
-		resp.Params = compiled.Params
-		resp.Value = compiled.Value
-		resp.Program = compiled.Program
-		resp.Clauses = compiled.Clauses
-		resp.Opcodes, err = vm.Disassemble(resp.Program, compiled.Labels)
-		if err != nil {
-			return resp, err
-		}
-	} else {
-		resp.Error = err.Error()
+	if err != nil {
+		return compileResp{Error: err.Error()}
 	}
-	return resp, nil
+	return compileResp{Contracts: compiled}
 }

@@ -10,20 +10,21 @@ import (
 )
 
 type Contract struct {
-	Name    string
-	Params  []*Param
-	Clauses []*Clause
-	Value   string
+	Name    string    `json:"name"`
+	Params  []*Param  `json:"params,omitempty"`
+	Clauses []*Clause `json:"clauses"`
+	Value   string    `json:"value"`
 
-	Body    chainjson.HexBytes
-	Opcodes string
+	Body    chainjson.HexBytes `json:"body_bytecode"`
+	Opcodes string             `json:"body_opcodes,omitempty"`
+
+	recursive bool
 }
 
 type Param struct {
-	Name string
-	Type typeDesc
+	Name string   `json:"name"`
+	Type typeDesc `json:"declared_type"`
 
-	// decoration
 	inferredType typeDesc
 }
 
@@ -35,14 +36,16 @@ func (p Param) bestType() typeDesc {
 }
 
 type Clause struct {
-	Name       string
-	Params     []*Param
-	statements []statement
-	Reqs       []*ClauseRequirement
+	Name   string               `json:"name"`
+	Params []*Param             `json:"params,omitempty"`
+	Reqs   []*ClauseRequirement `json:"reqs,omitempty"`
 
-	// decorations
-	MinTimes, MaxTimes []string
-	HashCalls          []HashCall
+	statements []statement
+
+	MinTimes  []string   `json:"mintimes,omitempty"`
+	MaxTimes  []string   `json:"maxtimes,omitempty"`
+	HashCalls []HashCall `json:"hash_calls,omitempty"`
+	Values []ValueInfo
 }
 
 type HashCall struct {
