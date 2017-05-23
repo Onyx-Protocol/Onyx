@@ -6,8 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/davecgh/go-spew/spew"
-
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/vm"
@@ -209,12 +207,15 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 			stk = b.addRoll(stk, len(contract.Params)) // stack: [<clause params> <contract params> <clause selector>]
 		}
 
+		var stk2 stack
+
 		// clauses 2..N-1
 		for i := len(contract.Clauses) - 1; i >= 2; i-- {
 			stk = b.addDup(stk)                                                   // stack: [... <clause selector> <clause selector>]
 			stk = b.addInt64(stk, int64(i))                                       // stack: [... <clause selector> <clause selector> <i>]
 			stk = b.addNumEqual(stk, fmt.Sprintf("(<clause selector> == %d)", i)) // stack: [... <clause selector> <i == clause selector>]
 			stk = b.addJumpIf(stk, contract.Clauses[i].Name)                      // stack: [... <clause selector>]
+			stk2 = stk                                                            // stack starts here for clauses 2 through N-1
 		}
 
 		// clause 1
@@ -223,11 +224,15 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 		// no jump needed for clause 0
 
 		for i, clause := range contract.Clauses {
-			b.addJumpTarget(stk, clause.Name)
-
 			if i > 1 {
 				// Clauses 0 and 1 have no clause selector on top of the
 				// stack. Clauses 2 and later do.
+				stk = stk2
+			}
+
+			b.addJumpTarget(stk, clause.Name)
+
+			if i > 1 {
 				stk = b.addDrop(stk)
 			}
 
@@ -243,9 +248,7 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 		b.addJumpTarget(stk, "_end")
 	}
 
-	fmt.Printf("* builder:\n%s", spew.Sdump(b))
-
-	opcodes := b.opcodes()
+	opcodes := optimize(b.opcodes())
 	prog, err := vm.Assemble(opcodes)
 	if err != nil {
 		return err
@@ -533,7 +536,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 			}
 		}
 
-		b.addOps(stk.dropN(k), bi.opcodes, e.String())
+		stk = b.addOps(stk.dropN(k), bi.opcodes, e.String())
 
 		// special-case reporting
 		switch bi.name {
