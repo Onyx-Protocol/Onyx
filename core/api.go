@@ -79,7 +79,6 @@ type API struct {
 	generator       *generator.Generator
 	remoteGenerator *rpc.Client
 	indexTxs        bool
-	useTLS          bool
 	internalSubj    pkix.Name
 	httpClient      *http.Client
 
