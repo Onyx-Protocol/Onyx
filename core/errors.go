@@ -91,7 +91,7 @@ var errorFormatter = httperror.Formatter{
 		errMissingAddr:                 {400, "CH160", "Address is missing"},
 		errInvalidAddr:                 {400, "CH161", "Address is invalid"},
 		raft.ErrAddressNotAllowed:      {400, "CH162", "Address is not allowed"},
-		raft.ErrUninitialized:          {400, "CH163", "No cluster configured"},
+		raft.ErrUninitialized:          {400, "CH163", "Cluster not initialized"},
 		raft.ErrExistingCluster:        {400, "CH164", "Already connected to a cluster"},
 		raft.ErrPeerUninitialized:      {400, "CH165", "Peer node is uninitialized"},
 

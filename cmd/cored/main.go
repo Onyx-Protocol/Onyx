@@ -125,7 +125,7 @@ func main() {
 	fmt.Printf("localhost_auth: %t\n", config.BuildConfig.LocalhostAuth)
 	fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
 	fmt.Printf("http_ok: %t\n", config.BuildConfig.HTTPOk)
-	fmt.Printf("cluster_init: %t\n", config.BuildConfig.ClusterInit)
+	fmt.Printf("init_cluster: %t\n", config.BuildConfig.InitCluster)
 
 	if *v {
 		return
@@ -177,7 +177,7 @@ func main() {
 
 	// In Developer Edition, automatically create a new cluster if
 	// there's no existing raft cluster.
-	if config.BuildConfig.ClusterInit {
+	if config.BuildConfig.InitCluster {
 		err = sdb.RaftService().Init()
 		if err != nil && errors.Root(err) != raft.ErrExistingCluster {
 			chainlog.Fatalkv(ctx, chainlog.KeyError, err)

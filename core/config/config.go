@@ -52,7 +52,7 @@ var (
 		MockHSM       bool `json:"is_mockhsm"`
 		Reset         bool `json:"is_reset"`
 		HTTPOk        bool `json:"is_http_ok"`
-		ClusterInit   bool `json:"is_cluster_init"`
+		InitCluster   bool `json:"is_init_cluster"`
 	}
 )
 
