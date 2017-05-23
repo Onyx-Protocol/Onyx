@@ -17,6 +17,11 @@ type builderItem struct {
 	stk     stack
 }
 
+type step struct {
+	Opcodes string `json:"opcodes"`
+	Stack   string `json:"stack"`
+}
+
 func (b *builder) add(opcodes string, newstack stack) stack {
 	if b.pendingVerify != nil {
 		b.items = append(b.items, b.pendingVerify)
@@ -145,4 +150,51 @@ func (b *builder) opcodes() string {
 		ops = append(ops, item.opcodes)
 	}
 	return strings.Join(ops, " ")
+}
+
+// This is for producing listings like:
+// 5                 |  [... <clause selector> borrower lender deadline balanceAmount balanceAsset 5]
+// ROLL              |  [... borrower lender deadline balanceAmount balanceAsset <clause selector>]
+// JUMPIF:$default   |  [... borrower lender deadline balanceAmount balanceAsset]
+// $repay            |  [... borrower lender deadline balanceAmount balanceAsset]
+// 0                 |  [... borrower lender deadline balanceAmount balanceAsset 0]
+// 0                 |  [... borrower lender deadline balanceAmount balanceAsset 0 0]
+// 3                 |  [... borrower lender deadline balanceAmount balanceAsset 0 0 3]
+// ROLL              |  [... borrower lender deadline balanceAsset 0 0 balanceAmount]
+// 3                 |  [... borrower lender deadline balanceAsset 0 0 balanceAmount 3]
+// ROLL              |  [... borrower lender deadline 0 0 balanceAmount balanceAsset]
+// 1                 |  [... borrower lender deadline 0 0 balanceAmount balanceAsset 1]
+// 6                 |  [... borrower lender deadline 0 0 balanceAmount balanceAsset 1 6]
+// ROLL              |  [... borrower deadline 0 0 balanceAmount balanceAsset 1 lender]
+// CHECKOUTPUT       |  [... borrower deadline checkOutput(payment, lender)]
+// VERIFY            |  [... borrower deadline]
+// 1                 |  [... borrower deadline 1]
+// 0                 |  [... borrower deadline 1 0]
+// AMOUNT            |  [... borrower deadline 1 0 <amount>]
+// ASSET             |  [... borrower deadline 1 0 <amount> <asset>]
+// 1                 |  [... borrower deadline 1 0 <amount> <asset> 1]
+// 6                 |  [... borrower deadline 1 0 <amount> <asset> 1 6]
+// ROLL              |  [... deadline 1 0 <amount> <asset> 1 borrower]
+// CHECKOUTPUT       |  [... deadline checkOutput(collateral, borrower)]
+// JUMP:$_end        |  [... borrower lender deadline balanceAmount balanceAsset]
+// $default          |  [... borrower lender deadline balanceAmount balanceAsset]
+// 2                 |  [... borrower lender deadline balanceAmount balanceAsset 2]
+// ROLL              |  [... borrower lender balanceAmount balanceAsset deadline]
+// MINTIME LESSTHAN  |  [... borrower lender balanceAmount balanceAsset after(deadline)]
+// VERIFY            |  [... borrower lender balanceAmount balanceAsset]
+// 0                 |  [... borrower lender balanceAmount balanceAsset 0]
+// 0                 |  [... borrower lender balanceAmount balanceAsset 0 0]
+// AMOUNT            |  [... borrower lender balanceAmount balanceAsset 0 0 <amount>]
+// ASSET             |  [... borrower lender balanceAmount balanceAsset 0 0 <amount> <asset>]
+// 1                 |  [... borrower lender balanceAmount balanceAsset 0 0 <amount> <asset> 1]
+// 7                 |  [... borrower lender balanceAmount balanceAsset 0 0 <amount> <asset> 1 7]
+// ROLL              |  [... borrower balanceAmount balanceAsset 0 0 <amount> <asset> 1 lender]
+// CHECKOUTPUT       |  [... borrower balanceAmount balanceAsset checkOutput(collateral, lender)]
+// $_end             |  [... borrower lender deadline balanceAmount balanceAsset]
+func (b *builder) steps() []step {
+	var result []step
+	for _, item := range b.items {
+		result = append(result, step{item.opcodes, item.stk.String()})
+	}
+	return result
 }

@@ -13,10 +13,6 @@ import (
 )
 
 type (
-	CompileResult struct {
-		Contracts []*Contract `json:"contracts"`
-	}
-
 	ContractParam struct {
 		Name string `json:"name"`
 		Typ  string `json:"type"`
