@@ -57,6 +57,7 @@ var (
 
 // API serves the Chain HTTP API
 type API struct {
+	ctx             context.Context
 	chain           *protocol.Chain
 	store           *txdb.Store
 	pinStore        *pin.Store
@@ -78,6 +79,7 @@ type API struct {
 	signer          func(context.Context, *legacy.Block) ([]byte, error)
 	requestLimits   []requestLimit
 	generator       *generator.Generator
+	replicator      *fetch.Replicator
 	remoteGenerator *rpc.Client
 	indexTxs        bool
 	internalSubj    pkix.Name

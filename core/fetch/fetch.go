@@ -19,24 +19,37 @@ import (
 
 const heightPollingPeriod = 3 * time.Second
 
-var (
-	generatorHeight          uint64
-	generatorHeightFetchedAt time.Time
-	generatorLock            sync.Mutex
-)
+// New initializes a new Replicator to replicate blocks from the
+// Chain Core specified by peer. It immediately begins polling for
+// the peer's blockchain height, and will stop only when ctx is
+// cancelled. To begin replicating blocks, the caller must call
+// Fetch.
+func New(ctx context.Context, peer *rpc.Client) *Replicator {
+	rep := &Replicator{peer: peer}
 
-func GeneratorHeight() (uint64, time.Time) {
-	generatorLock.Lock()
-	h := generatorHeight
-	t := generatorHeightFetchedAt
-	generatorLock.Unlock()
-	return h, t
+	// Fetch the generator height periodically.
+	go rep.pollGeneratorHeight(ctx)
+
+	return rep
 }
 
-// Init initializes the fetch package.
-func Init(ctx context.Context, peer *rpc.Client) {
-	// Fetch the generator height periodically.
-	go pollGeneratorHeight(ctx, peer)
+// Replicator implements block replication.
+type Replicator struct {
+	peer *rpc.Client // peer to replicate
+
+	mu              sync.Mutex
+	peerHeight      uint64
+	heightFetchedAt time.Time
+}
+
+// PeerHeight returns the height of the peer Chain Core and the
+// timestamp of the moment when that height was observed.
+func (rep *Replicator) PeerHeight() (uint64, time.Time) {
+	rep.mu.Lock()
+	h := rep.peerHeight
+	t := rep.heightFetchedAt
+	rep.mu.Unlock()
+	return h, t
 }
 
 // Fetch runs in a loop, fetching blocks from the configured
@@ -46,8 +59,8 @@ func Init(ctx context.Context, peer *rpc.Client) {
 // It returns when its context is canceled.
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
-func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
-	blockch, errch := DownloadBlocks(ctx, peer, c.Height()+1)
+func (rep *Replicator) Fetch(ctx context.Context, c *protocol.Chain, health func(error)) {
+	blockch, errch := DownloadBlocks(ctx, rep.peer, c.Height()+1)
 
 	var err error
 	var nfailures uint
@@ -81,6 +94,35 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 			nfailures = 0
 		}
 	}
+}
+
+func (rep *Replicator) pollGeneratorHeight(ctx context.Context) {
+	rep.updateGeneratorHeight(ctx)
+
+	ticker := time.NewTicker(heightPollingPeriod)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf(ctx, "Deposed, pollGeneratorHeight exiting")
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			rep.updateGeneratorHeight(ctx)
+		}
+	}
+}
+
+func (rep *Replicator) updateGeneratorHeight(ctx context.Context) {
+	h, err := getHeight(ctx, rep.peer)
+	if err != nil {
+		logNetworkError(ctx, err)
+		return
+	}
+
+	rep.mu.Lock()
+	defer rep.mu.Unlock()
+	rep.peerHeight = h
+	rep.heightFetchedAt = time.Now()
 }
 
 // DownloadBlocks starts a goroutine to download blocks from
@@ -125,35 +167,6 @@ func DownloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan 
 		}
 	}()
 	return blockch, errch
-}
-
-func pollGeneratorHeight(ctx context.Context, peer *rpc.Client) {
-	updateGeneratorHeight(ctx, peer)
-
-	ticker := time.NewTicker(heightPollingPeriod)
-	for {
-		select {
-		case <-ctx.Done():
-			log.Printf(ctx, "Deposed, fetchGeneratorHeight exiting")
-			ticker.Stop()
-			return
-		case <-ticker.C:
-			updateGeneratorHeight(ctx, peer)
-		}
-	}
-}
-
-func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
-	gh, err := getHeight(ctx, peer)
-	if err != nil {
-		logNetworkError(ctx, err)
-		return
-	}
-
-	generatorLock.Lock()
-	defer generatorLock.Unlock()
-	generatorHeight = gh
-	generatorHeightFetchedAt = time.Now()
 }
 
 func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *legacy.Block, block *legacy.Block) error {
