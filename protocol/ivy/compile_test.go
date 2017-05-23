@@ -1,6 +1,11 @@
 package ivy
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 const trivialLock = `
 contract TrivialLock() locks locked {
@@ -133,390 +138,86 @@ contract CallOptionWithSettlement(strikePrice: Amount,
 }
 `
 
-// func TestCompile(t *testing.T) {
-// 	cases := []struct {
-// 		name     string
-// 		contract string
-// 		want     CompileResult
-// 	}{
-// 		{
-// 			"TrivialLock",
-// 			trivialLock,
-// 			CompileResult{
-// 				Name:    "TrivialLock",
-// 				Body:    mustDecodeHex("51"),
-// 				Opcodes: "TRUE",
-// 				Value:   "locked",
-// 				Clauses: []ClauseInfo{{
-// 					Name: "trivialUnlock",
-// 					Values: []ValueInfo{{
-// 						Name: "locked",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"LockWithPublicKey",
-// 			lockWithPublicKey,
-// 			CompileResult{
-// 				Name:    "LockWithPublicKey",
-// 				Body:    mustDecodeHex("ae7cac"),
-// 				Opcodes: "TXSIGHASH SWAP CHECKSIG",
-// 				Value:   "locked",
-// 				Params: []ContractParam{{
-// 					Name: "publicKey",
-// 					Typ:  "PublicKey",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "unlockWithSig",
-// 					Args: []ClauseArg{{
-// 						Name: "sig",
-// 						Typ:  "Signature",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name: "locked",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"LockWithPublicKeyHash",
-// 			lockWithPKHash,
-// 			CompileResult{
-// 				Name:    "LockWithPublicKeyHash",
-// 				Body:    mustDecodeHex("5279aa887cae7cac"),
-// 				Opcodes: "2 PICK SHA3 EQUALVERIFY SWAP TXSIGHASH SWAP CHECKSIG",
-// 				Value:   "value",
-// 				Params: []ContractParam{{
-// 					Name: "pubKeyHash",
-// 					Typ:  "Sha3(PublicKey)",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "spend",
-// 					Args: []ClauseArg{{
-// 						Name: "pubKey",
-// 						Typ:  "PublicKey",
-// 					}, {
-// 						Name: "sig",
-// 						Typ:  "Signature",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name: "value",
-// 					}},
-// 					HashCalls: []HashCall{{
-// 						HashType: "sha3",
-// 						Arg:      "pubKey",
-// 						ArgType:  "PublicKey",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"LockWith2of3Keys",
-// 			lockWith2of3Keys,
-// 			CompileResult{
-// 				Name:    "LockWith3Keys",
-// 				Body:    mustDecodeHex("537a547a526bae71557a536c7cad"),
-// 				Opcodes: "3 ROLL 4 ROLL 2 TOALTSTACK TXSIGHASH 2ROT 5 ROLL 3 FROMALTSTACK SWAP CHECKMULTISIG",
-// 				Value:   "locked",
-// 				Params: []ContractParam{{
-// 					Name: "pubkey1",
-// 					Typ:  "PublicKey",
-// 				}, {
-// 					Name: "pubkey2",
-// 					Typ:  "PublicKey",
-// 				}, {
-// 					Name: "pubkey3",
-// 					Typ:  "PublicKey",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "unlockWith2Sigs",
-// 					Args: []ClauseArg{{
-// 						Name: "sig1",
-// 						Typ:  "Signature",
-// 					}, {
-// 						Name: "sig2",
-// 						Typ:  "Signature",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name: "locked",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"LockToOutput",
-// 			lockToOutput,
-// 			CompileResult{
-// 				Name:    "LockToOutput",
-// 				Body:    mustDecodeHex("0000c3c251557ac1"),
-// 				Opcodes: "0 0 AMOUNT ASSET 1 5 ROLL CHECKOUTPUT",
-// 				Value:   "locked",
-// 				Params: []ContractParam{{
-// 					Name: "address",
-// 					Typ:  "Program",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "relock",
-// 					Values: []ValueInfo{{
-// 						Name:    "locked",
-// 						Program: "address",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"TradeOffer",
-// 			tradeOffer,
-// 			CompileResult{
-// 				Name:    "TradeOffer",
-// 				Body:    mustDecodeHex("547a641300000000007251557ac16323000000547a547aae7cac690000c3c251577ac1"),
-// 				Opcodes: "4 ROLL JUMPIF:$cancel $trade 0 0 2SWAP 1 5 ROLL CHECKOUTPUT JUMP:$_end $cancel 4 ROLL 4 ROLL TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 7 ROLL CHECKOUTPUT $_end",
-// 				Value:   "offered",
-// 				Params: []ContractParam{{
-// 					Name: "requestedAsset",
-// 					Typ:  "Asset",
-// 				}, {
-// 					Name: "requestedAmount",
-// 					Typ:  "Amount",
-// 				}, {
-// 					Name: "sellerProgram",
-// 					Typ:  "Program",
-// 				}, {
-// 					Name: "sellerKey",
-// 					Typ:  "PublicKey",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "trade",
-// 					Values: []ValueInfo{{
-// 						Name:    "payment",
-// 						Program: "sellerProgram",
-// 						Asset:   "requestedAsset",
-// 						Amount:  "requestedAmount",
-// 					}, {
-// 						Name: "offered",
-// 					}},
-// 				}, {
-// 					Name: "cancel",
-// 					Args: []ClauseArg{{
-// 						Name: "sellerSig",
-// 						Typ:  "Signature",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name:    "offered",
-// 						Program: "sellerProgram",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"EscrowedTransfer",
-// 			escrowedTransfer,
-// 			CompileResult{
-// 				Name:    "EscrowedTransfer",
-// 				Body:    mustDecodeHex("537a641b000000537a7cae7cac690000c3c251567ac1632a000000537a7cae7cac690000c3c251557ac1"),
-// 				Opcodes: "3 ROLL JUMPIF:$reject $approve 3 ROLL SWAP TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 6 ROLL CHECKOUTPUT JUMP:$_end $reject 3 ROLL SWAP TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 5 ROLL CHECKOUTPUT $_end",
-// 				Value:   "value",
-// 				Params: []ContractParam{{
-// 					Name: "agent",
-// 					Typ:  "PublicKey",
-// 				}, {
-// 					Name: "sender",
-// 					Typ:  "Program",
-// 				}, {
-// 					Name: "recipient",
-// 					Typ:  "Program",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "approve",
-// 					Args: []ClauseArg{{
-// 						Name: "sig",
-// 						Typ:  "Signature",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name:    "value",
-// 						Program: "recipient",
-// 					}},
-// 				}, {
-// 					Name: "reject",
-// 					Args: []ClauseArg{{
-// 						Name: "sig",
-// 						Typ:  "Signature",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name:    "value",
-// 						Program: "sender",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"CollateralizedLoan",
-// 			collateralizedLoan,
-// 			CompileResult{
-// 				Name:    "CollateralizedLoan",
-// 				Body:    mustDecodeHex("557a641c00000000007251567ac1695100c3c251567ac163280000007bc59f690000c3c251577ac1"),
-// 				Opcodes: "5 ROLL JUMPIF:$default $repay 0 0 2SWAP 1 6 ROLL CHECKOUTPUT VERIFY 1 0 AMOUNT ASSET 1 6 ROLL CHECKOUTPUT JUMP:$_end $default ROT MINTIME LESSTHAN VERIFY 0 0 AMOUNT ASSET 1 7 ROLL CHECKOUTPUT $_end",
-// 				Value:   "collateral",
-// 				Params: []ContractParam{{
-// 					Name: "balanceAsset",
-// 					Typ:  "Asset",
-// 				}, {
-// 					Name: "balanceAmount",
-// 					Typ:  "Amount",
-// 				}, {
-// 					Name: "deadline",
-// 					Typ:  "Time",
-// 				}, {
-// 					Name: "lender",
-// 					Typ:  "Program",
-// 				}, {
-// 					Name: "borrower",
-// 					Typ:  "Program",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "repay",
-// 					Values: []ValueInfo{
-// 						{
-// 							Name:    "payment",
-// 							Program: "lender",
-// 							Asset:   "balanceAsset",
-// 							Amount:  "balanceAmount",
-// 						},
-// 						{
-// 							Name:    "collateral",
-// 							Program: "borrower",
-// 						},
-// 					},
-// 				}, {
-// 					Name: "default",
-// 					Values: []ValueInfo{
-// 						{
-// 							Name:    "collateral",
-// 							Program: "lender",
-// 						},
-// 					},
-// 					Mintimes: []string{"deadline"},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"RevealPreimage",
-// 			revealPreimage,
-// 			CompileResult{
-// 				Name:    "RevealPreimage",
-// 				Body:    mustDecodeHex("7caa87"),
-// 				Opcodes: "SWAP SHA3 EQUAL",
-// 				Value:   "value",
-// 				Params: []ContractParam{{
-// 					Name: "hash",
-// 					Typ:  "Sha3(String)",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "reveal",
-// 					Args: []ClauseArg{{
-// 						Name: "string",
-// 						Typ:  "String",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name: "value",
-// 					}},
-// 					HashCalls: []HashCall{{
-// 						HashType: "sha3",
-// 						Arg:      "string",
-// 						ArgType:  "String",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 		{
-// 			"CallOptionWithSettlement",
-// 			callOptionWithSettlement,
-// 			CompileResult{
-// 				Name:    "CallOptionWithSettlement",
-// 				Body:    mustDecodeHex("567a76529c64390000006427000000557ac6a06971ae7cac6900007b537a51557ac16349000000557ac59f690000c3c251577ac1634900000075577a547aae7cac69557a547aae7cac"),
-// 				Opcodes: "6 ROLL DUP 2 NUMEQUAL JUMPIF:$settle JUMPIF:$expire $exercise 5 ROLL MAXTIME GREATERTHAN VERIFY 2ROT TXSIGHASH SWAP CHECKSIG VERIFY 0 0 ROT 3 ROLL 1 5 ROLL CHECKOUTPUT JUMP:$_end $expire 5 ROLL MINTIME LESSTHAN VERIFY 0 0 AMOUNT ASSET 1 7 ROLL CHECKOUTPUT JUMP:$_end $settle DROP 7 ROLL 4 ROLL TXSIGHASH SWAP CHECKSIG VERIFY 5 ROLL 4 ROLL TXSIGHASH SWAP CHECKSIG $_end",
-// 				Value:   "underlying",
-// 				Params: []ContractParam{{
-// 					Name: "strikePrice",
-// 					Typ:  "Amount",
-// 				}, {
-// 					Name: "strikeCurrency",
-// 					Typ:  "Asset",
-// 				}, {
-// 					Name: "sellerProgram",
-// 					Typ:  "Program",
-// 				}, {
-// 					Name: "sellerKey",
-// 					Typ:  "PublicKey",
-// 				}, {
-// 					Name: "buyerKey",
-// 					Typ:  "PublicKey",
-// 				}, {
-// 					Name: "deadline",
-// 					Typ:  "Time",
-// 				}},
-// 				Clauses: []ClauseInfo{{
-// 					Name: "exercise",
-// 					Args: []ClauseArg{{
-// 						Name: "buyerSig",
-// 						Typ:  "Signature",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name:    "payment",
-// 						Program: "sellerProgram",
-// 						Asset:   "strikeCurrency",
-// 						Amount:  "strikePrice",
-// 					}, {
-// 						Name: "underlying",
-// 					}},
-// 					Maxtimes: []string{"deadline"},
-// 				}, {
-// 					Name: "expire",
-// 					Values: []ValueInfo{{
-// 						Name:    "underlying",
-// 						Program: "sellerProgram",
-// 					}},
-// 					Mintimes: []string{"deadline"},
-// 				}, {
-// 					Name: "settle",
-// 					Args: []ClauseArg{{
-// 						Name: "sellerSig",
-// 						Typ:  "Signature",
-// 					}, {
-// 						Name: "buyerSig",
-// 						Typ:  "Signature",
-// 					}},
-// 					Values: []ValueInfo{{
-// 						Name: "underlying",
-// 					}},
-// 				}},
-// 			},
-// 		},
-// 	}
-// 	for _, c := range cases {
-// 		t.Run(c.name, func(t *testing.T) {
-// 			r := strings.NewReader(c.contract)
-// 			got, err := Compile(r, nil)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-// 			if !testutil.DeepEqual(got, c.want) {
-// 				gotJSON, _ := json.Marshal(got)
-// 				wantJSON, _ := json.Marshal(c.want)
-// 				t.Errorf(
-// 					"\ngot  %s\nwant %s\ngot body : %s\nwant body: %s",
-// 					string(gotJSON),
-// 					wantJSON,
-// 					got.Opcodes,
-// 					c.want.Opcodes,
-// 				)
-// 			} else {
-// 				t.Log(got.Opcodes)
-// 			}
-// 		})
-// 	}
-// }
+func TestCompile(t *testing.T) {
+	cases := []struct {
+		name     string
+		contract string
+		wantJSON string
+	}{
+		{
+			"TrivialLock",
+			trivialLock,
+			`[{"name":"TrivialLock","clauses":[{"name":"trivialUnlock","values":[{"name":"locked"}]}],"value":"locked","body_bytecode":"51","body_opcodes":"TRUE","program":"00015100c0"}]`,
+		},
+		{
+			"LockWithPublicKey",
+			lockWithPublicKey,
+			`[{"name":"LockWithPublicKey","params":[{"name":"publicKey","declared_type":"PublicKey"}],"clauses":[{"name":"unlockWithSig","params":[{"name":"sig","declared_type":"Signature"}],"values":[{"name":"locked"}]}],"value":"locked","body_bytecode":"ae7cac","body_opcodes":"TXSIGHASH SWAP CHECKSIG"}]`,
+		},
+		{
+			"LockWithPublicKeyHash",
+			lockWithPKHash,
+			`[{"name":"LockWithPublicKeyHash","params":[{"name":"pubKeyHash","declared_type":"Hash","inferred_type":"Sha3(PublicKey)"}],"clauses":[{"name":"spend","params":[{"name":"pubKey","declared_type":"PublicKey"},{"name":"sig","declared_type":"Signature"}],"hash_calls":[{"hash_type":"sha3","arg":"pubKey","arg_type":"PublicKey"}],"values":[{"name":"value"}]}],"value":"value","body_bytecode":"5279aa887cae7cac","body_opcodes":"2 PICK SHA3 EQUALVERIFY SWAP TXSIGHASH SWAP CHECKSIG"}]`,
+		},
+		{
+			"LockWith2of3Keys",
+			lockWith2of3Keys,
+			`[{"name":"LockWith3Keys","params":[{"name":"pubkey1","declared_type":"PublicKey"},{"name":"pubkey2","declared_type":"PublicKey"},{"name":"pubkey3","declared_type":"PublicKey"}],"clauses":[{"name":"unlockWith2Sigs","params":[{"name":"sig1","declared_type":"Signature"},{"name":"sig2","declared_type":"Signature"}],"values":[{"name":"locked"}]}],"value":"locked","body_bytecode":"537a547a526bae71557a536c7cad","body_opcodes":"3 ROLL 4 ROLL 2 TOALTSTACK TXSIGHASH 2ROT 5 ROLL 3 FROMALTSTACK SWAP CHECKMULTISIG"}]`,
+		},
+		{
+			"LockToOutput",
+			lockToOutput,
+			`[{"name":"LockToOutput","params":[{"name":"address","declared_type":"Program"}],"clauses":[{"name":"relock","values":[{"name":"locked","program":"address"}]}],"value":"locked","body_bytecode":"0000c3c251557ac1","body_opcodes":"0 0 AMOUNT ASSET 1 5 ROLL CHECKOUTPUT"}]`,
+		},
+		{
+			"TradeOffer",
+			tradeOffer,
+			`[{"name":"TradeOffer","params":[{"name":"requestedAsset","declared_type":"Asset"},{"name":"requestedAmount","declared_type":"Amount"},{"name":"sellerProgram","declared_type":"Program"},{"name":"sellerKey","declared_type":"PublicKey"}],"clauses":[{"name":"trade","reqs":[{"name":"payment","asset":"requestedAsset","amount":"requestedAmount"}],"values":[{"name":"payment","program":"sellerProgram","asset":"requestedAsset","amount":"requestedAmount"},{"name":"offered"}]},{"name":"cancel","params":[{"name":"sellerSig","declared_type":"Signature"}],"values":[{"name":"offered","program":"sellerProgram"}]}],"value":"offered","body_bytecode":"547a641300000000007251557ac16323000000547a547aae7cac690000c3c251577ac1","body_opcodes":"4 ROLL JUMPIF:$cancel $trade 0 0 2SWAP 1 5 ROLL CHECKOUTPUT JUMP:$_end $cancel 4 ROLL 4 ROLL TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 7 ROLL CHECKOUTPUT $_end"}]`,
+		},
+		{
+			"EscrowedTransfer",
+			escrowedTransfer,
+			`[{"name":"EscrowedTransfer","params":[{"name":"agent","declared_type":"PublicKey"},{"name":"sender","declared_type":"Program"},{"name":"recipient","declared_type":"Program"}],"clauses":[{"name":"approve","params":[{"name":"sig","declared_type":"Signature"}],"values":[{"name":"value","program":"recipient"}]},{"name":"reject","params":[{"name":"sig","declared_type":"Signature"}],"values":[{"name":"value","program":"sender"}]}],"value":"value","body_bytecode":"537a641b000000537a7cae7cac690000c3c251567ac1632a000000537a7cae7cac690000c3c251557ac1","body_opcodes":"3 ROLL JUMPIF:$reject $approve 3 ROLL SWAP TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 6 ROLL CHECKOUTPUT JUMP:$_end $reject 3 ROLL SWAP TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 5 ROLL CHECKOUTPUT $_end"}]`,
+		},
+		{
+			"CollateralizedLoan",
+			collateralizedLoan,
+			`[{"name":"CollateralizedLoan","params":[{"name":"balanceAsset","declared_type":"Asset"},{"name":"balanceAmount","declared_type":"Amount"},{"name":"deadline","declared_type":"Time"},{"name":"lender","declared_type":"Program"},{"name":"borrower","declared_type":"Program"}],"clauses":[{"name":"repay","reqs":[{"name":"payment","asset":"balanceAsset","amount":"balanceAmount"}],"values":[{"name":"payment","program":"lender","asset":"balanceAsset","amount":"balanceAmount"},{"name":"collateral","program":"borrower"}]},{"name":"default","mintimes":["deadline"],"values":[{"name":"collateral","program":"lender"}]}],"value":"collateral","body_bytecode":"557a641c00000000007251567ac1695100c3c251567ac163280000007bc59f690000c3c251577ac1","body_opcodes":"5 ROLL JUMPIF:$default $repay 0 0 2SWAP 1 6 ROLL CHECKOUTPUT VERIFY 1 0 AMOUNT ASSET 1 6 ROLL CHECKOUTPUT JUMP:$_end $default ROT MINTIME LESSTHAN VERIFY 0 0 AMOUNT ASSET 1 7 ROLL CHECKOUTPUT $_end"}]`,
+		},
+		{
+			"RevealPreimage",
+			revealPreimage,
+			`[{"name":"RevealPreimage","params":[{"name":"hash","declared_type":"Hash","inferred_type":"Sha3(String)"}],"clauses":[{"name":"reveal","params":[{"name":"string","declared_type":"String"}],"hash_calls":[{"hash_type":"sha3","arg":"string","arg_type":"String"}],"values":[{"name":"value"}]}],"value":"value","body_bytecode":"7caa87","body_opcodes":"SWAP SHA3 EQUAL"}]`,
+		},
+		{
+			"CallOptionWithSettlement",
+			callOptionWithSettlement,
+			`[{"name":"CallOptionWithSettlement","params":[{"name":"strikePrice","declared_type":"Amount"},{"name":"strikeCurrency","declared_type":"Asset"},{"name":"sellerProgram","declared_type":"Program"},{"name":"sellerKey","declared_type":"PublicKey"},{"name":"buyerKey","declared_type":"PublicKey"},{"name":"deadline","declared_type":"Time"}],"clauses":[{"name":"exercise","params":[{"name":"buyerSig","declared_type":"Signature"}],"reqs":[{"name":"payment","asset":"strikeCurrency","amount":"strikePrice"}],"maxtimes":["deadline"],"values":[{"name":"payment","program":"sellerProgram","asset":"strikeCurrency","amount":"strikePrice"},{"name":"underlying"}]},{"name":"expire","mintimes":["deadline"],"values":[{"name":"underlying","program":"sellerProgram"}]},{"name":"settle","params":[{"name":"sellerSig","declared_type":"Signature"},{"name":"buyerSig","declared_type":"Signature"}],"values":[{"name":"underlying"}]}],"value":"underlying","body_bytecode":"567a76529c64390000006427000000557ac6a06971ae7cac6900007b537a51557ac16349000000557ac59f690000c3c251577ac1634900000075577a547aae7cac69557a547aae7cac","body_opcodes":"6 ROLL DUP 2 NUMEQUAL JUMPIF:$settle JUMPIF:$expire $exercise 5 ROLL MAXTIME GREATERTHAN VERIFY 2ROT TXSIGHASH SWAP CHECKSIG VERIFY 0 0 ROT 3 ROLL 1 5 ROLL CHECKOUTPUT JUMP:$_end $expire 5 ROLL MINTIME LESSTHAN VERIFY 0 0 AMOUNT ASSET 1 7 ROLL CHECKOUTPUT JUMP:$_end $settle DROP 7 ROLL 4 ROLL TXSIGHASH SWAP CHECKSIG VERIFY 5 ROLL 4 ROLL TXSIGHASH SWAP CHECKSIG $_end"}]`,
+		},
+		{
+			"PriceChanger",
+			priceChanger,
+			`[{"name":"PriceChanger","params":[{"name":"askAmount","declared_type":"Amount"},{"name":"askAsset","declared_type":"Asset"},{"name":"sellerKey","declared_type":"PublicKey"},{"name":"sellerProg","declared_type":"Program"}],"clauses":[{"name":"changePrice","params":[{"name":"newAmount","declared_type":"Amount"},{"name":"newAsset","declared_type":"Asset"},{"name":"sig","declared_type":"Signature"}],"values":[{"name":"offered","program":"PriceChanger(newAmount, newAsset, sellerKey, sellerProg)"}]},{"name":"redeem","reqs":[{"name":"payment","asset":"askAsset","amount":"askAmount"}],"values":[{"name":"payment","program":"sellerProg","asset":"askAsset","amount":"askAmount"},{"name":"offered"}]}],"value":"offered","body_bytecode":"557a6435000000557a5379ae7cac690000c3c251005a7a89597a89587a895a7a895b7a89558902767989008901c089c1633e00000000007b537a51567ac1","body_opcodes":"5 ROLL JUMPIF:$redeem $changePrice 5 ROLL 3 PICK TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 0 10 ROLL CATPUSHDATA 9 ROLL CATPUSHDATA 8 ROLL CATPUSHDATA 10 ROLL CATPUSHDATA 11 ROLL CATPUSHDATA 5 CATPUSHDATA 0x7679 CATPUSHDATA 0 CATPUSHDATA 192 CATPUSHDATA CHECKOUTPUT JUMP:$_end $redeem 0 0 ROT 3 ROLL 1 6 ROLL CHECKOUTPUT $_end"}]`,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r := strings.NewReader(c.contract)
+			got, err := Compile(r, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotJSON, _ := json.Marshal(got)
+			if string(gotJSON) != c.wantJSON {
+				t.Errorf("\ngot  %s\nwant %s", string(gotJSON), c.wantJSON)
+			} else {
+				for _, contract := range got {
+					t.Log(contract.Opcodes)
+				}
+			}
+		})
+	}
+}
 
 func mustDecodeHex(h string) []byte {
 	bits, err := hex.DecodeString(h)

@@ -2,10 +2,25 @@ package ivy
 
 import "fmt"
 
+func checkRecursive(contract *Contract) bool {
+	for _, clause := range contract.Clauses {
+		for _, stmt := range clause.statements {
+			if l, ok := stmt.(*lockStatement); ok {
+				if c, ok := l.program.(*callExpr); ok {
+					if references(c.fn, contract.Name) {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 func prohibitSigParams(contract *Contract) error {
 	for _, p := range contract.Params {
 		if p.Type == sigType {
-			return fmt.Errorf("Contract parameter \"%s\" has type Signature, but contract parameters cannot have type Signature", p.Name)
+			return fmt.Errorf("contract parameter \"%s\" has type Signature, but contract parameters cannot have type Signature", p.Name)
 		}
 	}
 	return nil

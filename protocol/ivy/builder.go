@@ -1,7 +1,6 @@
 package ivy
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -86,7 +85,7 @@ func (b *builder) addData(stk stack, data []byte) stack {
 	case 1:
 		s = strconv.FormatInt(int64(data[0]), 10)
 	default:
-		s = hex.EncodeToString(data)
+		s = fmt.Sprintf("0x%x", data)
 	}
 	return b.add(s, stk.add(s))
 }
@@ -142,6 +141,10 @@ func (b *builder) addOver(stk stack) stack {
 func (b *builder) addPick(stk stack, n int) stack {
 	b.addInt64(stk, int64(n))
 	return b.add("PICK", stk.pick(n))
+}
+
+func (b *builder) addCatPushdata(stk stack, desc string) stack {
+	return b.add("CATPUSHDATA", stk.dropN(2).add(desc))
 }
 
 func (b *builder) opcodes() string {

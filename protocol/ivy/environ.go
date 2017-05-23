@@ -11,6 +11,7 @@ type environ struct {
 type envEntry struct {
 	t typeDesc
 	r role
+	c *Contract // if t == contractType
 }
 
 type role int
@@ -49,6 +50,14 @@ func (e *environ) add(name string, t typeDesc, r role) error {
 		return fmt.Errorf("%s \"%s\" conflicts with %s", roleDesc[r], name, roleDesc[entry.r])
 	}
 	e.entries[name] = &envEntry{t: t, r: r}
+	return nil
+}
+
+func (e *environ) addContract(contract *Contract) error {
+	if entry := e.lookup(contract.Name); entry != nil {
+		return fmt.Errorf("%s \"%s\" conflicts with %s", roleDesc[roleContract], contract.Name, roleDesc[entry.r])
+	}
+	e.entries[contract.Name] = &envEntry{t: contractType, r: roleContract, c: contract}
 	return nil
 }
 
