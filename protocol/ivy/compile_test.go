@@ -138,6 +138,29 @@ contract CallOptionWithSettlement(strikePrice: Amount,
 }
 `
 
+const oneTwo = `
+contract Two(b, c: Program, expirationTime: Time) locks value {
+  clause redeem() {
+    verify before(expirationTime)
+    lock value with b
+  }
+  clause default() {
+    verify after(expirationTime)
+    lock value with c
+  }
+}
+contract One(a, b, c: Program, switchTime, expirationTime: Time) locks value {
+  clause redeem() {
+    verify before(switchTime)
+    lock value with a
+  }
+  clause switch() {
+    verify after(switchTime)
+    lock value with Two(b, c, expirationTime)
+  }
+}
+`
+
 func TestCompile(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -198,6 +221,11 @@ func TestCompile(t *testing.T) {
 			"PriceChanger",
 			priceChanger,
 			`[{"name":"PriceChanger","params":[{"name":"askAmount","declared_type":"Amount"},{"name":"askAsset","declared_type":"Asset"},{"name":"sellerKey","declared_type":"PublicKey"},{"name":"sellerProg","declared_type":"Program"}],"clauses":[{"name":"changePrice","params":[{"name":"newAmount","declared_type":"Amount"},{"name":"newAsset","declared_type":"Asset"},{"name":"sig","declared_type":"Signature"}],"values":[{"name":"offered","program":"PriceChanger(newAmount, newAsset, sellerKey, sellerProg)"}]},{"name":"redeem","reqs":[{"name":"payment","asset":"askAsset","amount":"askAmount"}],"values":[{"name":"payment","program":"sellerProg","asset":"askAsset","amount":"askAmount"},{"name":"offered"}]}],"value":"offered","body_bytecode":"557a6435000000557a5379ae7cac690000c3c251005a7a89597a89587a895a7a895b7a89558902767989008901c089c1633e00000000007b537a51567ac1","body_opcodes":"5 ROLL JUMPIF:$redeem $changePrice 5 ROLL 3 PICK TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 0 10 ROLL CATPUSHDATA 9 ROLL CATPUSHDATA 8 ROLL CATPUSHDATA 10 ROLL CATPUSHDATA 11 ROLL CATPUSHDATA 5 CATPUSHDATA 0x7679 CATPUSHDATA 0 CATPUSHDATA 192 CATPUSHDATA CHECKOUTPUT JUMP:$_end $redeem 0 0 ROT 3 ROLL 1 6 ROLL CHECKOUTPUT $_end"}]`,
+		},
+		{
+			"OneTwo",
+			oneTwo,
+			`[{"name":"Two","params":[{"name":"b","declared_type":"Program"},{"name":"c","declared_type":"Program"},{"name":"expirationTime","declared_type":"Time"}],"clauses":[{"name":"redeem","maxtimes":["expirationTime"],"values":[{"name":"value","program":"b"}]},{"name":"default","mintimes":["expirationTime"],"values":[{"name":"value","program":"c"}]}],"value":"value","body_bytecode":"537a64180000007bc6a0690000c3c251557ac163240000007bc59f690000c3c251567ac1","body_opcodes":"3 ROLL JUMPIF:$default $redeem ROT MAXTIME GREATERTHAN VERIFY 0 0 AMOUNT ASSET 1 5 ROLL CHECKOUTPUT JUMP:$_end $default ROT MINTIME LESSTHAN VERIFY 0 0 AMOUNT ASSET 1 6 ROLL CHECKOUTPUT $_end"},{"name":"One","params":[{"name":"a","declared_type":"Program"},{"name":"b","declared_type":"Program"},{"name":"c","declared_type":"Program"},{"name":"switchTime","declared_type":"Time"},{"name":"expirationTime","declared_type":"Time"}],"clauses":[{"name":"redeem","maxtimes":["switchTime"],"values":[{"name":"value","program":"a"}]},{"name":"switch","mintimes":["switchTime"],"values":[{"name":"value","program":"Two(b, c, expirationTime)"}]}],"value":"value","body_bytecode":"557a6419000000537ac6a0690000c3c251557ac1635b000000537ac59f690000c3c25100597a89587a89577a89538924537a64180000007bc6a0690000c3c251557ac163240000007bc59f690000c3c251567ac189008901c089c1","body_opcodes":"5 ROLL JUMPIF:$switch $redeem 3 ROLL MAXTIME GREATERTHAN VERIFY 0 0 AMOUNT ASSET 1 5 ROLL CHECKOUTPUT JUMP:$_end $switch 3 ROLL MINTIME LESSTHAN VERIFY 0 0 AMOUNT ASSET 1 0 9 ROLL CATPUSHDATA 8 ROLL CATPUSHDATA 7 ROLL CATPUSHDATA 3 CATPUSHDATA 0x537a64180000007bc6a0690000c3c251557ac163240000007bc59f690000c3c251567ac1 CATPUSHDATA 0 CATPUSHDATA 192 CATPUSHDATA CHECKOUTPUT $_end"}]`,
 		},
 	}
 	for _, c := range cases {

@@ -29,7 +29,7 @@ func (p *parser) errorf(format string, args ...interface{}) {
 }
 
 // parse is the main entry point to the parser
-func parse(buf []byte) (c *Contract, err error) {
+func parse(buf []byte) (contracts []*Contract, err error) {
 	defer func() {
 		if val := recover(); val != nil {
 			if e, ok := val.(parserErr); ok {
@@ -40,11 +40,20 @@ func parse(buf []byte) (c *Contract, err error) {
 		}
 	}()
 	p := &parser{buf: buf}
-	c = parseContract(p)
+	contracts = parseContracts(p)
 	return
 }
 
 // parse functions
+
+func parseContracts(p *parser) []*Contract {
+	var result []*Contract
+	for peekKeyword(p) == "contract" {
+		contract := parseContract(p)
+		result = append(result, contract)
+	}
+	return result
+}
 
 // contract name(p1, p2: t1, p3: t2) locks value { ... }
 func parseContract(p *parser) *Contract {

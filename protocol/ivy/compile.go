@@ -18,27 +18,6 @@ type (
 		Typ  string `json:"type"`
 	}
 
-	ClauseInfo struct {
-		Name   string      `json:"name"`
-		Args   []ClauseArg `json:"args"`
-		Values []ValueInfo `json:"value_info"`
-
-		// Mintimes is the stringified form of "x" for any "verify after(x)" in the clause
-		Mintimes []string `json:"mintimes"`
-
-		// Maxtimes is the stringified form of "x" for any "verify before(x)" in the clause
-		Maxtimes []string `json:"maxtimes"`
-
-		// Records each call to a hash function and the type of the
-		// argument passed in
-		HashCalls []HashCall `json:"hash_calls"`
-	}
-
-	ClauseArg struct {
-		Name string `json:"name"`
-		Typ  string `json:"type"`
-	}
-
 	ValueInfo struct {
 		Name    string `json:"name"`
 		Program string `json:"program,omitempty"`
@@ -53,8 +32,8 @@ type ContractArg struct {
 	S *chainjson.HexBytes `json:"string,omitempty"`
 }
 
-// Compile parses an Ivy contract from the supplied reader and
-// produces the compiled bytecode and other analysis. If args is
+// Compile parses a sequence of Ivy contracts from the supplied reader
+// and produces the compiled bytecode and other analysis. If args is
 // non-empty - or it's empty and the contract takes no arguments -
 // then the contract body and args are instantiated and the result
 // placed in the contract's Program field.
@@ -63,7 +42,7 @@ func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "reading input")
 	}
-	contract, err := parse(inp)
+	contracts, err := parse(inp)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse error")
 	}
@@ -75,49 +54,59 @@ func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
 	for _, b := range builtins {
 		globalEnv.add(b.name, nilType, roleBuiltin)
 	}
-	err = globalEnv.addContract(contract)
-	if err != nil {
-		return nil, err
+
+	// All contracts must be checked for recursiveness before any are
+	// compiled.
+	for _, contract := range contracts {
+		contract.recursive = checkRecursive(contract)
 	}
 
-	err = compileContract(contract, globalEnv)
-	if err != nil {
-		return nil, errors.Wrap(err, "compiling contract")
-	}
-
-	if len(contract.Params) == 0 || len(args) > 0 {
-		contract.Program, err = instantiate(contract, args, contract.Body)
+	for _, contract := range contracts {
+		err = globalEnv.addContract(contract)
 		if err != nil {
-			return nil, errors.Wrap(err, "instantiating contract")
+			return nil, err
 		}
 	}
 
-	for _, clause := range contract.Clauses {
-		for _, stmt := range clause.statements {
-			switch s := stmt.(type) {
-			case *lockStatement:
-				valueInfo := ValueInfo{
-					Name:    s.locked.String(),
-					Program: s.program.String(),
-				}
-				if s.locked.String() != contract.Value {
-					for _, r := range clause.Reqs {
-						if s.locked.String() == r.Name {
-							valueInfo.Asset = r.assetExpr.String()
-							valueInfo.Amount = r.amountExpr.String()
-							break
+	for _, contract := range contracts {
+		err = compileContract(contract, globalEnv)
+		if err != nil {
+			return nil, errors.Wrap(err, "compiling contract")
+		}
+
+		if len(contract.Params) == 0 || len(args) > 0 {
+			contract.Program, err = instantiate(contract, args, contract.Body)
+			if err != nil {
+				return nil, errors.Wrap(err, "instantiating contract")
+			}
+		}
+		for _, clause := range contract.Clauses {
+			for _, stmt := range clause.statements {
+				switch s := stmt.(type) {
+				case *lockStatement:
+					valueInfo := ValueInfo{
+						Name:    s.locked.String(),
+						Program: s.program.String(),
+					}
+					if s.locked.String() != contract.Value {
+						for _, r := range clause.Reqs {
+							if s.locked.String() == r.Name {
+								valueInfo.Asset = r.assetExpr.String()
+								valueInfo.Amount = r.amountExpr.String()
+								break
+							}
 						}
 					}
+					clause.Values = append(clause.Values, valueInfo)
+				case *unlockStatement:
+					valueInfo := ValueInfo{Name: contract.Value}
+					clause.Values = append(clause.Values, valueInfo)
 				}
-				clause.Values = append(clause.Values, valueInfo)
-			case *unlockStatement:
-				valueInfo := ValueInfo{Name: contract.Value}
-				clause.Values = append(clause.Values, valueInfo)
 			}
 		}
 	}
 
-	return []*Contract{contract}, nil
+	return contracts, nil
 }
 
 func instantiate(contract *Contract, args []ContractArg, body []byte) ([]byte, error) {
@@ -203,10 +192,6 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 		stk = stk.add("<clause selector>")
 	}
 
-	// TODO(bobg): when we handle multiple contracts per compilation,
-	// all must be decorated with the recursive flag before any are
-	// compiled.
-	contract.recursive = checkRecursive(contract)
 	if contract.recursive {
 		stk = stk.add(contract.Name)
 	}
@@ -535,6 +520,10 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 					case entry.c.recursive:
 						// Non-recursive call to a (different) recursive contract
 						// <body> <argN> <argN-1> ... <arg1> <N+1> DUP PICK 0 CHECKPREDICATE
+						if len(entry.c.Body) == 0 {
+							// TODO(bobg): sort input contracts topologically to permit forward calling
+							return stk, fmt.Errorf("contract \"%s\" not defined", entry.c.Name)
+						}
 						stk = b.addData(stk, entry.c.Body)
 						stk = b.addCatPushdata(stk, partialName)
 						err = addArgs()
@@ -555,6 +544,10 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 						}
 						stk = b.addInt64(stk, int64(len(e.args)))
 						stk = b.addCatPushdata(stk, partialName)
+						if len(entry.c.Body) == 0 {
+							// TODO(bobg): sort input contracts topologically to permit forward calling
+							return stk, fmt.Errorf("contract \"%s\" not defined", entry.c.Name)
+						}
 						stk = b.addData(stk, entry.c.Body)
 						stk = b.addCatPushdata(stk, partialName)
 					}
