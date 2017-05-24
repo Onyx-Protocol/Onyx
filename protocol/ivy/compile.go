@@ -126,33 +126,30 @@ func instantiate(contract *Contract, args []ContractArg, body []byte) ([]byte, e
 	}
 	// xxx typecheck args against param types
 	b := vmutil.NewBuilder()
-	addArgs := func() {
-		for i := len(args) - 1; i >= 0; i-- {
-			a := args[i]
-			switch {
-			case a.B != nil:
-				var n int64
-				if *a.B {
-					n = 1
-				}
-				b.AddInt64(n)
-			case a.I != nil:
-				b.AddInt64(*a.I)
-			case a.S != nil:
-				b.AddData(*a.S)
+
+	for i := len(args) - 1; i >= 0; i-- {
+		a := args[i]
+		switch {
+		case a.B != nil:
+			var n int64
+			if *a.B {
+				n = 1
 			}
+			b.AddInt64(n)
+		case a.I != nil:
+			b.AddInt64(*a.I)
+		case a.S != nil:
+			b.AddData(*a.S)
 		}
 	}
+
 	if contract.recursive {
-		// <body> <argN> <argN-1> ... <arg1> <N+1> DUP PICK 0 CHECKPREDICATE
+		// <argN> <argN-1> ... <arg1> <body> DEPTH OVER 0 CHECKPREDICATE
 		b.AddData(body)
-		addArgs()
-		b.AddInt64(int64(len(args) + 1))
-		b.AddOp(vm.OP_DUP).AddOp(vm.OP_PICK)
+		b.AddOp(vm.OP_DEPTH).AddOp(vm.OP_OVER)
 	} else {
-		// <argN> <argN-1> ... <arg1> <N> <body> 0 CHECKPREDICATE
-		addArgs()
-		b.AddInt64(int64(len(args)))
+		// <argN> <argN-1> ... <arg1> DEPTH <body> 0 CHECKPREDICATE
+		b.AddOp(vm.OP_DEPTH)
 		b.AddData(body)
 	}
 	b.AddInt64(0)
@@ -491,69 +488,51 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 				if entry := env.lookup(string(v)); entry != nil && entry.t == contractType {
 					partialName := fmt.Sprintf("%s(...)", v)
 					stk = b.addData(stk, nil)
-					addArgs := func() error {
-						if len(e.args) != len(entry.c.Params) {
-							return fmt.Errorf("contract \"%s\" expects %d argument(s), got %d", entry.c.Name, len(entry.c.Params), len(e.args))
-						}
 
-						for i := len(e.args) - 1; i >= 0; i-- {
-							arg := e.args[i]
-							if entry.c.Params[i].Type != "" && arg.typ(env) != entry.c.Params[i].Type {
-								return fmt.Errorf("argument %d to contract \"%s\" has type \"%s\", must be \"%s\"", i, entry.c.Name, arg.typ(env), entry.c.Params[i].Type)
-							}
-							stk, err := compileExpr(b, stk, contract, clause, env, counts, arg)
-							if err != nil {
-								return err
-							}
-							stk = b.addCatPushdata(stk, partialName)
+					if len(e.args) != len(entry.c.Params) {
+						return stk, fmt.Errorf("contract \"%s\" expects %d argument(s), got %d", entry.c.Name, len(entry.c.Params), len(e.args))
+					}
+
+					for i := len(e.args) - 1; i >= 0; i-- {
+						arg := e.args[i]
+						if entry.c.Params[i].Type != "" && arg.typ(env) != entry.c.Params[i].Type {
+							return stk, fmt.Errorf("argument %d to contract \"%s\" has type \"%s\", must be \"%s\"", i, entry.c.Name, arg.typ(env), entry.c.Params[i].Type)
 						}
-						return nil
+						stk, err := compileExpr(b, stk, contract, clause, env, counts, arg)
+						if err != nil {
+							return stk, err
+						}
+						stk = b.addCatPushdata(stk, partialName)
 					}
 
 					switch {
 					case entry.c == contract:
 						// Recursive call - cannot use entry.c.Body
-						// <body> <argN> <argN-1> ... <arg1> <N+1> DUP PICK 0 CHECKPREDICATE
+						// <argN> <argN-1> ... <arg1> <body> DEPTH OVER 0 CHECKPREDICATE
 						stk, err = compileRef(b, stk, counts, varRef(contract.Name))
 						if err != nil {
 							return stk, errors.Wrap(err, "compiling contract call")
 						}
 						stk = b.addCatPushdata(stk, partialName)
-						err = addArgs()
-						if err != nil {
-							return stk, errors.Wrap(err, "compiling contract call")
-						}
-						stk = b.addInt64(stk, int64(1+len(e.args)))
-						stk = b.addCatPushdata(stk, partialName)
-						stk = b.addData(stk, []byte{byte(vm.OP_DUP), byte(vm.OP_PICK)})
+						stk = b.addData(stk, []byte{byte(vm.OP_DEPTH), byte(vm.OP_OVER)})
 						stk = b.addCatPushdata(stk, partialName)
 
 					case entry.c.recursive:
 						// Non-recursive call to a (different) recursive contract
-						// <body> <argN> <argN-1> ... <arg1> <N+1> DUP PICK 0 CHECKPREDICATE
+						// <argN> <argN-1> ... <arg1> <body> DEPTH OVER 0 CHECKPREDICATE
 						if len(entry.c.Body) == 0 {
 							// TODO(bobg): sort input contracts topologically to permit forward calling
 							return stk, fmt.Errorf("contract \"%s\" not defined", entry.c.Name)
 						}
 						stk = b.addData(stk, entry.c.Body)
 						stk = b.addCatPushdata(stk, partialName)
-						err = addArgs()
-						if err != nil {
-							return stk, errors.Wrap(err, "compiling contract call")
-						}
-						stk = b.addInt64(stk, int64(1+len(e.args)))
-						stk = b.addCatPushdata(stk, partialName)
-						stk = b.addData(stk, []byte{byte(vm.OP_DUP), byte(vm.OP_PICK)})
+						stk = b.addData(stk, []byte{byte(vm.OP_DEPTH), byte(vm.OP_OVER)})
 						stk = b.addCatPushdata(stk, partialName)
 
 					default:
 						// Non-recursive call to non-recursive contract
-						// <argN> <argN-1> ... <arg1> <N> <body> 0 CHECKPREDICATE
-						err = addArgs()
-						if err != nil {
-							return stk, errors.Wrap(err, "compiling contract call")
-						}
-						stk = b.addInt64(stk, int64(len(e.args)))
+						// <argN> <argN-1> ... <arg1> DEPTH <body> 0 CHECKPREDICATE
+						stk = b.addData(stk, []byte{byte(vm.OP_DEPTH)})
 						stk = b.addCatPushdata(stk, partialName)
 						if len(entry.c.Body) == 0 {
 							// TODO(bobg): sort input contracts topologically to permit forward calling
