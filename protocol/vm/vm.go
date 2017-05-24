@@ -223,7 +223,7 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	dis, err := Disassemble(e.Prog, nil)
+	dis, err := Disassemble(e.Prog)
 	if err != nil {
 		dis = "???"
 	}

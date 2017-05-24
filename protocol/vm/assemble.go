@@ -114,16 +114,13 @@ func Assemble(s string) (res []byte, err error) {
 	return res, nil
 }
 
-// Disassemble converts the bytecode in prog to a string of
-// human-readable opcodes. The labels map maps absolute program
-// addresses to jump-target labels. If nil or incomplete, labels are
-// generated automatically.
-func Disassemble(prog []byte, labels map[uint32]string) (string, error) {
-	var insts []Instruction
+func Disassemble(prog []byte) (string, error) {
+	var (
+		insts []Instruction
 
-	if labels == nil {
+		// maps program locations (used as jump targets) to a label for each
 		labels = make(map[uint32]string)
-	}
+	)
 
 	// first pass: look for jumps
 	for i := uint32(0); i < uint32(len(prog)); {

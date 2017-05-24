@@ -44,7 +44,7 @@ func TestInferConstraints(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(want, prog) {
-		progSrc, _ := vm.Disassemble(prog, nil)
+		progSrc, _ := vm.Disassemble(prog)
 		t.Errorf("expected sig witness program %x [%s], got %x [%s]", want, wantSrc, prog, progSrc)
 	}
 }
