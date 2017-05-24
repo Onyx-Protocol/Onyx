@@ -16,20 +16,23 @@ import (
 )
 
 const (
-	pgport = "12345"
+	pgport      = "12345"
+	chainURL    = "https://github.com/chain/chain.git"
+	chainprvURL = "https://github.com/chain/chainprv.git"
 )
 
 // This command assumes it has free rein over $HOME/integration.
 var (
-	home     = os.Getenv("HOME")
-	dir      = home + "/integration"
+	dir      = os.Getenv("HOME") + "/integration"
 	lockFile = dir + "/lock"
 	wkdir    = dir + "/work"
 	gobin    = dir + "/bin"
 	pgdir    = dir + "/pg"
 	pgrun    = dir + "/pgrun" // for socket file
 	pglog    = dir + "/pglog" // for log file
-	chain    = first(os.Getenv("CHAIN"), home+"/go/src/chain")
+	gopath   = dir + "/go"
+	chain    = gopath + "/src/chain"
+	chainprv = chain + "prv"
 )
 
 var (
@@ -65,13 +68,17 @@ func main() {
 	args := flag.Args()[1:]
 
 	// accumulate environment for the test process
-	var env []string
-	env = append(env, "CHAIN="+chain)
+	env := []string{
+		"CHAIN=" + chain,
+		"GOPATH=" + gopath,
+	}
 
 	setupDB(ctx, *flagL)
 	pgURL := "postgresql:///postgres?host=" + pgrun + "&port=" + pgport
 	env = append(env, "DB_URL_TEST="+pgURL) // for chain/database/pg/pgtest
 
+	initRepo(ctx, chainURL, chain)
+	initRepo(ctx, chainprvURL, chainprv)
 	buildTest(ctx, pkg)
 
 	must(os.MkdirAll(wkdir, 0700))
@@ -96,13 +103,7 @@ func main() {
 }
 
 func printInfo(ctx context.Context) {
-	c := command(ctx, "git", "rev-parse", "HEAD")
-	c.Dir = chain
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-	must(run(c))
-
-	c = command(ctx, "hostname")
+	c := command(ctx, "hostname")
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	must(run(c))
@@ -144,6 +145,23 @@ func setupDB(ctx context.Context, logMinDur time.Duration) {
 		log.Printf("go: %v", err)
 		panic("cmd failed")
 	}
+}
+
+func initRepo(ctx context.Context, url, dir string) {
+	must(os.MkdirAll(dir, 0700))
+	if ents, _ := ioutil.ReadDir(dir); len(ents) > 0 {
+		must(runIn(dir, command(ctx, "git", "clean", "-xdf")))
+		must(runIn(dir, command(ctx, "git", "checkout", "main")))
+		must(runIn(dir, command(ctx, "git", "fetch", "origin")))
+		must(runIn(dir, command(ctx, "git", "reset", "--hard", "origin/main")))
+	} else {
+		must(run(command(ctx, "git", "clone", url, dir)))
+	}
+	c := command(ctx, "git", "rev-parse", "HEAD")
+	c.Dir = dir
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	must(run(c))
 }
 
 func buildTest(ctx context.Context, pkg string) {
@@ -207,6 +225,11 @@ func command(ctx context.Context, name string, arg ...string) *exec.Cmd {
 func run(c *exec.Cmd) error {
 	logCmd(c)
 	return c.Run()
+}
+
+func runIn(dir string, c *exec.Cmd) error {
+	c.Dir = dir
+	return run(c)
 }
 
 func start(c *exec.Cmd) error {

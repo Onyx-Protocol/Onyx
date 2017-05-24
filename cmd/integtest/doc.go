@@ -25,13 +25,15 @@ to assist in debugging a failed test.
 (Note, however, that the test process itself
 can write files anywhere.)
 
+It reads GitHub credentials from .netrc.
+
 It requires Postgres and Go installed.
 
 Test Environment
 
 This tool always sets some values for the test process:
 
-  CHAIN          from environment, or $HOME/go/src/chain
+  CHAIN          a clean checkout of the chain repo (and ${CHAIN}prv)
   DB_URL_TEST    the URL of a new, empty postgres cluster
   (working dir)  an empty scratch directory
 
