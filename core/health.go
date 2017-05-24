@@ -24,6 +24,11 @@ func (a *API) health() (x struct {
 	Errors map[string]string `json:"errors"`
 }) {
 	x.Errors = make(map[string]string)
+
+	if err := a.sdb.RaftService().Err(); err != nil {
+		x.Errors["raft"] = err.Error()
+	}
+
 	a.healthMu.Lock()
 	defer a.healthMu.Unlock()
 	for name, s := range a.healthErrors {
