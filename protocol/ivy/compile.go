@@ -114,7 +114,7 @@ func instantiate(contract *Contract, args []ContractArg, body []byte) ([]byte, e
 		return nil, fmt.Errorf("contract \"%s\" expects %d argument(s), got %d", contract.Name, len(contract.Params), len(args))
 	}
 	// xxx typecheck args against param types
-	b := vmutil.NewBuilder(false)
+	b := vmutil.NewBuilder()
 	addArgs := func() {
 		for i := len(args) - 1; i >= 0; i-- {
 			a := args[i]

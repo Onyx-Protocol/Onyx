@@ -193,7 +193,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		Transaction: unsigned,
 	}
 	h := tpl.Hash(0)
-	builder := vmutil.NewBuilder(false)
+	builder := vmutil.NewBuilder()
 	builder.AddData(h.Bytes())
 	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 	prog, _ := builder.Build()

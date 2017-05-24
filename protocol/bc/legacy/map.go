@@ -125,7 +125,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 				trID := addEntry(tr)
 				assetID := oldIss.AssetID()
 
-				builder := vmutil.NewBuilder(false)
+				builder := vmutil.NewBuilder()
 				builder.AddData(oldIss.Nonce).AddOp(vm.OP_DROP)
 				builder.AddOp(vm.OP_ASSET).AddData(assetID.Bytes()).AddOp(vm.OP_EQUAL)
 				prog, _ := builder.Build() // error is impossible

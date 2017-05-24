@@ -36,7 +36,7 @@ func NewIssuanceTx(tb testing.TB, initial bc.Hash, opts ...func(*legacy.Tx)) *le
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	builder := vmutil.NewBuilder(false)
+	builder := vmutil.NewBuilder()
 	builder.AddRawBytes(sigProg)
 	issuanceProgram, _ := builder.Build()
 
@@ -64,7 +64,7 @@ func NewIssuanceTx(tb testing.TB, initial bc.Hash, opts ...func(*legacy.Tx)) *le
 	}
 
 	// Sign with a simple TXSIGHASH signature.
-	builder = vmutil.NewBuilder(false)
+	builder = vmutil.NewBuilder()
 	h := tx.SigHash(0)
 	builder.AddData(h.Bytes())
 	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
