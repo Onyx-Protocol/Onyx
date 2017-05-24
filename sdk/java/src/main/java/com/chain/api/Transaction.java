@@ -233,6 +233,11 @@ public class Transaction {
      */
     @SerializedName("is_local")
     public String isLocal;
+
+    /**
+     * Witness arguments passed to the input.
+     */
+    public List<String> arguments;
   }
 
   /**

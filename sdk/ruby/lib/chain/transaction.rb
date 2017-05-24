@@ -197,6 +197,11 @@ module Chain
       # A flag indicating if the input is local.
       # @return [Boolean]
       attrib :is_local
+
+      # @!attribute [r] arguments
+      # The witness arguments passed to the input.
+      # @return [Array<String>]
+      attrib :arguments
     end
 
     class Output < ResponseObject
