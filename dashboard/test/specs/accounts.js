@@ -38,6 +38,7 @@ describe('accounts', () => {
       const alias = 'test-account-' + uuid.v4()
       browser.click('.ItemList button')
       browser.setValue('input[name=alias]', alias)
+      browser.click('.FormContainer input[type=radio][value=generate]')
       browser.click('.FormContainer button')
       browser.waitForVisible('.AccountShow')
       browser.getText('.AccountShow').should.contain('Created account. Create another?')
