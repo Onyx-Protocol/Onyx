@@ -43,6 +43,8 @@ func (s *Store) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 // Save stores g.
 // If a grant equivalent to g is already stored,
 // Save has no effect.
+// It also sets field CreatedAt to the time g is stored (the current time),
+// or to the time the original grant was stored, if there is one.
 func (s *Store) Save(ctx context.Context, g *Grant) error {
 	key := s.keyPrefix + g.Policy
 	if g.CreatedAt == "" {
@@ -59,6 +61,7 @@ func (s *Store) Save(ctx context.Context, g *Grant) error {
 	for _, existing := range grants {
 		if EqualGrants(*existing, *g) {
 			// this grant already exists, do nothing
+			g.CreatedAt = existing.CreatedAt
 			return nil
 		}
 	}
