@@ -12,20 +12,30 @@ import (
 	"chain/protocol/vmutil"
 )
 
-type (
-	ContractParam struct {
-		Name string `json:"name"`
-		Typ  string `json:"type"`
-	}
+// ValueInfo describes how a blockchain value is used in a contract
+// clause.
+type ValueInfo struct {
+	// Name is the clause's name for this value.
+	Name string `json:"name"`
 
-	ValueInfo struct {
-		Name    string `json:"name"`
-		Program string `json:"program,omitempty"`
-		Asset   string `json:"asset,omitempty"`
-		Amount  string `json:"amount,omitempty"`
-	}
-)
+	// Program is the program expression used to the lock the value, if
+	// the value is locked with "lock." If it's unlocked with "unlock"
+	// instead, this is empty.
+	Program string `json:"program,omitempty"`
 
+	// Asset is the expression describing the asset type the value must
+	// have, as it appears in a clause's "requires" section. If this is
+	// the contract value instead, this is empty.
+	Asset string `json:"asset,omitempty"`
+
+	// Amount is the expression describing the amount the value must
+	// have, as it appears in a clause's "requires" section. If this is
+	// the contract value instead, this is empty.
+	Amount string `json:"amount,omitempty"`
+}
+
+// ContractArg is an argument with which to instantiate a contract as
+// a program. Exactly one of B, I, and S should be supplied.
 type ContractArg struct {
 	B *bool               `json:"boolean,omitempty"`
 	I *int64              `json:"integer,omitempty"`
@@ -33,10 +43,11 @@ type ContractArg struct {
 }
 
 // Compile parses a sequence of Ivy contracts from the supplied reader
-// and produces the compiled bytecode and other analysis. If args is
-// non-empty - or it's empty and the contract takes no arguments -
-// then the contract body and args are instantiated and the result
-// placed in the contract's Program field.
+// and produces Contract objects containing the compiled bytecode and
+// other analysis. If args is non-empty - or it's empty and the
+// contract takes no arguments - then the contract body and args are
+// "instantiated" as a program and the result placed in the contract's
+// Program field.
 func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
 	inp, err := ioutil.ReadAll(r)
 	if err != nil {

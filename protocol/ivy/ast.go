@@ -9,52 +9,76 @@ import (
 	chainjson "chain/encoding/json"
 )
 
+// Contract is a compiled Ivy contract.
 type Contract struct {
-	Name    string    `json:"name"`
-	Params  []*Param  `json:"params,omitempty"`
-	Clauses []*Clause `json:"clauses"`
-	Value   string    `json:"value"`
+	// Name is the contract name.
+	Name string `json:"name"`
 
-	// Optimized bytecode of the contract body. Not a complete program!
-	// Use instantiate to turn this into a program.
+	// Params is the list of contract parameters.
+	Params []*Param `json:"params,omitempty"`
+
+	// Clauses is the list of contract clauses.
+	Clauses []*Clause `json:"clauses"`
+
+	// Value is the name of the value locked by the contract.
+	Value string `json:"value"`
+
+	// Body is the optimized bytecode of the contract body. This is not
+	// a complete program!  Use instantiate to turn this (plus some
+	// arguments) into a program.
 	Body chainjson.HexBytes `json:"body_bytecode"`
 
-	// The string of opcodes corresponding to Body.
+	// Opcodes is the human-readable string of opcodes corresponding to
+	// Body.
 	Opcodes string `json:"body_opcodes,omitempty"`
 
-	// The bytecode of the program instantiated from Body.
+	// Program is the bytecode of the program instantiated from Body.
 	Program chainjson.HexBytes `json:"program,omitempty"`
 
 	// Whether this contract calls itself.
 	recursive bool
 }
 
+// Param is a contract or clause parameter.
 type Param struct {
-	Name string   `json:"name"`
+	// Name is the parameter name.
+	Name string `json:"name"`
+
+	// Type is the declared parameter type.
 	Type typeDesc `json:"declared_type"`
 
 	// InferredType, if available, is a more-specific type than Type,
-	// above, inferred from the logic of the contract.
+	// inferred from the logic of the contract.
 	InferredType typeDesc `json:"inferred_type,omitempty"`
 }
 
+// Clause is a compiled contract clause.
 type Clause struct {
-	Name   string       `json:"name"`
-	Params []*Param     `json:"params,omitempty"`
-	Reqs   []*ClauseReq `json:"reqs,omitempty"`
+	// Name is the clause name.
+	Name string `json:"name"`
+
+	// Params is the list of clause parameters.
+	Params []*Param `json:"params,omitempty"`
+
+	// Reqs is the list of requirements (from the clause's "requires"
+	// section).
+	Reqs []*ClauseReq `json:"reqs,omitempty"`
 
 	statements []statement
 
-	// Expressions passed to after() in this clause.
+	// MinTimes is the list of expressions passed to after() in this
+	// clause.
 	MinTimes []string `json:"mintimes,omitempty"`
 
-	// Expressions passed to before() in this clause.
+	// MaxTimes is the list of expressions passed to before() in this
+	// clause.
 	MaxTimes []string `json:"maxtimes,omitempty"`
 
-	// Hash functions and their arguments used in this clause.
+	// HashCalls is the list of hash functions and their arguments used
+	// in this clause.
 	HashCalls []HashCall `json:"hash_calls,omitempty"`
 
-	// Each value unlocked or relocked in this clause.
+	// Values is the list of values unlocked or relocked in this clause.
 	Values []ValueInfo `json:"values"`
 }
 
