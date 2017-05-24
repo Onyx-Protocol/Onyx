@@ -129,12 +129,13 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		return nil, errors.Wrap(err)
 	}
 
-	g, err := a.grants.Save(ctx, &authz.Grant{
+	g := &authz.Grant{
 		GuardType: x.GuardType,
 		GuardData: guardData,
 		Policy:    x.Policy,
 		Protected: false, // grants created through the createGrant RPC cannot be protected
-	})
+	}
+	err = a.grants.Save(ctx, g)
 	if err != nil {
 		return nil, err
 	}
