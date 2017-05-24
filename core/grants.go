@@ -205,8 +205,8 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 		Protected: x.Protected, // should always be false
 	}
 
-	err = a.grants.Delete(ctx, x.Policy, func(g1 *authz.Grant) bool {
-		return authz.EqualGrants(toDelete, *g1)
+	err = a.grants.Delete(ctx, x.Policy, func(g *authz.Grant) bool {
+		return authz.EqualGrants(*g, toDelete)
 	})
 	return errors.Wrap(err)
 }
