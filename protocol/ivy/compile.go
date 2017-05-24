@@ -200,13 +200,13 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 		stk = stk.add("<clause selector>")
 	}
 
-	if contract.recursive {
-		stk = stk.add(contract.Name)
-	}
-
 	for i := len(contract.Params) - 1; i >= 0; i-- {
 		p := contract.Params[i]
 		stk = stk.add(p.Name)
+	}
+
+	if contract.recursive {
+		stk = stk.add(contract.Name)
 	}
 
 	b := &builder{}
@@ -224,7 +224,7 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 			if contract.recursive {
 				n++
 			}
-			stk = b.addRoll(stk, n) // stack: [<clause params> [<maybe contract body>] <contract params> <clause selector>]
+			stk = b.addRoll(stk, n) // stack: [<clause params> <contract params> [<maybe contract body>] <clause selector>]
 		}
 
 		var stk2 stack
@@ -276,6 +276,8 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 
 	contract.Body = prog
 	contract.Opcodes = opcodes
+
+	contract.steps = b.steps()
 
 	return nil
 }

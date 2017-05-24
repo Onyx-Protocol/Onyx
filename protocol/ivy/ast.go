@@ -37,6 +37,9 @@ type Contract struct {
 
 	// Whether this contract calls itself.
 	recursive bool
+
+	// Pre-optimized list of instruction steps, with stack snapshots.
+	steps stepList
 }
 
 // Param is a contract or clause parameter.

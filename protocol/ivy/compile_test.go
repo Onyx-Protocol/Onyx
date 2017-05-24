@@ -1,11 +1,12 @@
 package ivy
 
 import (
-	"chain/protocol/ivy/ivytest"
 	"encoding/hex"
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"chain/protocol/ivy/ivytest"
 )
 
 func TestCompile(t *testing.T) {
@@ -67,7 +68,7 @@ func TestCompile(t *testing.T) {
 		{
 			"PriceChanger",
 			ivytest.PriceChanger,
-			`[{"name":"PriceChanger","params":[{"name":"askAmount","declared_type":"Amount"},{"name":"askAsset","declared_type":"Asset"},{"name":"sellerKey","declared_type":"PublicKey"},{"name":"sellerProg","declared_type":"Program"}],"clauses":[{"name":"changePrice","params":[{"name":"newAmount","declared_type":"Amount"},{"name":"newAsset","declared_type":"Asset"},{"name":"sig","declared_type":"Signature"}],"values":[{"name":"offered","program":"PriceChanger(newAmount, newAsset, sellerKey, sellerProg)"}]},{"name":"redeem","reqs":[{"name":"payment","asset":"askAsset","amount":"askAmount"}],"values":[{"name":"payment","program":"sellerProg","asset":"askAsset","amount":"askAmount"},{"name":"offered"}]}],"value":"offered","body_bytecode":"557a6433000000557a5379ae7cac690000c3c25100597a89587a895b7a895c7a895a7a8902747889008901c089c1633c00000000007b537a51567ac1","body_opcodes":"5 ROLL JUMPIF:$redeem $changePrice 5 ROLL 3 PICK TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 0 9 ROLL CATPUSHDATA 8 ROLL CATPUSHDATA 11 ROLL CATPUSHDATA 12 ROLL CATPUSHDATA 10 ROLL CATPUSHDATA 0x7478 CATPUSHDATA 0 CATPUSHDATA 192 CATPUSHDATA CHECKOUTPUT JUMP:$_end $redeem 0 0 ROT 3 ROLL 1 6 ROLL CHECKOUTPUT $_end"}]`,
+			`[{"name":"PriceChanger","params":[{"name":"askAmount","declared_type":"Amount"},{"name":"askAsset","declared_type":"Asset"},{"name":"sellerKey","declared_type":"PublicKey"},{"name":"sellerProg","declared_type":"Program"}],"clauses":[{"name":"changePrice","params":[{"name":"newAmount","declared_type":"Amount"},{"name":"newAsset","declared_type":"Asset"},{"name":"sig","declared_type":"Signature"}],"values":[{"name":"offered","program":"PriceChanger(newAmount, newAsset, sellerKey, sellerProg)"}]},{"name":"redeem","reqs":[{"name":"payment","asset":"askAsset","amount":"askAmount"}],"values":[{"name":"payment","program":"sellerProg","asset":"askAsset","amount":"askAmount"},{"name":"offered"}]}],"value":"offered","body_bytecode":"557a6433000000557a5479ae7cac690000c3c251005a7a89597a895b7a895c7a89567a8902747889008901c089c1633d0000000000537a547a51577ac1","body_opcodes":"5 ROLL JUMPIF:$redeem $changePrice 5 ROLL 4 PICK TXSIGHASH SWAP CHECKSIG VERIFY 0 0 AMOUNT ASSET 1 0 10 ROLL CATPUSHDATA 9 ROLL CATPUSHDATA 11 ROLL CATPUSHDATA 12 ROLL CATPUSHDATA 6 ROLL CATPUSHDATA 0x7478 CATPUSHDATA 0 CATPUSHDATA 192 CATPUSHDATA CHECKOUTPUT JUMP:$_end $redeem 0 0 3 ROLL 4 ROLL 1 7 ROLL CHECKOUTPUT $_end"}]`,
 		},
 		{
 			"OneTwo",
@@ -88,6 +89,7 @@ func TestCompile(t *testing.T) {
 			} else {
 				for _, contract := range got {
 					t.Log(contract.Opcodes)
+					t.Log("\n" + contract.steps.String())
 				}
 			}
 		})

@@ -16,11 +16,6 @@ type builderItem struct {
 	stk     stack
 }
 
-type step struct {
-	Opcodes string `json:"opcodes"`
-	Stack   string `json:"stack"`
-}
-
 func (b *builder) add(opcodes string, newstack stack) stack {
 	if b.pendingVerify != nil {
 		b.items = append(b.items, b.pendingVerify)
@@ -194,10 +189,34 @@ func (b *builder) opcodes() string {
 // ROLL              |  [... borrower balanceAmount balanceAsset 0 0 <amount> <asset> 1 lender]
 // CHECKOUTPUT       |  [... borrower balanceAmount balanceAsset checkOutput(collateral, lender)]
 // $_end             |  [... borrower lender deadline balanceAmount balanceAsset]
-func (b *builder) steps() []step {
+
+type (
+	step struct {
+		Opcodes string `json:"opcodes"`
+		Stack   string `json:"stack"`
+	}
+	stepList []step
+)
+
+func (b *builder) steps() stepList {
 	var result []step
 	for _, item := range b.items {
 		result = append(result, step{item.opcodes, item.stk.String()})
+	}
+	return stepList(result)
+}
+
+func (sl stepList) String() string {
+	maxWidth := 0
+	for _, s := range sl {
+		if len(s.Opcodes) > maxWidth {
+			maxWidth = len(s.Opcodes)
+		}
+	}
+	result := ""
+	format := fmt.Sprintf("%%-%d.%ds  %%s\n", maxWidth, maxWidth)
+	for _, s := range sl {
+		result += fmt.Sprintf(format, s.Opcodes, s.Stack)
 	}
 	return result
 }
