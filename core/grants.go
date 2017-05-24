@@ -205,31 +205,10 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 		Protected: x.Protected, // should always be false
 	}
 
-	var grantList authz.GrantList
-	found, err := a.sdb.Get(ctx, GrantPrefix+x.Policy, &grantList)
-	if err != nil || !found {
-		return errors.Wrap(err) // if !found, errors.Wrap(err) is nil
-	}
-
-	var keep []*authz.Grant
-	for _, g := range grantList.Grants {
-		if !authz.EqualGrants(*g, toDelete) {
-			keep = append(keep, g)
-		}
-	}
-
-	// We didn't match any grants, don't need to do an update. Return success
-	if len(keep) == len(grantList.Grants) {
-		return nil
-	}
-
-	gList := &authz.GrantList{Grants: keep}
-	err = a.sdb.Exec(ctx, sinkdb.Set(GrantPrefix+x.Policy, gList))
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	return nil
+	err = a.grants.Delete(ctx, x.Policy, func(g *authz.Grant) bool {
+		return authz.EqualGrants(*g, toDelete)
+	})
+	return errors.Wrap(err)
 }
 
 // deleteGrantsByAccessToken is invoked after an access token is deleted, and the
@@ -237,36 +216,15 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 // protected.
 func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error {
 	for _, p := range Policies {
-		var grantList authz.GrantList
-		_, err := a.sdb.Get(ctx, GrantPrefix+p, &grantList)
-		if err != nil {
-			return errors.Wrap(err)
-		}
-
-		var keep []*authz.Grant
-		for _, g := range grantList.Grants {
+		err := a.grants.Delete(ctx, p, func(g *authz.Grant) bool {
 			if g.GuardType != "access_token" {
-				keep = append(keep, g)
-				continue
+				return false
 			}
 			var data map[string]interface{}
-			err = json.Unmarshal(g.GuardData, &data)
-			if err != nil {
-				return errors.Wrap(err)
-			}
-
-			if id, _ := data["id"].(string); id != token {
-				keep = append(keep, g)
-			}
-		}
-
-		// We didn't match any grants, don't need to do an update
-		if len(keep) == len(grantList.Grants) {
-			continue
-		}
-
-		gList := &authz.GrantList{Grants: keep}
-		err = a.sdb.Exec(ctx, sinkdb.Set(GrantPrefix+p, gList))
+			json.Unmarshal(g.GuardData, &data)
+			id, _ := data["id"].(string)
+			return id == token
+		})
 		if err != nil {
 			return errors.Wrap(err)
 		}
