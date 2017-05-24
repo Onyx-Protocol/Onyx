@@ -42,8 +42,7 @@ func (s *Store) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 
 // Save stores g.
 // If a grant equivalent to g is already stored,
-// Save has no effect and returns a copy of the existing grant.
-// Otherwise, if successful, it returns g.
+// Save has no effect.
 func (s *Store) Save(ctx context.Context, g *Grant) error {
 	key := s.keyPrefix + g.Policy
 	if g.CreatedAt == "" {
