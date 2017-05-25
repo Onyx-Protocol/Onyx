@@ -9,8 +9,11 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"net"
 	"net/url"
+	"strings"
 
 	"github.com/lib/pq"
 
@@ -50,6 +53,46 @@ func init() {
 func IsUniqueViolation(err error) bool {
 	pqErr, ok := err.(*pq.Error)
 	return ok && pqErr.Code.Name() == "unique_violation"
+}
+
+// IsValidJSONB returns true if the provided bytes may be stored
+// in a Postgres JSONB data type. It validates that b is a valid
+// json document and that it does not include the \u0000 escape
+// sequence:
+// https://www.postgresql.org/message-id/E1YHHV8-00032A-Em@gemulon.postgresql.org
+func IsValidJSONB(b []byte) bool {
+	var v interface{}
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		return false
+	}
+	return !containsNullByte(v)
+}
+
+func containsNullByte(v interface{}) (found bool) {
+	const nullByte = '\u0000'
+	switch t := v.(type) {
+	case bool:
+		return false
+	case float64:
+		return false
+	case string:
+		return strings.ContainsRune(t, nullByte)
+	case []interface{}:
+		for _, v := range t {
+			found = found || containsNullByte(v)
+		}
+		return found
+	case map[string]interface{}:
+		for k, v := range t {
+			found = found || containsNullByte(k) || containsNullByte(v)
+		}
+		return found
+	case nil:
+		return false
+	default:
+		panic(fmt.Errorf("unknown json type %T", v))
+	}
 }
 
 func resolveURI(rawURI string) (string, error) {

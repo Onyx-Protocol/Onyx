@@ -31,7 +31,10 @@ type Saver interface {
 func Annotated(a *Asset) (*query.AnnotatedAsset, error) {
 	jsonTags := json.RawMessage(`{}`)
 	jsonDefinition := json.RawMessage(`{}`)
-	if len(a.RawDefinition()) > 0 {
+
+	// a.RawDefinition is the asset definition as it appears on the
+	// blockchain, so it's untrusted and may not be valid json.
+	if pg.IsValidJSONB(a.RawDefinition()) {
 		jsonDefinition = json.RawMessage(a.RawDefinition())
 	}
 	if a.Tags != nil {
