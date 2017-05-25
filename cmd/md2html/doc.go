@@ -11,7 +11,7 @@ of the converted markdown.
 
 Usage
 
-	md2html [-prefix <major>.<minor>] build DEST_PATH
+	md2html build DEST_PATH
 
 
 	destination - address or directory
@@ -30,7 +30,7 @@ Example
 
 Start a server in the current directory:
 
-	$ md2html [-prefix <major>.<minor>] serve [port]
+	$ md2html serve [port]
 
 Code Interpolation
 

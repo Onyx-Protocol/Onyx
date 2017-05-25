@@ -37,25 +37,13 @@ var commands = map[string]*command{
 	"build": {convert},
 }
 
-var version = "x.y"
-
 func main() {
 	if len(os.Args) < 2 {
 		help(os.Stdout)
 		os.Exit(0)
 	}
 
-	flagVersionPrefix := flag.String("prefix", "", "specify version prefix of docs (e.g. '1.1')")
-	flag.Usage = func() {
-		help(os.Stdout)
-		os.Exit(1)
-	}
-
 	flag.Parse()
-	if *flagVersionPrefix != "" {
-		version = *flagVersionPrefix
-	}
-
 	if len(flag.Args()) < 1 {
 		fmt.Fprintln(os.Stderr, "You must specify a command to run")
 		help(os.Stderr)
@@ -73,9 +61,7 @@ func main() {
 }
 
 func help(w io.Writer) {
-	fmt.Fprintln(w, "usage: md2html [-prefix PREFIX] [command] [command-arguments]")
-	fmt.Fprintln(w, "\nFlags:")
-	fmt.Fprintln(w, "\t-prefix   specify version prefix of docs (e.g. '1.1')")
+	fmt.Fprintln(w, "usage: md2html [command] [command-arguments]")
 	fmt.Fprint(w, "\nThe commands are:\n\n")
 	for name := range commands {
 		fmt.Fprintln(w, "\t", name)
@@ -88,7 +74,7 @@ func serve(args []string) {
 	if len(args) >= 1 {
 		if _, err := strconv.Atoi(args[0]); err != nil {
 			fmt.Fprint(os.Stderr, "You must specify a numeric port for serving content\n\n")
-			fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] serve PORT")
+			fmt.Fprintln(os.Stderr, "usage: md2html serve PORT")
 			fmt.Fprintln(os.Stderr)
 			os.Exit(1)
 		}
@@ -100,10 +86,6 @@ func serve(args []string) {
 	fmt.Printf("serving at: http://localhost%s\n", addr)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := "." + r.URL.Path
-
-		if version != "" {
-			path = strings.Replace(path, version+"/", "", 1)
-		}
 
 		paths := []string{
 			path,
@@ -143,7 +125,7 @@ func serve(args []string) {
 func convert(args []string) {
 	if len(args) < 1 {
 		fmt.Fprint(os.Stderr, "You must specify an destination path for built docs\n\n")
-		fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] build DEST_PATH")
+		fmt.Fprintln(os.Stderr, "usage: md2html build DEST_PATH")
 		fmt.Fprintln(os.Stderr)
 		os.Exit(1)
 	}
@@ -242,11 +224,9 @@ func renderFile(p string) ([]byte, error) {
 func renderTemplate(p string, content []byte, layout []byte) ([]byte, error) {
 	pathClass := strings.Replace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(p, "./"), "../"), ".md"), "/", "_", -1)
 	substitution := struct {
-		Body        string
-		Filename    string
-		Version     string
-		VersionPath string
-	}{string(content), pathClass, version, version + "/"}
+		Body     string
+		Filename string
+	}{string(content), pathClass}
 
 	layoutTemplate, err := template.New(p).Parse(string(layout))
 	if err != nil {
