@@ -605,7 +605,7 @@ New opcodes:
 
 For simplicity and flexibility, we are removing the commitments to both the transaction witnesses and the block witness.
 
-1. The [transactions Merkle root](https://chain.com/docs/{{.VersionPath}}protocol/specifications/data#transactions-merkle-root) should be calculated based on the transaction IDs, rather than the transaction witness hashes. The code for calculating the transaction witness hashes can be eliminated.
+1. The [transactions Merkle root](https://chain.com/docs/1.1/protocol/specifications/data#transactions-merkle-root) should be calculated based on the transaction IDs, rather than the transaction witness hashes. The code for calculating the transaction witness hashes can be eliminated.
 
 2. `Block ID` (which is the ID included in the next block, and which currently includes the hash of the block witness) should be computed instead to be identical to how the block signature hash is currently computed (i.e., it should use 0x00 serialization flags).
 
