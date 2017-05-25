@@ -57,17 +57,14 @@ func IsUniqueViolation(err error) bool {
 }
 
 // IsValidJSONB returns true if the provided bytes may be stored
-// in a Postgres JSONB data type. It validates that b is a valid
-// json document and that it does not include the \u0000 escape
-// sequence:
+// in a Postgres JSONB data type. It validates that b is valid
+// utf-8 and valid json. It also verifies that it does not include
+// the \u0000 escape sequence, unsupported by the jsonb data type:
 // https://www.postgresql.org/message-id/E1YHHV8-00032A-Em@gemulon.postgresql.org
 func IsValidJSONB(b []byte) bool {
 	var v interface{}
 	err := json.Unmarshal(b, &v)
-	if err != nil {
-		return false
-	}
-	return utf8.Valid(b) && !containsNullByte(v)
+	return err == nil && utf8.Valid(b) && !containsNullByte(v)
 }
 
 func containsNullByte(v interface{}) (found bool) {

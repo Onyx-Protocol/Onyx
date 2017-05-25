@@ -37,12 +37,9 @@ func TestAnnotatedTxsReferenceData(t *testing.T) {
 
 	referenceData := []string{
 		"",
-		"{}",
-		`{"hello": "world"}`,
 		"{\"\u0000\": \"world\"}",
 		"{\"badString\":\"\u0000\"}",
 		`{"badString": "\u0000"}`,
-		`{"badString": "\u0001"}`,
 		`{"🤦‍♀️": "🤦‍♀️"}`,
 		`🤦‍♀️`,
 		"{",
@@ -52,8 +49,6 @@ func TestAnnotatedTxsReferenceData(t *testing.T) {
 		`{"client_id": 1, "device_name": "FooBar\ufffd\u0000\ufffd\u000f\ufffd"}`,
 		string(unicode.MaxRune + 1),
 		`"` + string(unicode.MaxRune+1) + `"`,
-		string(unicode.ReplacementChar),
-		`"` + string(unicode.ReplacementChar) + `"`,
 		string([]byte{0xff, 0xfe, 0xfd}),
 		`"` + string([]byte{0xff, 0xfe, 0xfd}) + `"`,
 	}
