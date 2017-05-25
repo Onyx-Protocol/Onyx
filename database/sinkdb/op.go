@@ -6,6 +6,18 @@ import (
 	"chain/database/sinkdb/internal/sinkpb"
 )
 
+// Op represents a change to the data store.
+// Each Op starts with conditions, boolean predicates over
+// existing stored data.
+// If all conditions return true, the Op is said to be satisfied.
+// It then results in zero or more effects,
+// mutations to apply to the data.
+// If there is more than one way to satisfy the conditions,
+// the effects may differ depending on how they are satisfied.
+// If an Op is unsatisfied, it has no effect.
+// The zero value of Op is a valid operation
+// with no conditions (it is always satisfied)
+// and no effects.
 type Op struct {
 	err     error
 	conds   []*sinkpb.Cond
