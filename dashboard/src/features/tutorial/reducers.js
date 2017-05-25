@@ -9,7 +9,7 @@ export const step = (state = 0, action) => {
   return state
 }
 
-export const isShowing = (state = true, action) => {
+export const isShowing = (state = process.env.NODE_ENV != 'test', action) => {
   if (action.type == 'DISMISS_TUTORIAL') return false
   if (action.type == 'OPEN_TUTORIAL') return true
   return state

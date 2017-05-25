@@ -38,6 +38,7 @@ describe('assets', () => {
       const alias = 'test-asset-' + uuid.v4()
       browser.click('.ItemList button')
       browser.setValue('input[name=alias]', alias)
+      browser.click('.FormContainer input[type=radio][value=generate]')
       browser.click('.FormContainer button')
       browser.waitForVisible('.AssetShow')
       browser.getText('.AssetShow').should.contain('Created asset. Create another?')
