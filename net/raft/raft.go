@@ -309,8 +309,8 @@ func (sv *Service) Init() error {
 	sv.raftNode = raftNode
 
 	// StartNode appends to the initial log a ConfChangeAddNode entry for
-	// each peer. We can't campaign until these entries are applied,
-	// so synchronously apply them before continuing.
+	// each peer (in our case, just this node). We can't campaign until
+	// this entry is applied, so synchronously apply them before continuing.
 	rd := <-raftNode.Ready()
 	sv.runUpdatesReady(rd, walobj, map[string]chan bool{})
 
