@@ -240,17 +240,16 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 
 	// Start the algorithm. It is okay to not lock startMu since
 	// sv hasn't escaped yet.
-	sv.startLocked(id, raftNode, walobj)
+	sv.id = id
+	sv.raftNode = raftNode
+	sv.startLocked(walobj)
 
 	return sv, nil
 }
 
 // startLocked begins the raft algorithm. It requires sv.startMu
 // to already be locked.
-func (sv *Service) startLocked(id uint64, raftNode raft.Node, walobj *wal.WAL) {
-	sv.id = id
-	sv.raftNode = raftNode
-
+func (sv *Service) startLocked(walobj *wal.WAL) {
 	go sv.runUpdates(walobj)
 	go runTicks(sv.raftNode)
 }
@@ -280,6 +279,7 @@ func (sv *Service) config(id uint64) *raft.Config {
 // Init initializes a new Raft cluster.
 func (sv *Service) Init() error {
 	const firstNodeID = 1
+	ctx := context.Background()
 
 	sv.startMu.Lock()
 	defer sv.startMu.Unlock()
@@ -288,7 +288,7 @@ func (sv *Service) Init() error {
 		return ErrExistingCluster
 	}
 
-	log.Printkv(context.Background(), "raftid", firstNodeID)
+	log.Printkv(ctx, "raftid", firstNodeID)
 	err := writeID(sv.dir, firstNodeID)
 	if err != nil {
 		return err
@@ -304,7 +304,23 @@ func (sv *Service) Init() error {
 
 	peers := []raft.Peer{{ID: firstNodeID, Context: []byte(sv.laddr)}}
 	raftNode := raft.StartNode(sv.config(firstNodeID), peers)
-	sv.startLocked(firstNodeID, raftNode, walobj)
+
+	sv.id = firstNodeID
+	sv.raftNode = raftNode
+
+	// StartNode appends to the initial log a ConfChangeAddNode entry for
+	// each peer (in our case, just this node). We can't campaign until
+	// this entry is applied, so synchronously apply them before continuing.
+	rd := <-raftNode.Ready()
+	sv.runUpdatesReady(rd, walobj, map[string]chan bool{})
+
+	sv.startLocked(walobj)
+
+	// campaign immediately to avoid waiting electionTick ticks in tests
+	err = raftNode.Campaign(ctx)
+	if err != nil {
+		log.Error(ctx, err, "election failed") // ok to continue
+	}
 	return nil
 }
 
@@ -326,8 +342,9 @@ func (sv *Service) Join(bootURL string) error {
 	if err != nil {
 		return err
 	}
-	raftNode := raft.RestartNode(sv.config(id))
-	sv.startLocked(id, raftNode, walobj)
+	sv.id = id
+	sv.raftNode = raft.RestartNode(sv.config(id))
+	sv.startLocked(walobj)
 	return nil
 }
 
