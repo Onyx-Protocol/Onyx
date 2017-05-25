@@ -3,7 +3,8 @@ package core
 import (
 	"context"
 	"math/rand"
-	"os"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -169,6 +170,9 @@ func TestContracts(t *testing.T) {
 			{},
 			{"sellerSig": "sellerKey", "buyerSig": "buyerKey"},
 		},
+	}, {
+		contract: ivytest.PriceChanger,
+		clauses:  []map[string]string{{"sig": "sellerKey"}},
 	}}
 
 	for _, test := range tests {
@@ -179,7 +183,9 @@ func TestContracts(t *testing.T) {
 			args, vals := contractArgs(t, ctx, compiled.Contracts[0], clause, accounts, assets)
 			compiled = compileIvy(compileReq{
 				Source: test.contract,
-				ArgMap: map[string][]ivy.ContractArg{compiled.Contracts[0].Name: args},
+				ArgMap: map[string][]ivy.ContractArg{
+					compiled.Contracts[0].Name: args,
+				},
 			})
 			contract := compiled.Contracts[0]
 			contractAssetAmount := bc.AssetAmount{AssetId: &asset1, Amount: 1}
@@ -215,6 +221,47 @@ func TestContracts(t *testing.T) {
 			<-pinStore.PinWaiter(utxos.PinName, b.Height)
 			<-pinStore.PinWaiter(account.PinName, b.Height)
 
+			sigInst := &txbuilder.SigningInstruction{}
+			for _, arg := range clause.Params {
+				switch arg.Type {
+				case "Amount":
+					amount := rand.Int63()
+					vals[arg.Name] = amount
+					sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(vm.Int64Bytes(amount)))
+				case "Asset":
+					asset := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+					assetBits := asset.Bytes()
+					vals[arg.Name] = asset
+					sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(assetBits))
+				case "PublicKey":
+					valName := test.clauses[i][arg.Name]
+					vals[arg.Name] = vals[valName].(*key).pk
+					sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(vals[valName].(*key).pk))
+				case "Signature":
+					valName := test.clauses[i][arg.Name]
+					key := vals[valName].(*key)
+					var hexPath []json.HexBytes
+					for _, v := range key.path {
+						hexPath = append(hexPath, v)
+					}
+					sigInst.WitnessComponents = append(sigInst.WitnessComponents, &txbuilder.RawTxSigWitness{
+						Quorum: 1,
+						Keys: []txbuilder.KeyID{{
+							XPub:           key.xpub,
+							DerivationPath: hexPath,
+						}},
+					})
+				case "String":
+					valName := test.clauses[i][arg.Name]
+					vals[arg.Name] = vals[valName].([]byte)
+					sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(vals[valName].([]byte)))
+				}
+			}
+			if len(contract.Clauses) > 1 {
+				sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(
+					vm.Int64Bytes(int64(i)),
+				))
+			}
 			source = txbuilder.Action(utxoStore.NewSpendUTXOAction(tpl.Transaction.ResultIds[0], nil))
 			actions := []txbuilder.Action{source}
 			for _, val := range clause.Values {
@@ -228,10 +275,14 @@ func TestContracts(t *testing.T) {
 					actions = append(actions, txbuilder.Action(assets.NewIssueAction(assetAmount, nil)))
 				}
 				if val.Program != "" {
+					prog, err := valueProg(test.contract, val.Program, vals)
+					if err != nil {
+						t.Fatal(err)
+					}
 					actions = append(actions, txbuilder.Action(txbuilder.NewControlReceiverAction(
 						assetAmount,
 						&txbuilder.Receiver{
-							ControlProgram: vals[val.Program].([]byte),
+							ControlProgram: prog,
 							ExpiresAt:      time.Now().Add(time.Minute),
 						},
 						nil,
@@ -250,47 +301,9 @@ func TestContracts(t *testing.T) {
 				continue
 			}
 			tpl.IncludesContract = true
-			sigInst := &txbuilder.SigningInstruction{}
-			for _, arg := range clause.Params {
-				switch arg.Type {
-				case "Amount":
-					amount := rand.Int63()
-					sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(vm.Int64Bytes(amount)))
-				case "Asset":
-					asset := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-					assetBits := asset.Bytes()
-					sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(assetBits))
-				case "PublicKey":
-					valName := test.clauses[i][arg.Name]
-					sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(vals[valName].(*key).pk))
-				case "Signature":
-					valName := test.clauses[i][arg.Name]
-					key := vals[valName].(*key)
-					var hexPath []json.HexBytes
-					for _, v := range key.path {
-						hexPath = append(hexPath, v)
-					}
-					sigInst.WitnessComponents = append(sigInst.WitnessComponents, &txbuilder.RawTxSigWitness{
-						Quorum: 1,
-						Keys: []txbuilder.KeyID{{
-							XPub:           key.xpub,
-							DerivationPath: hexPath,
-						}},
-					})
-				case "String":
-					valName := test.clauses[i][arg.Name]
-					sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(vals[valName].([]byte)))
-				}
-			}
-			if len(contract.Clauses) > 1 {
-				sigInst.WitnessComponents = append(sigInst.WitnessComponents, txbuilder.DataWitness(
-					vm.Int64Bytes(int64(i)),
-				))
-			}
 			tpl.SigningInstructions[0] = sigInst
 
 			coretest.SignTxTemplate(t, ctx, tpl, &testutil.TestXPrv)
-			vm.TraceOut = os.Stdout
 			err = txbuilder.FinalizeTx(ctx, c, g, tpl.Transaction, tpl.IncludesContract)
 			if err != nil {
 				t.Log(contract.Name)
@@ -305,4 +318,38 @@ func TestContracts(t *testing.T) {
 			<-pinStore.PinWaiter(account.PinName, b.Height)
 		}
 	}
+}
+
+func valueProg(source, valueProg string, vals map[string]interface{}) ([]byte, error) {
+	if !strings.Contains(valueProg, "(") {
+		return vals[valueProg].([]byte), nil
+	}
+	tokens := regexp.MustCompile("[A-z_]([A-z0-9_])*").FindAllString(valueProg, -1)
+	contractName, argNames := tokens[0], tokens[1:]
+	var args []ivy.ContractArg
+	for _, argName := range argNames {
+		switch t := vals[argName].(type) {
+		case int64:
+			args = append(args, ivy.ContractArg{I: &t})
+		case []byte:
+			args = append(args, ivy.ContractArg{S: (*json.HexBytes)(&t)})
+		case bc.AssetID:
+			assetBits := t.Bytes()
+			args = append(args, ivy.ContractArg{S: (*json.HexBytes)(&assetBits)})
+		case *key:
+			args = append(args, ivy.ContractArg{S: (*json.HexBytes)(&t.pk)})
+		}
+	}
+	compiled, err := ivy.Compile(strings.NewReader(source), map[string][]ivy.ContractArg{
+		contractName: args,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range compiled {
+		if c.Name == contractName {
+			return c.Program, nil
+		}
+	}
+	return nil, errors.New("Couldn't find contract by that name")
 }

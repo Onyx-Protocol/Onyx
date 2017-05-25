@@ -501,7 +501,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 						if entry.c.Params[i].Type != "" && arg.typ(env) != entry.c.Params[i].Type {
 							return stk, fmt.Errorf("argument %d to contract \"%s\" has type \"%s\", must be \"%s\"", i, entry.c.Name, arg.typ(env), entry.c.Params[i].Type)
 						}
-						stk, err := compileExpr(b, stk, contract, clause, env, counts, arg)
+						stk, err = compileExpr(b, stk, contract, clause, env, counts, arg)
 						if err != nil {
 							return stk, err
 						}
@@ -518,7 +518,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 						}
 						stk = b.addCatPushdata(stk, partialName)
 						stk = b.addData(stk, []byte{byte(vm.OP_DEPTH), byte(vm.OP_OVER)})
-						stk = b.addCatPushdata(stk, partialName)
+						stk = b.addCat(stk, partialName)
 
 					case entry.c.recursive:
 						// Non-recursive call to a (different) recursive contract
@@ -530,13 +530,13 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 						stk = b.addData(stk, entry.c.Body)
 						stk = b.addCatPushdata(stk, partialName)
 						stk = b.addData(stk, []byte{byte(vm.OP_DEPTH), byte(vm.OP_OVER)})
-						stk = b.addCatPushdata(stk, partialName)
+						stk = b.addCat(stk, partialName)
 
 					default:
 						// Non-recursive call to non-recursive contract
 						// <argN> <argN-1> ... <arg1> DEPTH <body> 0 CHECKPREDICATE
 						stk = b.addData(stk, []byte{byte(vm.OP_DEPTH)})
-						stk = b.addCatPushdata(stk, partialName)
+						stk = b.addCat(stk, partialName)
 						if len(entry.c.Body) == 0 {
 							// TODO(bobg): sort input contracts topologically to permit forward calling
 							return stk, fmt.Errorf("contract \"%s\" not defined", entry.c.Name)
@@ -547,7 +547,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 					stk = b.addData(stk, vm.Int64Bytes(0))
 					stk = b.addCatPushdata(stk, partialName)
 					stk = b.addData(stk, []byte{byte(vm.OP_CHECKPREDICATE)})
-					stk = b.addCatPushdata(stk, e.String())
+					stk = b.addCat(stk, e.String())
 
 					return stk, nil
 				}

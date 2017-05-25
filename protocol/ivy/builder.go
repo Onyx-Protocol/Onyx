@@ -142,6 +142,10 @@ func (b *builder) addCatPushdata(stk stack, desc string) stack {
 	return b.add("CATPUSHDATA", stk.dropN(2).add(desc))
 }
 
+func (b *builder) addCat(stk stack, desc string) stack {
+	return b.add("CAT", stk.dropN(2).add(desc))
+}
+
 func (b *builder) opcodes() string {
 	var ops []string
 	for _, item := range b.items {
