@@ -134,60 +134,92 @@ func TestContracts(t *testing.T) {
 	asset1 := coretest.CreateAsset(ctx, t, assets, nil, "USD", nil)
 
 	tests := []struct {
-		contract string
-		clauses  []map[string]string
+		contract     string
+		contractName string
+		clauses      []map[string]string
 	}{{
-		contract: ivytest.TrivialLock,
-		clauses:  nil,
+		contract:     ivytest.TrivialLock,
+		contractName: "TrivialLock",
+		clauses:      nil,
 	}, {
-		contract: ivytest.LockWithPublicKey,
-		clauses:  []map[string]string{{"sig": "publicKey"}},
+		contract:     ivytest.LockWithPublicKey,
+		contractName: "LockWithPublicKey",
+		clauses:      []map[string]string{{"sig": "publicKey"}},
 	}, {
-		contract: ivytest.LockWithPKHash,
-		clauses:  []map[string]string{{"pubKey": "pubKeyHash", "sig": "pubKeyHash"}},
+		contract:     ivytest.LockWithPKHash,
+		contractName: "LockWithPublicKeyHash",
+		clauses:      []map[string]string{{"pubKey": "pubKeyHash", "sig": "pubKeyHash"}},
 	}, {
-		contract: ivytest.LockWith2of3Keys,
-		clauses:  []map[string]string{{"sig1": "pubkey1", "sig2": "pubkey2"}},
+		contract:     ivytest.LockWith2of3Keys,
+		contractName: "LockWith3Keys",
+		clauses:      []map[string]string{{"sig1": "pubkey1", "sig2": "pubkey2"}},
 	}, {
-		contract: ivytest.LockToOutput,
-		clauses:  nil,
+		contract:     ivytest.LockToOutput,
+		contractName: "LockToOutput",
+		clauses:      nil,
 	}, {
-		contract: ivytest.TradeOffer,
-		clauses:  []map[string]string{{}, {"sellerSig": "sellerKey"}},
+		contract:     ivytest.TradeOffer,
+		contractName: "TradeOffer",
+		clauses:      []map[string]string{{}, {"sellerSig": "sellerKey"}},
 	}, {
-		contract: ivytest.EscrowedTransfer,
-		clauses:  []map[string]string{{"sig": "agent"}, {"sig": "agent"}},
+		contract:     ivytest.EscrowedTransfer,
+		contractName: "EscrowedTransfer",
+		clauses:      []map[string]string{{"sig": "agent"}, {"sig": "agent"}},
 	}, {
-		contract: ivytest.CollateralizedLoan,
-		clauses:  nil,
+		contract:     ivytest.CollateralizedLoan,
+		contractName: "CollateralizedLoan",
+		clauses:      nil,
 	}, {
-		contract: ivytest.RevealPreimage,
-		clauses:  []map[string]string{{"string": "hash"}},
+		contract:     ivytest.RevealPreimage,
+		contractName: "RevealPreimage",
+		clauses:      []map[string]string{{"string": "hash"}},
 	}, {
-		contract: ivytest.CallOptionWithSettlement,
+		contract:     ivytest.CallOptionWithSettlement,
+		contractName: "CallOptionWithSettlement",
 		clauses: []map[string]string{
 			{"buyerSig": "buyerKey"},
 			{},
 			{"sellerSig": "sellerKey", "buyerSig": "buyerKey"},
 		},
 	}, {
-		contract: ivytest.PriceChanger,
-		clauses:  []map[string]string{{"sig": "sellerKey"}},
+		contract:     ivytest.PriceChanger,
+		contractName: "PriceChanger",
+		clauses:      []map[string]string{{"sig": "sellerKey"}},
+	}, {
+		contract:     ivytest.OneTwo,
+		contractName: "One",
+		clauses:      nil,
+	}, {
+		contract:     ivytest.OneTwo,
+		contractName: "Two",
+		clauses:      nil,
 	}}
 
 	for _, test := range tests {
 		compiled := compileIvy(compileReq{
 			Source: test.contract,
 		})
-		for i, clause := range compiled.Contracts[0].Clauses {
-			args, vals := contractArgs(t, ctx, compiled.Contracts[0], clause, accounts, assets)
+		var contract *ivy.Contract
+		for _, c := range compiled.Contracts {
+			if c.Name == test.contractName {
+				contract = c
+				break
+			}
+		}
+		for i, clause := range contract.Clauses {
+			args, vals := contractArgs(t, ctx, contract, clause, accounts, assets)
 			compiled = compileIvy(compileReq{
 				Source: test.contract,
 				ArgMap: map[string][]ivy.ContractArg{
-					compiled.Contracts[0].Name: args,
+					test.contractName: args,
 				},
 			})
-			contract := compiled.Contracts[0]
+			for _, c := range compiled.Contracts {
+				if c.Name == test.contractName {
+					contract = c
+					break
+				}
+			}
 			contractAssetAmount := bc.AssetAmount{AssetId: &asset1, Amount: 1}
 			source := txbuilder.Action(assets.NewIssueAction(contractAssetAmount, nil))
 			dest := txbuilder.Action(txbuilder.NewControlReceiverAction(
