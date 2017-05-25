@@ -281,17 +281,11 @@ func renderMarkdown(p string, src []byte) ([]byte, error) {
 // If no layout.html file is found, a default layout that renders .Body
 // is returned.
 func renderLayout(p string, content []byte) ([]byte, error) {
-	// Don't search for layouts beyond the working dir
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
 	originalPath := p
 	layout := []byte("{{.Body}}")
 
 	// Render any variables
-	content, err = renderTemplate(originalPath, []byte{}, content)
+	content, err := renderTemplate(originalPath, []byte{}, content)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +301,7 @@ func renderLayout(p string, content []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		if wd == p {
+		if p == "." {
 			break
 		}
 	}
