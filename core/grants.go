@@ -135,7 +135,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		Policy:    x.Policy,
 		Protected: false, // grants created through the createGrant RPC cannot be protected
 	}
-	err = a.grants.Save(ctx, g)
+	err = a.sdb.Exec(ctx, a.grants.Save(ctx, g))
 	if err != nil {
 		return nil, err
 	}
@@ -206,9 +206,9 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 		Protected: x.Protected, // should always be false
 	}
 
-	err = a.grants.Delete(ctx, x.Policy, func(g *authz.Grant) bool {
+	err = a.sdb.Exec(ctx, a.grants.Delete(ctx, x.Policy, func(g *authz.Grant) bool {
 		return authz.EqualGrants(*g, toDelete)
-	})
+	}))
 	return errors.Wrap(err)
 }
 
@@ -217,7 +217,7 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 // protected.
 func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error {
 	for _, p := range Policies {
-		err := a.grants.Delete(ctx, p, func(g *authz.Grant) bool {
+		err := a.sdb.Exec(ctx, a.grants.Delete(ctx, p, func(g *authz.Grant) bool {
 			if g.GuardType != "access_token" {
 				return false
 			}
@@ -225,7 +225,7 @@ func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error
 			json.Unmarshal(g.GuardData, &data)
 			id, _ := data["id"].(string)
 			return id == token
-		})
+		}))
 		if err != nil {
 			return errors.Wrap(err)
 		}

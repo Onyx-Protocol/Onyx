@@ -40,12 +40,12 @@ func (s *Store) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 	return grants, nil
 }
 
-// Save stores g.
+// Save returns an Op to store g.
 // If a grant equivalent to g is already stored,
-// Save has no effect.
+// the returned Op has no effect.
 // It also sets field CreatedAt to the time g is stored (the current time),
 // or to the time the original grant was stored, if there is one.
-func (s *Store) Save(ctx context.Context, g *Grant) error {
+func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
 	key := s.keyPrefix + g.Policy
 	if g.CreatedAt == "" {
 		g.CreatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -54,7 +54,7 @@ func (s *Store) Save(ctx context.Context, g *Grant) error {
 	var grantList GrantList
 	_, err := s.sdb.Get(ctx, key, &grantList)
 	if err != nil {
-		return errors.Wrap(err)
+		return sinkdb.Error(errors.Wrap(err))
 	}
 
 	grants := grantList.Grants
@@ -62,7 +62,7 @@ func (s *Store) Save(ctx context.Context, g *Grant) error {
 		if EqualGrants(*existing, *g) {
 			// this grant already exists, do nothing
 			g.CreatedAt = existing.CreatedAt
-			return nil
+			return sinkdb.Op{}
 		}
 	}
 
@@ -70,19 +70,18 @@ func (s *Store) Save(ctx context.Context, g *Grant) error {
 	grants = append(grants, g)
 
 	// TODO(tessr): Make this safe for concurrent updates. Will likely require a
-	// conditional write operation for raftDB
-	err = s.sdb.Exec(ctx, sinkdb.Set(s.keyPrefix+g.Policy, &GrantList{Grants: grants}))
-	return errors.Wrap(err)
+	// conditional write operation for sinkdb
+	return sinkdb.Set(s.keyPrefix+g.Policy, &GrantList{Grants: grants})
 }
 
-// Delete deletes from policy all stored grants for which delete returns true.
-func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) bool) error {
+// Delete returns an Op to delete from policy all stored grants for which delete returns true.
+func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) bool) sinkdb.Op {
 	key := s.keyPrefix + policy
 
 	var grantList GrantList
 	found, err := s.sdb.Get(ctx, key, &grantList)
 	if err != nil || !found {
-		return errors.Wrap(err) // if !found, errors.Wrap(err) is nil
+		return sinkdb.Error(errors.Wrap(err)) // if !found, errors.Wrap(err) is nil
 	}
 
 	var keep []*Grant
@@ -94,16 +93,12 @@ func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) b
 
 	// We didn't match any grants, don't need to do an update. Return success
 	if len(keep) == len(grantList.Grants) {
-		return nil
+		return sinkdb.Op{}
 	}
 
-	gList := &GrantList{Grants: keep}
-	err = s.sdb.Exec(ctx, sinkdb.Set(key, gList))
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	return nil
+	// TODO(tessr): Make this safe for concurrent updates. Will likely require a
+	// conditional write operation for sinkdb
+	return sinkdb.Set(key, &GrantList{Grants: keep})
 }
 
 func EqualGrants(a, b Grant) bool {

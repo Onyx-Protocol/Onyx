@@ -69,3 +69,11 @@ func AddAllowedMember(addr string) Op {
 		}},
 	}
 }
+
+// Error returns an Op representing an error condition.
+// Exec will return err, and have no effect,
+// when the returned Op is executed.
+// If err is nil, Error returns the zero Op.
+func Error(err error) Op {
+	return Op{err: err}
+}
