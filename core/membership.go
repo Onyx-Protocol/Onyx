@@ -46,12 +46,12 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		return errors.Wrap(err)
 	}
 
-	err = a.grants.Save(ctx, &authz.Grant{
+	err = a.sdb.Exec(ctx, a.grants.Save(ctx, &authz.Grant{
 		Policy:    "internal",
 		GuardType: "x509",
 		GuardData: guardData,
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 		Protected: true,
-	})
+	}))
 	return errors.Wrap(err)
 }
