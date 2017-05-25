@@ -91,7 +91,7 @@ func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) b
 		}
 	}
 
-	// We didn't match any grants, don't need to do an update. Return success
+	// We didn't match any grants, don't need to do an update. Return no-op.
 	if len(keep) == len(grantList.Grants) {
 		return sinkdb.Op{}
 	}
