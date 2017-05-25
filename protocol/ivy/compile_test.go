@@ -18,7 +18,7 @@ func TestCompile(t *testing.T) {
 		{
 			"TrivialLock",
 			ivytest.TrivialLock,
-			`[{"name":"TrivialLock","clauses":[{"name":"trivialUnlock","values":[{"name":"locked"}]}],"value":"locked","body_bytecode":"51","body_opcodes":"TRUE","program":"74015100c0"}]`,
+			`[{"name":"TrivialLock","clauses":[{"name":"trivialUnlock","values":[{"name":"locked"}]}],"value":"locked","body_bytecode":"51","body_opcodes":"TRUE"}]`,
 		},
 		{
 			"LockWithPublicKey",

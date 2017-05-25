@@ -8,8 +8,8 @@ import (
 
 type (
 	compileReq struct {
-		Source string            `json:"source"`
-		Args   []ivy.ContractArg `json:"args"`
+		Source string                       `json:"source"`
+		ArgMap map[string][]ivy.ContractArg `json:"arg_map"`
 	}
 
 	compileResp struct {
@@ -19,7 +19,7 @@ type (
 )
 
 func compileIvy(req compileReq) compileResp {
-	compiled, err := ivy.Compile(strings.NewReader(req.Source), req.Args)
+	compiled, err := ivy.Compile(strings.NewReader(req.Source), req.ArgMap)
 	if err != nil {
 		return compileResp{Error: err.Error()}
 	}

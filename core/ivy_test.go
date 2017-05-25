@@ -179,7 +179,7 @@ func TestContracts(t *testing.T) {
 			args, vals := contractArgs(t, ctx, compiled.Contracts[0], clause, accounts, assets)
 			compiled = compileIvy(compileReq{
 				Source: test.contract,
-				Args:   args,
+				ArgMap: map[string][]ivy.ContractArg{compiled.Contracts[0].Name: args},
 			})
 			contract := compiled.Contracts[0]
 			contractAssetAmount := bc.AssetAmount{AssetId: &asset1, Amount: 1}

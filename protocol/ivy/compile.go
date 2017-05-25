@@ -44,11 +44,11 @@ type ContractArg struct {
 
 // Compile parses a sequence of Ivy contracts from the supplied reader
 // and produces Contract objects containing the compiled bytecode and
-// other analysis. If args is non-empty - or it's empty and the
-// contract takes no arguments - then the contract body and args are
-// "instantiated" as a program and the result placed in the contract's
-// Program field.
-func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
+// other analysis. If argMap is non-nil, it maps contract names to
+// lists of arguments with which to instantiate them as programs, with
+// the results placed in the contract's Program field. A contract
+// named in argMap but not found in the input is silently ignored.
+func Compile(r io.Reader, argMap map[string][]ContractArg) ([]*Contract, error) {
 	inp, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading input")
@@ -84,11 +84,12 @@ func Compile(r io.Reader, args []ContractArg) ([]*Contract, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "compiling contract")
 		}
-
-		if len(contract.Params) == 0 || len(args) > 0 {
-			contract.Program, err = instantiate(contract, args, contract.Body)
-			if err != nil {
-				return nil, errors.Wrap(err, "instantiating contract")
+		if argMap != nil {
+			if args, ok := argMap[contract.Name]; ok {
+				contract.Program, err = instantiate(contract, args, contract.Body)
+				if err != nil {
+					return nil, errors.Wrapf(err, "instantiating contract \"%s\"", contract.Name)
+				}
 			}
 		}
 		for _, clause := range contract.Clauses {
