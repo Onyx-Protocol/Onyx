@@ -36,6 +36,7 @@ func TestAnnotatedTxsReferenceData(t *testing.T) {
 	ctx := context.Background()
 
 	referenceData := []string{
+		"",
 		"{}",
 		`{"hello": "world"}`,
 		"{\"\u0000\": \"world\"}",
