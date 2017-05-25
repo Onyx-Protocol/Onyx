@@ -35,6 +35,7 @@ This tool always sets some values for the test process:
 
   CHAIN          a clean checkout of the chain repo (and ${CHAIN}prv)
   DB_URL_TEST    the URL of a new, empty postgres cluster
+  GOPATH         the Go workspace containing $CHAIN
   (working dir)  an empty scratch directory
 
 */
