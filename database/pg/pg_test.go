@@ -37,11 +37,12 @@ func TestIsValidJSONB(t *testing.T) {
 	cases := map[string]bool{
 		`"hello"`: true,
 		`{`:       false,
-		`{"foo": ["bar", "baz"]}`:                true,
-		`{"bad": {"foo": "bar\u0000"}}`:          false,
-		`{"bad": {"foo\u0000": "bar"}}`:          false,
-		`{"bad": "\u0000"}`:                      false,
-		`["hello", "world", "what is \u0000p?"]`: false,
+		`{"foo": ["bar", "baz"]}`:                    true,
+		`{"bad": {"foo": "bar\u0000"}}`:              false,
+		`{"bad": {"foo\u0000": "bar"}}`:              false,
+		`{"bad": "\u0000"}`:                          false,
+		`["hello", "world", "what is \u0000p?"]`:     false,
+		`"` + string([]byte{0xff, 0xfe, 0xfd}) + `"`: false,
 	}
 
 	for b, want := range cases {

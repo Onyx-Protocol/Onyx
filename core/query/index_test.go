@@ -51,8 +51,11 @@ func TestAnnotatedTxsReferenceData(t *testing.T) {
 		"{\"client_id\": 1, \"device_name\": \"FooBar\ufffd\u0000\ufffd\u000f\ufffd\"}",
 		`{"client_id": 1, "device_name": "FooBar\ufffd\u0000\ufffd\u000f\ufffd"}`,
 		string(unicode.MaxRune + 1),
+		`"` + string(unicode.MaxRune+1) + `"`,
 		string(unicode.ReplacementChar),
-		string([]byte{0xff, 0xfe, 0xfd}), // from https://golang.org/pkg/unicode/utf8/#example_Valid
+		`"` + string(unicode.ReplacementChar) + `"`,
+		string([]byte{0xff, 0xfe, 0xfd}),
+		`"` + string([]byte{0xff, 0xfe, 0xfd}) + `"`,
 	}
 	for _, refData := range referenceData {
 		t.Run(refData, func(t *testing.T) {

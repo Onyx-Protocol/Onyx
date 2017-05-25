@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/lib/pq"
 
@@ -66,7 +67,7 @@ func IsValidJSONB(b []byte) bool {
 	if err != nil {
 		return false
 	}
-	return !containsNullByte(v)
+	return utf8.Valid(b) && !containsNullByte(v)
 }
 
 func containsNullByte(v interface{}) (found bool) {
