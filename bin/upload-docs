@@ -1,46 +1,38 @@
 #!/usr/bin/env bash
 set -ef -o pipefail
 
-if [[ ( $# != 0 ) && ( "$1" != "prod" ) ]];
+bucket="chain-staging.chain.com"
+if [ "$1" = "prod" ];
 then
-  tempChainPath=`mktemp -d`
-  trap "rm -rf $tempChainPath" EXIT
-
-  newChain=$tempChainPath/src/chain
-  mkdir -p $newChain
-  git clone $CHAIN $newChain
-  cd $newChain
-  git checkout $1-stable
-
-  bucket="chain-staging.chain.com"
-  if [ "$2" = "prod" ];
-  then
-    bucket="chain.com"
-  fi
-
-  bucket_url=s3://$bucket
-
-  # Print output from generate-docs to stdout, but capture last line (the actual
-  # output directory) in a variable.
-  exec 3>&1
-  generate_dest_path=$($CHAIN/bin/generate-docs $1 | tee /dev/fd/3 | tail -n1)
-  trap "rm -rf $generate_dest_path" EXIT
-
-  echo
-  echo "Uploading docs...."
-  aws s3 sync --delete $generate_dest_path $bucket_url/docs/$1
-
-  echo
-  echo "Setting content type for extensionless files, this will take a while..."
-  cd $generate_dest_path
-  find . -type f ! -name "*.*" |
-    sed -e "s/^.\\///" |
-    xargs -I {} aws s3api copy-object \
-      --bucket $bucket \
-      --content-type "text/html" \
-      --copy-source $bucket/docs/$1/{} \
-      --key docs/$1/{} \
-      --metadata-directive "REPLACE" > /dev/null
-else
-  echo "usage: upload-docs version-prefix [prod]"
+  bucket="chain.com"
 fi
+
+bucket_url=s3://$bucket
+
+generate_dest_path=`mktemp -d`
+trap "echo 'Error generating docs, cleaning up temp files...'; rm -rf $generate_dest_path" ERR
+
+echo "Generating documentation..."
+
+sourcePath=${PWD}
+
+go install chain/cmd/md2html
+go install chain/cmd/docgenerate
+
+docgenerate $sourcePath $generate_dest_path
+
+echo
+echo "Uploading docs...."
+aws s3 sync --delete $generate_dest_path $bucket_url/docs/$1
+
+echo
+echo "Setting content type for extensionless files, this will take a while..."
+cd $generate_dest_path
+find . -type f ! -name "*.*" |
+  sed -e "s/^.\\///" |
+  xargs -I {} aws s3api copy-object \
+    --bucket $bucket \
+    --content-type "text/html" \
+    --copy-source $bucket/docs/{} \
+    --key docs/{} \
+    --metadata-directive "REPLACE" > /dev/null
