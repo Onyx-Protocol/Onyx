@@ -3,12 +3,13 @@ package sinkdb
 
 import (
 	"context"
-	"errors"
 	"net/http"
+	"sort"
 
 	"github.com/golang/protobuf/proto"
 
 	"chain/database/sinkdb/internal/sinkpb"
+	"chain/errors"
 	"chain/net/raft"
 )
 
@@ -44,6 +45,20 @@ func (db *DB) Exec(ctx context.Context, ops ...Op) error {
 		instr.Conditions = append(instr.Conditions, op.conds...)
 		instr.Operations = append(instr.Operations, op.effects...)
 	}
+
+	// Disallow multiple writes to the same key.
+	sort.Slice(instr.Operations, func(i, j int) bool {
+		return instr.Operations[i].Key < instr.Operations[j].Key
+	})
+	var lastKey string
+	for _, pbop := range instr.Operations {
+		if pbop.Key == lastKey {
+			err := errors.New("duplicate write")
+			return errors.Wrap(err, pbop.Key)
+		}
+		lastKey = pbop.Key
+	}
+
 	encoded, err := proto.Marshal(instr)
 	if err != nil {
 		return err
