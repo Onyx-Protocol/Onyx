@@ -51,12 +51,12 @@ func (db *DB) Exec(ctx context.Context, ops ...Op) error {
 		return instr.Operations[i].Key < instr.Operations[j].Key
 	})
 	var lastKey string
-	for _, pbop := range instr.Operations {
-		if pbop.Key == lastKey {
+	for _, e := range instr.Operations {
+		if e.Key == lastKey {
 			err := errors.New("duplicate write")
-			return errors.Wrap(err, pbop.Key)
+			return errors.Wrap(err, e.Key)
 		}
-		lastKey = pbop.Key
+		lastKey = e.Key
 	}
 
 	encoded, err := proto.Marshal(instr)
