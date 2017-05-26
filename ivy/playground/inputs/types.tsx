@@ -1,13 +1,13 @@
 export type Type = Primitive | TypeVariable | Hash | List | "SigHash" | "Contract"
 
 export type Primitive = "PublicKey" | "Signature" | "String" | "Integer" | "Time" | "Boolean" |
-                        "Value" | "Asset" | "Amount" | "Program" | "Sha3(PublicKey)" | "Sha3(String)"
-
-export type DeclarableType = Primitive | "Hash"
+                        "Value" | "Asset" | "Amount" | "Program" | Hash
 
 export type HashFunction = "sha256" | "sha3"
 
-export type Hash = { type: "hashType", hashFunction: HashFunction, inputType: Type }
+export type HashType = "Sha3(PublicKey)" | "Sha3(String)" | "Sha256(PublicKey)" | "Sha256(String)"
+
+export type Hash = { type: "Hash", hashType: HashType }
 
 export type List = { type: "listType", elementType: Type }
 
@@ -15,22 +15,10 @@ export type TypeClass = "Primitive" | "TypeVariable" | "Hash" | "List" | "Other"
 
 export type TypeVariable = { type: "typeVariable", name: string }
 
-export type ContractParameterHash = {
-  type: "hashType",
-  inputType: ContractParameterType,
-  hashFunction: HashFunction
-}
-
-export type ClauseParameterHash = {
-  type: "hashType",
-  inputType: ClauseParameterType,
-  hashFunction: HashFunction
-}
-
-export type ClauseParameterType = "Signature" | ClauseParameterHash | ContractParameterType
+export type ClauseParameterType = "Signature" | ContractParameterType
 
 export type ContractParameterType = "PublicKey" | "String" | "Integer" | "Time" | "Boolean" |
-                                    "Program" | "Asset" | "Amount" | "Value" | ContractParameterHash
+                                    "Program" | "Asset" | "Amount" | "Value" | Hash
 export type ContractParameter = {
   type: "contractParameter",
   valueType: ContractParameterType,
@@ -92,23 +80,25 @@ export type ProvideStringInput = {
 }
 
 export type HashInput = {
-  type: "hashInput",
-  hashType: ClauseParameterHash,
-  value: "provideHashInput"|"generateHashInput",
+  type: "hashInput"
+  hashType: HashType
+  value: "provideHashInput"|"generateHashInput"
   name: string
 }
 
 export type GenerateHashInput = {
-  type: "generateHashInput",
-  hashType: ClauseParameterHash,
+  type: "generateHashInput"
+  hashFunction: HashFunction,
+  inputType: ClauseParameterType
   value: string,
   name: string
 }
 
 export type ProvideHashInput = {
-  type: "provideHashInput",
-  hashFunction: HashFunction,
-  value: string,
+  type: "provideHashInput"
+  hashFunction: HashFunction
+  inputType: ClauseParameterType
+  value: string
   name: string
 }
 
@@ -240,5 +230,34 @@ export type AssetInput = {
 }
 
 export function isHash(type: Type): type is Hash {
-  return (typeof type === "object" && type.type === "hashType")
+  return (typeof type === "object" && type.type === "Hash")
+}
+
+export function isTypeClass(type:Type|TypeClass): type is TypeClass {
+  return (type === "Primitive" || type === "TypeVariable" || type === "Hash" || type === "List")
+}
+
+export function typeToString(type: Type|TypeClass): string {
+  if (isTypeClass(type)) {
+    return type
+  }
+
+  if (type === undefined) {
+    throw "undefined passed to typeToString()"
+  }
+
+  if (typeof type === "object") {
+    switch (type.type) {
+      case "Hash":
+        return type.hashType
+      case "listType":
+        return "List<" + typeToString(type.elementType) + ">"
+      case "typeVariable":
+        return type.name
+      default:
+        throw "unknown type"
+    }
+  } else {
+    return type
+  }
 }

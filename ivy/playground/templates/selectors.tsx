@@ -9,7 +9,7 @@ import { SpendFromAccount } from '../core/types'
 import { isValidInput, getData } from '../inputs/data'
 
 // internal imports
-import { TemplateState, SourceMap } from './types'
+import { CompiledTemplate, TemplateState, SourceMap } from './types'
 import { INITIAL_ID_LIST } from './constants'
 
 export const getTemplateState = (state: AppState): TemplateState => state.templates
@@ -84,6 +84,11 @@ export const getCompiled = createSelector(
   (state) => state.compiled
 )
 
+export const getCompiledName = createSelector(
+  getCompiled,
+  (compiled: CompiledTemplate) => compiled.name
+)
+
 export const hasSourceChanged = (source) => {
   return createSelector(
     getSourceMap,
@@ -100,7 +105,7 @@ export const hasSourceChanged = (source) => {
 
 export const getContractParameters = createSelector(
   getCompiled,
-  (compiled) => {
+  (compiled: CompiledTemplate) => {
     if (compiled === undefined) {
       return compiled
     }
@@ -114,7 +119,7 @@ export const getOpcodes = createSelector(
     if (compiled === undefined) {
       return compiled
     }
-    return compiled.opcodes
+    return compiled.bodyOpcodes
   }
 )
 

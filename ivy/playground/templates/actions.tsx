@@ -5,7 +5,8 @@ import { generateInputMap } from '../contracts/selectors'
 // internal imports
 import { INITIAL_ID_LIST } from './constants'
 import { getSourceMap, hasSourceChanged } from './selectors'
-import { CompiledTemplate } from './types'
+import { CompilerResult, CompiledTemplate } from './types'
+import { makeEmptyTemplate, getDefaultContract, formatCompilerResult } from './util'
 
 export const loadTemplate = (selected: string) => {
   return (dispatch, getState) => {
@@ -52,17 +53,19 @@ export const FETCH_COMPILED = 'templates/FETCH_COMPILED'
 
 export const fetchCompiled = (source: string) => {
   return (dispatch, getState) => {
-    return client.ivy.compile({ contract: source }).then((result) => {
-      const type = FETCH_COMPILED
-      const format = (tpl: CompiledTemplate) => {
-        if (tpl.error !== '') {
-          tpl.clauseInfo = tpl.params = []
-        }
-        return tpl
+    const type = FETCH_COMPILED
+    const sourceMap = getSourceMap(getState())
+    return client.ivy.compile({ source }).then((result: CompilerResult) => {
+      if (result.error) {
+        const compiled: CompiledTemplate =  makeEmptyTemplate(source, result.error)
+        const inputMap = {}
+        return dispatch({ type, compiled, inputMap })
       }
-      const compiled = format(result)
+
+      const formatted: CompilerResult = formatCompilerResult(result)
+      const compiled: CompiledTemplate = getDefaultContract(source, formatted)
       const inputMap = generateInputMap(compiled)
-      dispatch({ type, compiled, inputMap })
+      return dispatch({ type, compiled, inputMap })
     }).catch((e) => {throw e})
   }
 }

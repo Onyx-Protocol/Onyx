@@ -47,6 +47,26 @@ describe('camelizer', () => {
       DONTCONVERTME: 1,
     })
   })
+
+  it('does not convert PascalCase keys', () => {
+    expect(
+      Connection.camelize({
+        convert_me: 1,
+        DontConvertMe: 1,
+        DDontConvertMe: 1,
+        DontCConvertMe: 1,
+        DontConvertME: 1,
+        DontConvertM: 1,
+      })
+    ).deep.equals({
+      convertMe: 1,
+      DontConvertMe: 1,
+      DDontConvertMe: 1,
+      DontCConvertMe: 1,
+      DontConvertME: 1,
+      DontConvertM: 1,
+    })
+  })
 })
 
 describe('snakeizer', () => {
@@ -89,6 +109,26 @@ describe('snakeizer', () => {
     ).deep.equals({
       convert_me: 1,
       DONTCONVERTME: 1,
+    })
+  })
+
+  it('does not convert PascalCase keys', () => {
+    expect(
+      Connection.snakeize({
+        convertMe: 1,
+        DontConvertMe: 1,
+        DDontConvertMe: 1,
+        DontCConvertMe: 1,
+        DontConvertME: 1,
+        DontConvertM: 1,
+      })
+    ).deep.equals({
+      convert_me: 1,
+      DontConvertMe: 1,
+      DDontConvertMe: 1,
+      DontCConvertMe: 1,
+      DontConvertME: 1,
+      DontConvertM: 1,
     })
   })
 })

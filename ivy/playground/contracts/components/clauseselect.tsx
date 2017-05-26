@@ -5,9 +5,9 @@ import { connect } from 'react-redux'
 // internal imports
 import { getSpendContract, getSpendContractId, getSelectedClauseIndex } from '../selectors'
 import { setClauseIndex } from '../actions'
-import { ClauseInfo } from '../../templates/types'
+import { Clause } from '../../templates/types'
 
-const ClauseSelect = (props: { contractId: string, clauses: ClauseInfo[],
+const ClauseSelect = (props: { contractId: string, clauses: Clause[],
                                setClauseIndex: (number)=>undefined, spendIndex: number }) => {
   return (
     <section>
@@ -22,7 +22,7 @@ const ClauseSelect = (props: { contractId: string, clauses: ClauseInfo[],
 export default connect(
   (state) => ({
     spendIndex: getSelectedClauseIndex(state),
-    clauses: getSpendContract(state).template.clauseInfo,
+    clauses: getSpendContract(state).template.clauses,
     contractId: getSpendContractId(state)
   }),
   { setClauseIndex }
