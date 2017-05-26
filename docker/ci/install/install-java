@@ -3,6 +3,11 @@
 set -e
 
 curl -L0 -o jdk-7u80-linux-x64.tar.gz https://s3.amazonaws.com/chain-qa/jdk-7u80-linux-x64.tar.gz
+
+sha256sum -c - <<-EOF
+bad9a731639655118740bee119139c1ed019737ec802a630dd7ad7aab4309623  jdk-7u80-linux-x64.tar.gz
+EOF
+
 tar -C /opt -xzf jdk-7u80-linux-x64.tar.gz
 rm jdk-7u80-linux-x64.tar.gz
 cd /opt/jdk1.7.0_80/
