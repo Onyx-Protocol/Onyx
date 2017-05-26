@@ -5,6 +5,8 @@ import { push } from 'react-router-redux'
 import { getItemMap } from '../assets/selectors';
 import { getItem } from '../accounts/selectors';
 import { fetch } from '../accounts/actions';
+import { CompilerResult, CompiledTemplate } from '../templates/types'
+import { makeEmptyTemplate, getDefaultContract, formatCompilerResult } from '../templates/util'
 import {
   setSource,
   updateLockError,
@@ -12,6 +14,7 @@ import {
 } from '../templates/actions'
 import {
   areInputsValid,
+  getCompiledName,
   getSource,
   getContractValue,
   getInputMap,
@@ -93,6 +96,7 @@ export const create = () => {
     const inputMap = getInputMap(state)
     if (inputMap === undefined) throw "create should not have been called when inputMap is undefined"
 
+    const name = getCompiledName(state)
     const source = getSource(state)
     const spendFromAccount = getContractValue(state)
     if (spendFromAccount === undefined) throw "spendFromAccount should not be undefined here"
@@ -118,12 +122,17 @@ export const create = () => {
         }
         throw 'unsupported argument type ' + (typeof param)
       })
-      return client.ivy.compile({ contract: source, args: args })
+
+      const argMap = { [name]: args }
+      return client.ivy.compile({ source, argMap })
     })
 
-    const promisedUtxo = promisedTemplate.then(template => {
+    const promisedUtxo = promisedTemplate.then(result => {
+      if (result.error) {
+        throw result.error
+      }
       const receiver: Receiver = {
-        controlProgram: template.program,
+        controlProgram: result.programMap[name],
         expiresAt: "2017-06-25T00:00:00.000Z" // TODO
       }
       const controlWithReceiver: ControlWithReceiver = {
@@ -136,10 +145,12 @@ export const create = () => {
       return createLockingTx(actions)
     })
 
-    Promise.all([promisedInputMap, promisedTemplate, promisedUtxo]).then(([inputMap, template, utxo]) => {
+    Promise.all([promisedInputMap, promisedTemplate, promisedUtxo]).then(([inputMap, result, utxo]) => {
+      const formatted: CompilerResult = formatCompilerResult(result)
+      const template: CompiledTemplate = getDefaultContract(source, formatted)
       dispatch({
         type: CREATE_CONTRACT,
-        controlProgram: template.program,
+        controlProgram: formatted.programMap[name],
         source,
         template,
         inputMap,

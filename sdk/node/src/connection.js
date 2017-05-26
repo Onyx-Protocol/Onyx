@@ -25,6 +25,11 @@ const snakeize = (object) => {
       continue
     }
 
+    // Skip PascalCase keys
+    if (/^(?:[A-Z][a-z]*)+$/.test(key)) {
+      continue
+    }
+
     if (/[A-Z]/.test(key)) {
       newKey = key.replace(/([A-Z])/g, v => `_${v.toLowerCase()}`)
       delete object[key]
