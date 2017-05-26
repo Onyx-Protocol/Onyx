@@ -1,13 +1,3 @@
-require 'chain'
-require 'securerandom'
-
-def balance_by_asset_alias(balances)
-  balances.reduce({}) do |memo, b|
-    memo[b.sum_by['asset_alias']] = b.amount
-    memo
-  end
-end
-
 context 'Chain SDK integration test' do
 
   # TODO(jeffomatic): split this up with better organization.
@@ -15,31 +5,6 @@ context 'Chain SDK integration test' do
   example 'integration test' do
     chain = Chain::Client.new
     signer = Chain::HSMSigner.new
-
-    # Access tokens
-
-    t = chain.access_tokens.create(type: :client, id: :foobar)
-    expect(t.token).not_to be_empty
-
-    expect {
-      # Using same ID twice will trigger error
-      chain.access_tokens.create(type: :client, id: :foobar)
-    }.to raise_error(Chain::APIError)
-
-    toks = chain.access_tokens.query.map(&:id)
-    expect(toks).to eq(['foobar'])
-
-    toks = chain.access_tokens.query(type: :client).map(&:id)
-    expect(toks).to eq(['foobar'])
-
-    # DEPRECATED
-    toks = chain.access_tokens.query(type: :network).all
-    expect(toks).to eq([])
-
-    chain.access_tokens.delete(:foobar)
-
-    toks = chain.access_tokens.query.all
-    expect(toks).to eq([])
 
     # Key creation and signer setup
 

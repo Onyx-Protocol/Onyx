@@ -1,5 +1,3 @@
-require 'chain'
-
 describe Chain::AuthorizationGrant::ClientModule do
 
   describe 'sanitize_x509' do
