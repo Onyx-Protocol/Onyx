@@ -22,6 +22,22 @@ type Op struct {
 	effects []*sinkpb.Op
 }
 
+// All encodes the atomic application of all its arguments.
+//
+// The returned Op is satisfied if all arguments would be satisfied.
+// Its effects (if satisfied) are the effects of the arguments, in order.
+func All(op ...Op) Op {
+	var outer Op
+	for _, inner := range op {
+		if inner.err != nil {
+			return inner
+		}
+		outer.conds = append(outer.conds, inner.conds...)
+		outer.effects = append(outer.effects, inner.effects...)
+	}
+	return outer
+}
+
 // IfNotExists encodes a conditional to make an instruction
 // successful only if the provided key does not exist.
 func IfNotExists(key string) Op {
