@@ -1,10 +1,11 @@
-import { ClauseParameterType, ContractParameterType, InputMap } from '../inputs/types'
+import { ClauseParameterType, ContractParameterType, HashType, InputMap } from '../inputs/types'
 
 export type SourceMap = { [s: string]: string }
 
 export type Param = {
-  name: string,
-  type: ContractParameterType | ClauseParameterType
+  name: string
+  declaredType: ContractParameterType | ClauseParameterType
+  inferredType?: HashType
 }
 
 export type HashCall = {
@@ -13,41 +14,55 @@ export type HashCall = {
   argType: string
 }
 
-export type ValueInfo = {
+export type ClauseReq = {
+  name: string
+  asset: string
+  amount: string
+}
+
+export type Value = {
   name: string,
   program?: string,
   asset?: string,
   amount?: string
 }
 
-export type ClauseInfo = {
-  name: string,
-  args: Param[],
-  mintimes: string[],
-  maxtimes: string[],
-  hashCalls: HashCall[],
-  valueInfo: ValueInfo[]
+export type Clause = {
+  name: string
+  params: Param[]
+  reqs: ClauseReq[]
+  mintimes: string[]
+  maxtimes: string[]
+  hashCalls: HashCall[]
+  values: Value[]
 }
 
 export type CompiledTemplate = {
-  name: string,
-  source: string,
-  program: string,
-  opcodes: string,
-  error: string,
-  params: Param[],
-  value: string,
-  clauseInfo: ClauseInfo[]
+  name: string
+  params: Param[]
+  clauses: Clause[]
+  value: string
+  bodyBytecode: string
+  bodyOpcodes: string
+  recursive: boolean
+  source: string
+  error?
+}
+
+export type CompilerResult = {
+  contracts: CompiledTemplate[]
+  programMap: { [s: string]: string }
+  error: string
 }
 
 export type TemplateState = {
-  sourceMap: SourceMap,
-  idList: string[],
-  protectedIdList: string[],
-  source: string,
-  sourceChanged: boolean,
-  inputMap?: InputMap,
-  compiled?: CompiledTemplate,
-  showLockInputErrors: boolean,
+  sourceMap: SourceMap
+  idList: string[]
+  protectedIdList: string[]
+  source: string
+  sourceChanged: boolean
+  inputMap?: InputMap
+  compiled?: CompiledTemplate
+  showLockInputErrors: boolean
   error?
 }

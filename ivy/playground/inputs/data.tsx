@@ -9,6 +9,7 @@ import {
   InputMap,
   PrimaryInputType,
   InputContext,
+  Hash,
   HashInput,
   ProgramInput,
   PublicKeyInput,
@@ -20,8 +21,7 @@ import {
   isHash,
   HashFunction,
   ClauseParameter,
-  ClauseParameterType,
-  ClauseParameterHash // clause parameters are a superset of contract parameters
+  ClauseParameterType
 } from './types'
 
 let Promise = require('prfun')
@@ -89,7 +89,7 @@ export function getData(inputId: string, inputsById: {[s: string]: Input}): Buff
     case "generateHashInput": {
       let childData = getData(getChild(input), inputsById)
       if (typeof childData === "number") throw "should not generate hash of a number"
-      switch(input.hashType.hashFunction) {
+      switch(input.hashFunction) {
         case "sha256": return sha256(childData)
         case "sha3": return Buffer.from(sha3_256(childData), "hex")
         default: throw "unexpected hash function"
@@ -286,34 +286,64 @@ export const getGenerateStringInputValue = (input: GenerateStringInput) => {
   return input.seed.slice(0, length * 2) // dumb, for now
 }
 
-function addHashInputs(inputs: Input[], type: ClauseParameterHash, parentName: string) {
+function addHashInputs(inputs: Input[], type: Hash, parentName: string) {
+  let inputType: ClauseParameterType
+  let value: string
+  switch (type.hashType) {
+    case "Sha256(PublicKey)":
+    case "Sha3(PublicKey)":
+      inputType = "PublicKey"
+      value = getInputType(inputType)
+      break
+    case "Sha256(String)":
+    case "Sha3(String)":
+      inputType = "String"
+      value = getInputType(inputType)
+      break
+    default:
+      throw 'unsupported hash type "' + type.hashType + '"'
+  }
+
+  let hashFunction: HashFunction
+  switch (type.hashType) {
+    case "Sha256(PublicKey)":
+    case "Sha256(String)":
+      hashFunction = "sha256"
+      break
+    case "Sha3(PublicKey)":
+    case "Sha3(String)":
+      hashFunction = "sha3"
+      break
+    default:
+      throw 'unsupported hash type: ' + type.hashType
+  }
+
   let name = parentName + ".generateHashInput"
-  let value = getInputType(type.inputType)
   let generateHashInput: GenerateHashInput = {
     type: "generateHashInput",
-    hashType: type,
-    value: value,
-    name: name
+    hashFunction,
+    inputType,
+    value,
+    name
   }
   inputs.push(generateHashInput)
-  addInputForType(inputs, type.inputType, name)
-
-  let hashType = generateHashInput.hashType.inputType
+  addInputForType(inputs, inputType, name)
 
   let provideHashInput: ProvideHashInput = {
     type: "provideHashInput",
-    hashFunction: type.hashFunction,
+    hashFunction,
+    inputType,
     value: "",
     name: parentName + ".provideHashInput"
   }
   inputs.push(provideHashInput)
 }
 
-function addHashInput(inputs: Input[], type: ClauseParameterHash, parentName: string) {
+function addHashInput(inputs: Input[], type: Hash, parentName: string) {
   let name = parentName + ".hashInput"
   let hashInput: HashInput = {
     type: "hashInput",
-    hashType: type,
+    hashType: type.hashType,
     value: "generateHashInput",
     name: name
   }

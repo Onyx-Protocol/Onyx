@@ -1,7 +1,6 @@
 // external imports
 import * as React from 'react'
 import { connect } from 'react-redux'
-import { typeToString } from 'ivy-compiler'
 
 // ivy imports
 import { Item as Asset } from '../../assets/types'
@@ -21,7 +20,7 @@ import { Input, InputContext, ParameterInput, NumberInput, BooleanInput, StringI
          ProvideHashInput, InputType, ComplexInput, SignatureInput, GenerateSignatureInput,
          ProvideSignatureInput, ProvidePrivateKeyInput,
          ValueInput, AccountAliasInput, AssetAliasInput, AssetInput, AmountInput,
-         ProgramInput, ChoosePublicKeyInput, KeyData } from '../../inputs/types'
+         ProgramInput, ChoosePublicKeyInput, KeyData, typeToString } from '../../inputs/types'
 
 import { validateInput, computeDataForInput, getChild,
          getParameterIdentifier, getInputContext } from '../../inputs/data'
@@ -136,8 +135,8 @@ function GenerateHashWidget(props: { id: string,
     <div>
       <ComputedValue computeFor={props.id} />
       <div className="nested">
-        <div className="description">{props.input.hashType.hashFunction} of:</div>
-        <label className="type-label">{typeToString(props.input.hashType.inputType)}</label>
+        <div className="description">{props.input.hashFunction} of:</div>
+        <label className="type-label">{typeToString(props.input.inputType)}</label>
         {getChildWidget(props.input)}
       </div>
     </div>
