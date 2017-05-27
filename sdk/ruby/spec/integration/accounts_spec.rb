@@ -1,9 +1,9 @@
 context 'accounts' do
   let(:key) { chain.mock_hsm.keys.create }
-  let(:uid) { SecureRandom.uuid }
+  let(:uuid) { SecureRandom.uuid }
 
   context 'creation' do
-    subject { chain.accounts.create(alias: "alice-#{uid}", root_xpubs: [key.xpub], quorum: 1) }
+    subject { chain.accounts.create(alias: "alice-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
 
     it 'returns the created account' do
       expect(subject.id).not_to be_empty
@@ -17,9 +17,9 @@ context 'accounts' do
   context 'batch creation' do
     subject {
       chain.accounts.create_batch([
-        {alias: "carol-#{uid}", root_xpubs: [key.xpub], quorum: 1}, # success
-        {alias: "david-#{uid}"}, # error
-        {alias: "eve-#{uid}", root_xpubs: [key.xpub], quorum: 1}, #success
+        {alias: "carol-#{uuid}", root_xpubs: [key.xpub], quorum: 1}, # success
+        {alias: "david-#{uuid}"}, # error
+        {alias: "eve-#{uuid}", root_xpubs: [key.xpub], quorum: 1}, #success
       ])
     }
 

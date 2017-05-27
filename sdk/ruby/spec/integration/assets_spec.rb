@@ -1,9 +1,9 @@
 context 'assets' do
   let(:key) { chain.mock_hsm.keys.create }
-  let(:uid) { SecureRandom.uuid }
+  let(:uuid) { SecureRandom.uuid }
 
   context 'creation' do
-    subject { chain.assets.create(alias: "asset-#{uid}", root_xpubs: [key.xpub], quorum: 1) }
+    subject { chain.assets.create(alias: "asset-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
 
     it 'returns the created asset' do
       expect(subject.id).not_to be_empty
@@ -17,9 +17,9 @@ context 'assets' do
   context 'batch creation' do
     subject {
       chain.assets.create_batch([
-          {alias: "bronze-#{uid}", root_xpubs: [key.xpub], quorum: 1}, # success
-          {alias: "unobtanium-#{uid}"}, # error
-          {alias: "copper-#{uid}", root_xpubs: [key.xpub], quorum: 1}, #success
+          {alias: "bronze-#{uuid}", root_xpubs: [key.xpub], quorum: 1}, # success
+          {alias: "unobtanium-#{uuid}"}, # error
+          {alias: "copper-#{uuid}", root_xpubs: [key.xpub], quorum: 1}, #success
       ])
     }
 

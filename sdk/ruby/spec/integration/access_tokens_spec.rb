@@ -1,7 +1,7 @@
-context 'access_tokens' do
+context 'access tokens' do
   context 'creation' do
-    let(:uid) { SecureRandom.uuid }
-    subject(:token) { chain.access_tokens.create(id: uid) }
+    let(:uuid) { SecureRandom.uuid }
+    subject(:token) { chain.access_tokens.create(id: uuid) }
 
     it 'returns the created token' do
       expect(token.token).not_to be_empty
@@ -12,19 +12,19 @@ context 'access_tokens' do
 
       it 'does not allow the same ID to be used twice' do
         expect {
-          chain.access_tokens.create(type: :client, id: uid)
+          chain.access_tokens.create(type: :client, id: uuid)
         }.to raise_error(Chain::APIError)
       end
 
       it 'token is returned in list' do
         tokens = chain.access_tokens.query().map(&:id)
-        expect(tokens).to include(uid)
+        expect(tokens).to include(uuid)
       end
 
       it 'can delete the token' do
-        chain.access_tokens.delete(uid)
+        chain.access_tokens.delete(uuid)
         tokens = chain.access_tokens.query().map(&:id)
-        expect(tokens).not_to include(uid)
+        expect(tokens).not_to include(uuid)
       end
     end
   end
