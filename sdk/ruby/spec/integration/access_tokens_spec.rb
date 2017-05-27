@@ -19,22 +19,22 @@ context 'access_tokens' do
 
       it 'token is returned in list' do
         tokens = chain.access_tokens.query().map(&:id)
-        expect(tokens.include?(uid)).to eq(true)
+        expect(tokens).to include(uid)
       end
 
       it 'can delete the token' do
         chain.access_tokens.delete(uid)
         tokens = chain.access_tokens.query().map(&:id)
-        expect(tokens.include?(uid)).to eq(false)
+        expect(tokens).not_to include(uid)
       end
     end
   end
 
   context 'deprecated syntax' do
-    let(:uid1) { SecureRandom.uuid }
-    let(:uid2) { SecureRandom.uuid }
-    let(:client) { chain.access_tokens.create(type: :client, id: uid1) }
-    let(:network) { chain.access_tokens.create(type: :network, id: uid2) }
+    let(:client_id) { SecureRandom.uuid }
+    let(:network_id) { SecureRandom.uuid }
+    let(:client) { chain.access_tokens.create(type: :client, id: client_id) }
+    let(:network) { chain.access_tokens.create(type: :network, id: network_id) }
 
     it 'creates client tokens' do
       expect(client.type).to eq('client')
@@ -42,28 +42,37 @@ context 'access_tokens' do
 
     it 'adds `client-readwrite` grant to client tokens' do
       client
-      puts chain.authorization_grants.list_all
+      grant = chain.authorization_grants.list_all
+        .select{ |grant| grant.guard_data["id"] == client_id }
+      expect(grant[0]).not_to eq(nil)
+      expect(grant[0].policy).to eq('client-readwrite')
     end
 
     it 'creates network tokens' do
       expect(network.type).to eq('network')
     end
 
-    it 'adds `crosscore` grant to network token'
+    it 'adds `crosscore` grant to network token' do
+      network
+      grant = chain.authorization_grants.list_all
+        .select{ |grant| grant.guard_data["id"] == network_id }
+      expect(grant[0]).not_to eq(nil)
+      expect(grant[0].policy).to eq('crosscore')
+    end
 
     context 'deprecated roles' do
       before { client; network }
 
       it 'filters client tokens' do
         tokens = chain.access_tokens.query(type: :client).map(&:id)
-        expect(tokens.include?(uid1)).to eq(true)
-        expect(tokens.include?(uid2)).to eq(false)
+        expect(tokens).to include(client_id)
+        expect(tokens).not_to include(network_id)
       end
 
       it 'filters network tokens' do
         tokens = chain.access_tokens.query(type: :network).map(&:id)
-        expect(tokens.include?(uid1)).to eq(false)
-        expect(tokens.include?(uid2)).to eq(true)
+        expect(tokens).not_to include(client_id)
+        expect(tokens).to include(network_id)
       end
     end
   end
