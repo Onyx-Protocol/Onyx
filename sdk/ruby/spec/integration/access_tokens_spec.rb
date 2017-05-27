@@ -1,5 +1,4 @@
 context 'access_tokens' do
-
   context 'creation' do
     let(:uid) { SecureRandom.uuid }
     subject(:token) { chain.access_tokens.create(id: uid) }
