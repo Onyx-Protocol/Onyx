@@ -64,7 +64,7 @@ func Annotated(a *Asset) (*query.AnnotatedAsset, error) {
 			derived := xpub.Derive(path)
 			aa.Keys = append(aa.Keys, &query.AssetKey{
 				RootXPub:            xpub,
-				AssetPubkey:         derived[:],
+				AssetPubkey:         derived.Bytes(),
 				AssetDerivationPath: jsonPath,
 			})
 		}

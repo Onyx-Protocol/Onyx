@@ -17,13 +17,19 @@ func TestQueryAccounts(t *testing.T) {
 	ctx := context.Background()
 	indexer := NewIndexer(pgtest.NewTx(t), prottest.NewChain(t), nil)
 
+	xpub1 := chainkd.RootXPrv([]byte{1}).XPub()
+	xpub2 := chainkd.RootXPrv([]byte{2}).XPub()
+	xpub3 := chainkd.RootXPrv([]byte{3}).XPub()
+	xpub4 := chainkd.RootXPrv([]byte{4}).XPub()
+	xpub5 := chainkd.RootXPrv([]byte{5}).XPub()
+
 	// Save a bunch of annotated accounts to the database.
 	seedAccounts := map[string]*AnnotatedAccount{
 		"accAlice": {
 			ID:    "accAlice",
 			Alias: "alice",
 			Keys: []*AccountKey{
-				{RootXPub: chainkd.XPub{1}, AccountXPub: chainkd.XPub{2}},
+				{RootXPub: xpub1, AccountXPub: xpub2},
 			},
 			Quorum: 1,
 			Tags:   raw(`{"branch_id": "NYC1", "internal_account_id": "alice123"}`),
@@ -32,7 +38,7 @@ func TestQueryAccounts(t *testing.T) {
 			ID:    "accBob",
 			Alias: "bob",
 			Keys: []*AccountKey{
-				{RootXPub: chainkd.XPub{1}, AccountXPub: chainkd.XPub{3}},
+				{RootXPub: xpub1, AccountXPub: xpub3},
 			},
 			Quorum: 1,
 			Tags:   raw(`{"branch_id": "SFO1", "internal_account_id": "bobbie"}`),
@@ -41,8 +47,8 @@ func TestQueryAccounts(t *testing.T) {
 			ID:    "accCarol",
 			Alias: "carol",
 			Keys: []*AccountKey{
-				{RootXPub: chainkd.XPub{1}, AccountXPub: chainkd.XPub{4}},
-				{RootXPub: chainkd.XPub{1}, AccountXPub: chainkd.XPub{5}},
+				{RootXPub: xpub1, AccountXPub: xpub4},
+				{RootXPub: xpub1, AccountXPub: xpub5},
 			},
 			Quorum: 2,
 			Tags:   raw(`{"branch_id": "NYC1", "internal_account_id": "carolmerryl"}`),

@@ -85,7 +85,7 @@ func (h *HSM) createChainKDKey(ctx context.Context, alias string, get bool) (*XP
 				return nil, false, errors.Wrapf(err, "reading existing xpub with alias %s", alias)
 			}
 			var existingXPub chainkd.XPub
-			copy(existingXPub[:], xpubBytes)
+			existingXPub.SetBytes(xpubBytes)
 			return &XPub{XPub: existingXPub, Alias: ptrAlias}, false, nil
 		}
 		return nil, false, errors.Wrap(err, "storing new xpub")
@@ -177,7 +177,7 @@ func (h *HSM) ListKeys(ctx context.Context, aliases []string, after string, limi
 
 	consumeRow := func(b []byte, alias sql.NullString, sortID int64) {
 		var hdxpub chainkd.XPub
-		copy(hdxpub[:], b)
+		hdxpub.SetBytes(b)
 		xpub := &XPub{XPub: hdxpub}
 		if alias.Valid {
 			xpub.Alias = &alias.String
@@ -211,7 +211,7 @@ func (h *HSM) loadChainKDKey(ctx context.Context, xpub chainkd.XPub) (xprv chain
 	if err != nil {
 		return xprv, err
 	}
-	copy(xprv[:], b)
+	xprv.SetBytes(b)
 	h.kdCache[xpub] = xprv
 	return xprv, nil
 }

@@ -107,10 +107,10 @@ func TestCreate(t *testing.T) {
 			if !found {
 				t.Errorf("case %d: list of xpubs mismatch", i)
 				for j, key := range c.xpubs {
-					t.Logf("want %d: %x", j, key[:])
+					t.Logf("want %d: %x", j, key.Bytes())
 				}
 				for j, key := range s.XPubs {
-					t.Logf("got %d: %x", j, key[:])
+					t.Logf("got %d: %x", j, key.Bytes())
 				}
 			}
 		}
