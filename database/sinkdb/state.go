@@ -150,12 +150,13 @@ func (s *state) Apply(data []byte, index uint64) (satisfied bool) {
 }
 
 // get performs a provisional read operation.
-func (s *state) get(key string) (value []byte, ok bool) {
+func (s *state) get(key string) ([]byte, Version) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	value, ok = s.state[key]
-	return
+	b := s.state[key]
+	n := s.version[key]
+	return b, Version{key, n}
 }
 
 // AppliedIndex returns the raft log index (applied index) of current state
@@ -179,8 +180,8 @@ func (s *state) NextNodeID() (id, version uint64) {
 }
 
 func (s *state) IsAllowedMember(addr string) bool {
-	_, ok := s.get(allowedMemberPrefix + "/" + addr)
-	return ok
+	_, ver := s.get(allowedMemberPrefix + "/" + addr)
+	return ver.Exists()
 }
 
 func (s *state) IncrementNextNodeID(oldID uint64, index uint64) (instruction []byte) {

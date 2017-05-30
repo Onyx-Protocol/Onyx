@@ -30,10 +30,10 @@ func (s *Store) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 	var grants []*Grant
 	for _, p := range policy {
 		var grantList GrantList
-		found, err := s.sdb.GetStale(s.keyPrefix+p, &grantList)
+		ver, err := s.sdb.GetStale(s.keyPrefix+p, &grantList)
 		if err != nil {
 			return nil, err
-		} else if found {
+		} else if ver.Exists() {
 			grants = append(grants, grantList.Grants...)
 		}
 	}
@@ -79,9 +79,9 @@ func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) b
 	key := s.keyPrefix + policy
 
 	var grantList GrantList
-	found, err := s.sdb.Get(ctx, key, &grantList)
-	if err != nil || !found {
-		return sinkdb.Error(errors.Wrap(err)) // if !found, errors.Wrap(err) is nil
+	ver, err := s.sdb.Get(ctx, key, &grantList)
+	if err != nil || !ver.Exists() {
+		return sinkdb.Error(errors.Wrap(err)) // if !exists, errors.Wrap(err) is nil
 	}
 
 	var keep []*Grant

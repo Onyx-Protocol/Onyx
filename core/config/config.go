@@ -61,10 +61,10 @@ var (
 // storage, the config will be added to sinkdb.
 func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 	c := new(Config)
-	found, err := sdb.Get(ctx, "/core/config", c)
+	ver, err := sdb.Get(ctx, "/core/config", c)
 	if err != nil {
 		return nil, errors.Wrap(err)
-	} else if found {
+	} else if ver.Exists() {
 		return c, nil
 	}
 
@@ -211,10 +211,10 @@ func Configure(ctx context.Context, db pg.DB, sdb *sinkdb.DB, httpClient *http.C
 	// we start writing blocks to Postgres.
 	// TODO(jackson): make configuration idempotent so that we
 	// don't need this.
-	found, err := sdb.Get(ctx, "/core/config", &Config{})
+	ver, err := sdb.Get(ctx, "/core/config", &Config{})
 	if err != nil {
 		return errors.Wrap(err) // likely uninitialized
-	} else if found {
+	} else if ver.Exists() {
 		return errors.Wrap(sinkdb.ErrConflict) // already configured
 	}
 
