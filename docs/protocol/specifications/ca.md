@@ -198,6 +198,8 @@ Generator `J` has the following 32-byte encoding:
 
 ### Hash functions
 
+The following hash functions are based on SHA-3 Derived Functions as specified by [NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
+
 #### Hash256
 
 `Hash256` is a secure hash function that takes a variable-length binary string `x` as input and outputs a 256-bit string.
@@ -213,7 +215,9 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 #### ScalarHash
 
-`ScalarHash` is a secure hash function that takes a variable-length binary string `x` as input and outputs a [scalar](#scalar):
+`ScalarHash` is a secure hash function that takes a variable-length binary string `x` as input and outputs a [scalar](#scalar). It is based on NIST recommendation to output at least extra 128 bits in order to make bias negligible ([NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf), Appendix B, p. 25). 
+
+`ScalarHash` uses 512-bit output to take advantage of an existing implementation of “reduce” operation in Ed25519 libraries defined for 512-bit strings (although 381-bit string would be sufficient).
 
 1. For the input string `x` compute a 512-bit hash `h`:
 
