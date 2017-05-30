@@ -562,23 +562,19 @@ func (sv *Service) waitRead(ctx context.Context) error {
 
 	select {
 	case idx := <-req.index:
-		ok := sv.wait(idx)
-		if !ok {
-			return errors.New("raft shutdown")
-		}
+		sv.wait(idx)
 	case <-ctx.Done():
 		return ctx.Err()
 	}
 	return nil
 }
 
-func (sv *Service) wait(index uint64) bool {
+func (sv *Service) wait(index uint64) {
 	sv.stateMu.Lock()
 	defer sv.stateMu.Unlock()
 	for sv.state.AppliedIndex() < index {
 		sv.stateCond.Wait()
 	}
-	return sv.state.AppliedIndex() >= index //if false killed b/c of done signal
 }
 
 // ServeHTTP responds to raft consensus messages at /raft/x,
