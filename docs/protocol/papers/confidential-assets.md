@@ -39,15 +39,25 @@ TBD: prove a specific asset id / amount
 
 ## Security analysis
 
-### Asset Point denial of service risk
+### Theorem D1: risk of denial of service via asset ID point hashing is negligible
 
 Since the amount of computations it takes to compute an [Asset ID point](#asset-id-point) is variable,
 malicious prover may find an `assetID` by brute force that would require the verifier
-to perform arbitrary amount of computations.
+to perform arbitrary amount of point decoding operations. The following theorem states
+that the risk is negligible as the malicious prover has to perform exponentially more work than 
+the verifier being attacked.
 
-However, mounting an attack to force a non-negligible amount of work on a verifier is 
-computationally infeasible. For `N` hash computations to be performed by a verifier,
-a malicious prover would have to perform an order of `2^N` hash computations.
+**Theorem D1.** In order to make the verifier perform `N` point decodings
+when mapping asset ID to a point, the expected number of decodings to be
+performed by the prover who enumerates arbitrary asset IDs is `2^N`.
+
+**Proof.** The output of a hash function used by [Asset ID Point](ca.md#asset-id-point) 
+algorithm is a random 256-bit string, where the first 255 bits encode the Y coordinate and 
+the last bit encodes the lowest bit of the X coordinate. Decoding procedure extracts the Y coordinate
+as is, verifies that it is below 2^255 + 19 and recovers the matching X coordinate. If the procedure fails,
+hashing and decoding is retried with an incremented counter. TBD∎
+
+**Discussion**
 
 The alternative solution is to have creators of asset identifiers to choose an issuance
 program (that defines the asset ID) so that their asset ID always hashes to a valid point.
@@ -56,6 +66,7 @@ the blockchains deployed before the extension to _Confidential Assets_.
 We consider that to preserve asset ID compatibility at the risk of an infeasible 
 denial of service attack is an acceptable tradeoff.
 
+### Theorem 
 
 TBD: security theorems and proofs
 

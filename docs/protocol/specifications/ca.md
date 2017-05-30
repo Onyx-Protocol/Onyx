@@ -133,7 +133,7 @@ In this section we will provide a brief overview of various ways to use confiden
 
 **The elliptic curve** is edwards25519 as defined by [[RFC7748](https://tools.ietf.org/html/rfc7748)].
 
-`L` is the **order of edwards25519** as defined by \[[RFC8032](https://tools.ietf.org/html/rfc8032)\]. 
+`L` is the **order of edwards25519** as defined by \[[RFC8032](https://tools.ietf.org/html/rfc8032)\].
 
 L = 2<sup>252</sup>+27742317777372353535851937790883648493.
 
@@ -215,7 +215,7 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 #### ScalarHash
 
-`ScalarHash` is a secure hash function that takes a variable-length binary string `x` as input and outputs a [scalar](#scalar). It is based on NIST recommendation to output at least extra 128 bits in order to make bias negligible ([NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf), Appendix B, p. 25). 
+`ScalarHash` is a secure hash function that takes a variable-length binary string `x` as input and outputs a [scalar](#scalar). It is based on NIST recommendation to output at least extra 128 bits in order to make bias negligible ([NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf), Appendix B, p. 25).
 
 `ScalarHash` uses 512-bit output to take advantage of an existing implementation of “reduce” operation in Ed25519 libraries defined for 512-bit strings (although 381-bit string would be sufficient).
 
@@ -840,7 +840,7 @@ The asset ID commitment can either be _nonblinded_ or _blinded_:
 
 ### Excess Factor
 
-Excess factor is a [scalar](#scalar) representing a net difference between input and output blinding factors. 
+Excess factor is a [scalar](#scalar) representing a net difference between input and output blinding factors.
 It is computed by [balancing blinding factors](#balance-blinding-factors) and used to create an [Excess Commitment](#excess-commitment).
 
 #### Balance Blinding Factors
@@ -889,7 +889,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 **Algorithm:**
 
 1. Calculate a [point pair](#point-pair):
-        
+
         QG = q·G
         QJ = q·J
 
@@ -898,7 +898,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
         r = ScalarHash("r" || QG || QJ || q || message)
 
 3. Calculate points:
-    
+
         R1 = r·G
         R2 = r·J
 
@@ -951,7 +951,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 1. [Validate](#validate-excess-commitment) each of `k` [excess commitments](#excess-commitment); if any is not valid, halt and return `false`.
 2. Calculate the sum of input value commitments:
-        
+
         Ti = ∑(VC[i], j from 0 to n-1)
 
 3. Calculate the sum of output value commitments:
@@ -1078,7 +1078,7 @@ the asset ID of one of the inputs to the recipient.
 
 The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance)
 commits to one of the asset IDs specified in the transaction inputs.
-Some inputs to the [validation procedure](#validate-issuance-asset-range-proof) are computed 
+Some inputs to the [validation procedure](#validate-issuance-asset-range-proof) are computed
 from other elements in the confidential issuance witness, as part of the [issuance validation procedure](blockchain.md#issuance-2-validation).
 
 The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`)
@@ -1153,10 +1153,10 @@ When creating a confidential issuance, the first step is to construct the rest o
 7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
     * `msg = msghash`, the string to be signed.
     * `l = 2`, number of secrets.
-    * `m = 3`, number of statements. 
+    * `m = 3`, number of statements.
     * `{x[k]} = {c,y}`, secret scalars — blinding factor and an issuance key.
     * Statement sets (`i=0..n-1`):
-        
+
             f[i,0](c,y) = (c + h·y)·G
             f[i,1](c,y) = c·J
             f[i,2](c,y) = y·M
@@ -1200,8 +1200,8 @@ When creating a confidential issuance, the first step is to construct the rest o
     1. Compute [asset ID point](#asset-id-point): `A’ = 8·Decode(Hash256(assetID...))`.
     2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC`.
 2. If the range proof is confidential:
-    1. Calculate the base hash: 
-    
+    1. Calculate the base hash:
+
             basehash = Hash256("IARP" || AC || uint64le(n) ||
                            a[0] || ... || a[n-1] ||
                            Y[0] || ... || Y[n-1] ||
@@ -1214,7 +1214,7 @@ When creating a confidential issuance, the first step is to construct the rest o
         4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
         5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
     3. Calculate a 32-byte message hash to sign:
-    
+
             msghash = Hash256("msg" || basehash || M || T || Bm)
 
     4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
@@ -1225,9 +1225,9 @@ When creating a confidential issuance, the first step is to construct the rest o
     6. Verify [OLEG-ZKP](#oleg-zkp) `(e0, {s[i,k]})` with the following parameters:
         * `msg = msghash`, the string to be signed.
         * `l = 2`, number of secrets.
-        * `m = 3`, number of statements. 
+        * `m = 3`, number of statements.
         * Statement sets (`i=0..n-1`):
-            
+
                 f[i,0](c,y) = (c + h·y)·G
                 f[i,1](c,y) = c·J
                 f[i,2](c,y) = y·M
@@ -1990,7 +1990,7 @@ i                | index
 J                | secondary generator
 K                | TBD
 L                | [Order](#elliptic-curve) of the generator on curve Ed25519.
-l                | 
+l                |
 M                | TBD
 m                | TBD
 N                | TBD
