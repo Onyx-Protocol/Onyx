@@ -53,9 +53,10 @@ context 'transactions' do
 
   context 'atomic swap' do
     before do
-      # TODO: this could be sped up with a single issuance (-2 seconds total)
-      issue("alice-#{uuid}", "gold-#{uuid}", 100)
-      issue("bob-#{uuid}", "silver-#{uuid}", 200)
+      issue(
+        ["alice-#{uuid}", "gold-#{uuid}", 100],
+        ["bob-#{uuid}", "silver-#{uuid}", 200]
+      )
 
       swap_proposal = chain.transactions.build do |b|
         b.spend_from_account account_alias: "alice-#{uuid}", asset_alias: "gold-#{uuid}", amount: 10

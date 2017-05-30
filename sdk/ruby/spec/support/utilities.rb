@@ -21,10 +21,16 @@ module Utilities
     end
   end
 
-  def issue(account_alias, asset_alias, amount)
+  def issue(*args)
+    if !args[0].is_a?(Array) && args.length == 3
+      args = [args]
+    end
+
     tx = chain.transactions.build do |b|
-      b.issue asset_alias: asset_alias, amount: amount
-      b.control_with_account account_alias: account_alias, asset_alias: asset_alias, amount: amount
+      args.each do |account_alias, asset_alias, amount|
+        b.issue asset_alias: asset_alias, amount: amount
+        b.control_with_account account_alias: account_alias, asset_alias: asset_alias, amount: amount
+      end
     end
 
     chain.transactions.submit(signer.sign(tx))

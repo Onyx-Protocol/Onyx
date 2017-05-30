@@ -16,8 +16,8 @@ context 'transactions' do
 
     # Should succeed
     builders << Chain::Transaction::Builder.new do |b|
-      b.issue(asset_alias: "gold-#{uuid}", amount: 100)
-      b.control_with_account(account_alias: "alice-#{uuid}", asset_alias: "gold-#{uuid}", amount: 100)
+      b.issue asset_alias: "gold-#{uuid}", amount: 100
+      b.control_with_account account_alias: "alice-#{uuid}", asset_alias: "gold-#{uuid}", amount: 100
     end
 
     # Should fail at the build step
@@ -27,14 +27,14 @@ context 'transactions' do
 
     # Should fail at the submit step
     builders << Chain::Transaction::Builder.new do |b|
-      b.issue(asset_alias: "gold-#{uuid}", amount: 50)
-      b.control_with_account(account_alias: "alice-#{uuid}", asset_alias: "gold-#{uuid}", amount: 100)
+      b.issue asset_alias: "gold-#{uuid}", amount: 50
+      b.control_with_account account_alias: "alice-#{uuid}", asset_alias: "gold-#{uuid}", amount: 100
     end
 
     # Should succeed
     builders << Chain::Transaction::Builder.new do |b|
-      b.issue(asset_alias: "silver-#{uuid}", amount: 100)
-      b.control_with_account(account_alias: "bob-#{uuid}", asset_alias: "silver-#{uuid}", amount: 100)
+      b.issue asset_alias: "silver-#{uuid}", amount: 100
+      b.control_with_account account_alias: "bob-#{uuid}", asset_alias: "silver-#{uuid}", amount: 100
     end
 
     builders
