@@ -32,14 +32,12 @@ type Contract struct {
 	// Body.
 	Opcodes string `json:"body_opcodes,omitempty"`
 
-	// Program is the bytecode of the program instantiated from Body.
-	Program chainjson.HexBytes `json:"program,omitempty"`
-
-	// Whether this contract calls itself.
-	recursive bool
+	// Recursive tells whether this contract calls itself.  (This is
+	// used to select between two possible instantiation options.)
+	Recursive bool `json:"recursive"`
 
 	// Pre-optimized list of instruction steps, with stack snapshots.
-	steps stepList
+	Steps []Step `json:"-"`
 }
 
 // Param is a contract or clause parameter.

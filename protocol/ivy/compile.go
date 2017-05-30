@@ -48,7 +48,7 @@ type ContractArg struct {
 // lists of arguments with which to instantiate them as programs, with
 // the results placed in the contract's Program field. A contract
 // named in argMap but not found in the input is silently ignored.
-func Compile(r io.Reader, argMap map[string][]ContractArg) ([]*Contract, error) {
+func Compile(r io.Reader) ([]*Contract, error) {
 	inp, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading input")
@@ -69,7 +69,7 @@ func Compile(r io.Reader, argMap map[string][]ContractArg) ([]*Contract, error) 
 	// All contracts must be checked for recursiveness before any are
 	// compiled.
 	for _, contract := range contracts {
-		contract.recursive = checkRecursive(contract)
+		contract.Recursive = checkRecursive(contract)
 	}
 
 	for _, contract := range contracts {
@@ -83,14 +83,6 @@ func Compile(r io.Reader, argMap map[string][]ContractArg) ([]*Contract, error) 
 		err = compileContract(contract, globalEnv)
 		if err != nil {
 			return nil, errors.Wrap(err, "compiling contract")
-		}
-		if argMap != nil {
-			if args, ok := argMap[contract.Name]; ok {
-				contract.Program, err = instantiate(contract, args, contract.Body)
-				if err != nil {
-					return nil, errors.Wrapf(err, "instantiating contract \"%s\"", contract.Name)
-				}
-			}
 		}
 		for _, clause := range contract.Clauses {
 			for _, stmt := range clause.statements {
@@ -121,9 +113,9 @@ func Compile(r io.Reader, argMap map[string][]ContractArg) ([]*Contract, error) 
 	return contracts, nil
 }
 
-func instantiate(contract *Contract, args []ContractArg, body []byte) ([]byte, error) {
-	if len(args) != len(contract.Params) {
-		return nil, fmt.Errorf("contract \"%s\" expects %d argument(s), got %d", contract.Name, len(contract.Params), len(args))
+func Instantiate(body []byte, params []*Param, recursive bool, args []ContractArg) ([]byte, error) {
+	if len(args) != len(params) {
+		return nil, fmt.Errorf("got %d argument(s), want %d", len(args), len(params))
 	}
 	// xxx typecheck args against param types
 	b := vmutil.NewBuilder()
@@ -144,7 +136,7 @@ func instantiate(contract *Contract, args []ContractArg, body []byte) ([]byte, e
 		}
 	}
 
-	if contract.recursive {
+	if recursive {
 		// <argN> <argN-1> ... <arg1> <body> DEPTH OVER 0 CHECKPREDICATE
 		b.AddData(body)
 		b.AddOp(vm.OP_DEPTH).AddOp(vm.OP_OVER)
@@ -206,7 +198,7 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 		stk = stk.add(p.Name)
 	}
 
-	if contract.recursive {
+	if contract.Recursive {
 		stk = stk.add(contract.Name)
 	}
 
@@ -222,7 +214,7 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 			// A clause selector is at the bottom of the stack. Roll it to the
 			// top.
 			n := len(contract.Params)
-			if contract.recursive {
+			if contract.Recursive {
 				n++
 			}
 			stk = b.addRoll(stk, n) // stack: [<clause params> <contract params> [<maybe contract body>] <clause selector>]
@@ -278,7 +270,7 @@ func compileContract(contract *Contract, globalEnv *environ) error {
 	contract.Body = prog
 	contract.Opcodes = opcodes
 
-	contract.steps = b.steps()
+	contract.Steps = b.steps()
 
 	return nil
 }
@@ -520,7 +512,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 						stk = b.addData(stk, []byte{byte(vm.OP_DEPTH), byte(vm.OP_OVER)})
 						stk = b.addCat(stk, partialName)
 
-					case entry.c.recursive:
+					case entry.c.Recursive:
 						// Non-recursive call to a (different) recursive contract
 						// <argN> <argN-1> ... <arg1> <body> DEPTH OVER 0 CHECKPREDICATE
 						if len(entry.c.Body) == 0 {

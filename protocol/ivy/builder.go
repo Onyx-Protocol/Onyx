@@ -195,32 +195,16 @@ func (b *builder) opcodes() string {
 // $_end             |  [... borrower lender deadline balanceAmount balanceAsset]
 
 type (
-	step struct {
+	Step struct {
 		Opcodes string `json:"opcodes"`
 		Stack   string `json:"stack"`
 	}
-	stepList []step
 )
 
-func (b *builder) steps() stepList {
-	var result []step
+func (b *builder) steps() []Step {
+	var result []Step
 	for _, item := range b.items {
-		result = append(result, step{item.opcodes, item.stk.String()})
-	}
-	return stepList(result)
-}
-
-func (sl stepList) String() string {
-	maxWidth := 0
-	for _, s := range sl {
-		if len(s.Opcodes) > maxWidth {
-			maxWidth = len(s.Opcodes)
-		}
-	}
-	result := ""
-	format := fmt.Sprintf("%%-%d.%ds  %%s\n", maxWidth, maxWidth)
-	for _, s := range sl {
-		result += fmt.Sprintf(format, s.Opcodes, s.Stack)
+		result = append(result, Step{item.opcodes, item.stk.String()})
 	}
 	return result
 }
