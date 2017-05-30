@@ -20,7 +20,3 @@ cd $CHAIN/perf
 for file in *.java
 do javac $file
 done
-cd $CHAIN/docs/core/examples/java
-for file in *.java
-do javac $file
-done
