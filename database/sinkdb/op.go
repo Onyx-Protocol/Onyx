@@ -49,12 +49,12 @@ func IfNotExists(key string) Op {
 	}
 }
 
-// IfMatch encodes a conditional to make an instruction
+// IfNotModified encodes a conditional to make an instruction
 // successful only if the version stored in v's key matches v.
 //
 // If v.Exists() is false,
-// IfMatch(v) is equivalent to IfNotExists(v.Key()).
-func IfMatch(v Version) Op {
+// IfNotModified(v) is equivalent to IfNotExists(v.Key()).
+func IfNotModified(v Version) Op {
 	return Op{
 		conds: []*sinkpb.Cond{{
 			Type:  sinkpb.Cond_INDEX_EQUAL,

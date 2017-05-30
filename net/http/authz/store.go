@@ -70,7 +70,7 @@ func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
 	grants = append(grants, g)
 
 	return sinkdb.All(
-		sinkdb.IfMatch(ver),
+		sinkdb.IfNotModified(ver),
 		sinkdb.Set(s.keyPrefix+g.Policy, &GrantList{Grants: grants}),
 	)
 }
@@ -98,7 +98,7 @@ func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) b
 	}
 
 	return sinkdb.All(
-		sinkdb.IfMatch(ver),
+		sinkdb.IfNotModified(ver),
 		sinkdb.Set(key, &GrantList{Grants: keep}),
 	)
 }
