@@ -716,10 +716,9 @@ It is defined as follows:
 
 1. Let `counter = 0`.
 2. Calculate `Hash256("AssetID" || assetID || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
-3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
+3. Decode the resulting hash as a [point](#point) `A` on the elliptic curve.
 4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
-6. Return `A`.
+5. Return `A`.
 
 
 ### Asset ID Commitment
