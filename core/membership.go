@@ -29,12 +29,6 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		return newerr
 	}
 
-	// TODO(kr): create this and the below grant together atomically
-	err = a.sdb.Exec(ctx, sinkdb.AddAllowedMember(x.Addr))
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
 	data := map[string]interface{}{
 		"subject": map[string]string{
 			"CN": hostname,
@@ -46,12 +40,15 @@ func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) err
 		return errors.Wrap(err)
 	}
 
-	err = a.sdb.Exec(ctx, a.grants.Save(ctx, &authz.Grant{
-		Policy:    "internal",
-		GuardType: "x509",
-		GuardData: guardData,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
-		Protected: true,
-	}))
+	err = a.sdb.Exec(ctx,
+		sinkdb.AddAllowedMember(x.Addr),
+		a.grants.Save(ctx, &authz.Grant{
+			Policy:    "internal",
+			GuardType: "x509",
+			GuardData: guardData,
+			CreatedAt: time.Now().UTC().Format(time.RFC3339),
+			Protected: true,
+		}),
+	)
 	return errors.Wrap(err)
 }
