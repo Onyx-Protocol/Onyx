@@ -491,7 +491,7 @@ It is a non-interactive proof-of-knowledge of secrets `x,y,z...` that statisfy o
     NIPK({x,y,z...}, (s1 OR s2 OR s3 OR...))
 
 OLEG-ZKP is a construct facilitating concrete statements and cannot provide security guarantees in abstract.
-For proof of security refer to description of a concrete instance of OLEG-ZKP that uses concrete statements.
+For the proofs of hiding and binding refer to description of a concrete instance of OLEG-ZKP that uses concrete statements.
 
 **Examples:**
 
