@@ -39,5 +39,5 @@ func compileIvy(req compileReq) compileResp {
 		}
 	}
 
-	return compileResp{Contracts: compiled, Programs: m}
+	return compileResp{Contracts: contracts, Programs: m}
 }
