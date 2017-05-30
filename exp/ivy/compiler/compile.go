@@ -117,7 +117,26 @@ func Instantiate(body []byte, params []*Param, recursive bool, args []ContractAr
 	if len(args) != len(params) {
 		return nil, fmt.Errorf("got %d argument(s), want %d", len(args), len(params))
 	}
-	// xxx typecheck args against param types
+
+	// typecheck args against param types
+	for i, param := range params {
+		arg := args[i]
+		switch param.Type {
+		case amountType, intType, timeType:
+			if arg.I == nil {
+				return nil, fmt.Errorf("type mismatch in arg %d (want integer)", i)
+			}
+		case assetType, hashType, progType, pubkeyType, sigType, strType:
+			if arg.S == nil {
+				return nil, fmt.Errorf("type mismatch in arg %d (want string)", i)
+			}
+		case boolType:
+			if arg.B == nil {
+				return nil, fmt.Errorf("type mismatch in arg %d (want boolean)", i)
+			}
+		}
+	}
+
 	b := vmutil.NewBuilder()
 
 	for i := len(args) - 1; i >= 0; i-- {
