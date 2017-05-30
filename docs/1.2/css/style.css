@@ -864,8 +864,10 @@ a.btn:hover .icon-download {
 /* Icons and Images */
 .image,
 img {
-    width: 100%;
+    width: auto%;
+    max-width: 100%;
 }
+
 .btn-icon {
     width: 15px;
     padding-left: 15px;
@@ -1405,7 +1407,7 @@ and (-webkit-min-device-pixel-ratio: 2) {
   outline: none;
 }
 
-#version-alert {
+#version-alert, .force-version-alert {
   display: none;
   margin-bottom: 30px;
 }
