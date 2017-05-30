@@ -225,7 +225,7 @@ func TestContracts(t *testing.T) {
 			dest := txbuilder.Action(txbuilder.NewControlReceiverAction(
 				contractAssetAmount,
 				&txbuilder.Receiver{
-					ControlProgram: contract.Program,
+					ControlProgram: compiled.Programs[contract.Name],
 					ExpiresAt:      time.Now().Add(time.Minute),
 				},
 				nil,
@@ -372,15 +372,17 @@ func valueProg(source, valueProg string, vals map[string]interface{}) ([]byte, e
 			args = append(args, ivy.ContractArg{S: (*json.HexBytes)(&t.pk)})
 		}
 	}
-	compiled, err := ivy.Compile(strings.NewReader(source), map[string][]ivy.ContractArg{
-		contractName: args,
-	})
+	compiled, err := ivy.Compile(strings.NewReader(source))
 	if err != nil {
 		return nil, err
 	}
 	for _, c := range compiled {
 		if c.Name == contractName {
-			return c.Program, nil
+			inst, err := ivy.Instantiate(c.Body, c.Params, c.Recursive, args)
+			if err != nil {
+				return nil, err
+			}
+			return inst, nil
 		}
 	}
 	return nil, errors.New("Couldn't find contract by that name")
