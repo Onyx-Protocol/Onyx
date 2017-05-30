@@ -52,10 +52,26 @@ when mapping asset ID to a point, the expected number of decodings to be
 performed by the prover who enumerates arbitrary asset IDs is `2^N`.
 
 **Proof.** The output of a hash function used by [Asset ID Point](ca.md#asset-id-point) 
-algorithm is a random 256-bit string, where the first 255 bits encode the Y coordinate and 
-the last bit encodes the lowest bit of the X coordinate. Decoding procedure extracts the Y coordinate
-as is, verifies that it is below 2^255 + 19 and recovers the matching X coordinate. If the procedure fails,
-hashing and decoding is retried with an incremented counter. TBD∎
+algorithm is a random 256-bit string, where the first 255 bits encode the y-coordinate and 
+the last bit encodes the lowest bit of the x-coordinate. Decoding procedure extracts the y-coordinate
+as is, verifies that it is below 2^255 + 19 and recovers the matching x-coordinate. If the procedure fails,
+hashing and decoding is retried with an incremented counter. 
+
+The failure can happen in one of 3 cases:
+
+1. If the y-coordinate is >= than 2^255 - 19.
+2. If the recovered x-coordinate is zero and the lowest bit of x is 1.
+3. If there is no square root for a given y-coordinate.
+
+We will consider probabilities of failing checks #1 and #2 as negligible:
+
+1. There are only 19 in 2^255 invalid y-coordinates to fail the check #1. 
+2. There are only 2 in (2^255 - 19) valid y-coordinates that fail the check #2 when the x-coordinate has non-zero lowest bit.
+
+The check #3 fails half the time since there are only half of the valid square roots in the prime field.
+In other words, the probability of choosing an asset ID that hashes to an invalid point is slightly below 1/2.
+
+As a result, the probability of choosing an asset ID to cause N decoding failures in a row after M tries follows the binomial distribution. For probability above 0.5, M equals 2^N. ∎
 
 **Discussion**
 
