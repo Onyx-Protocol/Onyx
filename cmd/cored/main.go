@@ -249,6 +249,13 @@ func main() {
 		err := server.Serve(listener)
 		chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "Serve"))
 	}()
+
+	// Verify that we're connected to the rest of the cluster, if initialized.
+	err = errors.Root(sdb.Ping())
+	if err == context.DeadlineExceeded {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, "Unable to reach rest of raft cluster. Was the node evicted?")
+	}
+
 	resetIfAllowedAndRequested(db, sdb)
 
 	conf, err := config.Load(ctx, db, sdb)

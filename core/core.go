@@ -171,18 +171,12 @@ func (a *API) initCluster(ctx context.Context) error {
 func (a *API) joinCluster(ctx context.Context, x struct {
 	BootAddress string `json:"boot_address"`
 }) error {
-	// validate the format of the boot address
-	_, _, err := net.SplitHostPort(x.BootAddress)
-	if err != nil {
-		newerr := errors.Sub(errInvalidAddr, err)
-		if addrErr, ok := err.(*net.AddrError); ok {
-			newerr = errors.WithDetail(newerr, addrErr.Err)
-		}
-		return newerr
+	if err := validateAddress(x.BootAddress); err != nil {
+		return err
 	}
 
 	bootURL := fmt.Sprintf("https://%s", x.BootAddress)
-	err = a.sdb.RaftService().Join(bootURL)
+	err := a.sdb.RaftService().Join(bootURL)
 	if err != nil {
 		return err
 	}
@@ -192,6 +186,27 @@ func (a *API) joinCluster(ctx context.Context, x struct {
 	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
 	execSelf("")
 	panic("unreached")
+}
+
+func (a *API) evict(ctx context.Context, x struct {
+	NodeAddress string `json:"node_address"`
+}) error {
+	if err := validateAddress(x.NodeAddress); err != nil {
+		return err
+	}
+	return a.sdb.RaftService().Evict(ctx, x.NodeAddress)
+}
+
+func validateAddress(addr string) error {
+	_, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		newerr := errors.Sub(errInvalidAddr, err)
+		if addrErr, ok := err.(*net.AddrError); ok {
+			newerr = errors.WithDetail(newerr, addrErr.Err)
+		}
+		return newerr
+	}
+	return nil
 }
 
 func closeConnOK(w http.ResponseWriter, req *http.Request) {

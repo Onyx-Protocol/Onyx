@@ -56,6 +56,7 @@ var policyByRoute = map[string][]string{
 	"/add-allowed-member":         {"internal"},
 	"/init-cluster":               {"internal"},
 	"/join-cluster":               {"internal"},
+	"/evict":                      {"internal"},
 	"/configure":                  {"client-readwrite", "internal"},
 	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring", "internal"},
 

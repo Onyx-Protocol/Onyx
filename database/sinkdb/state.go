@@ -41,25 +41,38 @@ func (s *state) SetAppliedIndex(index uint64) {
 	s.appliedIndex = index
 }
 
-// SetPeerAddr sets the address for the given peer.
-func (s *state) SetPeerAddr(id uint64, addr string) {
+// Peers returns the current set of peer nodes. The returned
+// map must not be modified.
+func (s *state) Peers() map[uint64]string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.peers[id] = addr
+	return s.peers
 }
 
-// GetPeerAddr gets the current address for the given peer, if set.
-func (s *state) GetPeerAddr(id uint64) (addr string) {
+// SetPeerAddr sets the address for the given peer.
+func (s *state) SetPeerAddr(id uint64, addr string) {
+	newPeers := make(map[uint64]string)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.peers[id]
+	for nodeID, addr := range s.peers {
+		newPeers[nodeID] = addr
+	}
+	newPeers[id] = addr
+	s.peers = newPeers
 }
 
 // RemovePeerAddr deletes the current address for the given peer if it exists.
 func (s *state) RemovePeerAddr(id uint64) {
+	newPeers := make(map[uint64]string)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.peers, id)
+	for nodeID, addr := range s.peers {
+		if nodeID == id {
+			continue
+		}
+		newPeers[nodeID] = addr
+	}
+	s.peers = newPeers
 }
 
 // RestoreSnapshot decodes data and overwrites the contents of s.

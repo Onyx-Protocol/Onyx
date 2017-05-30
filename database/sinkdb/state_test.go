@@ -32,11 +32,11 @@ func TestSetPeerAddr(t *testing.T) {
 func TestGetPeerAddr(t *testing.T) {
 	s := newState()
 	s.SetPeerAddr(1, "1.2.3.4:567")
-	want := "1.2.3.4:567"
+	want := map[uint64]string{1: "1.2.3.4:567"}
 
-	got := s.GetPeerAddr(1)
+	got := s.Peers()
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("s.GetPeerAddr(1) = %s, want %s", got, want)
+		t.Errorf("s.GetPeerAddr(1) = %v, want %v", got, want)
 	}
 }
 

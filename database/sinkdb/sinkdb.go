@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -32,6 +33,17 @@ func Open(laddr, dir string, httpClient *http.Client) (*DB, error) {
 type DB struct {
 	state *state
 	raft  *raft.Service
+}
+
+// Ping peforms an empty write to verify the connection to
+// the rest of the cluster.
+func (db *DB) Ping() error {
+	const timeout = 30 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	_, err := db.raft.Exec(ctx, db.state.EmptyWrite())
+	return err
 }
 
 // Exec executes the provided operations
