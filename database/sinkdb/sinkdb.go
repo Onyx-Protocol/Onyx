@@ -74,20 +74,20 @@ func (db *DB) Exec(ctx context.Context, ops ...Op) error {
 
 // Get performs a linearizable read of the provided key. The
 // read value is unmarshalled into v.
-func (db *DB) Get(ctx context.Context, key string, v proto.Message) (found bool, err error) {
-	err = db.raft.WaitRead(ctx)
+func (db *DB) Get(ctx context.Context, key string, v proto.Message) (Version, error) {
+	err := db.raft.WaitRead(ctx)
 	if err != nil {
-		return false, err
+		return Version{}, err
 	}
-	buf, found := db.state.get(key)
-	return found, proto.Unmarshal(buf, v)
+	buf, ver := db.state.get(key)
+	return ver, proto.Unmarshal(buf, v)
 }
 
 // GetStale performs a non-linearizable read of the provided key.
 // The value may be stale. The read value is unmarshalled into v.
-func (db *DB) GetStale(key string, v proto.Message) (found bool, err error) {
-	buf, found := db.state.get(key) // read directly from state
-	return found, proto.Unmarshal(buf, v)
+func (db *DB) GetStale(key string, v proto.Message) (Version, error) {
+	buf, ver := db.state.get(key) // read directly from state
+	return ver, proto.Unmarshal(buf, v)
 }
 
 // RaftService returns the raft service used for replication.
