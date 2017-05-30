@@ -25,7 +25,7 @@ type Op struct {
 // All encodes the atomic application of all its arguments.
 //
 // The returned Op is satisfied if all arguments would be satisfied.
-// Its effects (if satisfied) are the effects of the arguments, in order.
+// Its effects (if satisfied) are the effects of the arguments.
 func All(op ...Op) Op {
 	var outer Op
 	for _, inner := range op {
