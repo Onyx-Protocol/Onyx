@@ -50,8 +50,7 @@ func IfNotExists(key string) Op {
 }
 
 // IfMatch encodes a conditional to make an instruction
-// successful only if the stored version matches v.
-// It checks the key returned by method Key on v.
+// successful only if the version stored in v's key matches v.
 //
 // If v.Exists() is false,
 // IfMatch(v) is equivalent to IfNotExists(v.Key()).
