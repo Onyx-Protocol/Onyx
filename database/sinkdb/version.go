@@ -13,3 +13,8 @@ type Version struct {
 func (v Version) Exists() bool {
 	return v.n != 0
 }
+
+// Key returns the key for which v is valid.
+func (v Version) Key() string {
+	return v.key
+}

@@ -49,6 +49,22 @@ func IfNotExists(key string) Op {
 	}
 }
 
+// IfMatch encodes a conditional to make an instruction
+// successful only if the stored version matches v.
+// It checks the key returned by method Key on v.
+//
+// If v.Exists() is false,
+// IfMatch(v) is equivalent to IfNotExists(v.Key()).
+func IfMatch(v Version) Op {
+	return Op{
+		conds: []*sinkpb.Cond{{
+			Type:  sinkpb.Cond_INDEX_EQUAL,
+			Key:   v.key,
+			Index: v.n,
+		}},
+	}
+}
+
 // Delete encodes a delete operation for key.
 func Delete(key string) Op {
 	return Op{
