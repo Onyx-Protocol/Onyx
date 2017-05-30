@@ -15,7 +15,8 @@ module Utilities
 
   def account_balances(account_alias)
     chain.balances.query(filter: "account_alias='#{account_alias}'").reduce({}) do |memo, b|
-      memo[b.sum_by['asset_alias']] = b.amount
+      key = b.sum_by['asset_alias'].empty? ? b.sum_by['asset_id'] : b.sum_by['asset_alis']
+      memo[key] = b.amount
       memo
     end
   end

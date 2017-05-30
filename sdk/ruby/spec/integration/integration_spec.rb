@@ -30,42 +30,8 @@ context 'Chain SDK integration test' do
     # Asset creation
     # TODO: remove me
 
-    chain.assets.create(alias: :gold, root_xpubs: [gold_key.xpub], quorum: 1)
-    chain.assets.create(alias: :silver, root_xpubs: [silver_key.xpub], quorum: 1)
-
-    # Receiver creation
-
-    r = chain.accounts.create_receiver(account_alias: :alice)
-    expect(r.control_program).not_to be_empty
-    expect(r.expires_at).not_to be_nil
-
-    r = chain.accounts.create_receiver(account_id: alice.id)
-    expect(r.control_program).not_to be_empty
-    expect(r.expires_at).not_to be_nil
-
-    expect { chain.accounts.create_receiver({}) }.to raise_error(Chain::APIError)
-
-    # Batch receiver creation
-
-    receiver_batch = chain.accounts.create_receiver_batch([
-      {account_alias: :alice}, # success
-      {}, # error
-      {account_id: alice.id}, #success
-    ])
-
-    expect(receiver_batch.errors.keys).to eq([1])
-    expect(receiver_batch.successes.keys).to eq([0, 2])
-
-    # Pay to receiver
-
-    r = chain.accounts.create_receiver(account_alias: :alice)
-
-    tx = chain.transactions.build do |b|
-      b.issue asset_alias: :gold, amount: 1
-      b.control_with_receiver receiver: r, asset_alias: :gold, amount: 1
-    end
-
-    chain.transactions.submit(signer.sign(tx))
+    gold = chain.assets.create(alias: :gold, root_xpubs: [gold_key.xpub], quorum: 1)
+    silver = chain.assets.create(alias: :silver, root_xpubs: [silver_key.xpub], quorum: 1)
 
     # Transaction feed
 
