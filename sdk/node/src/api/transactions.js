@@ -97,6 +97,9 @@ function checkForError(resp) {
  *
  * @property {Boolean} isLocal
  * A flag indicating if the input is local.
+ *
+ * @property {String[]} arguments
+ * The witness arguments passed to the input.
  */
 
 /**
@@ -104,7 +107,7 @@ function checkForError(resp) {
  * creates others. An output is considered unspent when it has not yet been used
  * as an input to a new transaction. All asset units on a blockchain exist in
  * the unspent output set.
- * 
+ *
  * More info: {@link https://chain.com/docs/core/build-applications/unspent-outputs}
  * @typedef {Object} TransactionOutput
  * @global

@@ -27,21 +27,22 @@ type AnnotatedTx struct {
 }
 
 type AnnotatedInput struct {
-	Type            string             `json:"type"`
-	AssetID         bc.AssetID         `json:"asset_id"`
-	AssetAlias      string             `json:"asset_alias,omitempty"`
-	AssetDefinition *json.RawMessage   `json:"asset_definition"`
-	AssetTags       *json.RawMessage   `json:"asset_tags,omitempty"`
-	AssetIsLocal    Bool               `json:"asset_is_local"`
-	Amount          uint64             `json:"amount"`
-	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
-	ControlProgram  chainjson.HexBytes `json:"-"`
-	SpentOutputID   *bc.Hash           `json:"spent_output_id,omitempty"`
-	AccountID       string             `json:"account_id,omitempty"`
-	AccountAlias    string             `json:"account_alias,omitempty"`
-	AccountTags     *json.RawMessage   `json:"account_tags,omitempty"`
-	ReferenceData   *json.RawMessage   `json:"reference_data"`
-	IsLocal         Bool               `json:"is_local"`
+	Type            string               `json:"type"`
+	AssetID         bc.AssetID           `json:"asset_id"`
+	AssetAlias      string               `json:"asset_alias,omitempty"`
+	AssetDefinition *json.RawMessage     `json:"asset_definition"`
+	AssetTags       *json.RawMessage     `json:"asset_tags,omitempty"`
+	AssetIsLocal    Bool                 `json:"asset_is_local"`
+	Amount          uint64               `json:"amount"`
+	IssuanceProgram chainjson.HexBytes   `json:"issuance_program,omitempty"`
+	ControlProgram  chainjson.HexBytes   `json:"-"`
+	SpentOutputID   *bc.Hash             `json:"spent_output_id,omitempty"`
+	AccountID       string               `json:"account_id,omitempty"`
+	AccountAlias    string               `json:"account_alias,omitempty"`
+	AccountTags     *json.RawMessage     `json:"account_tags,omitempty"`
+	ReferenceData   *json.RawMessage     `json:"reference_data"`
+	IsLocal         Bool                 `json:"is_local"`
+	Arguments       []chainjson.HexBytes `json:"arguments"` // experimental
 }
 
 type AnnotatedOutput struct {
@@ -142,12 +143,17 @@ func buildAnnotatedTransaction(orig *legacy.Tx, b *legacy.Block, indexInBlock ui
 
 func buildAnnotatedInput(tx *legacy.Tx, i uint32) *AnnotatedInput {
 	orig := tx.Inputs[i]
+	var jsonArgs []chainjson.HexBytes
+	for _, a := range orig.Arguments() {
+		jsonArgs = append(jsonArgs, a)
+	}
 	in := &AnnotatedInput{
 		AssetID:         orig.AssetID(),
 		Amount:          orig.Amount(),
 		AssetDefinition: &emptyJSONObject,
 		AssetTags:       &emptyJSONObject,
 		ReferenceData:   &emptyJSONObject,
+		Arguments:       jsonArgs,
 	}
 
 	if len(orig.ReferenceData) > 0 {
