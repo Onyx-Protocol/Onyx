@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -91,7 +90,6 @@ type Service struct {
 	mux     *http.ServeMux
 	rctxReq chan rctxReq
 	wctxReq chan wctxReq
-	donec   chan struct{}
 	client  *http.Client
 
 	// config set during init/join/restart. immutable once set.
@@ -118,7 +116,6 @@ type Service struct {
 	stateCond sync.Cond
 	state     State
 	confState raftpb.ConfState
-	done      bool
 
 	// Current log position, accessed only from runUpdates goroutine
 	snapIndex uint64
@@ -205,7 +202,6 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 		mux:         http.NewServeMux(),
 		raftStorage: raft.NewMemoryStorage(),
 		state:       state,
-		donec:       make(chan struct{}),
 		rctxReq:     make(chan rctxReq),
 		wctxReq:     make(chan wctxReq),
 		client:      httpClient,
@@ -422,27 +418,6 @@ func replyReadIndex(rdIndices map[string]chan uint64, readStates []raft.ReadStat
 // runUpdates runs forever, reading and processing updates from raft
 // onto local storage.
 func (sv *Service) runUpdates(wal *wal.WAL) {
-	defer func() {
-		v := recover()
-		if err, ok := v.(error); ok {
-			sv.errMu.Lock()
-			sv.err = err
-			sv.errMu.Unlock()
-			log.Printf(context.Background(), "raft exiting: %v", err)
-			debug.PrintStack()
-		} else if v != nil {
-			panic(v)
-		}
-
-		sv.stateMu.Lock()
-		sv.done = true
-		sv.stateMu.Unlock()
-		sv.stateCond.Broadcast()
-	}()
-	defer sv.raftNode.Stop()
-	defer close(sv.donec)
-	defer log.Printf(context.Background(), "ats:got here deferred")
-
 	rdIndices := make(map[string]chan uint64)
 	writers := make(map[string]chan bool)
 	for {
@@ -485,17 +460,11 @@ func (sv *Service) Exec(ctx context.Context, instruction []byte) (satisfied bool
 		return false, errors.Wrap(err)
 	}
 	req := wctxReq{wctx: prop.Wctx, satisfied: make(chan bool, 1)}
-	select {
-	case sv.wctxReq <- req:
-	case <-sv.donec:
-		return false, errors.New("raft shutdown")
-	}
+	sv.wctxReq <- req
+
 	err = sv.raftNode.Propose(ctx, data)
 	if err != nil {
-		select {
-		case sv.wctxReq <- wctxReq{wctx: prop.Wctx}:
-		case <-sv.donec:
-		}
+		sv.wctxReq <- wctxReq{wctx: prop.Wctx}
 		return false, errors.Wrap(err)
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) //TODO(tessr): realistic timeout
@@ -506,8 +475,6 @@ func (sv *Service) Exec(ctx context.Context, instruction []byte) (satisfied bool
 		return ok, nil
 	case <-ctx.Done():
 		return false, ctx.Err()
-	case <-sv.donec:
-		return false, errors.New("raft shutdown")
 	}
 }
 
@@ -557,8 +524,6 @@ func (sv *Service) waitRead(ctx context.Context) error {
 	req := rctxReq{rctx: rctx, index: make(chan uint64, 1)}
 	select {
 	case sv.rctxReq <- req:
-	case <-sv.donec:
-		return errors.New("raft shutdown")
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -570,7 +535,6 @@ func (sv *Service) waitRead(ctx context.Context) error {
 		// select statement.
 		select {
 		case sv.rctxReq <- rctxReq{rctx: rctx}:
-		case <-sv.donec:
 		case <-ctx.Done():
 		}
 		return err
@@ -598,25 +562,19 @@ func (sv *Service) waitRead(ctx context.Context) error {
 
 	select {
 	case idx := <-req.index:
-		ok := sv.wait(idx)
-		if !ok {
-			return errors.New("raft shutdown")
-		}
-	case <-sv.donec:
-		return errors.New("raft shutdown")
+		sv.wait(idx)
 	case <-ctx.Done():
 		return ctx.Err()
 	}
 	return nil
 }
 
-func (sv *Service) wait(index uint64) bool {
+func (sv *Service) wait(index uint64) {
 	sv.stateMu.Lock()
 	defer sv.stateMu.Unlock()
-	for !sv.done && sv.state.AppliedIndex() < index {
+	for sv.state.AppliedIndex() < index {
 		sv.stateCond.Wait()
 	}
-	return sv.state.AppliedIndex() >= index //if false killed b/c of done signal
 }
 
 // ServeHTTP responds to raft consensus messages at /raft/x,
