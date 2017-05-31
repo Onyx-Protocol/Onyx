@@ -52,7 +52,7 @@ func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
 	}
 
 	var grantList GrantList
-	_, err := s.sdb.Get(ctx, key, &grantList)
+	ver, err := s.sdb.Get(ctx, key, &grantList)
 	if err != nil {
 		return sinkdb.Error(errors.Wrap(err))
 	}
@@ -69,9 +69,10 @@ func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
 	// create new grant and it append to the list of grants associated with this policy
 	grants = append(grants, g)
 
-	// TODO(tessr): Make this safe for concurrent updates. Will likely require a
-	// conditional write operation for sinkdb
-	return sinkdb.Set(s.keyPrefix+g.Policy, &GrantList{Grants: grants})
+	return sinkdb.All(
+		sinkdb.IfNotModified(ver),
+		sinkdb.Set(s.keyPrefix+g.Policy, &GrantList{Grants: grants}),
+	)
 }
 
 // Delete returns an Op to delete from policy all stored grants for which delete returns true.
@@ -96,9 +97,10 @@ func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) b
 		return sinkdb.Op{}
 	}
 
-	// TODO(tessr): Make this safe for concurrent updates. Will likely require a
-	// conditional write operation for sinkdb
-	return sinkdb.Set(key, &GrantList{Grants: keep})
+	return sinkdb.All(
+		sinkdb.IfNotModified(ver),
+		sinkdb.Set(key, &GrantList{Grants: keep}),
+	)
 }
 
 func EqualGrants(a, b Grant) bool {
