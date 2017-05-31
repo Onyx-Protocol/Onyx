@@ -187,13 +187,13 @@ Generator `G` has the following 32-byte encoding:
 
     G = 0x5866666666666666666666666666666666666666666666666666666666666666
 
-**Secondary generator point** (`J`) is the elliptic curve point defined as decoded hash of the primary generator `G`:
+**Secondary generator point** (`J`) is the elliptic curve point defined as decoded hash of the primary generator `G` using [PointHash](#pointhash) function:
 
-    J = Decode(SHA3-256(Encode(G)))
+    J = PointHash("J", Encode(G))
 
 Generator `J` has the following 32-byte encoding:
 
-    J = 0x00c774b875ed4e395ebb0782b4d93db838d3c4c0840bc970570517555ca71b77
+    J = 0x0TBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBD
 
 
 ### Hash functions
@@ -238,11 +238,11 @@ It is defined as follows:
 1. Let `counter = 0`.
 2. Append counter to a list of input strings `x`,  where `counter` is encoded as a 64-bit unsigned integer using little-endian convention:
 
-        y = {uint64le(counter), x[0], ..., x[n-1]}
+        x’ = {uint64le(counter), x[0], ..., x[n-1]}
 
 3. Calculate hash using `TupleHash` function as defined in [NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): 
 
-        h = TupleHash128(y, 32, "PointHash")
+        h = TupleHash128(x’, 32, "PointHash")
 
 4. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
 5. If the point is invalid, increment `counter` and go back to step 2. The probability of failure is 0.5.
@@ -732,13 +732,9 @@ Transient issuance key is created for the [confidential issuance proof](#issuanc
 
 _Asset ID point_ is a [point](#point) representing an asset ID.
 
-It is defined as follows:
+It is calculated using [PointHash](#pointhash) function:
 
-1. Let `counter = 0`.
-2. Calculate `Hash256("AssetID" || assetID || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
-3. Decode the resulting hash as a [point](#point) `A` on the elliptic curve.
-4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-5. Return `A`.
+        A = PointHash("AssetID", assetID)
 
 
 ### Asset ID Commitment
@@ -768,7 +764,7 @@ The asset ID commitment can either be nonblinded or blinded.
 
 1. Compute an [asset ID point](#asset-id-point):
 
-        A = Hash256(assetID || counter)
+        A = PointHash("AssetID", assetID)
 
 2. Return [point pair](#point-pair) `(A,O)` where `O` is a [zero point](#zero-point).
 
@@ -789,7 +785,7 @@ The asset ID commitment can either be nonblinded or blinded.
 
 1. Compute an [asset ID point](#asset-id-point):
 
-        A = Decode(Hash256(assetID...))
+        A = PointHash("AssetID", assetID)
 
 2. Compute [asset ID blinding factor](#asset-id-blinding-factor):
 
@@ -1085,7 +1081,7 @@ the asset ID of one of the inputs to the recipient.
 3. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with `msg`, [generators](#generators) `(G,J)` and `{(P[i],Q[i])}`.
 4. If verification was unsuccessful, return `false`.
 5. If the asset range proof is non-confidential:
-    1. Compute [asset ID point](#asset-id-point): `A’ = Hash256(assetID || counter)`.
+    1. Compute [asset ID point](#asset-id-point): `A’ = PointHash("AssetID", assetID)`.
     2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC’`.
 6. Return `true`.
 
@@ -1154,16 +1150,18 @@ When creating a confidential issuance, the first step is to construct the rest o
                            nonce || message)
 
 2. Calculate marker point `M`:
-    1. Let `counter = 0`.
-    2. Calculate `Hash256("M" || basehash || uint64le(counter))`.
-    3. Decode the resulting hash as a [point](#point) `M` on the elliptic curve.
-    4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
+
+        M = PointHash("IARP.M", basehash)
+
 3. Calculate the tracing point: `T = y·M`.
 4. Calculate a 32-byte message hash to sign:
 
         msghash = Hash256("msg" || basehash || M || T)
 
-5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = Decode(Hash256(a[i]...))`.
+5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
+
+        A[i] = PointHash("AssetID", a[i])
+
 6. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
         h = ScalarHash("h" || msghash)
@@ -1215,7 +1213,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Algorithm:**
 
 1. If the range proof is non-confidential:
-    1. Compute [asset ID point](#asset-id-point): `A’ = Decode(Hash256(assetID...))`.
+    1. Compute [asset ID point](#asset-id-point): `A’ = PointHash("AssetID",assetID)`.
     2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC`.
 2. If the range proof is confidential:
     1. Calculate the base hash:
@@ -1226,15 +1224,14 @@ When creating a confidential issuance, the first step is to construct the rest o
                            nonce || message)
 
     2. Calculate marker point `M`:
-        1. Let `counter = 0`.
-        2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
-        3. Decode the resulting hash as a [point](#point) `M` on the elliptic curve.
-        4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
+    
+            M = PointHash("IARP.M", basehash)
+
     3. Calculate a 32-byte message hash to sign:
 
             msghash = Hash256("msg" || basehash || M || T || Bm)
 
-    4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = Decode(Hash256(a[i]...))`.
+    4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = PointHash("AssetID", a[i])`.
     5. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
             h = ScalarHash("h" || msghash)
@@ -1616,7 +1613,7 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 **Algorithm:**
 
 1. [Validate excess commitment](#validate-excess-commitment) `(QG,QJ),e,s,message`.
-2. Compute [asset ID point](#asset-id-point): `A’ = Hash256(assetID || counter)`.
+2. Compute [asset ID point](#asset-id-point): `A’ = PointHash("AssetID", assetID)`.
 4. [Create nonblinded value commitment](#create-nonblinded-value-commitment): `V’ = value·A’`.
 5. Verify that [point pair](#point-pair) `(QG + V’, QJ)` equals `VC`.
 
