@@ -31,7 +31,6 @@ func TestRingSig(t *testing.T) {
 			p = p2
 		}
 	}
-	P[0][0].ScMul(&B, &p)
 
 	rs := CreateRingSignature(msg, []ecmath.Point{B}, P, 0, p)
 	if !rs.Validate(msg, []ecmath.Point{B}, P) {
