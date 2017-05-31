@@ -503,6 +503,13 @@ func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 // won't have changed the value again, but it is guaranteed not to
 // read stale data.)
 func (sv *Service) WaitRead(ctx context.Context) error {
+	const defaultTimeout = 30 * time.Second
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, defaultTimeout)
+		defer cancel()
+	}
+
 	if !sv.initialized() {
 		return ErrUninitialized
 	}
