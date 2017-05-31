@@ -23,7 +23,7 @@ docgenerate $sourcePath $generate_dest_path
 
 echo
 echo "Uploading docs...."
-aws s3 sync --delete $generate_dest_path $bucket_url/docs/$1
+aws s3 sync --delete $generate_dest_path $bucket_url/docs
 
 echo
 echo "Setting content type for extensionless files, this will take a while..."
