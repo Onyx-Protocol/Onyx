@@ -509,10 +509,12 @@ func (sv *Service) WaitRead(ctx context.Context) error {
 
 	for {
 		err := sv.waitRead(ctx)
-		if isTimeout(err) {
-			continue
+		if !isTimeout(err) {
+			return err
 		}
-		return err
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 	}
 }
 
