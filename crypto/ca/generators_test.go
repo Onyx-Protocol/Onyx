@@ -1,8 +1,9 @@
 package ca
 
 import (
-	"chain/crypto/ed25519/ecmath"
 	"testing"
+
+	"chain/crypto/ed25519/ecmath"
 )
 
 func TestZeroPoint(t *testing.T) {

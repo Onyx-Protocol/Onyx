@@ -1,8 +1,6 @@
 package ca
 
-import (
-	"chain/crypto/ed25519/ecmath"
-)
+import "chain/crypto/ed25519/ecmath"
 
 // G is a base point
 var G = makeG()

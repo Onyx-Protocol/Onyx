@@ -1,10 +1,10 @@
 package ca
 
 import (
+	"golang.org/x/crypto/sha3"
+
 	"chain/crypto/ed25519/ecmath"
 	"chain/crypto/sha3pool"
-
-	"golang.org/x/crypto/sha3"
 )
 
 func sha3_256(input ...[]byte) (output [32]byte) {

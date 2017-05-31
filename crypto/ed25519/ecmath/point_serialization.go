@@ -1,10 +1,11 @@
 package ecmath
 
 import (
-	"chain/crypto/ed25519/internal/edwards25519"
 	"encoding/hex"
 	"fmt"
 	"io"
+
+	"chain/crypto/ed25519/internal/edwards25519"
 )
 
 // Bytes returns binary representation of a EC point (32-byte slice)

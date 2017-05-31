@@ -1,8 +1,9 @@
 package ca
 
 import (
-	"chain/crypto/ed25519/ecmath"
 	"io"
+
+	"chain/crypto/ed25519/ecmath"
 )
 
 type (

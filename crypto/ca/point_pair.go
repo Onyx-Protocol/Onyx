@@ -1,11 +1,12 @@
 package ca
 
 import (
-	"chain/crypto/ed25519/ecmath"
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
 	"io"
+
+	"chain/crypto/ed25519/ecmath"
 )
 
 // PointPair is an ordered pair of points on the ed25519 curve.

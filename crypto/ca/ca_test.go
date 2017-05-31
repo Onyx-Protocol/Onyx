@@ -1,9 +1,10 @@
 package ca
 
 import (
-	"chain/crypto/ed25519/ecmath"
 	"encoding/hex"
 	"fmt"
+
+	"chain/crypto/ed25519/ecmath"
 )
 
 func fromHex256(hash string) (h [32]byte) {
