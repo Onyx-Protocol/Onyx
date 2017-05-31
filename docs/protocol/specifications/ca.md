@@ -202,26 +202,26 @@ The following hash functions are based on SHA-3 Derived Functions as specified b
 
 #### Hash256
 
-`Hash256` is a secure hash function that takes a variable-length binary string `x` as input and outputs a 256-bit string.
+`Hash256(X)` is a secure hash function that takes a list of input strings `X` and outputs a 256-bit hash.
 
-    Hash256(x) = SHAKE128("ChainCA-256" || x, 32)
+    Hash256(X) = TupleHash128(X, L=256, S="ChainCA.Hash256")
 
 #### StreamHash
 
-`StreamHash` is a secure extendable-output hash function that takes a variable-length binary string `x` as input
+`StreamHash(X,n)` is a secure extendable-output hash function that takes a sequence of variable-length binary strings `X` as input
 and outputs a variable-length hash string depending on a number of bytes (`n`) requested.
 
-    StreamHash(x, n) = SHAKE128("ChainCA-stream" || x, n)
+    StreamHash(X, n) = TupleHashXOF128(X, L=n·8, S="ChainCA.StreamHash")
 
 #### ScalarHash
 
-`ScalarHash` is a secure hash function that takes a variable-length binary string `x` as input and outputs a [scalar](#scalar). It is based on NIST recommendation to output at least extra 128 bits in order to make bias negligible ([NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf), Appendix B, p. 25).
+`ScalarHash(X)` is a secure hash function that takes a variable-length binary string `x` as input and outputs a [scalar](#scalar). It is based on NIST recommendation to output at least extra 128 bits in order to make bias negligible ([NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf), Appendix B, p. 25).
 
-`ScalarHash` uses 512-bit output to take advantage of an existing implementation of “reduce” operation in Ed25519 libraries defined for 512-bit strings (although 381-bit string would be sufficient).
+`ScalarHash` uses 512-bit output to take advantage of an existing implementation of “reduce” operation in Ed25519 libraries defined for 512-bit strings (even though a 381-bit output provides a sufficient security level).
 
-1. For the input string `x` compute a 512-bit hash `h`:
+1. For the input sequence of strings `X` compute a 512-bit hash `h`:
 
-        h = SHAKE128("ChainCA-scalar" || x, 64)
+        h = TupleHash128(X, L=512, S="ChainCA.ScalarHash")
 
 2. Interpret `h` as a little-endian integer and reduce modulo subgroup [order](#elliptic-curve) `L`:
 
@@ -231,18 +231,18 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 #### PointHash
 
-`PointHash` is a secure hash function that takes a list of input strings `x` and returns a valid point in Ed25519 subgroup.
+`PointHash(X)` is a secure hash function that takes a list of input strings `X` and returns a valid point in Ed25519 subgroup.
 
 It is defined as follows:
 
 1. Let `counter = 0`.
-2. Append counter to a list of input strings `x`,  where `counter` is encoded as a 64-bit unsigned integer using little-endian convention:
+2. Append counter to a list of input strings `X`,  where `counter` is encoded as a 64-bit unsigned integer using little-endian convention:
 
-        x’ = {uint64le(counter), x[0], ..., x[n-1]}
+        X’ = {uint64le(counter), X[0], ..., X[n-1]}
 
 3. Calculate hash using `TupleHash` function as defined in [NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): 
 
-        h = TupleHash128(x’, 32, "PointHash")
+        h = TupleHash128(X’, L=256, S="ChainCA.PointHash")
 
 4. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
 5. If the point is invalid, increment `counter` and go back to step 2. The probability of failure is 0.5.
