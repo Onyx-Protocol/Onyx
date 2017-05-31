@@ -250,7 +250,7 @@ Ring signature described below supports proving knowledge of multiple discrete l
 2. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
 3. `{B[u]}`: `M` base [points](#point) to validate the signature.
 4. `{P[i,u]}`: `n·M` [points](#point) representing the public keys.
-5. `j`: the index of the designated public key, so that `P[j] == p·B`.
+5. `j`: the index of the designated public key, so that `P[j,u] == p·B[u]` for `u` in `0..M-1`.
 6. `p`: the secret [scalar](#scalar) representing a private key for the public keys `P[u,j]`.
 
 **Output:** `{e0, s[0], ..., s[n-1]}`: the ring signature, `n+1` 32-byte elements.
@@ -867,7 +867,7 @@ It is computed by [balancing blinding factors](#balance-blinding-factors) and us
 
 ### Excess Commitment
 
-An excess commitment `QC` is an ElGamal commitment to an [excess factor](#excess-factor) represented by a [point pair](#point-pair) together with a Schnorr signature proving the equality of the discrete logarithms in both points (`e,s`):
+An excess commitment `QC` is an ElGamal commitment to a zero amount of an arbitrary asset (asset ID does not matter since the amount is zero). Since the amount is zero, `QC` is simply a [pair of points](#point-pair) committing to the same [excess factor](#excess-factor) using two different generators. The pair comes with a Schnorr signature `e,s` proving the equality of the factors committed to by both points:
 
     QC = (q·G, q·J, e, s)
 
