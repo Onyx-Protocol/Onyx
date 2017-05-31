@@ -68,7 +68,8 @@ func (s *state) RestoreSnapshot(data []byte, index uint64) error {
 	snapshot := &sinkpb.Snapshot{}
 	err := proto.Unmarshal(data, snapshot)
 	s.peers = snapshot.Peers
-	s.state = snapshot.State //TODO (ameets): need to add version here
+	s.state = snapshot.State
+	s.version = snapshot.Version
 	return errors.Wrap(err)
 }
 
@@ -78,8 +79,9 @@ func (s *state) Snapshot() ([]byte, uint64, error) {
 	defer s.mu.Unlock()
 
 	data, err := proto.Marshal(&sinkpb.Snapshot{
-		State: s.state,
-		Peers: s.peers,
+		Version: s.version,
+		State:   s.state,
+		Peers:   s.peers,
 	})
 	return data, s.appliedIndex, errors.Wrap(err)
 }
