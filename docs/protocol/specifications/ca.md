@@ -278,8 +278,8 @@ Ring signature described below supports proving knowledge of multiple discrete l
 **Algorithm:**
 
 1. Let `counter = 0`.
-2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS" || byte(48+M) || B || P[0] || ... || P[n-1] || msg)`.
-3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash(uint64le(counter) || msghash || p || uint64le(j), 32·(n-1) + 64 + 1)`, where:
+2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS", byte(48+M), B[0],...,B[M-1], P[0],...,P[n-1], msg)`.
+3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash({uint64le(counter), msghash, p, uint64le(j)}, 32·(n-1) + 64 + 1)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * `p` is encoded as a 256-bit little-endian integer,
     * `j` is encoded as a 64-bit little-endian integer.
@@ -287,7 +287,7 @@ Ring signature described below supports proving knowledge of multiple discrete l
 5. Calculate the initial e-value, let `i = j+1 mod n`:
     1. For each `u` from 0 to `M-1`: calculate `R[u,i]` as the [point](#point) `k·B[u]`.
     2. Define `w[j]` as `mask` with lower 4 bits set to zero: `w[j] = mask & 0xf0`.
-    3. Calculate `e[i] = ScalarHash("e" || R[0,i] || ... || R[M-1,i] || msghash || uint64le(i) || w[j])` where `i` is encoded as a 64-bit little-endian integer.
+    3. Calculate `e[i] = ScalarHash("e", R[0,i], ..., R[M-1,i], msghash, uint64le(i), w[j])` where `i` is encoded as a 64-bit little-endian integer.
 6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
     2. Calculate the forged s-value `s[i] = r[step-1]`.
@@ -296,7 +296,7 @@ Ring signature described below supports proving knowledge of multiple discrete l
     5. Let `i’ = i+1 mod n`.
     6. For each `u` from 0 to `M-1`:
         1. Calculate point `R[u,i’] = z[i]·B[u] - e[i]·P[i,u]`.
-    7. Calculate `e[i’] = ScalarHash("e" || R[0,i’] || ... || R[M-1,i’] || msghash || uint64le(i’) || w[i])` where `i’` is encoded as a 64-bit little-endian integer.
+    7. Calculate `e[i’] = ScalarHash("e", R[0,i’], ..., R[M-1,i’], msghash, uint64le(i’), w[i])` where `i’` is encoded as a 64-bit little-endian integer.
 7. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
 8. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
 9. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
@@ -318,13 +318,13 @@ Ring signature described below supports proving knowledge of multiple discrete l
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS" || byte(48+M) || B || P[0] || ... || P[n-1] || msg)`.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS", byte(48+M), B, P[0],..., P[n-1], msg)`.
 2. For each `i` from `0` to `n-1`:
     1. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero (see note below).
     2. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     3. For each `u` from 0 to `M-1`:
         1. Calculate point `R[u,i+1] = z[i]·B[u] - e[i]·P[u,i]`.
-    4. Calculate `e[i+1] = ScalarHash("e" || R[0,i+1] || ... || R[M-1,i+1] || msghash || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
+    4. Calculate `e[i+1] = ScalarHash("e", R[0,i+1], ..., R[M-1,i+1], msghash, i+1, w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
 3. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
 Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
@@ -372,10 +372,10 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS" || byte(48+M) || uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS", byte(48+M), uint64le(n), uint64le(m), {B[i]}, {P[i,j]}, msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Let `counter = 0`.
 3. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
-4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash("O" || uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
+4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash({"O", uint64le(counter), msghash, {p[i]}, {uint64le(j[i])}}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
@@ -390,7 +390,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         1. Let `j’ = j+1 mod m`.
         2. For each `u` from 0 to `M-1`:
             1. Calculate `R[t,j’,u]` as the point `k[t]·B[u]`.
-        3. Calculate `e[t,j’] = ScalarHash("e" || byte(cnt), R[t,j’,0] || ... || R[t,j’,M-1] || msghash || uint64le(t) || uint64le(j’) || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
+        3. Calculate `e[t,j’] = ScalarHash("e", byte(cnt), R[t,j’,0], ..., R[t,j’,M-1], msghash, uint64le(t), uint64le(j’), w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
     7. If `j ≠ m-1`, then for `i` from `j+1` to `m-1`:
         1. Calculate the forged s-value: `s[t,i] = r[m·t + i]`.
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
@@ -398,7 +398,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         4. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`.
-        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash("e", byte(cnt), R[t,i’,0], ..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
 7. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
     2. Calculate `e0 = ScalarHash(E)`.
@@ -413,7 +413,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         4. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`. If `i` is zero, use `e0` in place of `e[t,0]`.
-        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash("e", byte(cnt), R[t,i’,0],..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     4. Calculate the non-forged `z[t,j] = k[t] + p[t]·e[t,j] mod L` and encode it as a 32-byte little-endian integer.
     5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
     6. Define `s[t,j]` as `z[t,j]` with 4 high bits set to `mask[t]` bits.
@@ -439,7 +439,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256("BRS" || byte(48+M) || uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS", byte(48+M), uint64le(n), uint64le(m), {B[i]}, {P[i,j]}, msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Set top 4 bits of `e0` to zero.
@@ -451,7 +451,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         3. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`. Use `e0` instead of `e[t,0]` in each ring.
-        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash("e", byte(cnt), R[t,i’,0],..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 6. Calculate `e’ = ScalarHash(E)`.
 7. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
@@ -476,13 +476,13 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256("BRS" || byte(48+M) || n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS", byte(48+M), n, m, {B[i]}, {P[i,j]}, msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Let `counter` integer equal `cnt`.
 5. Calculate a sequence of `n·m` 32-byte random overlay values:
 
-        `{o[i]} = StreamHash("O" || uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
+        `{o[i]} = StreamHash({"O", uint64le(counter), msghash, {p[i]}, {uint64le(j[i])}}, 32·n·m)`, where:
 
 6. Set top 4 bits of `e0` to zero.
 7. For `t` from `0` to `n-1` (each ring):
@@ -499,7 +499,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         5. Let `i’ = i+1 mod m`.
         6. For each `u` from 0 to `M-1`:
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
-        7. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        7. Calculate `e[t,i’] = ScalarHash("e", byte(cnt), R[t,i’,0], ..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 8. Calculate `e’ = ScalarHash(E)`.
 9. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
@@ -569,18 +569,20 @@ Statement ring       | A collection of `n` statement sets, where at list one mus
 1. Let `counter = 0`.
 2. Let the `msghash` be a hash of the input non-secret data:
 
-        msghash = Hash256("OLEG-ZKP" || uint64le(n) || uint64le(m) || uint64le(l) ||
-                          F[0,0]   || ... || F[0,m-1]   ||
+        msghash = Hash256("OLEG-ZKP", uint64le(n), uint64le(m), uint64le(l),
+                          F[0,0]  , ..., F[0,m-1],
                           ...
-                          F[n-1,0] || ... || F[n-1,m-1] ||
+                          F[n-1,0], ..., F[n-1,m-1],
                           msg)
 
 3. Calculate a sequence of: `(n-1)·l` 32-byte random values `{S[i,k]}`, `l` 64-byte nonces `r[k]` and `l` 1-byte `mask[k]`:
 
-        {S[i,k], r[k], mask[k]} = StreamHash(uint64le(counter) ||
-                                             msghash ||
-                                             x[0] || ... || x[l-1] ||
-                                             uint64le(j),
+        {S[i,k], r[k], mask[k]} = StreamHash({
+                                              uint64le(counter),
+                                              msghash,
+                                              x[0],..., x[l-1],
+                                              uint64le(j)
+                                             },
                                              32·(n-1)·l + 64·l + l)
 
 4. Reduce each `r[k]` modulo `L`.
@@ -591,10 +593,10 @@ Statement ring       | A collection of `n` statement sets, where at list one mus
         1. Define `w[î,k]` as `mask[k]` with lower 4 bits set to zero: `w[î,k] = mask[k] & 0xf0`.
     3. Calculate the challenge:
 
-            e[i’] = ScalarHash("e" ||
-                               msghash || uint64le(i’) ||
-                               R[i’,0] || ... || R[i’,m-1] ||
-                               w[î,0]  || ... || w[î,l-1])
+            e[i’] = ScalarHash("e", 
+                               msghash, uint64le(i’),
+                               R[i’,0], ..., R[i’,m-1],
+                               w[î,0], ..., w[î,l-1])
 
 6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (î + step) mod n`.
@@ -607,10 +609,10 @@ Statement ring       | A collection of `n` statement sets, where at list one mus
         1. Calculate point `R[i’,j] = f[i,j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
     5. Calculate the challenge:
 
-            e[i’] = ScalarHash("e" ||
-                               msghash || uint64le(i’) ||
-                               R[i’,0] || ... || R[i’,m-1] ||
-                               w[i,0]  || ... || w[i,l-1])
+            e[i’] = ScalarHash("e",
+                               msghash, uint64le(i’),
+                               R[i’,0],..., R[i’,m-1],
+                               w[i,0],..., w[i,l-1])
 
 7. Calculate the non-forged responses for each `k=0..l-1`:
     1. Calculate a response scalar:
@@ -639,10 +641,10 @@ Statement ring       | A collection of `n` statement sets, where at list one mus
 
 1. Let the `msghash` be a hash of the input non-secret data:
 
-        msghash = Hash256("OLEG-ZKP" || uint64le(n) || uint64le(m) || uint64le(l) ||
-                          F[0,0]   || ... || F[0,m-1]   ||
+        msghash = Hash256("OLEG-ZKP", uint64le(n), uint64le(m), uint64le(l),
+                          F[0,0],..., F[0,m-1],
                           ...
-                          F[n-1,0] || ... || F[n-1,m-1] ||
+                          F[n-1,0],..., F[n-1,m-1],
                           msg)
 
 2. For each `i=0..n-1`:
@@ -654,10 +656,10 @@ Statement ring       | A collection of `n` statement sets, where at list one mus
         1. Calculate point `R[i’,j] = f[i,j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
     4. Calculate the challenge:
 
-            e[i+1] = ScalarHash("e" ||
-                                msghash || uint64le(i’) ||
-                                R[i’,0] || ... || R[i’,m-1] ||
-                                w[i,0]  || ... || w[i,l-1])
+            e[i+1] = ScalarHash("e",
+                                msghash, uint64le(i’),
+                                R[i’,0],..., R[i’,m-1],
+                                w[i,0],..., w[i,l-1])
 
 3. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
@@ -718,7 +720,7 @@ Transient issuance key is created for the [confidential issuance proof](#issuanc
 
 **Algorithm:**
 
-1. Calculate scalar `y = ScalarHash("IARP.y" || assetid || aek)`.
+1. Calculate scalar `y = ScalarHash("IARP.y", assetid, aek)`.
 2. Calculate point `Y` by multiplying base point by `y`: `Y = y·G`.
 3. Return key pair `(y,Y)`.
 
@@ -789,7 +791,7 @@ The asset ID commitment can either be nonblinded or blinded.
 
 2. Compute [asset ID blinding factor](#asset-id-blinding-factor):
 
-        c = ScalarHash("AC.c" || assetID || aek)
+        c = ScalarHash("AC.c", assetID, aek)
 
 3. Compute an [asset ID commitment](#asset-id-commitment):
 
@@ -845,7 +847,7 @@ The asset ID commitment can either be _nonblinded_ or _blinded_:
 
 **Algorithm:**
 
-1. Calculate `f = ScalarHash("VC.f" || uint64le(value) || vek)`.
+1. Calculate `f = ScalarHash("VC.f", uint64le(value), vek)`.
 2. Calculate point `V = value·H + f·G`.
 3. Calculate point `F = value·C + f·J`.
 4. Create a [point pair](#point-pair): `VC = (V, F)`.
@@ -910,7 +912,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 2. Calculate the nonce:
 
-        r = ScalarHash("r" || QG || QJ || q || message)
+        r = ScalarHash("r", QG, QJ, q, message)
 
 3. Calculate points:
 
@@ -919,7 +921,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 4. Calculate Schnorr challenge scalar:
 
-        e = ScalarHash("EC" || QG || QJ || R1 || R2 || message)
+        e = ScalarHash("EC", QG, QJ, R1, R2, message)
 
 5. Calculate Schnorr response scalar:
 
@@ -947,7 +949,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 2. Calculate Schnorr challenge:
 
-        e’ = ScalarHash("EC" || QG || QJ || R1 || R2 || message)
+        e’ = ScalarHash("EC", QG, QJ, R1, R2, message)
 
 4. Return `true` if `e’ == e`, otherwise return `false`.
 
@@ -1033,7 +1035,7 @@ Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signat
 
 1. Calculate the message hash to sign:
 
-        msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1] || message)
+        msghash = Hash256("ARP", AC’, AC[0], ..., AC[n-1], message)
 
 2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
 
@@ -1071,7 +1073,7 @@ the asset ID of one of the inputs to the recipient.
 
 1. Calculate the message hash to sign:
 
-        msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1] || message)
+        msghash = Hash256("ARP", AC’, AC[0], ..., AC[n-1], message)
 
 2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
 
@@ -1144,10 +1146,10 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 1. Calculate the base hash:
 
-        basehash = Hash256("IARP" || AC || uint64le(n) ||
-                           a[0] || ... || a[n-1] ||
-                           Y[0] || ... || Y[n-1] ||
-                           nonce || message)
+        basehash = Hash256("IARP", AC, uint64le(n),
+                           a[0], ..., a[n-1],
+                           Y[0], ..., Y[n-1],
+                           nonce, message)
 
 2. Calculate marker point `M`:
 
@@ -1156,7 +1158,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 3. Calculate the tracing point: `T = y·M`.
 4. Calculate a 32-byte message hash to sign:
 
-        msghash = Hash256("msg" || basehash || M || T)
+        msghash = Hash256("msg", basehash, M, T)
 
 5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
 
@@ -1164,7 +1166,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 6. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
-        h = ScalarHash("h" || msghash)
+        h = ScalarHash("h", msghash)
 
 7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
     * `msg = msghash`, the string to be signed.
@@ -1218,10 +1220,10 @@ When creating a confidential issuance, the first step is to construct the rest o
 2. If the range proof is confidential:
     1. Calculate the base hash:
 
-            basehash = Hash256("IARP" || AC || uint64le(n) ||
-                           a[0] || ... || a[n-1] ||
-                           Y[0] || ... || Y[n-1] ||
-                           nonce || message)
+            basehash = Hash256("IARP", AC, uint64le(n),
+                           a[0], ..., a[n-1],
+                           Y[0], ..., Y[n-1],
+                           nonce, message)
 
     2. Calculate marker point `M`:
     
@@ -1229,12 +1231,12 @@ When creating a confidential issuance, the first step is to construct the rest o
 
     3. Calculate a 32-byte message hash to sign:
 
-            msghash = Hash256("msg" || basehash || M || T || Bm)
+            msghash = Hash256("msg", basehash, M, T, Bm)
 
     4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = PointHash("AssetID", a[i])`.
     5. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
-            h = ScalarHash("h" || msghash)
+            h = ScalarHash("h", msghash)
 
     6. Verify [OLEG-ZKP](#oleg-zkp) `(e0, {s[i,k]})` with the following parameters:
         * `msg = msghash`, the string to be signed.
@@ -1292,23 +1294,23 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 1. [Validate issuance asset range proof](#validate-issuance-asset-range-proof) to make sure tracing and marker points are correct.
 2. Calculate the blinding scalar `x`:
 
-        x = ScalarHash("x" || AC || T || y || nonce || message)
+        x = ScalarHash("x", AC, T, y, nonce, message)
 
 3. Blind the tracing point being tested: `Z = x·T`.
 4. Calculate commitment to the blinding key: `X = x·M`.
 5. Calculate and blind a tracing point corresponding to the issuance key pair `y,Y`: `Z’ = x·y·M`.
-6. Calculate a message hash: `msghash = Hash32("IP" || AC || T || X || Z || Z’)`.
+6. Calculate a message hash: `msghash = Hash256("IP", AC, T, X, Z, Z’)`.
 7. Create a proof that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/M` is equal to the discrete log `Z/T`):
-    1. Calculate the nonce `k1 = ScalarHash("k1" || msghash || y || x)`.
+    1. Calculate the nonce `k1 = ScalarHash("k1", msghash, y, x)`.
     2. Calculate point `R1 = k1·M`.
     3. Calculate point `R2 = k1·T`.
-    4. Calculate scalar `e1 = ScalarHash("e1" || msghash || R1 || R2)`.
+    4. Calculate scalar `e1 = ScalarHash("e1", msghash, R1, R2)`.
     5. Calculate scalar `s1 = k1 + x·e1 mod L`.
 8. Create a proof that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
-    1. Calculate the nonce `k2 = ScalarHash("k2" || msghash || y || x)`.
+    1. Calculate the nonce `k2 = ScalarHash("k2", msghash, y, x)`.
     2. Calculate point `R3 = k2·X`.
     3. Calculate point `R4 = k2·G`.
-    4. Calculate scalar `e2 = ScalarHash("e2" || msghash || R3 || R4)`.
+    4. Calculate scalar `e2 = ScalarHash("e2", msghash, R3, R4)`.
     5. Calculate scalar `s2 = k2 + y·e2 mod L`.
 9. Return points `(X, Z, Z’)`, signature `(e1,s1)` and signature `(e2,s2)`.
 
@@ -1340,16 +1342,16 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 **Algorithm:**
 
 1. [Validate issuance asset range proof](#validate-issuance-asset-range-proof).
-2. Calculate a message hash: `msghash = Hash32("IP" || AC || T || X || Z || Z’)`.
+2. Calculate a message hash: `msghash = Hash256("IP", AC, T, X, Z, Z’)`.
 3. Verify that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/M` is equal to the discrete log `Z/T`):
     1. Calculate point `R1 = s1·M - e1·X`.
     2. Calculate point `R2 = s1·T - e1·Z`.
-    3. Calculate scalar `e’ = ScalarHash("e1" || msghash || R1 || R2)`.
+    3. Calculate scalar `e’ = ScalarHash("e1", msghash, R1, R2)`.
     4. Verify that `e’` is equal to `e1`. If validation fails, halt and return `nil`.
 4. Verify that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
     1. Calculate point `R3 = s2·X - e2·Z’`.
     2. Calculate point `R4 = s2·G - e2·Y[j]`.
-    3. Calculate scalar `e” = ScalarHash("e2" || msghash || R3 || R4)`.
+    3. Calculate scalar `e” = ScalarHash("e2", msghash, R3, R4)`.
     4. Verify that `e”` is equal to `e2`. If validation fails, halt and return `nil`.
 5. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
 
@@ -1427,11 +1429,11 @@ In case of failure, returns `nil` instead of the range proof.
 3. Define `vmin = 0`.
 4. Define `exp = 0`.
 5. Define `base = 4`.
-6. Calculate the message to sign: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek" || msghash || idek || f)`.
+6. Calculate the message to sign: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek", msghash, idek, f)`.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
-10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash("VRP.b" || msghash || f, 64·(n-1))`.
+10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash("VRP.b", msghash, f, 64·(n-1))`.
 11. Interpret each 64-byte `b[t]` (`t` from 0 to `n-2`) is interpreted as a little-endian integer and reduce modulo `L` to a 32-byte scalar.
 12. Calculate the last digit blinding factor: `b[n-1] = f - ∑b[t] mod L`, where `t` is from 0 to `n-2`.
 13. For `t` from `0` to `n-1` (each digit):
@@ -1492,7 +1494,7 @@ In case of failure, returns `nil` instead of the range proof.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
 3. Let `base = 4`.
-4. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+4. Calculate the message to validate: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
     1. For `i` from `0` to `base-1` (each digit’s value):
@@ -1542,7 +1544,7 @@ In case of failure, returns `nil` instead of the range proof.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
 3. Let `base = 4`.
-4. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+4. Calculate the message to validate: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
     1. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
@@ -1560,7 +1562,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G`.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
-8. Derive payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek" || idek || f || VC)`.
+8. Derive payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek", idek, f, VC)`.
 9. [Decrypt payload](#decrypt-payload): compute an array of `2·N-1` 32-byte chunks: `{pt[i]} = DecryptPayload({ct[i]}, pek)`. If decryption fails, halt and return `nil`.
 10. Return `{pt[i]}`, a plaintext array of `2·N-1` 32-byte elements.
 
@@ -1710,9 +1712,9 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 
 **Algorithm:**
 
-1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash("EP" || ek, 32·n)`.
+1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash({"EP", ek}, 32·n)`.
 2. Encrypt the plaintext payload: `{ct[i]} = {pt[i] XOR keystream[i]}`.
-3. Calculate MAC: `mac = Hash256(ek || ct[0] || ... || ct[n-1])`.
+3. Calculate MAC: `mac = Hash256(ek, ct[0], ..., ct[n-1])`.
 4. Return a sequence of `n+1` 32-byte elements: `{ct[0], ..., ct[n-1], mac}`.
 
 #### Decrypt Payload
@@ -1727,10 +1729,10 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 
 **Algorithm:**
 
-1. Calculate MAC’: `mac’ = Hash256(ek || ct[0] || ... || ct[n-1])`.
+1. Calculate MAC’: `mac’ = Hash256(ek, ct[0], ..., ct[n-1])`.
 2. Extract the transmitted MAC: `mac = ct[n]`.
 3. Compare calculated  `mac’` with the received `mac`. If they are not equal, return `nil`.
-4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash("EP" || ek, 32·n)`.
+4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash({"EP", ek}, 32·n)`.
 5. Decrypt the plaintext payload: `{pt[i]} = {ct[i] XOR keystream[i]}`.
 5. Return `{pt[i]}`.
 
@@ -1752,7 +1754,7 @@ Encrypted value is a 40-byte string representing a simple encryption of the nume
 
 **Algorithm:**
 
-1. Expand the encryption key: `ek = StreamHash("EV" || vek || VC, 40)`.
+1. Expand the encryption key: `ek = StreamHash({"EV", vek, VC}, 40)`.
 2. Encrypt the value using the first 8 bytes: `ev = value XOR ek[0,8]`.
 3. Encrypt the value blinding factor using the last 32 bytes: `ef = f XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
 4. Return `(ev||ef)`.
@@ -1772,7 +1774,7 @@ Value and asset ID commitments must be [proven to be valid](#validate-assets-flo
 
 **Algorithm:**
 
-1. Expand the encryption key: `ek = StreamHash("EV" || vek || VC, 40)`.
+1. Expand the encryption key: `ek = StreamHash({"EV", vek, VC}, 40)`.
 2. Decrypt the value using the first 8 bytes: `value = ev XOR ek[0,8]`.
 3. Decrypt the value blinding factor using the last 32 bytes: `f = ef XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
 4. [Create blinded value commitment](#create-blinded-value-commitment) `VC’` using `AC`, `value` and the raw blinding factor `f` (instead of `vek`).
@@ -1797,7 +1799,7 @@ Encrypted value is a 64-byte string representing a simple encryption of the [ass
 
 **Algorithm:**
 
-1. Expand the encryption key: `ek = StreamHash("EA" || aek || AC, 40)`.
+1. Expand the encryption key: `ek = StreamHash({"EA", aek, AC}, 40)`.
 2. Encrypt the asset ID using the first 32 bytes: `ea = assetID XOR ek[0,32]`.
 3. Encrypt the blinding factor using the second 32 bytes: `ec = c XOR ek[32,32]` where `c` is encoded as a 256-bit little-endian integer.
 4. Return `(ea||ec)`.
@@ -1817,7 +1819,7 @@ Asset ID commitment must be [proven to be valid](#validate-assets-flow).
 
 **Algorithm:**
 
-1. Expand the decryption key: `ek = StreamHash("EA" || aek || AC, 40)`.
+1. Expand the decryption key: `ek = StreamHash({"EA", aek, AC}, 40)`.
 2. Decrypt the asset ID using the first 32 bytes: `assetID = ea XOR ek[0,32]`.
 3. Decrypt the blinding factor using the second 32 bytes: `c = ec XOR ek[32,32]`.
 4. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment) `AC’` using `assetID` and the raw blinding factor `c` (instead of `aek`).
