@@ -4,44 +4,40 @@ import (
 	"strings"
 
 	chainjson "chain/encoding/json"
-	"chain/protocol/ivy"
-	"chain/protocol/vm"
+	ivy "chain/exp/ivy/compiler"
 )
 
 type (
 	compileReq struct {
-		Contract string            `json:"contract"`
-		Args     []ivy.ContractArg `json:"args"`
+		Source string                       `json:"source"`
+		ArgMap map[string][]ivy.ContractArg `json:"arg_map"`
 	}
 
 	compileResp struct {
-		Name    string              `json:"name"`
-		Source  string              `json:"source"`
-		Program chainjson.HexBytes  `json:"program"`
-		Params  []ivy.ContractParam `json:"params"`
-		Value   string              `json:"value"`
-		Clauses []ivy.ClauseInfo    `json:"clause_info"`
-		Opcodes string              `json:"opcodes"`
-		Error   string              `json:"error"`
+		Contracts []*ivy.Contract               `json:"contracts,omitempty"`
+		Programs  map[string]chainjson.HexBytes `json:"program_map,omitempty"`
+		Error     string                        `json:"error,omitempty"`
 	}
 )
 
-func compileIvy(req compileReq) (compileResp, error) {
-	var resp compileResp
-	compiled, err := ivy.Compile(strings.NewReader(req.Contract), req.Args)
-	if err == nil {
-		resp.Name = compiled.Name
-		resp.Source = req.Contract
-		resp.Params = compiled.Params
-		resp.Value = compiled.Value
-		resp.Program = compiled.Program
-		resp.Clauses = compiled.Clauses
-		resp.Opcodes, err = vm.Disassemble(resp.Program, compiled.Labels)
-		if err != nil {
-			return resp, err
-		}
-	} else {
-		resp.Error = err.Error()
+func compileIvy(req compileReq) compileResp {
+	contracts, err := ivy.Compile(strings.NewReader(req.Source))
+	if err != nil {
+		return compileResp{Error: err.Error()}
 	}
-	return resp, nil
+	var m map[string]chainjson.HexBytes
+	for _, contract := range contracts {
+		if args, ok := req.ArgMap[contract.Name]; ok {
+			prog, err := ivy.Instantiate(contract.Body, contract.Params, contract.Recursive, args)
+			if err != nil {
+				return compileResp{Error: err.Error()}
+			}
+			if m == nil {
+				m = make(map[string]chainjson.HexBytes)
+			}
+			m[contract.Name] = prog
+		}
+	}
+
+	return compileResp{Contracts: contracts, Programs: m}
 }

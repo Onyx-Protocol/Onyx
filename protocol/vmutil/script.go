@@ -25,7 +25,7 @@ func BlockMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	builder := NewBuilder(false)
+	builder := NewBuilder()
 	builder.AddOp(vm.OP_BLOCKHASH)
 	for _, key := range pubkeys {
 		builder.AddData(key)
@@ -78,7 +78,7 @@ func P2SPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
-	builder := NewBuilder(false)
+	builder := NewBuilder()
 	// Expected stack: [... NARGS SIG SIG SIG PREDICATE]
 	// Number of sigs must match nrequired.
 	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_TOALTSTACK) // stash a copy of the predicate
