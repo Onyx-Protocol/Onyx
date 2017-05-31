@@ -77,18 +77,18 @@ func (z *PointPair) ConstTimeEqual(x *PointPair) bool {
 }
 
 // Bytes returns binary representation of a point pair (64-byte slice).
-func (z *PointPair) Bytes() []byte {
+func (p *PointPair) Bytes() []byte {
 	return append(p.Point1.Bytes(), p.Point2.Bytes()...)
 }
 
 // String returns hex representation of a point pair.
-func (z *PointPair) String() string {
+func (p *PointPair) String() string {
 	return hex.EncodeToString(p.Bytes())
 }
 
 // MarshalBinary encodes the point pair into a binary form and returns the result (32-byte slice).
-func (z *PointPair) MarshalBinary() ([]byte, error) {
-	return z.Bytes(), nil
+func (p *PointPair) MarshalBinary() ([]byte, error) {
+	return p.Bytes(), nil
 }
 
 // UnmarshalBinary decodes a point pair for a given slice.
@@ -136,7 +136,7 @@ func (z *PointPair) MarshalText() ([]byte, error) {
 // UnmarshalText decodes a point pair from a hex-encoded buffer.
 func (z *PointPair) UnmarshalText(data []byte) error {
 	if len(data) != hex.EncodedLen(64) {
-		return fmt.Errorf("ca.PointPair.UnmarshalText got input with wrong length %d", len(b))
+		return fmt.Errorf("ca.PointPair.UnmarshalText got input with wrong length %d", len(data))
 	}
 	var err error
 	err = z.Point1.UnmarshalText(data[0:hex.EncodedLen(32)])
