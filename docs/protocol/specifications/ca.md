@@ -189,7 +189,7 @@ Generator `G` has the following 32-byte encoding:
 
 **Secondary generator point** (`J`) is the elliptic curve point defined as decoded hash of the primary generator `G`:
 
-    J = 8·Decode(SHA3-256(Encode(G)))
+    J = Decode(SHA3-256(Encode(G)))
 
 Generator `J` has the following 32-byte encoding:
 
@@ -748,7 +748,7 @@ The asset ID commitment can either be nonblinded or blinded.
 
 1. Compute an [asset ID point](#asset-id-point):
 
-        A = 8·Hash256(assetID || counter)
+        A = Hash256(assetID || counter)
 
 2. Return [point pair](#point-pair) `(A,O)` where `O` is a [zero point](#zero-point).
 
@@ -769,7 +769,7 @@ The asset ID commitment can either be nonblinded or blinded.
 
 1. Compute an [asset ID point](#asset-id-point):
 
-        A = 8·Decode(Hash256(assetID...))
+        A = Decode(Hash256(assetID...))
 
 2. Compute [asset ID blinding factor](#asset-id-blinding-factor):
 
@@ -1065,7 +1065,7 @@ the asset ID of one of the inputs to the recipient.
 3. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with `msg`, [generators](#generators) `(G,J)` and `{(P[i],Q[i])}`.
 4. If verification was unsuccessful, return `false`.
 5. If the asset range proof is non-confidential:
-    1. Compute [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
+    1. Compute [asset ID point](#asset-id-point): `A’ = Hash256(assetID || counter)`.
     2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC’`.
 6. Return `true`.
 
@@ -1136,15 +1136,14 @@ When creating a confidential issuance, the first step is to construct the rest o
 2. Calculate marker point `M`:
     1. Let `counter = 0`.
     2. Calculate `Hash256("M" || basehash || uint64le(counter))`.
-    3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
+    3. Decode the resulting hash as a [point](#point) `M` on the elliptic curve.
     4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-    5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
 3. Calculate the tracing point: `T = y·M`.
 4. Calculate a 32-byte message hash to sign:
 
         msghash = Hash256("msg" || basehash || M || T)
 
-5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = Decode(Hash256(a[i]...))`.
 6. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
         h = ScalarHash("h" || msghash)
@@ -1196,7 +1195,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Algorithm:**
 
 1. If the range proof is non-confidential:
-    1. Compute [asset ID point](#asset-id-point): `A’ = 8·Decode(Hash256(assetID...))`.
+    1. Compute [asset ID point](#asset-id-point): `A’ = Decode(Hash256(assetID...))`.
     2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC`.
 2. If the range proof is confidential:
     1. Calculate the base hash:
@@ -1209,14 +1208,13 @@ When creating a confidential issuance, the first step is to construct the rest o
     2. Calculate marker point `M`:
         1. Let `counter = 0`.
         2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
-        3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
+        3. Decode the resulting hash as a [point](#point) `M` on the elliptic curve.
         4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-        5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
     3. Calculate a 32-byte message hash to sign:
 
             msghash = Hash256("msg" || basehash || M || T || Bm)
 
-    4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+    4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = Decode(Hash256(a[i]...))`.
     5. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
             h = ScalarHash("h" || msghash)
@@ -1598,7 +1596,7 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 **Algorithm:**
 
 1. [Validate excess commitment](#validate-excess-commitment) `(QG,QJ),e,s,message`.
-2. Compute [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
+2. Compute [asset ID point](#asset-id-point): `A’ = Hash256(assetID || counter)`.
 4. [Create nonblinded value commitment](#create-nonblinded-value-commitment): `V’ = value·A’`.
 5. Verify that [point pair](#point-pair) `(QG + V’, QJ)` equals `VC`.
 
@@ -1775,7 +1773,7 @@ Encrypted value is a 64-byte string representing a simple encryption of the [ass
 
 1. `assetID`: the [asset ID](blockchain.md#asset-id).
 2. `AC`: the [asset ID commitment](#asset-id-commitment) hiding the `assetID`.
-3. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) for the commitment `AC` such that `AC == (8·Hash256(assetID...) + c·G, c·J)`.
+3. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) for the commitment `AC` such that `AC == (Hash256(assetID...) + c·G, c·J)`.
 4. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
 
 **Output:** `(ea||ec)`, the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `AC`.
