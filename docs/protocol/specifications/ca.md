@@ -1712,9 +1712,12 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 
 **Algorithm:**
 
-1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash({"EP", ek}, 32·n)`.
+1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash({"Payload.Key", ek}, 32·n)`.
 2. Encrypt the plaintext payload: `{ct[i]} = {pt[i] XOR keystream[i]}`.
-3. Calculate MAC: `mac = Hash256(ek, ct[0], ..., ct[n-1])`.
+3. Calculate 256-bit MAC using `ek` as a key and `ct` as a message:
+
+        mac = KMAC128(K=ek, X=ct[0] ||...|| ct[n-1], L, S), L=256, S="Payload.MAC")
+
 4. Return a sequence of `n+1` 32-byte elements: `{ct[0], ..., ct[n-1], mac}`.
 
 #### Decrypt Payload
@@ -1729,12 +1732,15 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 
 **Algorithm:**
 
-1. Calculate MAC’: `mac’ = Hash256(ek, ct[0], ..., ct[n-1])`.
+1. Calculate 256-bit `mac’` using `ek` as a key and `ct` as a message:
+
+        mac’ = KMAC128(K=ek, X=ct[0] ||...|| ct[n-1], L, S), L=256, S="Payload.MAC")
+
 2. Extract the transmitted MAC: `mac = ct[n]`.
 3. Compare calculated  `mac’` with the received `mac`. If they are not equal, return `nil`.
-4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash({"EP", ek}, 32·n)`.
+4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash({"Payload.Key", ek}, 32·n)`.
 5. Decrypt the plaintext payload: `{pt[i]} = {ct[i] XOR keystream[i]}`.
-5. Return `{pt[i]}`.
+6. Return `{pt[i]}`.
 
 
 ### Encrypted Value
