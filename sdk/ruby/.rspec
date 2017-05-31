@@ -1,4 +1,3 @@
 --color
 --require spec_helper
 --order rand
---exclude-pattern "**/integration/integration_spec.rb"
