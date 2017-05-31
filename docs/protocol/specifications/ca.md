@@ -229,7 +229,7 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 3. Return the resulting scalar `s`.
 
-### PointHash
+#### PointHash
 
 `PointHash` is a secure hash function that takes a list of input strings `x` and returns a valid point in Ed25519 subgroup.
 
