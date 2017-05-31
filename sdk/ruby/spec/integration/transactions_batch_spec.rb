@@ -1,13 +1,13 @@
 context 'transactions' do
   let(:uuid) { SecureRandom.uuid }
   let(:key) { chain.mock_hsm.keys.create }
-  let(:gold) { chain.assets.create(alias: "gold-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
-  let(:silver) { chain.assets.create(alias: "silver-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
-  let(:alice) { chain.accounts.create(alias: "alice-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
-  let(:bob) { chain.accounts.create(alias: "bob-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
+
+  let!(:gold) { chain.assets.create(alias: "gold-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
+  let!(:silver) { chain.assets.create(alias: "silver-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
+  let!(:alice) { chain.accounts.create(alias: "alice-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
+  let!(:bob) { chain.accounts.create(alias: "bob-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
 
   before do
-    gold; silver; alice; bob
     signer.add_key(key, chain.mock_hsm.signer_conn)
   end
 

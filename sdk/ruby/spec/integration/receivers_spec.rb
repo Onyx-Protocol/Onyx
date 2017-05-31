@@ -2,13 +2,10 @@ describe 'Receiver' do
   let(:uuid) { SecureRandom.uuid }
   let(:key) { chain.mock_hsm.keys.create }
   let(:account_alias) { "receiver-account-#{uuid}" }
-  let(:account) { chain.accounts.create(alias: account_alias, root_xpubs: [key.xpub], quorum: 1) }
+
+  let!(:account) { chain.accounts.create(alias: account_alias, root_xpubs: [key.xpub], quorum: 1) }
 
   subject(:accounts) { chain.accounts }
-
-  before do
-    account
-  end
 
   describe 'create a new receiver' do
     let(:params) {{}}
