@@ -1,4 +1,3 @@
-require 'chain'
 require 'webmock'
 
 include WebMock::API

@@ -1,5 +1,3 @@
-require 'chain'
-
 class Foo < Chain::ResponseObject
   attrib :time, rfc3339_time: true
 end

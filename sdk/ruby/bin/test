@@ -1,0 +1,2 @@
+bundle exec parallel_rspec --serialize-stdout spec -p '^((?!feed).)*$' -o '--tag ~nonparallel' && \
+rspec spec --tag nonparallel
