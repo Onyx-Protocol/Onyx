@@ -71,7 +71,7 @@ We will consider probabilities of failing checks #1 and #2 as negligible:
 The check #3 fails half the time since there are only half of the valid square roots in the prime field.
 In other words, the probability of choosing an asset ID that hashes to an invalid point is slightly below 1/2.
 
-As a result, the probability of choosing an asset ID to cause N decoding failures in a row after M tries follows the binomial distribution. For probability above 0.5, M equals 2^N. ∎
+As a result, the probability of choosing an asset ID to cause N decoding failures in a row after M tries follows the binomial distribution. For probability above 0.5, M equals 2^N.∎
 
 **Discussion**
 
@@ -82,9 +82,13 @@ the blockchains deployed before the extension to _Confidential Assets_.
 We consider that to preserve asset ID compatibility at the risk of an infeasible 
 denial of service attack is an acceptable tradeoff.
 
-### Theorem 
+### Theorem A1: asset commitment is perfectly binding
 
-TBD: security theorems and proofs
+TBD: asset id is hashed, blinding factor is proven to be the same by ARP
+
+### Theorem A2: asset commitment is computationally hiding within a given set of commitments
+
+TBD: 
 
 
 
@@ -273,7 +277,7 @@ Proof of soundness:
 
         j*(h2-h1) == b2 - b1
 
-       which is what we are looking for
+       which is what we are looking for.
 
 Proof of blinding:
 
