@@ -229,6 +229,26 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 3. Return the resulting scalar `s`.
 
+### PointHash
+
+`PointHash` is a secure hash function that takes a list of input strings `x` and returns a valid point in Ed25519 subgroup.
+
+It is defined as follows:
+
+1. Let `counter = 0`.
+2. Append counter to a list of input strings `x`,  where `counter` is encoded as a 64-bit unsigned integer using little-endian convention:
+
+        y = {uint64le(counter), x[0], ..., x[n-1]}
+
+3. Calculate hash using `TupleHash` function as defined in [NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): 
+
+        h = TupleHash128(y, 32, "PointHash")
+
+4. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
+5. If the point is invalid, increment `counter` and go back to step 2. The probability of failure is 0.5.
+6. Return `P`.
+
+
 
 ### Ring Signature
 
