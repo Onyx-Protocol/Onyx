@@ -14,7 +14,6 @@ import (
 
 func main() {
 	localKeys := mustListContents("/Users/jeff/go/src/chain/cmd/docsync/DO_NOT_COMMIT")
-	fmt.Println(len(localKeys))
 
 	region := "us-east-1"
 	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
@@ -34,53 +33,61 @@ func main() {
 		log.Fatalln("s3 list objects error:", err)
 	}
 
-	intersection, localOnly, remoteOnly := setAnalyze(localKeys, remoteKeys)
-	fmt.Println("local size:", len(localKeys))
-	fmt.Println("remote size:", len(remoteKeys))
-	fmt.Println("intersection:", len(intersection))
-	fmt.Println("local only:", len(localOnly))
-	fmt.Println("remote only:", len(remoteOnly))
+	var prefixedLocalKeys []string
+	for _, k := range localKeys {
+		prefixedLocalKeys = append(prefixedLocalKeys, path.Join("docs", k))
+	}
+	fmt.Println("keys to upload:", len(prefixedLocalKeys)) // TEMP
+
+	remoteOnly := setDiff(remoteKeys, prefixedLocalKeys)
+	fmt.Println("keys to delete:", len(remoteOnly)) // TEMP
+
+	// TODO:
+	// 1. upload localKeys to prefixedLocalKeys, using a default content type of
+	//    text/html for extensionless files.
+	// 2. remove remoteOnly keys
+	// 3. Make local directory and bucket configurable.
 }
 
-func setAnalyze(a, b []string) (intersection []string, aOnly []string, bOnly []string) {
-	sort.Strings(append([]string{}, a...))
-	sort.Strings(append([]string{}, b...))
+func setDiff(a, b []string) []string {
+	// don't modify input
+	a = append([]string{}, a...)
+	b = append([]string{}, b...)
+	sort.Strings(a)
+	sort.Strings(b)
 
-	fmt.Println(a[0])
-	fmt.Println(b[0])
-
-	var i, j int
+	var (
+		diff []string
+		i, j int
+	)
 
 	for {
 		if i == len(a) {
-			bOnly = append(bOnly, b[j:]...)
 			break
 		}
 
 		if j == len(b) {
-			aOnly = append(aOnly, a[i:]...)
+			diff = append(diff, a[i:]...)
 			break
 		}
 
 		if a[i] < b[j] {
-			aOnly = append(aOnly, a[i])
+			diff = append(diff, a[i])
 			i++
 			continue
 		}
 
 		if b[j] < a[i] {
-			bOnly = append(bOnly, b[j])
 			j++
 			continue
 		}
 
 		// invariant: a[i] == b[j]
-		intersection = append(intersection, a[i])
 		i++
 		j++
 	}
 
-	return
+	return diff
 }
 
 func mustListContents(parentPath string) []string {
