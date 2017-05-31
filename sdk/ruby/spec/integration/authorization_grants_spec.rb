@@ -12,16 +12,11 @@ context 'authoriation grants' do
       )
     }
 
-    it 'responds with the grant guard type' do
-      expect(subject.guard_type).to eq('access_token')
-    end
+    its(:guard_type) { is_expected.to eq('access_token') }
+    its(:policy) { is_expected.to eq('client-readwrite') }
 
     it 'responds with the grant guard data id' do
       expect(subject.guard_data).to eq('id' => token.id)
-    end
-
-    it 'responds with the grant policy' do
-      expect(subject.policy).to eq('client-readwrite')
     end
 
     context 'listing' do
@@ -31,17 +26,9 @@ context 'authoriation grants' do
 
       before { grant }
 
-      it 'finds the previously created grant' do
-        expect(subject).not_to eq(nil)
-      end
-
-      it 'returns the an access token grant' do
-        expect(subject.guard_type).to eq('access_token')
-      end
-
-      it 'returns the a client-readwrite grant' do
-        expect(subject.policy).to eq('client-readwrite')
-      end
+      it { is_expected.not_to be_nil }
+      its(:guard_type) { is_expected.to eq('access_token') }
+      its(:policy) { is_expected.to eq('client-readwrite') }
     end
 
     context 'deletion' do
@@ -76,16 +63,11 @@ context 'authoriation grants' do
       )
     }
 
-    it 'responds with the grant guard type' do
-      expect(subject.guard_type).to eq('x509')
-    end
+    its(:guard_type) { is_expected.to eq('x509') }
+    its(:policy) { is_expected.to eq('crosscore') }
 
     it 'responds with the grant guard data common name' do
       expect(subject.guard_data['subject']['CN']).to eq("cn-#{uuid}")
-    end
-
-    it 'responds with the grant policy' do
-      expect(subject.policy).to eq('crosscore')
     end
 
     context 'listing' do
@@ -97,13 +79,8 @@ context 'authoriation grants' do
 
       before { grant }
 
-      it 'finds the previously created grant' do
-        expect(subject).not_to eq(nil)
-      end
-
-      it 'returns the a client-readwrite grant' do
-        expect(subject.policy).to eq('crosscore')
-      end
+      it { is_expected.not_to be_nil }
+      its(:policy) { is_expected.to eq('crosscore') }
     end
   end
 end

@@ -3,9 +3,7 @@ context 'access tokens' do
     let(:uuid) { SecureRandom.uuid }
     subject(:token) { chain.access_tokens.create(id: uuid) }
 
-    it 'returns the created token' do
-      expect(token.token).not_to be_empty
-    end
+    its(:token) { is_expected.not_to be_empty }
 
     context 'after the token is created' do
       before { subject }
@@ -43,7 +41,7 @@ context 'access tokens' do
       client
       grant = chain.authorization_grants.list_all
         .select{ |grant| grant.guard_data["id"] == client_id }
-      expect(grant[0]).not_to eq(nil)
+      expect(grant[0]).not_to be_nil
       expect(grant[0].policy).to eq('client-readwrite')
     end
 
@@ -55,7 +53,7 @@ context 'access tokens' do
       network
       grant = chain.authorization_grants.list_all
         .select{ |grant| grant.guard_data["id"] == network_id }
-      expect(grant[0]).not_to eq(nil)
+      expect(grant[0]).not_to be_nil
       expect(grant[0].policy).to eq('crosscore')
     end
 

@@ -1,11 +1,9 @@
 context 'mock_hsm' do
   context 'creation' do
     let(:uuid) { SecureRandom.uuid }
-    subject(:key) { chain.mock_hsm.keys.create(alias: uuid) }
+    subject { chain.mock_hsm.keys.create(alias: uuid) }
 
-    it 'returns the created xpub' do
-      expect(key.xpub).not_to be_empty
-    end
+    its(:xpub) { is_expected.not_to be_empty }
 
     context 'after the key is created' do
       before { subject }

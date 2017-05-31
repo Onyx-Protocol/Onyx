@@ -5,9 +5,7 @@ context 'assets' do
   context 'creation' do
     subject { chain.assets.create(alias: "asset-#{uuid}", root_xpubs: [key.xpub], quorum: 1) }
 
-    it 'returns the created asset' do
-      expect(subject.id).not_to be_empty
-    end
+    its(:id) { is_expected.not_to be_empty }
 
     it 'returns an error when required fields are missing' do
       expect { chain.assets.create(alias: :unobtanium) }.to raise_error(Chain::APIError)
@@ -23,13 +21,8 @@ context 'assets' do
       ])
     }
 
-    it 'returns successfully created assets' do
-      expect(subject.successes.keys).to eq([0,2])
-    end
-
-    it 'returns errors for failed creations' do
-      expect(subject.errors.keys).to eq([1])
-    end
+    its('successes.keys') { are_expected.to eq([0,2]) }
+    its('errors.keys') { are_expected.to eq([1]) }
 
     it 'returns the reason for the error' do
       expect(subject.errors[1].code).to eq('CH202')
@@ -64,13 +57,8 @@ context 'assets' do
         ])
       }
 
-      it 'returns successfully updated assets' do
-        expect(subject.successes.keys).to eq([0,2])
-      end
-
-      it 'returns errors for failed updates' do
-        expect(subject.errors.keys).to eq([1,3])
-      end
+      its('successes.keys') { are_expected.to eq([0,2]) }
+      its('errors.keys') { are_expected.to eq([1, 3]) }
 
       it 'returns an error for missing aliases' do
         expect(subject.errors[1].code).to eq('CH051')

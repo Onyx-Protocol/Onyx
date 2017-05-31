@@ -43,13 +43,8 @@ context 'transactions' do
   context 'building' do
     subject { chain.transactions.build_batch(builders) }
 
-    it 'returns one error from building' do
-      expect(subject.errors.keys).to eq([1])
-    end
-
-    it 'returns three successes from building' do
-      expect(subject.successes.keys).to eq([0, 2, 3])
-    end
+    its('successes.keys') { are_expected.to eq([0, 2, 3]) }
+    its('errors.keys') { are_expected.to eq([1]) }
   end
 
   context 'signing' do
@@ -58,13 +53,8 @@ context 'transactions' do
       signer.sign_batch(built.successes.values)
     end
 
-    it 'returns no errors from signing' do
-      expect(subject.errors.keys).to eq([])
-    end
-
-    it 'returns three successes from signing' do
-      expect(subject.successes.keys).to eq([0, 1, 2])
-    end
+    its('successes.keys') { are_expected.to eq([0, 1, 2]) }
+    its('errors.keys') { are_expected.to eq([]) }
   end
 
   context 'submitting' do
@@ -74,12 +64,7 @@ context 'transactions' do
       chain.transactions.submit_batch(signed.successes.values)
     end
 
-    it 'returns one error from submitting' do
-      expect(subject.errors.keys).to eq([1])
-    end
-
-    it 'returns two successes from submitting' do
-      expect(subject.successes.keys).to eq([0, 2])
-    end
+    its('successes.keys') { are_expected.to eq([0, 2]) }
+    its('errors.keys') { are_expected.to eq([1]) }
   end
 end
