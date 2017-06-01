@@ -49,4 +49,4 @@ ruby:
         name: ruby tests
         code: |
           cp -a $WERCKER_SOURCE_DIR $CHAIN
-          DATABASE_URL="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" CACHE_DIR="$WERCKER_CACHE_DIR/maven" ruby-tests
+          DATABASE_URL="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" ruby-tests
