@@ -61,8 +61,8 @@ class Main extends React.Component {
 
 export default connect(
   (state) => ({
-    canLogOut: state.core.requireClientToken,
-    connected: state.core.connected,
+    canLogOut: state.authn.authenticationRequired,
+    connected: state.authn.connected,
     showDropwdown: state.app.dropdownState == 'open',
   }),
   (dispatch) => ({

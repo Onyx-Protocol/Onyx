@@ -9,13 +9,13 @@ export const clear = () => {
 export const exportState = (store) => () => {
   const state = store.getState()
   const exportable = {
-    core: {
-      clientToken: (state.core || {}).clientToken,
+    authn: {
+      clientToken: (state.authn || {}).clientToken,
 
       // TODO: If the dashboard has a way of probing the core for a token
       // requirement, we won't need to store these anymore.
-      requireClientToken: (state.core || {}).requireClientToken,
-      validToken: (state.core || {}).validToken,
+      // requireClientToken: (state.core || {}).requireClientToken,
+      // validToken: (state.core || {}).validToken,
     },
     transaction: {
       generated: (state.transaction || {}).generated,

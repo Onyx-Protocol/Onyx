@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router'
 import { connect } from 'react-redux'
-import actions from 'actions'
+import { clearSession } from 'features/authn/actions'
 import { navIcon } from '../../utils'
 import styles from './SecondaryNavigation.scss'
 
@@ -53,6 +53,6 @@ export default connect(
     canLogOut: state.core.requireClientToken,
   }),
   (dispatch) => ({
-    logOut: () => dispatch(actions.core.clearSession)
+    logOut: () => dispatch(clearSession)
   })
 )(SecondaryNavigation)

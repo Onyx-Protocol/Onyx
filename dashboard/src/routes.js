@@ -2,6 +2,7 @@ import { routes as container } from 'features/container'
 import accessControl from 'features/accessControl/routes'
 import { routes as accounts } from 'features/accounts'
 import { routes as assets } from 'features/assets'
+import { routes as authn } from 'features/authn'
 import { routes as balances } from 'features/balances'
 import { routes as configuration } from 'features/configuration'
 import { routes as core } from 'features/core'
@@ -17,6 +18,7 @@ const makeRoutes = (store) => ({
     accessControl(store),
     accounts(store),
     assets(store),
+    authn(store),
     balances(store),
     configuration,
     core,

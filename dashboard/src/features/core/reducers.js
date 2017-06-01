@@ -167,29 +167,6 @@ export const onTestnet = (state = false, action) => {
   return state
 }
 
-export const requireClientToken = (state = false, action) => {
-  if (action.type == 'ERROR' && action.payload.status == 401) return true
-
-  return state
-}
-
-export const clientToken = (state = '', action) => {
-  if      (action.type == 'SET_CLIENT_TOKEN') return action.token
-  else if (action.type == 'ERROR' &&
-           action.payload.status == 401)      return ''
-
-  return state
-}
-
-export const validToken = (state = false, action) => {
-  if      (action.type == 'SET_CLIENT_TOKEN') return false
-  else if (action.type == 'USER_LOG_IN')      return true
-  else if (action.type == 'ERROR' &&
-           action.payload.status == 401)      return false
-
-  return state
-}
-
 export const connected = (state = true, action) => {
   if      (action.type == 'UPDATE_CORE_INFO') return true
   else if (action.type == 'CORE_DISCONNECT')  return false
@@ -210,7 +187,6 @@ export default combineReducers({
   blockchainId,
   blockHeight,
   connected,
-  clientToken,
   configKnown,
   configured,
   configuredAt,
@@ -226,11 +202,9 @@ export default combineReducers({
   httpOk,
   replicationLag,
   replicationLagClass,
-  requireClientToken,
   reset,
   signer,
   snapshot,
   syncEstimates,
-  validToken,
   version,
 })
