@@ -527,11 +527,14 @@ function ClauseParametersUnconnected(props: { parameterIds: string[] }) {
   let parameterInputs = props.parameterIds.map((id) => {
     return <div key={id} className="argument">{getWidget(id)}</div>
   })
-  return <section style={{wordBreak: 'break-all'}}>
-    <h4>Clause Arguments</h4>
-    <form className="form">
-    {parameterInputs}
-  </form></section>
+  return (
+    <section style={{wordBreak: 'break-all'}}>
+      <h4>Clause Arguments</h4>
+      <form className="form">
+        {parameterInputs}
+      </form>
+    </section>
+  )
 }
 
 function mapStateToClauseValueProps(state) {
