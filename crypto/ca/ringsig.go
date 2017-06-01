@@ -112,7 +112,6 @@ func (rs *RingSignature) Validate(msg []byte, B []ecmath.Point, P [][]ecmath.Poi
 	msghash := rsMsgHash(B, P, msg)
 
 	n := uint64(len(P))
-	M := len(B)
 
 	e := make([]ecmath.Scalar, n+1)
 	e[0] = rs.e
