@@ -31,9 +31,7 @@ class Container extends React.Component {
       return(<Loading>Connecting to Chain Core...</Loading>)
     }
 
-    return(<div>
-      {this.props.children}
-    </div>)
+    return this.props.children  
   }
 }
 

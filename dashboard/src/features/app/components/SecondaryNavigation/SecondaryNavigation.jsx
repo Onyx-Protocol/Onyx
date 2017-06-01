@@ -50,7 +50,7 @@ class SecondaryNavigation extends React.Component {
 
 export default connect(
   (state) => ({
-    canLogOut: state.core.requireClientToken,
+    canLogOut: state.authn.authenticationRequired,
   }),
   (dispatch) => ({
     logOut: () => dispatch(clearSession)

@@ -47,7 +47,7 @@ class PageTitle extends React.Component {
 }
 
 const mapStateToProps = (state) => {
-  const routes = makeRoutes()
+  const routes = makeRoutes().childRoutes.find(route => route.useForBreadcrumbs)
   const pathname = state.routing.locationBeforeTransitions.pathname
   const breadcrumbs = []
 

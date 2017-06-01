@@ -12,25 +12,35 @@ import { routes as unspents } from 'features/unspents'
 import { routes as mockhsm } from 'features/mockhsm'
 import { NotFound } from 'features/shared/components'
 
-const makeRoutes = (store) => ({
-  ...container(store),
-  childRoutes: [
-    accessControl(store),
-    accounts(store),
-    assets(store),
-    authn(store),
-    balances(store),
-    configuration,
-    core,
-    transactions(store),
-    transactionFeeds(store),
-    unspents(store),
-    mockhsm(store),
-    {
-      path: '*',
-      component: NotFound
-    }
-  ]
-})
+import Main from 'features/app/components/Main/Main'
 
+
+const makeRoutes = (store) => {
+  return({
+    ...container(store),
+    childRoutes: [
+      authn(store),
+      configuration,
+      {
+        useForBreadcrumbs: true, // key for app functions inspecting routes
+        component: Main,
+        childRoutes: [
+          transactions(store),
+          accessControl(store),
+          accounts(store),
+          assets(store),
+          balances(store),
+          core,
+          transactionFeeds(store),
+          unspents(store),
+          mockhsm(store),
+          {
+            path: '*',
+            component: NotFound
+          }
+        ]
+      },
+    ]
+  })
+}
 export default makeRoutes
