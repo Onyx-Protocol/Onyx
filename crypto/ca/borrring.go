@@ -49,13 +49,11 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 	var (
 		k    = make([]ecmath.Scalar, n)
 		mask = make([]byte, n)
-		R    = make([][][]ecmath.Point, n)
 		e    = make([][]ecmath.Scalar, n)
 		s    = make([][]ecmath.Scalar, n)
 		z    = make([][]ecmath.Scalar, n)
 	)
 	for t := uint64(0); t < n; t++ {
-		R[t] = make([][]ecmath.Point, m)
 		jt := j[t]
 		x := r[m*t+jt]
 		k[t] = x
@@ -64,12 +62,12 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 		w[t] = make([]byte, m) // xxx is "m" right here?
 		w[t][jt] = mask[t]
 		jPrime := (jt + 1) % m
-		R[t][jPrime] = make([]ecmath.Point, M)
+		R := make([]ecmath.Point, M)
 		for u := 0; u < M; u++ {
-			R[t][jPrime][u].ScMul(&B[u], &k[t])
+			R[u].ScMul(&B[u], &k[t])
 		}
 		e[t] = make([]ecmath.Scalar, m)
-		e[t][jPrime] = brsEHash(cnt, R[t][jPrime], msghash, t, jPrime, w[t][jt])
+		e[t][jPrime] = brsEHash(cnt, R, msghash, t, jPrime, w[t][jt])
 
 		for i := jt + 1; i < m; i++ {
 			s[i] = make([]ecmath.Scalar, m)
@@ -82,8 +80,7 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 			w[t][i] = s[t][i][31] & 0xf0
 
 			iPrime := (i + 1) % m
-			R[t][iPrime] = make([]ecmath.Point, M)
-			e[t][iPrime] = brsR(&R[t][iPrime], B, P[t][i], z[t][i], e[t][i], msghash, t, iPrime, cnt, w[t][i])
+			e[t][iPrime] = brsNextE(B, P[t][i], z[t][i], e[t][i], msghash, t, iPrime, cnt, w[t][i])
 		}
 	}
 	hasher := scalarHasher()
@@ -103,8 +100,7 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 			z[t][i][31] &= 0x0f
 			w[t][i] = s[t][i][31] & 0xf0
 			iPrime := (i + 1) % m
-			R[t][iPrime] = make([]ecmath.Point, M)
-			e[t][iPrime] = brsR(&R[t][iPrime], B, P[t][i], z[t][i], e[t][i], msghash, t, iPrime, cnt, w[t][i])
+			e[t][iPrime] = brsNextE(B, P[t][i], z[t][i], e[t][i], msghash, t, iPrime, cnt, w[t][i])
 		}
 		z[t][jt].MulAdd(&p[t], &e[t][jt], &k[t])
 		if z[t][jt][31]&0xf0 != 0 {
@@ -151,13 +147,47 @@ func brsEHash(cnt byte, R []ecmath.Point, msghash []byte, t, i uint64, w byte) e
 	return scalarHasherFinalize(hasher)
 }
 
-func brsR(R *[]ecmath.Point, B, P []ecmath.Point, z, e ecmath.Scalar, msghash []byte, t, i uint64, cnt, w byte) ecmath.Scalar {
-	M := len(*R)
+func brsNextE(B, P []ecmath.Point, z, e ecmath.Scalar, msghash []byte, t, i uint64, cnt, w byte) ecmath.Scalar {
+	M := len(B)
+	R := make([]ecmath.Point, M)
 	for u := 0; u < M; u++ {
-		(*R)[u].ScMul(&B[u], &z)
+		R[u].ScMul(&B[u], &z)
 		var R2 ecmath.Point
 		R2.ScMul(&P[u], &e)
-		(*R)[u].Sub(&(*R)[u], &R2)
+		R[u].Sub(&R[u], &R2)
 	}
-	return brsEHash(cnt, *R, msghash, t, i, w)
+	return brsEHash(cnt, R, msghash, t, i, w)
+}
+
+func (brs *BorromeanRingSignature) Validate(msg []byte, B []ecmath.Point, P [][][]ecmath.Point) bool {
+	msghash := brsMsgHash(B, P, msg)
+	n := uint64(len(P))
+	m := uint64(len(P[0]))
+
+	hasher := scalarHasher()
+
+	e0 := brs.e
+	cnt := brs.e[31] >> 4
+	e0[31] &= 0x0f
+	var (
+		e = make([][]ecmath.Scalar, n)
+		z = make([][]ecmath.Scalar, n)
+		w = make([][]byte, n)
+	)
+	for t := uint64(0); t < n; t++ {
+		e[t] = make([]ecmath.Scalar, m)
+		e[t][0] = e0
+		z[t] = make([]ecmath.Scalar, m)
+		w[t] = make([]byte, m)
+		for i := uint64(0); i < m; i++ {
+			z[t][i] = brs.s[t][i]
+			z[t][i][31] &= 0x0f
+			w[t][i] = brs.s[t][i][31] & 0xf0
+			iPrime := (i + 1) % m
+			e[t][iPrime] = brsNextE(B, P[t][i], z[t][i], e[t][i], msghash[:], t, iPrime, cnt, w[t][i])
+		}
+		hasher.Write(e[t][0][:])
+	}
+	ePrime := scalarHasherFinalize(hasher)
+	return ePrime == e0
 }
