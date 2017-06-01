@@ -1,6 +1,10 @@
 package ca
 
-import "chain/crypto/ed25519/ecmath"
+import (
+	"fmt"
+
+	"chain/crypto/ed25519/ecmath"
+)
 
 // The ring signature is encoded as a string of n+1 32-byte elements
 // where n is the number of public keys provided separately (typically
@@ -25,17 +29,16 @@ type RingSignature struct {
 // (Layout note: P has n elements; P[i] has M elements.)
 func CreateRingSignature(msg []byte, B []ecmath.Point, P [][]ecmath.Point, j uint64, p ecmath.Scalar) *RingSignature {
 	// 1. Let counter = 0.
-	return createRingSignature(msg, B, P, j, p, 0)
-}
-
-func createRingSignature(msg []byte, B []ecmath.Point, P [][]ecmath.Point, j uint64, p ecmath.Scalar, counter uint64) *RingSignature {
-	n := uint64(len(P))
-	M := len(B)
-
 	// 2. Let the msghash be a hash of the input non-secret data:
 	// msghash = Hash256("RS" || byte(48+M) || B || P[0] || ... ||
 	// P[n-1] || msg).
-	msghash := rsMsgHash(M, B, P, msg)
+	msghash := rsMsgHash(B, P, msg)
+	return createRingSignature(msghash[:], B, P, j, p, 0)
+}
+
+func createRingSignature(msghash []byte, B []ecmath.Point, P [][]ecmath.Point, j uint64, p ecmath.Scalar, counter uint64) *RingSignature {
+	n := uint64(len(P))
+	M := len(B)
 
 	// 3. Calculate a sequence of: n-1 32-byte random values, 64-byte
 	// nonce and 1-byte mask: {r[i], nonce, mask} =
@@ -46,7 +49,7 @@ func createRingSignature(msg []byte, B []ecmath.Point, P [][]ecmath.Point, j uin
 		nonce [64]byte
 		mask  [1]byte
 	)
-	stream := streamHash(uint64le(counter), msghash[:], p[:], uint64le(j))
+	stream := streamHash(uint64le(counter), msghash[:], p[:], uint64le(j)) // xxx should this start with some prefix?
 	for i := uint64(0); i < n-1; i++ {
 		stream.Read(r[i][:])
 	}
@@ -60,7 +63,7 @@ func createRingSignature(msg []byte, B []ecmath.Point, P [][]ecmath.Point, j uin
 	k.Reduce(&nonce)
 
 	// 5. Calculate the initial e-value, let i = j+1 mod n
-	R := make([]ecmath.Point, M)
+	R := make([]ecmath.Point, M) // impl. note: this R is the spec's R[i]
 	i := (j + 1) % n
 	for u := 0; u < M; u++ {
 		// 5.1. For each u from 0 to M-1: calculate R[i,u] as the [point](#point) k·B[u].
@@ -92,10 +95,12 @@ func createRingSignature(msg []byte, B []ecmath.Point, P [][]ecmath.Point, j uin
 	s[j].MulAdd(&p, &e[j], &k) // z = p * e[j] + k
 	if s[j][31]&0xf0 != 0 {
 		// s[j] > 2^252-1
-		return createRingSignature(msg, B, P, j, p, counter+1)
+		return createRingSignature(msghash, B, P, j, p, counter+1)
 	}
 	s[j][31] &= 0x0f
 	s[j][31] |= (mask[0] & 0xf0)
+
+	fmt.Printf("* creating ring sig\ne values are %v\ns values are %v\n", e, s)
 
 	return &RingSignature{
 		e: e[0],
@@ -104,9 +109,11 @@ func createRingSignature(msg []byte, B []ecmath.Point, P [][]ecmath.Point, j uin
 }
 
 func (rs *RingSignature) Validate(msg []byte, B []ecmath.Point, P [][]ecmath.Point) bool {
+	msghash := rsMsgHash(B, P, msg)
+
 	n := uint64(len(P))
 	M := len(B)
-	msghash := rsMsgHash(M, B, P, msg)
+
 	e := make([]ecmath.Scalar, n+1)
 	e[0] = rs.e
 	for i := uint64(0); i < n; i++ {
@@ -115,10 +122,13 @@ func (rs *RingSignature) Validate(msg []byte, B []ecmath.Point, P [][]ecmath.Poi
 		w := rs.s[i][31] & 0xf0
 		e[i+1] = rsNextE(msghash[:], i+1, B, z, P[i], e[i], w)
 	}
+	fmt.Printf("* validating ring sig\ne values are %v\n", e)
 	return e[0] == e[n]
 }
 
-func rsMsgHash(M int, B []ecmath.Point, P [][]ecmath.Point, msg []byte) [32]byte {
+func rsMsgHash(B []ecmath.Point, P [][]ecmath.Point, msg []byte) [32]byte {
+	M := len(B)
+
 	hasher := hasher256([]byte("RS"), []byte{byte(48 + M)})
 	for _, b := range B {
 		hasher.Write(b.Bytes())
