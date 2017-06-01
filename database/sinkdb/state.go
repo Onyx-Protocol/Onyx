@@ -156,9 +156,9 @@ func (s *state) get(key string) ([]byte, Version) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	b := s.state[key]
+	b, ok := s.state[key]
 	n := s.version[key]
-	return b, Version{key, n}
+	return b, Version{key, ok, n}
 }
 
 // AppliedIndex returns the raft log index (applied index) of current state
