@@ -47,11 +47,11 @@ to perform arbitrary amount of point decoding operations. The following theorem 
 that the risk is negligible as the malicious prover has to perform exponentially more work than 
 the verifier being attacked.
 
-**Theorem D1.** In order to make the verifier perform `N` point decodings
+**Theorem D1:** In order to make the verifier perform `N` point decodings
 when mapping asset ID to a point, the expected number of decodings to be
 performed by the prover who enumerates arbitrary asset IDs is `2^N`.
 
-**Proof.** The output of a hash function used by [Asset ID Point](ca.md#asset-id-point) 
+**Proof:** The output of a hash function used by [Asset ID Point](ca.md#asset-id-point) 
 algorithm is a random 256-bit string, where the first 255 bits encode the y-coordinate and 
 the last bit encodes the lowest bit of the x-coordinate. Decoding procedure extracts the y-coordinate
 as is, verifies that it is below 2^255 + 19 and recovers the matching x-coordinate. If the procedure fails,
@@ -68,21 +68,24 @@ We will consider probabilities of failing checks #1 and #2 as negligible:
 1. There are only 19 in 2^255 invalid y-coordinates to fail the check #1. 
 2. There are only 2 in (2^255 - 19) valid y-coordinates that fail the check #2 when the x-coordinate has non-zero lowest bit.
 
-The check #3 fails half the time since there are only half of the valid square roots in the prime field.
-In other words, the probability of choosing an asset ID that hashes to an invalid point is slightly below 1/2.
+Check #3 fails with probability 0.5 because only half of elements in a prime field are valid square roots.
 
 As a result, the probability of choosing an asset ID to cause N decoding failures in a row after M tries follows the binomial distribution. For probability above 0.5, M equals 2^N.∎
 
-**Discussion**
-
-The alternative solution is to have creators of asset identifiers to choose an issuance
+**Discussion:** The alternative solution is to have creators of asset identifiers to choose an issuance
 program (that defines the asset ID) so that their asset ID always hashes to a valid point.
 Unfortunately, this approach rejects roughly half of existing asset IDs created on
 the blockchains deployed before the extension to _Confidential Assets_. 
 We consider that to preserve asset ID compatibility at the risk of an infeasible 
 denial of service attack is an acceptable tradeoff.
 
-### Theorem A1: asset commitment is perfectly binding
+### Theorem A1: asset commitment is statistically binding
+
+**Theorem A1:** Asset ID commitment is statistically binding for asset ID under the assumption of a second preimage-resistant hash function that maps asset ID to a curve point.
+
+**Proof:** First, we observe that [PointHash](#pointhash) function that maps asset ID to an [asset ID point](#asset-id-point) based on Keccak permutation is a statistically binding commitment under the assumption that Keccak is second preimage-resistant (that is, probability of finding a different asset ID mapping to the same _asset ID point_ is negligible).
+
+
 
 TBD: asset id is hashed, blinding factor is proven to be the same by ARP
 
@@ -90,6 +93,10 @@ TBD: asset id is hashed, blinding factor is proven to be the same by ARP
 
 TBD: 
 
+
+### Theorem A3: asset range proof is statistically unforgeable
+
+TBD: fiat-shamir commitment is a preimage-resistant hash function making.
 
 
 ### Asset Commitment (AC)
@@ -256,8 +263,8 @@ Proof of soundness:
     let J  = j*G
     let H1 = h1*G
     let H2 = h2*G
-    let B1 = b1*G
-    let B2 = b2*G
+    let B1 = b1*J
+    let B2 = b2*J
 
     Need to prove that (x can be any value):
 
