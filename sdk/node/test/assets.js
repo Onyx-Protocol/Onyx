@@ -10,46 +10,46 @@ chai.use(chaiAsPromised)
 const expect = chai.expect
 
 const client = new chain.Client()
-const xAccountAlias = `x-${uuid.v4()}`
-const yAccountAlias = `y-${uuid.v4()}`
+const xAssetAlias = `x-${uuid.v4()}`
+const yAssetAlias = `y-${uuid.v4()}`
 
 let mockHsmKey
 
-describe('Accounts test', () => {
+describe('Assets test', () => {
 
   describe('Promise style', () => {
 
     before('set up API objects', () => {
 
-      // Key and account creation
+      // Key and asset creation
       return client.mockHsm.keys.create()
         .then(key => { mockHsmKey = key })
         .then(() => {
-          return client.accounts.create({alias: xAccountAlias, rootXpubs: [mockHsmKey.xpub], quorum: 1, tags: {x: 0}})
+          return client.assets.create({alias: xAssetAlias, rootXpubs: [mockHsmKey.xpub], quorum: 1, tags: {x: 0}})
         })
         .then(() => {
-          return client.accounts.create({alias: yAccountAlias, rootXpubs: [mockHsmKey.xpub], quorum: 1, tags: {y: 0}})
+          return client.assets.create({alias: yAssetAlias, rootXpubs: [mockHsmKey.xpub], quorum: 1, tags: {y: 0}})
         })
     })
 
-    describe('Single account creation', () => {
+    describe('Single asset creation', () => {
 
-      it('account creation successful', () => {
-        return client.accounts.create({alias: `alice-${uuid.v4()}`, rootXpubs: [mockHsmKey.xpub], quorum: 1})
+      it('asset creation successful', () => {
+        return client.assets.create({alias: `asset-${uuid.v4()}`, rootXpubs: [mockHsmKey.xpub], quorum: 1})
       })
 
-      it('account creation rejected due to missing key fields', () => {
-        return expect(client.accounts.create({alias: 'david'})).to.be.rejectedWith('CH202')
+      it('asset creation rejected due to missing key fields', () => {
+        return expect(client.assets.create({alias: 'asset'})).to.be.rejectedWith('CH202')
       })
     })
 
-    describe('Batch account creation', () => {
+    describe('Batch asset creation', () => {
       let batchResponse = {}
 
-      before(() => client.accounts.createBatch([
-          {alias: `carol-${uuid.v4()}`, rootXpubs: [mockHsmKey.xpub], quorum: 1}, // success
-          {alias: 'david'}, // failure
-          {alias: `eve-${uuid.v4()}`, rootXpubs: [mockHsmKey.xpub], quorum: 1}, // success
+      before(() => client.assets.createBatch([
+          {alias: `bronze-${uuid.v4()}`, rootXpubs: [mockHsmKey.xpub], quorum: 1}, // success
+          {alias: 'unobtanium'}, // failure
+          {alias: `copper-${uuid.v4()}`, rootXpubs: [mockHsmKey.xpub], quorum: 1}, // success
         ])
         .then(resp => {batchResponse = resp})
       )
@@ -58,16 +58,16 @@ describe('Accounts test', () => {
       it('returns one error', () => assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null]))
     })
 
-    describe('Single account tags update', () => {
+    describe('Single asset tags update', () => {
 
-      it('successfully updates account tags', () => {
-        return client.accounts.updateTags({
-          alias: xAccountAlias,
+      it('successfully updates asset tags', () => {
+        return client.assets.updateTags({
+          alias: xAssetAlias,
           tags: {x: 1},
         })
         .then(() => {
-          return client.accounts.query({
-            filter: `alias='${xAccountAlias}'`
+          return client.assets.query({
+            filter: `alias='${xAssetAlias}'`
           })
         })
         .then(page => {
@@ -75,9 +75,9 @@ describe('Accounts test', () => {
         })
       })
 
-      it('fails to update account tags', () => {
+      it('fails to update asset tags', () => {
         return expect(
-          client.accounts.updateTags({
+          client.assets.updateTags({
             // ID/Alias intentionally omitted
             tags: {x: 1},
           })
@@ -85,19 +85,19 @@ describe('Accounts test', () => {
       })
     })
 
-    describe('Batch account tags update', () => {
+    describe('Batch asset tags update', () => {
 
-      it('successfully updates accounts tags', () => {
-        return client.accounts.updateTagsBatch([{
-          alias: xAccountAlias,
+      it('successfully updates assets tags', () => {
+        return client.assets.updateTagsBatch([{
+          alias: xAssetAlias,
           tags: {x: 2},
         }, {
-          alias: yAccountAlias,
+          alias: yAssetAlias,
           tags: {y: 2},
         }])
         .then(() => {
-          return client.accounts.query({
-            filter: `alias='${xAccountAlias}' OR alias='${yAccountAlias}'`
+          return client.assets.query({
+            filter: `alias='${xAssetAlias}' OR alias='${yAssetAlias}'`
           })
         })
         .then(page => {
@@ -106,9 +106,9 @@ describe('Accounts test', () => {
         })
       })
 
-      it('fails to update accounts tags with missing id', () => {
-        return client.accounts.updateTagsBatch([{
-          alias: xAccountAlias,
+      it('fails to update assets tags with missing id', () => {
+        return client.assets.updateTagsBatch([{
+          alias: xAssetAlias,
           tags: {x: 3},
         }, {
           // ID/Alias intentionally omitted
@@ -128,29 +128,29 @@ describe('Accounts test', () => {
   // tested in the promises test.
   describe('Callback style', () => {
 
-    it('Single account creation', (done) => {
-      client.accounts.create(
+    it('Single asset creation', (done) => {
+      client.assets.create(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Batch account creation', (done) => {
-      client.accounts.createBatch(
+    it('Batch asset creation', (done) => {
+      client.assets.createBatch(
         [{}, {}], // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Single account tags update', (done) => {
-      client.accounts.updateTags(
+    it('Single asset tags update', (done) => {
+      client.assets.updateTags(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Batch account tags update', (done) => {
-      client.accounts.updateTagsBatch(
+    it('Batch asset tags update', (done) => {
+      client.assets.updateTagsBatch(
         [{}, {}], // intentionally blank
         () => done() // intentionally ignore errors
       )
