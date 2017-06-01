@@ -7,7 +7,7 @@
 ## 1.2.1
 
 * This is a pre-release version
-* Update to Chain Core [1.2rc2](https://github.com/chain/chain/blob/1.2-stable/docs/core/reference/changelog.md#1.2rc2)
+* Update to Chain Core [1.2rc2](https://https://chain.com/docs/1.2/core/reference/changelog#1.2rc2)
 
 ## 1.2.0
 
