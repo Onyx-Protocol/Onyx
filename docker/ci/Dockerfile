@@ -11,10 +11,10 @@ ENV CHAIN="/go/src/chain" \
     GEM_HOME="/usr/local/bundle" \
     GOPATH="/go" \
     GOROOT="/usr/local/go" \
-    JAVA_HOME="/opt/jdk1.7.0_79" \
-    JRE_HOME="/opt/jdk1.7.0_79/jre" \
+    JAVA_HOME="/opt/jdk1.7.0_80" \
+    JRE_HOME="/opt/jdk1.7.0_80/jre" \
     MAVEN_HOME="/usr/share/maven" \
-    PATH="$PATH:/go/src/chain/docker/ci/bin/:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin:/opt/nfast/bin"
+    PATH="$PATH:/go/src/chain/docker/ci/bin/:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_80/bin:/opt/jdk1.7.0_80/jre/bin:/opt/nfast/bin"
 
 ADD install /usr/bin
 
