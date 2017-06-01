@@ -4,8 +4,8 @@ This changelog covers updates to cored, the Chain Core server binary.
 
 For updates to subpackages, see below:
 
-- [Mac installer](https://github.com/chain/chain/blob/1.2-stable/installer/mac/CHANGELOG.md)
-- [Windows installer](https://github.com/chain/chain/blob/1.2-stable/installer/windows/CHANGELOG.md)
+- [Mac installer](https://github.com/chain/chain/blob/1.2-stable/desktop/mac/CHANGELOG.md)
+- [Windows installer](https://github.com/chain/chain/blob/1.2-stable/desktop/windows/CHANGELOG.md)
 - [Java SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/java/CHANGELOG.md)
 - [Node.js SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/node/CHANGELOG.md)
 - [Ruby SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/ruby/CHANGELOG.md)
