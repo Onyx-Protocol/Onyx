@@ -51,8 +51,6 @@ $ go install chain/cmd/corectl
 * [reset](#reset)
 * [grant](#grant)
 * [revoke](#revoke)
-* [init](#init)
-* [join](#join)
 * [allow-address](#allow-address)
 * [wait](#wait)
 
@@ -185,31 +183,6 @@ It must take one of three forms:
    * `OU=[name]` to affect an X.509 Organizational Unit
 
    The type of guard (before the = sign) is case-insensitive.
-
-
-### `init`
-
-Creates a new Chain Core cluster.
-
-```
-corectl init
-```
-
-
-### `join`
-
-Connects the Chain Core process to an existing Chain Core cluster.
-
-`join` should only be used for multiserver Chain Cores.
-
-```
-corectl join [address]
-```
-
-Argument:
-
-* **address**: The boot address, in `host:port` format.
-
 
 ### `allow-address`
 
