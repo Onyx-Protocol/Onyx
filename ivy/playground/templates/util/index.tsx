@@ -16,31 +16,37 @@ export const makeEmptyTemplate = (source: string, error: string): CompiledTempla
 }
 
 // Converts undefined, array attributes into empty arrays.
-export const formatCompilerResult = (result: CompilerResult): CompilerResult => ({
-  ...result,
-  contracts: result.contracts.map(orig => {
-    const contract = {
-      ...orig,
-      params: orig.params || [],
-      clauses: orig.clauses || []
-    } as CompiledTemplate
+export const formatCompilerResult = (result: CompilerResult): CompilerResult => {
+  if (result.contracts.length < 1) {
+    throw '0 contracts returned from compiler'
+  }
 
-    const clauses = contract.clauses.map(clause => ({
-      ...clause,
-      params: clause.params || [],
-      reqs: clause.reqs || [],
-      mintimes: clause.mintimes || [],
-      maxtimes: clause.maxtimes || [],
-      values: clause.values || [],
-      hashCalls: clause.hashCalls || []
-    }))
+  return ({
+    ...result,
+    contracts: result.contracts.map(orig => {
+      const contract = {
+        ...orig,
+        params: orig.params || [],
+        clauses: orig.clauses || []
+      } as CompiledTemplate
 
-    return ({
-      ...contract,
-      clauses
-    } as CompiledTemplate)
-  })
-})
+      const clauses = contract.clauses.map(clause => ({
+        ...clause,
+        params: clause.params || [],
+        reqs: clause.reqs || [],
+        mintimes: clause.mintimes || [],
+        maxtimes: clause.maxtimes || [],
+        values: clause.values || [],
+        hashCalls: clause.hashCalls || []
+      }))
+
+      return ({
+        ...contract,
+        clauses
+      } as CompiledTemplate)
+    })
+  } as CompilerResult)
+}
 
 // Returns the last contract in the list returned from the compiler.
 // By convention, this is the default contract.
