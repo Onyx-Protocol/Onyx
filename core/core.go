@@ -182,7 +182,16 @@ func (a *API) joinCluster(ctx context.Context, x struct {
 	}
 
 	bootURL := fmt.Sprintf("https://%s", x.BootAddress)
-	return a.sdb.RaftService().Join(bootURL)
+	err = a.sdb.RaftService().Join(bootURL)
+	if err != nil {
+		return err
+	}
+
+	// The cluster we joined might already be configured. Exec self
+	// to restart cored and attempt to load the config.
+	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
+	execSelf("")
+	panic("unreached")
 }
 
 func closeConnOK(w http.ResponseWriter, req *http.Request) {
