@@ -16,12 +16,12 @@ type BorromeanRingSignature struct {
 // 7. {p[i]}: the list of n [scalars](#scalar) representing private keys.
 // 8. {j[i]}: the list of n indexes of the designated public keys within each ring, so that P[i,j] == p[i]·B[i].
 // 9. {payload[i]}: sequence of n·m random 32-byte elements.
-func CreateBorromeanRingSignature(msg []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][]byte) *BorromeanRingSignature {
+func CreateBorromeanRingSignature(msg []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][32]byte) *BorromeanRingSignature {
 	msghash := brsMsgHash(B, P, msg)
 	return createBorromeanRingSignature(msghash[:], B, P, p, j, payload, 0)
 }
 
-func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][]byte, counter uint64) *BorromeanRingSignature {
+func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][32]byte, counter uint64) *BorromeanRingSignature {
 	n := uint64(len(P))
 	m := uint64(len(P[0]))
 	M := len(B)
@@ -69,11 +69,11 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 		e[t] = make([]ecmath.Scalar, m)
 		e[t][jPrime] = brsEHash(cnt, R, msghash, t, jPrime, w[t][jt])
 
+		s[t] = make([]ecmath.Scalar, m)
+		z[t] = make([]ecmath.Scalar, m)
 		for i := jt + 1; i < m; i++ {
-			s[i] = make([]ecmath.Scalar, m)
 			s[t][i] = r[m*t+i]
 
-			z[t] = make([]ecmath.Scalar, n)
 			z[t][i] = s[t][i]
 			z[t][i][31] &= 0x0f
 

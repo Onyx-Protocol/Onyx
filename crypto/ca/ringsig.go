@@ -1,10 +1,6 @@
 package ca
 
-import (
-	"fmt"
-
-	"chain/crypto/ed25519/ecmath"
-)
+import "chain/crypto/ed25519/ecmath"
 
 // The ring signature is encoded as a string of n+1 32-byte elements
 // where n is the number of public keys provided separately (typically
@@ -100,8 +96,6 @@ func createRingSignature(msghash []byte, B []ecmath.Point, P [][]ecmath.Point, j
 	s[j][31] &= 0x0f
 	s[j][31] |= (mask[0] & 0xf0)
 
-	fmt.Printf("* creating ring sig\ne values are %v\ns values are %v\n", e, s)
-
 	return &RingSignature{
 		e: e[0],
 		s: s,
@@ -121,7 +115,6 @@ func (rs *RingSignature) Validate(msg []byte, B []ecmath.Point, P [][]ecmath.Poi
 		w := rs.s[i][31] & 0xf0
 		e[i+1] = rsNextE(msghash[:], i+1, B, z, P[i], e[i], w)
 	}
-	fmt.Printf("* validating ring sig\ne values are %v\n", e)
 	return e[0] == e[n]
 }
 
