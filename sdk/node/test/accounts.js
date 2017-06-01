@@ -34,11 +34,12 @@ describe('Accounts test', () => {
 
     describe('Single account creation', () => {
 
-      it('account creation successful', () => {
+      it('successful', () => {
         return client.accounts.create({alias: `alice-${uuid.v4()}`, rootXpubs: [mockHsmKey.xpub], quorum: 1})
+          .then(resp => expect(resp.id).not.to.be.empty)
       })
 
-      it('account creation rejected due to missing key fields', () => {
+      it('rejected due to missing key fields', () => {
         return expect(client.accounts.create({alias: 'david'})).to.be.rejectedWith('CH202')
       })
     })
@@ -60,7 +61,7 @@ describe('Accounts test', () => {
 
     describe('Single account tags update', () => {
 
-      it('successfully updates account tags', () => {
+      it('successful', () => {
         return client.accounts.updateTags({
           alias: xAccountAlias,
           tags: {x: 1},
@@ -75,7 +76,7 @@ describe('Accounts test', () => {
         })
       })
 
-      it('fails to update account tags', () => {
+      it('rejected due to missing ID/Alias', () => {
         return expect(
           client.accounts.updateTags({
             // ID/Alias intentionally omitted
@@ -87,7 +88,7 @@ describe('Accounts test', () => {
 
     describe('Batch account tags update', () => {
 
-      it('successfully updates accounts tags', () => {
+      it('successful', () => {
         return client.accounts.updateTagsBatch([{
           alias: xAccountAlias,
           tags: {x: 2},
@@ -106,7 +107,7 @@ describe('Accounts test', () => {
         })
       })
 
-      it('fails to update accounts tags with missing id', () => {
+      it('fails to update accounts tags with missing ID/Alias', () => {
         return client.accounts.updateTagsBatch([{
           alias: xAccountAlias,
           tags: {x: 3},

@@ -9,101 +9,134 @@ chai.use(chaiAsPromised)
 const expect = chai.expect
 
 const client = new chain.Client()
-const tokenId = `token-${uuid.v4()}`
-const clientTokenId = `client-${uuid.v4()}`
-const networkTokenId = `network-${uuid.v4()}`
+
+let tokenId, clientTokenId, networkTokenId
 
 describe('Access tokens test', () => {
 
   describe('Promise style', () => {
 
-    describe('Access token creation', () => {
+    describe('Access token', () => {
 
-      it('access token creation successful', () => {
+      beforeEach(() => {
+        tokenId = `token-${uuid.v4()}`
         return client.accessTokens.create({
           type: 'client',
           id: tokenId
         })
       })
 
-      it('access token creation rejected due to duplicate ID', () => {
+      it('creation successful', () => {
+        return client.accessTokens.create({
+          type: 'client',
+          id: `another-${tokenId}`
+        }).then(resp => expect(resp.token).not.to.be.empty)
+      })
+
+      it('creation rejected due to duplicate ID', () => {
         return expect(client.accessTokens.create({
           type: 'client',
           id: tokenId
-        }))
-        .to.be.rejectedWith('CH302')
+        })).to.be.rejectedWith('CH302')
       })
 
-      it('access token returned in list after creation', () => {
+      it('returned in list after creation', () => {
         return client.accessTokens.query()
           .then(resp => expect(resp.items.map(item => item.id)).to.contain(tokenId))
       })
-    })
 
-    describe('Access token deletion', () => {
-
-      it('access token deletion successful', () => {
+      it('deletion successful', () => {
         return client.accessTokens.delete(tokenId)
+          .then(resp => expect(resp.message).to.equal('ok'))
       })
 
-      it('access token deletion rejected due to missing ID', () => {
+      it('deletion rejected due to missing ID', () => {
         return expect(client.accessTokens.delete())
           .to.be.rejectedWith('CH310')
       })
 
-      it('access token removed from list after deletion', () => {
-        return client.accessTokens.query()
+      it('removed from list after deletion', () => {
+        return client.accessTokens.delete(tokenId)
+          .then(() => client.accessTokens.query())
           .then(resp => expect(resp.items.map(item => item.id)).to.not.contain(tokenId))
       })
     })
 
     describe('Deprecated syntax', () => {
 
-      it('client token creation successful', () => {
-        return client.accessTokens.create({
-          type: 'client',
-          id: clientTokenId
-        }).then(resp => expect(resp.type).to.equal('client'))
+      describe('Client token', () => {
+
+        it('creation successful', () => {
+          return client.accessTokens.create({
+            type: 'client',
+            id: `client-${uuid.v4()}`
+          }).then(resp => expect(resp.type).to.equal('client'))
+        })
+
+        it('creation adds client-readwrite grant', () => {
+          return client.accessTokens.create({
+            type: 'client',
+            id: `client-${uuid.v4()}`
+          }).then((resp) => {
+            clientTokenId = resp.id
+            return client.authorizationGrants.list()
+          })
+            .then(resp => expect(resp.items.filter(guard => guard.guardData['id'] == clientTokenId)[0].policy).to.equal('client-readwrite'))
+        })
       })
 
-      it('client token creation adds client-readwrite grant', () => {
-        return client.authorizationGrants.list()
-          .then(resp => expect(resp.items.filter(guard => guard.guardData['id'] == clientTokenId)[0].policy).to.equal('client-readwrite'))
+      describe('Network token', () => {
+
+        it('creation successful', () => {
+          return client.accessTokens.create({
+            type: 'network',
+            id: `network-${uuid.v4()}`
+          }).then(resp => expect(resp.type).to.equal('network'))
+        })
+
+        it('creation adds crosscore grant', () => {
+          return client.accessTokens.create({
+            type: 'network',
+            id: `network-${uuid.v4()}`
+          }).then((resp) => {
+            networkTokenId = resp.id
+            return client.authorizationGrants.list()
+          })
+            .then(resp => expect(resp.items.filter(guard => guard.guardData['id'] == networkTokenId)[0].policy).to.equal('crosscore'))
+        })
       })
 
-      it('network token creation successful', () => {
-        return client.accessTokens.create({
-          type: 'network',
-          id: networkTokenId
-        }).then(resp => expect(resp.type).to.equal('network'))
-      })
+      describe('Deprecated roles', () => {
 
-      it('network token creation adds crosscore grant', () => {
-        return client.authorizationGrants.list()
-          .then(resp => expect(resp.items.filter(guard => guard.guardData['id'] == networkTokenId)[0].policy).to.equal('crosscore'))
-      })
+        beforeEach(() => {
+          clientTokenId = `client-${uuid.v4()}`
+          networkTokenId = `network-${uuid.v4()}`
 
-      describe('Filtered client tokens', () => {
+          return client.accessTokens.create({
+            type: 'client',
+            id: clientTokenId
+          }).then(() => client.accessTokens.create({
+            type: 'network',
+            id: networkTokenId
+          }))
+        })
 
-        it('contains clientTokenId', () => {
+        it('filtered by client type contains clientTokenId', () => {
           return client.accessTokens.query({type: 'client'})
             .then(resp => expect(resp.items.map(item => item.id)).to.contain(clientTokenId))
         })
 
-        it('does not contain networkTokenId', () => {
+        it('filtered by client type does not contain networkTokenId', () => {
           return client.accessTokens.query({type: 'client'})
             .then(resp => expect(resp.items.map(item => item.id)).to.not.contain(networkTokenId))
         })
-      })
 
-      describe('Filtered network tokens', () => {
-
-        it('contains networkTokenId', () => {
+        it('filtered by network type contains networkTokenId', () => {
           return client.accessTokens.query({type: 'network'})
             .then(resp => expect(resp.items.map(item => item.id)).to.contain(networkTokenId))
         })
 
-        it('does not contain clientTokenId', () => {
+        it('filtered by network type does not contain clientTokenId', () => {
           return client.accessTokens.query({type: 'network'})
             .then(resp => expect(resp.items.map(item => item.id)).to.not.contain(clientTokenId))
         })
