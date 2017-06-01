@@ -12,8 +12,8 @@ import (
 func TestBorrRingSig(t *testing.T) {
 	msg := []byte("message")
 
-	var B ecmath.Point
-	B.ScMulBase(&ecmath.One)
+	var B0 ecmath.Point
+	B0.ScMulBase(&ecmath.One)
 
 	pbytes := [][]string{
 		[]string{
@@ -33,15 +33,18 @@ func TestBorrRingSig(t *testing.T) {
 	n := len(pbytes)
 	m := len(pbytes[0])
 
+	B := make([][]ecmath.Point, n)
 	p := make([]ecmath.Scalar, n)
 	P := make([][][]ecmath.Point, n)
 	for i := 0; i < n; i++ {
+		B[i] = make([]ecmath.Point, 1)
+		B[i][0] = B0
 		P[i] = make([][]ecmath.Point, m)
 		for j := 0; j < m; j++ {
 			P[i][j] = make([]ecmath.Point, 1)
 			var p2 ecmath.Scalar
 			hex.Decode(p2[:], []byte(pbytes[i][j]))
-			P[i][j][0].ScMul(&B, &p2)
+			P[i][j][0].ScMul(&B0, &p2)
 			if j == 0 {
 				p[i] = p2
 			}
@@ -49,9 +52,9 @@ func TestBorrRingSig(t *testing.T) {
 	}
 	j := make([]uint64, n)
 	payload := make([][32]byte, m*n)
-	brs := CreateBorromeanRingSignature(msg, []ecmath.Point{B}, P, p, j, payload)
+	brs := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
 	t.Log(spew.Sdump(brs))
-	if !brs.Validate(msg, []ecmath.Point{B}, P) {
+	if !brs.Validate(msg, B, P) {
 		t.Error("failed to validate borromean ring signature")
 	}
 }
