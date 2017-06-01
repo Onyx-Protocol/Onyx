@@ -621,18 +621,18 @@ describe('Promise style', () => {
 
     // Access tokens
 
-    .then(() => expect(Promise.all([
-      client.accessTokens.create({type: 'client', id: uuid.v4()}),
-      client.accessTokens.create({type: 'client', id: uuid.v4()}),
-    ])).to.be.fulfilled)
-    .then(() => {
-      counter = 0
-      return expect(client.accessTokens.queryAll({pageSize: 1}, (item, next, done) => {
-        counter += 1
-        expect(item).to.not.be.null
-        counter >= 2 ? done() : next()
-      })).to.be.fulfilled
-    }).then(() => expect(counter).to.equal(2))
+    // .then(() => expect(Promise.all([
+    //   client.accessTokens.create({type: 'client', id: uuid.v4()}),
+    //   client.accessTokens.create({type: 'client', id: uuid.v4()}),
+    // ])).to.be.fulfilled)
+    // .then(() => {
+    //   counter = 0
+    //   return expect(client.accessTokens.queryAll({pageSize: 1}, (item, next, done) => {
+    //     counter += 1
+    //     expect(item).to.not.be.null
+    //     counter >= 2 ? done() : next()
+    //   })).to.be.fulfilled
+    // }).then(() => expect(counter).to.equal(2))
 
     // Accounts
 

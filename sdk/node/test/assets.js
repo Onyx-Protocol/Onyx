@@ -34,11 +34,12 @@ describe('Assets test', () => {
 
     describe('Single asset creation', () => {
 
-      it('asset creation successful', () => {
+      it('successful', () => {
         return client.assets.create({alias: `asset-${uuid.v4()}`, rootXpubs: [mockHsmKey.xpub], quorum: 1})
+          .then(resp => expect(resp.id).not.to.be.empty)
       })
 
-      it('asset creation rejected due to missing key fields', () => {
+      it('rejected due to missing key fields', () => {
         return expect(client.assets.create({alias: 'asset'})).to.be.rejectedWith('CH202')
       })
     })
@@ -60,7 +61,7 @@ describe('Assets test', () => {
 
     describe('Single asset tags update', () => {
 
-      it('successfully updates asset tags', () => {
+      it('successful', () => {
         return client.assets.updateTags({
           alias: xAssetAlias,
           tags: {x: 1},
@@ -75,7 +76,7 @@ describe('Assets test', () => {
         })
       })
 
-      it('fails to update asset tags', () => {
+      it('rejected due to missing ID/Alias', () => {
         return expect(
           client.assets.updateTags({
             // ID/Alias intentionally omitted
@@ -87,7 +88,7 @@ describe('Assets test', () => {
 
     describe('Batch asset tags update', () => {
 
-      it('successfully updates assets tags', () => {
+      it('successful', () => {
         return client.assets.updateTagsBatch([{
           alias: xAssetAlias,
           tags: {x: 2},
@@ -106,7 +107,7 @@ describe('Assets test', () => {
         })
       })
 
-      it('fails to update assets tags with missing id', () => {
+      it('fails to update assets tags with missing ID/Alias', () => {
         return client.assets.updateTagsBatch([{
           alias: xAssetAlias,
           tags: {x: 3},
