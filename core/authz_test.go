@@ -31,7 +31,7 @@ func TestAuthz(t *testing.T) {
 		mux:          http.NewServeMux(),
 		sdb:          sdb,
 		accessTokens: accessTokens,
-		grants:       authz.NewStore(sdb, GrantPrefix),
+		grants:       authz.NewStore(sdb),
 	}
 	api.buildHandler()
 	mux.Handle("/", api)
