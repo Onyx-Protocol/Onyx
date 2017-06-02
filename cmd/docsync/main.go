@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"mime"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,7 +18,6 @@ import (
 )
 
 func main() {
-	fmt.Println(os.Args)
 	localKeys := mustListContents(os.Args[2])
 
 	region := "us-east-1"
@@ -30,10 +30,13 @@ func main() {
 		Prefix: aws.String("docs/"),
 	}, func(page *s3.ListObjectsOutput, lastPage bool) bool {
 		for _, obj := range page.Contents {
-			remoteKeys = append(remoteKeys, *obj.Key)
+			if !(*obj.Key == "docs/") {
+				remoteKeys = append(remoteKeys, *obj.Key)
+			}
 		}
 		return true
 	})
+
 	if err != nil {
 		log.Fatalln("s3 list objects error:", err)
 	}
@@ -48,9 +51,10 @@ func main() {
 	fmt.Println("keys to delete:", len(remoteOnly)) // TEMP
 
 	for _, k := range prefixedLocalKeys {
+		var body []byte
+
 		path := strings.Replace(k, "docs", os.Args[2], 1)
-		fmt.Println(path)
-		body, err := ioutil.ReadFile(path)
+		body, err = ioutil.ReadFile(path)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -62,9 +66,16 @@ func main() {
 			Body:   bytes.NewReader(body),
 		}
 
-		if filepath.Ext(path) == "" {
+		ext := filepath.Ext(path)
+		contentType := mime.TypeByExtension(ext)
+
+		if contentType == "" {
 			upload.SetContentType("text/html")
+		} else {
+			upload.SetContentType(contentType)
 		}
+
+		fmt.Println("uploading ", k, " with type ", contentType)
 
 		_, err = svc.PutObject(upload)
 
@@ -74,11 +85,21 @@ func main() {
 		}
 	}
 
-	// TODO:
-	// 1. upload localKeys to prefixedLocalKeys, using a default content type of
-	//    text/html for extensionless files.
-	// 2. remove remoteOnly keys
-	// ✅ 3. Make local directory and bucket configurable.
+	for _, k := range remoteOnly {
+		remove := &s3.DeleteObjectInput{
+			Bucket: aws.String(os.Args[1]),
+			Key:    aws.String(k),
+		}
+
+		fmt.Println("deleting ", k)
+
+		_, err = svc.DeleteObject(remove)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+	}
 }
 
 func setDiff(a, b []string) []string {
@@ -138,7 +159,9 @@ func mustListContents(parentPath string) []string {
 				res = append(res, path.Join(n, d))
 			}
 		} else {
-			res = append(res, n)
+			if !strings.HasPrefix(n, ".") {
+				res = append(res, n)
+			}
 		}
 	}
 
