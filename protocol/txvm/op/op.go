@@ -4,48 +4,48 @@ const (
 	// control flow & stack
 	Fail   = 0
 	Verify = 1
-	Exec   = 2
-	Jump   = 3
-	JumpIf = 4
-	Roll   = 5 // any stack
-	Depth  = 6 // any stack
-	Drop   = 7
-	Dup    = 8
-
-	// 9
+	PC     = 2
+	Exec   = 3
+	Jump   = 4
+	JumpIf = 5
+	Roll   = 6 // any stack
+	Bury   = 7 // any stack
+	Depth  = 8 // any stack
+	Drop   = 9
+	Dup    = 10
 
 	// data
-	List   = 10
-	Cons   = 11
-	Uncons = 12
-	Len    = 13 // list or bytes
-	Varint = 14
-	Encode = 15
+	List   = 11
+	Cons   = 12
+	Uncons = 13
+	Len    = 14 // list or string
+	Varint = 15
+	Encode = 16
 
 	// boolean
-	Equal = 16
-	Not   = 17
-	And   = 18
-	Or    = 19
-	GT    = 20
-	GE    = 21
+	Equal = 17
+	Not   = 18
+	And   = 19
+	Or    = 20
+	GT    = 21
+	GE    = 22
 
 	// math
-	Abs    = 22
-	Add    = 23
-	Mul    = 24
-	Div    = 25
-	Mod    = 26
-	Lshift = 27
-	Rshift = 28
-	Min    = 29
-	Max    = 30
-
-	// 31
+	Abs    = 23
+	Add    = 24
+	Mul    = 25
+	Div    = 26
+	Mod    = 27
+	Lshift = 28
+	Rshift = 29
+	Min    = 30
+	Max    = 31
 
 	// string
 	Cat    = 32
 	Substr = 33
+
+	// bitwise (int64 or string)
 	BitNot = 34
 	BitAnd = 35
 	BitOr  = 36
@@ -81,7 +81,14 @@ const (
 	VM1Withdraw       = 61 // vm1mux + amount asset => vm1mux + value
 	VM1CheckPredicate = 62 // list vm1prog => bool
 
-	// 63 - 78
+	// extensions
+	Private = 63
+	Nop0    = 64
+	Nop1    = 65
+	Nop2    = 66
+	Nop3    = 67
+
+	// 67 - 78
 
 	NumOp = MinInt
 
