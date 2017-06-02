@@ -68,7 +68,7 @@ func grantStore(sdb *sinkdb.DB, extra []*authz.Grant, subj *pkix.Name) authz.Loa
 		})
 	}
 	return &extraGrantLoader{
-		loader: authz.NewStore(sdb, GrantPrefix),
+		loader: authz.NewStore(sdb),
 		extra:  ext,
 	}
 }
@@ -158,36 +158,30 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 }
 
 func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
-	var grants []apiGrant
-	for _, p := range Policies {
-		// perhaps could denormalize the data in storage to speed this up,
-		// but for now assume a small number of grants
-		var grantList authz.GrantList
-		_, err := a.sdb.Get(ctx, GrantPrefix+p, &grantList)
+	grants, err := a.grants.Load(ctx, Policies)
+	if err != nil {
+		return nil, err
+	}
+
+	var apiGrants []apiGrant
+	for _, g := range grants {
+		var data map[string]interface{}
+		err = json.Unmarshal(g.GuardData, &data)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
 
-		for _, g := range grantList.Grants {
-			var data map[string]interface{}
-			err = json.Unmarshal(g.GuardData, &data)
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-
-			grant := apiGrant{
-				GuardType: g.GuardType,
-				GuardData: data,
-				Policy:    g.Policy,
-				CreatedAt: g.CreatedAt,
-				Protected: g.Protected,
-			}
-			grants = append(grants, grant)
-		}
+		apiGrants = append(apiGrants, apiGrant{
+			GuardType: g.GuardType,
+			GuardData: data,
+			Policy:    g.Policy,
+			CreatedAt: g.CreatedAt,
+			Protected: g.Protected,
+		})
 	}
 
 	return map[string]interface{}{
-		"items": httpjson.Array(grants),
+		"items": httpjson.Array(apiGrants),
 	}, nil
 }
 

@@ -17,6 +17,7 @@ import (
 	"chain/database/pg"
 	"chain/database/sinkdb"
 	"chain/errors"
+	"chain/net/http/authz"
 )
 
 var (
@@ -66,8 +67,11 @@ func ResetEverything(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 	// Delete config & grants in sinkdb
 	var ops []sinkdb.Op
 	ops = append(ops, sinkdb.Delete("/core/config"))
+
+	grants := authz.NewStore(sdb)
+	all := func(*authz.Grant) bool { return true }
 	for _, p := range core.Policies {
-		ops = append(ops, sinkdb.Delete(core.GrantPrefix+p))
+		ops = append(ops, grants.Delete(ctx, p, all))
 	}
 	err = sdb.Exec(ctx, ops...)
 	return errors.Wrap(err, "could not delete grants sinkdb")

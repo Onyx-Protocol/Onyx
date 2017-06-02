@@ -9,20 +9,21 @@ import (
 	"chain/errors"
 )
 
+const keyPrefix = `/core/grant/`
+
 // Generate code for the Grant and GrantList types.
 //go:generate protoc -I. -I$CHAIN/.. --go_out=. grant.proto
 
 // Store provides persistent storage for grant objects.
 type Store struct {
-	sdb       *sinkdb.DB
-	keyPrefix string
+	sdb *sinkdb.DB
 }
 
 // NewStore returns a new *Store storing grants
 // in db under keyPrefix.
 // It implements the Loader interface.
-func NewStore(db *sinkdb.DB, keyPrefix string) *Store {
-	return &Store{db, keyPrefix}
+func NewStore(db *sinkdb.DB) *Store {
+	return &Store{db}
 }
 
 // Load satisfies the Loader interface.
@@ -30,7 +31,7 @@ func (s *Store) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 	var grants []*Grant
 	for _, p := range policy {
 		var grantList GrantList
-		ver, err := s.sdb.GetStale(s.keyPrefix+p, &grantList)
+		ver, err := s.sdb.GetStale(keyPrefix+p, &grantList)
 		if err != nil {
 			return nil, err
 		} else if ver.Exists() {
@@ -46,7 +47,7 @@ func (s *Store) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 // It also sets field CreatedAt to the time g is stored (the current time),
 // or to the time the original grant was stored, if there is one.
 func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
-	key := s.keyPrefix + g.Policy
+	key := keyPrefix + g.Policy
 	if g.CreatedAt == "" {
 		g.CreatedAt = time.Now().UTC().Format(time.RFC3339)
 	}
@@ -71,13 +72,13 @@ func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
 
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
-		sinkdb.Set(s.keyPrefix+g.Policy, &GrantList{Grants: grants}),
+		sinkdb.Set(keyPrefix+g.Policy, &GrantList{Grants: grants}),
 	)
 }
 
 // Delete returns an Op to delete from policy all stored grants for which delete returns true.
 func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) bool) sinkdb.Op {
-	key := s.keyPrefix + policy
+	key := keyPrefix + policy
 
 	var grantList GrantList
 	ver, err := s.sdb.Get(ctx, key, &grantList)
@@ -95,6 +96,11 @@ func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) b
 	// We didn't match any grants, don't need to do an update. Return no-op.
 	if len(keep) == len(grantList.Grants) {
 		return sinkdb.Op{}
+	}
+
+	// We're not keeping any grants, just delete the key altogether.
+	if len(keep) == 0 {
+		return sinkdb.All(sinkdb.IfNotModified(ver), sinkdb.Delete(key))
 	}
 
 	return sinkdb.All(

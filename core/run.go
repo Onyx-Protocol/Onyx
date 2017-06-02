@@ -126,7 +126,7 @@ func RunUnconfigured(ctx context.Context, db pg.DB, sdb *sinkdb.DB, routableAddr
 		db:           db,
 		sdb:          sdb,
 		accessTokens: &accesstoken.CredentialStore{DB: db},
-		grants:       authz.NewStore(sdb, GrantPrefix),
+		grants:       authz.NewStore(sdb),
 		mux:          http.NewServeMux(),
 		addr:         routableAddress,
 	}
@@ -183,7 +183,7 @@ func Run(
 		txFeeds:      &txfeed.Tracker{DB: db},
 		indexer:      indexer,
 		accessTokens: &accesstoken.CredentialStore{DB: db},
-		grants:       authz.NewStore(sdb, GrantPrefix),
+		grants:       authz.NewStore(sdb),
 		config:       conf,
 		db:           db,
 		sdb:          sdb,
