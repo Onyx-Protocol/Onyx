@@ -11,7 +11,7 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 // SignFunc is the function passed into Sign that produces

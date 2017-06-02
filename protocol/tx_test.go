@@ -13,7 +13,7 @@ import (
 	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 	"chain/testutil"
 )
 

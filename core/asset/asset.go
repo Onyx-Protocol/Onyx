@@ -23,7 +23,7 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 const maxAssetCache = 1000

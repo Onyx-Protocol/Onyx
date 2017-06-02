@@ -12,7 +12,7 @@ import (
 	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 	"chain/protocol/validation"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 // maxBlockTxs limits the number of transactions

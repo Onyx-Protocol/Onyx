@@ -11,7 +11,7 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 type AnnotatedTx struct {
