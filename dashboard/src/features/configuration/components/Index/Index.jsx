@@ -86,7 +86,7 @@ class Index extends React.Component {
       />)
     }
 
-    return (
+    return (<div className='container'>
       <form onSubmit={handleSubmit(this.submitWithValidation)}>
         <h2 className={styles.title}>Configure Chain Core</h2>
 
@@ -181,7 +181,7 @@ class Index extends React.Component {
           </div>
         </div>
       </form>
-    )
+    </div>)
   }
 }
 

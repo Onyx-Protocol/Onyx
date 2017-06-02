@@ -20,6 +20,7 @@ const makeRootReducer = () => (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO' &&
       !action.param.isConfigured) {
     const newState = {
+      authn: state.authn,
       form: state.form,
       routing: state.routing,
     }

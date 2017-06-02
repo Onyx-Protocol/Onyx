@@ -31,14 +31,14 @@ class Container extends React.Component {
       return(<Loading>Connecting to Chain Core...</Loading>)
     }
 
-    return this.props.children  
+    return this.props.children
   }
 }
 
 export default connect(
   (state) => ({
-    configured: state.core.configured,
     authenticationReady: state.authn.authenticationReady,
+    shouldShowConfig: !state.core.configured,
     shouldShowLogin: state.authn.authenticationRequired && !state.authn.authenticated,
   }),
   (dispatch) => ({

@@ -71,7 +71,7 @@ const mapStateToProps = (state) => {
     }
   })
 
-  breadcrumbs[breadcrumbs.length - 1].last = true
+  if (breadcrumbs.length > 0) breadcrumbs[breadcrumbs.length - 1].last = true
 
   return {
     breadcrumbs,
