@@ -3,7 +3,7 @@ package legacy
 import (
 	"encoding/binary"
 
-	"github.com/chain/txvm"
+	"chain/protocol/txvm"
 
 	"chain/protocol/bc"
 	"chain/protocol/vm"
