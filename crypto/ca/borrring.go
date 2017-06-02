@@ -16,15 +16,15 @@ type BorromeanRingSignature struct {
 // 7. {p[i]}: the list of n [scalars](#scalar) representing private keys.
 // 8. {j[i]}: the list of n indexes of the designated public keys within each ring, so that P[i,j] == p[i]·B[i].
 // 9. {payload[i]}: sequence of n·m random 32-byte elements.
-func CreateBorromeanRingSignature(msg []byte, B [][]ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][32]byte) *BorromeanRingSignature {
+func CreateBorromeanRingSignature(msg []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][32]byte) *BorromeanRingSignature {
 	msghash := brsMsgHash(B, P, msg)
 	return createBorromeanRingSignature(msghash[:], B, P, p, j, payload, 0)
 }
 
-func createBorromeanRingSignature(msghash []byte, B [][]ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][32]byte, counter uint64) *BorromeanRingSignature {
+func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][32]byte, counter uint64) *BorromeanRingSignature {
 	n := uint64(len(P))
 	m := uint64(len(P[0]))
-	M := len(B[0]) // xxx check that len(B) == n ?
+	M := len(B)
 
 	cnt := byte(counter & 0x0f)
 
@@ -55,7 +55,7 @@ func createBorromeanRingSignature(msghash []byte, B [][]ecmath.Point, P [][][]ec
 		jPrime := (jt + 1) % m
 		R := make([]ecmath.Point, M)
 		for u := 0; u < M; u++ {
-			R[u].ScMul(&B[t][u], &k[t])
+			R[u].ScMul(&B[u], &k[t])
 		}
 		e[t] = make([]ecmath.Scalar, m)
 		e[t][jPrime] = brsEHash(cnt, R, msghash, t, jPrime, w[t][jt])
@@ -70,7 +70,7 @@ func createBorromeanRingSignature(msghash []byte, B [][]ecmath.Point, P [][][]ec
 			w[t][i] = s[t][i][31] & 0xf0
 
 			iPrime := (i + 1) % m
-			e[t][iPrime] = brsNextE(B[t], P[t][i], z, e[t][i], msghash, t, iPrime, cnt, w[t][i])
+			e[t][iPrime] = brsNextE(B, P[t][i], z, e[t][i], msghash, t, iPrime, cnt, w[t][i])
 		}
 	}
 	hasher := scalarHasher()
@@ -90,7 +90,7 @@ func createBorromeanRingSignature(msghash []byte, B [][]ecmath.Point, P [][][]ec
 			z[31] &= 0x0f
 			w[t][i] = s[t][i][31] & 0xf0
 			iPrime := (i + 1) % m
-			e[t][iPrime] = brsNextE(B[t], P[t][i], z, e[t][i], msghash, t, iPrime, cnt, w[t][i])
+			e[t][iPrime] = brsNextE(B, P[t][i], z, e[t][i], msghash, t, iPrime, cnt, w[t][i])
 		}
 		var z ecmath.Scalar
 		z.MulAdd(&p[t], &e[t][jt], &k[t])
@@ -104,15 +104,13 @@ func createBorromeanRingSignature(msghash []byte, B [][]ecmath.Point, P [][][]ec
 	return &BorromeanRingSignature{e: e0, s: s}
 }
 
-func brsMsgHash(B [][]ecmath.Point, P [][][]ecmath.Point, msg []byte) [32]byte {
+func brsMsgHash(B []ecmath.Point, P [][][]ecmath.Point, msg []byte) [32]byte {
 	n := uint64(len(P))
 	m := uint64(len(P[0]))
-	M := len(B[0])
+	M := len(B)
 	hasher := hasher256([]byte("BRS"), []byte{byte(48 + M)}, uint64le(n), uint64le(m))
 	for _, Bi := range B {
-		for _, Bj := range Bi {
-			hasher.Write(Bj.Bytes())
-		}
+		hasher.Write(Bi.Bytes())
 	}
 	for _, Pi := range P {
 		for _, Pij := range Pi {
@@ -152,7 +150,7 @@ func brsNextE(B, P []ecmath.Point, z, e ecmath.Scalar, msghash []byte, t, i uint
 	return brsEHash(cnt, R, msghash, t, i, w)
 }
 
-func (brs *BorromeanRingSignature) Validate(msg []byte, B [][]ecmath.Point, P [][][]ecmath.Point) bool {
+func (brs *BorromeanRingSignature) Validate(msg []byte, B []ecmath.Point, P [][][]ecmath.Point) bool {
 	msghash := brsMsgHash(B, P, msg)
 	n := uint64(len(P))
 	m := uint64(len(P[0]))
@@ -177,7 +175,7 @@ func (brs *BorromeanRingSignature) Validate(msg []byte, B [][]ecmath.Point, P []
 			z[t][i][31] &= 0x0f
 			w[t][i] = brs.s[t][i][31] & 0xf0
 			iPrime := (i + 1) % m
-			e[t][iPrime] = brsNextE(B[t], P[t][i], z[t][i], e[t][i], msghash[:], t, iPrime, cnt, w[t][i])
+			e[t][iPrime] = brsNextE(B, P[t][i], z[t][i], e[t][i], msghash[:], t, iPrime, cnt, w[t][i])
 		}
 		hasher.Write(e[t][0][:])
 	}
@@ -185,7 +183,7 @@ func (brs *BorromeanRingSignature) Validate(msg []byte, B [][]ecmath.Point, P []
 	return ePrime == e0
 }
 
-func (brs *BorromeanRingSignature) Payload(msg []byte, B [][]ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64) [][32]byte {
+func (brs *BorromeanRingSignature) Payload(msg []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64) [][32]byte {
 	// msghash := brsMsgHash(B, P, msg)
 	n := uint64(len(P))
 	m := uint64(len(P[0]))

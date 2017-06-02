@@ -10,9 +10,6 @@ import (
 func TestBorrRingSig(t *testing.T) {
 	msg := []byte("message")
 
-	var B0 ecmath.Point
-	B0.ScMulBase(&ecmath.One)
-
 	pbytes := [][]string{
 		[]string{
 			"4f6d87e9e83dc1dc6868c13fa1ab6af977bcedec0304c5239a87c7c71419da04",
@@ -31,18 +28,16 @@ func TestBorrRingSig(t *testing.T) {
 	n := len(pbytes)
 	m := len(pbytes[0])
 
-	B := make([][]ecmath.Point, n)
+	B := []ecmath.Point{G}
 	p := make([]ecmath.Scalar, n)
 	P := make([][][]ecmath.Point, n)
 	for i := 0; i < n; i++ {
-		B[i] = make([]ecmath.Point, 1)
-		B[i][0] = B0
 		P[i] = make([][]ecmath.Point, m)
 		for j := 0; j < m; j++ {
 			P[i][j] = make([]ecmath.Point, 1)
 			var p2 ecmath.Scalar
 			hex.Decode(p2[:], []byte(pbytes[i][j]))
-			P[i][j][0].ScMul(&B0, &p2)
+			P[i][j][0].ScMul(&G, &p2)
 			if j == 0 {
 				p[i] = p2
 			}

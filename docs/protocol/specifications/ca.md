@@ -432,7 +432,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
-5. `{B[u]}`: `n·M` base [points](#point) to validate the signature.
+5. `{B[u]}`: `M` base [points](#point) to validate the signature.
 6. `{P[i,j,u]}`: `n·m·M` [points](#point) representing public keys.
 7. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
