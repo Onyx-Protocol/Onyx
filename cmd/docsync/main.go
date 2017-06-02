@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,7 +17,8 @@ import (
 )
 
 func main() {
-	localKeys := mustListContents("/Users/jeff/go/src/chain/cmd/docsync/DO_NOT_COMMIT")
+	fmt.Println(os.Args)
+	localKeys := mustListContents(os.Args[2])
 
 	region := "us-east-1"
 	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
@@ -21,7 +26,7 @@ func main() {
 
 	var remoteKeys []string
 	err := svc.ListObjectsPages(&s3.ListObjectsInput{
-		Bucket: aws.String("chain.com"),
+		Bucket: aws.String(os.Args[1]),
 		Prefix: aws.String("docs/"),
 	}, func(page *s3.ListObjectsOutput, lastPage bool) bool {
 		for _, obj := range page.Contents {
@@ -42,11 +47,38 @@ func main() {
 	remoteOnly := setDiff(remoteKeys, prefixedLocalKeys)
 	fmt.Println("keys to delete:", len(remoteOnly)) // TEMP
 
+	for _, k := range prefixedLocalKeys {
+		path := strings.Replace(k, "docs", os.Args[2], 1)
+		fmt.Println(path)
+		body, err := ioutil.ReadFile(path)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		upload := &s3.PutObjectInput{
+			Bucket: aws.String(os.Args[1]),
+			Key:    aws.String(k),
+			Body:   bytes.NewReader(body),
+		}
+
+		if filepath.Ext(path) == "" {
+			upload.SetContentType("text/html")
+		}
+
+		_, err = svc.PutObject(upload)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+	}
+
 	// TODO:
 	// 1. upload localKeys to prefixedLocalKeys, using a default content type of
 	//    text/html for extensionless files.
 	// 2. remove remoteOnly keys
-	// 3. Make local directory and bucket configurable.
+	// ✅ 3. Make local directory and bucket configurable.
 }
 
 func setDiff(a, b []string) []string {
