@@ -11,11 +11,6 @@ export const exportState = (store) => () => {
   const exportable = {
     authn: {
       clientToken: (state.authn || {}).clientToken,
-
-      // TODO: If the dashboard has a way of probing the core for a token
-      // requirement, we won't need to store these anymore.
-      // requireClientToken: (state.core || {}).requireClientToken,
-      // validToken: (state.core || {}).validToken,
     },
     transaction: {
       generated: (state.transaction || {}).generated,
