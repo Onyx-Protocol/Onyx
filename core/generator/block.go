@@ -15,7 +15,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 // errTooFewSigners is returned when a block-signing attempt finds

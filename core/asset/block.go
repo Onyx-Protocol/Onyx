@@ -13,7 +13,7 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 // PinName is used to identify the pin

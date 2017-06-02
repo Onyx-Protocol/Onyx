@@ -4,7 +4,7 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 // MapTx converts a legacy TxData object into its entries-based

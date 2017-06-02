@@ -19,7 +19,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 	"chain/testutil"
 )
 

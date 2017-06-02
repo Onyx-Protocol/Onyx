@@ -19,7 +19,7 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/protocol"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 const maxAccountCache = 1000

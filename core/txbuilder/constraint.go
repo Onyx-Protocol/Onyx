@@ -4,7 +4,7 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 // Constraint types express a constraint on an input of a proposed

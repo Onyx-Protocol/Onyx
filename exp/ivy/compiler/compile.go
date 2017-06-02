@@ -9,7 +9,7 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain/protocol/vm/vmutil"
 )
 
 // ValueInfo describes how a blockchain value is used in a contract
