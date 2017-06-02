@@ -649,7 +649,7 @@ Statement ring       | A collection of `n` statement sets, where at list one mus
                           msg)
 
 2. For each `i=0..n-1`:
-    1. Let `i’ = i+1 mod L`.
+    1. Let `i’ = i+1 mod n`.
     2. For each `k=0..l-1`:
         1. Define `z[i,k]` as `s[i,k]` with the most significant 4 bits set to zero (see note below).
         2. Define `w[i,k]` as a most significant byte of `s[i,k]` with lower 4 bits set to zero: `w[i,k] = s[i,k][31] & 0xf0`.
