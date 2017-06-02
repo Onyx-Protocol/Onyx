@@ -7,7 +7,81 @@ import (
 	"chain/crypto/ed25519/ecmath"
 )
 
-func TestBorrRingSig(t *testing.T) {
+// n=1 ring, m=1 sig, M=1 base point
+func TestBorrRingSig111(t *testing.T) {
+	msg := []byte("message")
+
+	pbytes := [][]string{
+		[]string{
+			"b5ea5caeec9dafa11a337b0e047166c159e10a1f37f2f0e4a1f289f2d6d83736",
+		},
+	}
+
+	n := len(pbytes)
+	m := len(pbytes[0])
+
+	B := []ecmath.Point{G}
+	p := make([]ecmath.Scalar, n)
+	P := make([][][]ecmath.Point, n)
+	for i := 0; i < n; i++ {
+		P[i] = make([][]ecmath.Point, m)
+		for j := 0; j < m; j++ {
+			P[i][j] = make([]ecmath.Point, 1)
+			var p2 ecmath.Scalar
+			hex.Decode(p2[:], []byte(pbytes[i][j]))
+			P[i][j][0].ScMul(&G, &p2)
+			if j == 0 {
+				p[i] = p2
+			}
+		}
+	}
+	j := make([]uint64, n) // n zeroes
+	payload := make([][32]byte, m*n)
+	brs := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
+	if !brs.Validate(msg, B, P) {
+		t.Error("failed to validate borromean ring signature")
+	}
+}
+
+// n=1 ring, m=2 sigs, M=1 base point
+func TestBorrRingSig121(t *testing.T) {
+	msg := []byte("message")
+
+	pbytes := [][]string{
+		[]string{
+			"b5ea5caeec9dafa11a337b0e047166c159e10a1f37f2f0e4a1f289f2d6d83736",
+			"7b0e047166c159e10f2f0e4a16c159e10a1f379f2d6d83736a1f37f2f0e4a1f2",
+		},
+	}
+
+	n := len(pbytes)
+	m := len(pbytes[0])
+
+	B := []ecmath.Point{G}
+	p := make([]ecmath.Scalar, n)
+	P := make([][][]ecmath.Point, n)
+	for i := 0; i < n; i++ {
+		P[i] = make([][]ecmath.Point, m)
+		for j := 0; j < m; j++ {
+			P[i][j] = make([]ecmath.Point, 1)
+			var p2 ecmath.Scalar
+			hex.Decode(p2[:], []byte(pbytes[i][j]))
+			P[i][j][0].ScMul(&G, &p2)
+			if j == 0 {
+				p[i] = p2
+			}
+		}
+	}
+	j := make([]uint64, n) // n zeroes
+	payload := make([][32]byte, m*n)
+	brs := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
+	if !brs.Validate(msg, B, P) {
+		t.Error("failed to validate borromean ring signature")
+	}
+}
+
+// n=1 ring, m=2 sig, M=1 base point
+func TestBorrRingSig321(t *testing.T) {
 	msg := []byte("message")
 
 	pbytes := [][]string{
@@ -43,7 +117,7 @@ func TestBorrRingSig(t *testing.T) {
 			}
 		}
 	}
-	j := make([]uint64, n)
+	j := make([]uint64, n) // n zeroes
 	payload := make([][32]byte, m*n)
 	brs := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
 	if !brs.Validate(msg, B, P) {
