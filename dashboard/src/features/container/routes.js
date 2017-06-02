@@ -11,10 +11,14 @@ export default (store) => ({
   path: '/',
   component: Container,
   onEnter: () => {
+    store.dispatch(getAuthenticationStatus())
     store.dispatch(fetchTestnetInfo())
-    store.dispatch(getAuthenticationStatus()).then(() => {
-      setInterval(() => store.dispatch(fetchCoreInfo()), CORE_POLLING_TIME)
-      setInterval(() => store.dispatch(fetchTestnetInfo()), TESTNET_INFO_POLLING_TIME)
-    })
+
+    setInterval(() => {
+      if (store.getState().authn.authenticationReady) {
+        store.dispatch(fetchCoreInfo())
+      }
+    }, CORE_POLLING_TIME)
+    setInterval(() => store.dispatch(fetchTestnetInfo()), TESTNET_INFO_POLLING_TIME)
   }
 })

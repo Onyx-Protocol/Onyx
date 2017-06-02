@@ -30,20 +30,10 @@ const clientToken = (state = '', action) => {
 }
 
 const authenticationReady = (state = false, action) => {
-  if (action.type == 'AUTHN_LOADED') return true
+  if (action.type == 'AUTHENTICATION_READY') return true
 
   return state
 }
-
-
-// const validToken = (state = false, action) => {
-//   if      (action.type == 'SET_CLIENT_TOKEN') return false
-//   else if (action.type == 'USER_LOG_IN')      return true
-//   else if (action.type == 'ERROR' &&
-//            action.payload.status == 401)      return false
-//
-//   return state
-// }
 
 export default combineReducers({
   connected,
