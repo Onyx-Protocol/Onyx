@@ -26,8 +26,7 @@ type RingSignature struct {
 func CreateRingSignature(msg []byte, B []ecmath.Point, P [][]ecmath.Point, j uint64, p ecmath.Scalar) *RingSignature {
 	// 1. Let counter = 0.
 	// 2. Let the msghash be a hash of the input non-secret data:
-	// msghash = Hash256("RS" || byte(48+M) || B || P[0] || ... ||
-	// P[n-1] || msg).
+	// msghash = Hash256("RS" || byte(48+M) || B || P[0] || ... || P[n-1] || msg).
 	msghash := rsMsgHash(B, P, msg)
 	return createRingSignature(msghash[:], B, P, j, p, 0)
 }
@@ -45,7 +44,7 @@ func createRingSignature(msghash []byte, B []ecmath.Point, P [][]ecmath.Point, j
 		nonce [64]byte
 		mask  [1]byte
 	)
-	stream := streamHash(uint64le(counter), msghash[:], p[:], uint64le(j)) // xxx should this start with some prefix?
+	stream := streamHash(uint64le(counter), msghash, p[:], uint64le(j)) // xxx should this start with some prefix?
 	for i := uint64(0); i < n-1; i++ {
 		stream.Read(r[i][:])
 	}
@@ -122,12 +121,12 @@ func rsMsgHash(B []ecmath.Point, P [][]ecmath.Point, msg []byte) [32]byte {
 	M := len(B)
 
 	hasher := hasher256([]byte("RS"), []byte{byte(48 + M)})
-	for _, b := range B {
-		hasher.Write(b.Bytes())
+	for _, Bi := range B {
+		hasher.Write(Bi.Bytes())
 	}
-	for i := range P { // xxx check this is the right ordering (P[0][0], P[0][1], P[1][0], ...)
-		for u := 0; u < M; u++ {
-			hasher.Write(P[i][u].Bytes())
+	for _, Pi := range P {
+		for _, Pij := range Pi {
+			hasher.Write(Pij.Bytes())
 		}
 	}
 	hasher.Write(msg)

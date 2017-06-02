@@ -4,8 +4,6 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"chain/crypto/ed25519/ecmath"
 )
 
@@ -53,7 +51,6 @@ func TestBorrRingSig(t *testing.T) {
 	j := make([]uint64, n)
 	payload := make([][32]byte, m*n)
 	brs := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
-	t.Log(spew.Sdump(brs))
 	if !brs.Validate(msg, B, P) {
 		t.Error("failed to validate borromean ring signature")
 	}
