@@ -1,6 +1,8 @@
 package ca
 
-import "chain/crypto/ed25519/ecmath"
+import (
+	"chain/crypto/ed25519/ecmath"
+)
 
 type OlegZKP struct {
 	e ecmath.Scalar
@@ -17,7 +19,6 @@ func CreateOlegZKP(msg []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]ecmat
 
 func createOlegZKP(msghash []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]ecmath.Point, iHat, counter uint64) *OlegZKP {
 	n := uint64(len(F))
-	m := uint64(len(F[0]))
 	l := uint64(len(x))
 
 	var (
@@ -57,7 +58,7 @@ func createOlegZKP(msghash []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]e
 	z := make([]ecmath.Scalar, l)
 	for step := uint64(1); step < n; step++ {
 		i := (iHat + step) % n
-		s[i] = make([]ecmath.Scalar, m)
+		s[i] = make([]ecmath.Scalar, l)
 		for k := uint64(0); k < l; k++ {
 			s[i][k] = S[step-1][k]
 			z[k] = s[i][k]
@@ -68,6 +69,7 @@ func createOlegZKP(msghash []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]e
 		e[iPrime] = ozkpNextE(msghash, iPrime, f[i], z, w, &e[i], F[i])
 	}
 
+	s[iHat] = make([]ecmath.Scalar, l)
 	for k := uint64(0); k < l; k++ {
 		z[k].MulAdd(&x[k], &e[iHat], &r[k])
 		if z[k][31]&0xf0 != 0 {
@@ -119,4 +121,24 @@ func ozkpNextE(msghash []byte, i uint64, f []OlegZKPFunc, r []ecmath.Scalar, w [
 		}
 	}
 	return ozkpEHash(msghash, i, R, w)
+}
+
+func (ozkp *OlegZKP) Validate(msg []byte, f [][]OlegZKPFunc, F [][]ecmath.Point) bool {
+	n := uint64(len(F))
+	l := uint64(len(ozkp.s[0]))
+	msghash := ozkpMsgHash(F, l, msg)
+	e := make([]ecmath.Scalar, n+1)
+	e[0] = ozkp.e
+	for i := uint64(0); i < n; i++ {
+		iPrime := (i + 1) % n
+		z := make([]ecmath.Scalar, l)
+		w := make([]byte, l)
+		for k := uint64(0); k < l; k++ {
+			z[k] = ozkp.s[i][k]
+			z[k][31] &= 0x0f
+			w[k] = ozkp.s[i][k][31] & 0xf0
+		}
+		e[i+1] = ozkpNextE(msghash[:], iPrime, f[i], z, w, &e[i], F[i])
+	}
+	return e[0] == e[n]
 }
