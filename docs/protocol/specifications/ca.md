@@ -324,7 +324,8 @@ Ring signature described below supports proving knowledge of multiple discrete l
     2. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     3. For each `u` from 0 to `M-1`:
         1. Calculate point `R[u,i+1] = z[i]·B[u] - e[i]·P[u,i]`.
-    4. Calculate `e[i+1] = ScalarHash("e", R[0,i+1], ..., R[M-1,i+1], msghash, i+1, w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
+    4. Let `i’ = i+1 mod n`.
+    4. Calculate `e[i’] = ScalarHash("e", R[0,i’], ..., R[M-1,i’], msghash, i’, w[i])` where `i’` is encoded as a 64-bit little-endian integer.
 3. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
 Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.

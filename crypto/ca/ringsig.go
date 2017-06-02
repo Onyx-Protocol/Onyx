@@ -112,7 +112,8 @@ func (rs *RingSignature) Validate(msg []byte, B []ecmath.Point, P [][]ecmath.Poi
 		z := rs.s[i]
 		z[31] &= 0x0f
 		w := rs.s[i][31] & 0xf0
-		e[i+1] = rsNextE(msghash[:], i+1, B, z, P[i], e[i], w)
+		iPrime := (i + 1) % n
+		e[i+1] = rsNextE(msghash[:], iPrime, B, z, P[i], e[i], w)
 	}
 	return e[0] == e[n]
 }
