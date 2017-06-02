@@ -581,7 +581,7 @@ Statement ring       | A collection of `n` statement sets, where at list one mus
                                               uint64le(counter),
                                               msghash,
                                               x[0],..., x[l-1],
-                                              uint64le(j)
+                                              uint64le(î)
                                              },
                                              32·(n-1)·l + 64·l + l)
 
