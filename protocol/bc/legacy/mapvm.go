@@ -13,7 +13,7 @@ import (
 func MapTx(oldTx *TxData) *txvm.Tx {
 	tx := new(txvm.Tx)
 
-	argsProgs := make([][]byte, len(oldtx.Inputs))
+	var argsProgs [][]byte
 
 	// OpAnchor:
 	// nonce + program + timerange => anchor + condition
@@ -39,6 +39,10 @@ func MapTx(oldTx *TxData) *txvm.Tx {
 				pushInt64(&tx.Proof, tx.MaxTime)
 				pushBytes(&tx.Proof, prog)
 				tx.Proof = append(tx.Proof, txvm.OpVM1Anchor) // nonce => anchor + cond
+
+				var argsProg []byte
+				argsProg = append(argsProg, txvm.OpSatisfy)
+				argsProgs = append(argsProgs, argsProg)
 			}
 
 			pushID(&tx.Proof, hashData(oldIss.AssetDefinition))
@@ -49,13 +53,6 @@ func MapTx(oldTx *TxData) *txvm.Tx {
 			pushID(&tx.Proof, oldIss.AssetID)
 			tx.Proof = append(tx.Proof, txvm.OpVM1Issue) // anchor => value + cond
 
-			if len(oldIss.Nonce) > 0 {
-				pushInt64(&tx.Proof, 1)
-				pushInt64(&tx.Proof, txvm.StackCond)
-				tx.Proof = append(tx.Proof, txvm.OpRoll)
-				tx.Proof = append(tx.Proof, txvm.OpSatisfy)
-			}
-
 			var argsProg []byte
 			for _, arg := range oldIss.Arguments {
 				pushBytes(&argsProg, arg)
@@ -63,7 +60,7 @@ func MapTx(oldTx *TxData) *txvm.Tx {
 			pushInt64(&argsProg, int64(len(oldIss.Arguments)))
 			argsProg = append(argsProg, txvm.OpList)
 			argsProg = append(argsProg, txvm.OpSatisfy)
-			argsProgs[i] = argsProg
+			argsProgs = append(argsProgs, argsProg)
 		case *SpendInput:
 			// output id
 			prog := &bc.Program{VmVersion: oldSp.VMVersion, Code: oldSp.ControlProgram}
@@ -85,7 +82,7 @@ func MapTx(oldTx *TxData) *txvm.Tx {
 			pushInt64(&argsProg, int64(len(oldSp.Arguments)))
 			argsProg = append(argsProg, txvm.OpList)
 			argsProg = append(argsProg, txvm.OpSatisfy)
-			argsProgs[i] = argsProg
+			argsProgs = append(argsProgs, argsProg)
 
 			// prevout fields
 			pushID(&tx.Proof, oldSp.RefDataHash)
