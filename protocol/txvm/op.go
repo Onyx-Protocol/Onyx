@@ -61,11 +61,6 @@ var ops = [op.NumOp]func(*vm){
 	op.SHA3:          hashOp(sha3.New256).run,
 	op.CheckSig:      opCheckSig,
 	op.CheckMultiSig: opCheckMultiSig,
-
-	op.Input:  opInput,
-	op.Open:   opOpen,
-	op.Seal:   opSeal,
-	op.Output: opOutput,
 }
 
 func opVerify(vm *vm) {
@@ -328,60 +323,6 @@ func opCheckMultiSig(vm *vm) {
 		key = key[1:]
 	}
 	vm.data.Push(data.Bool(len(sig) == 0))
-}
-
-func opInput(vm *vm) {
-	prev := vm.input[len(vm.input)-1]
-	vm.input = vm.input[:len(vm.input)-1]
-
-	ref := makeID(vm.data.PopBytes())
-	asset := makeID(vm.data.PopBytes())
-	n := vm.data.PopInt64()
-	pos := vm.data.PopInt64()
-	prog := vm.data.PopBytes()
-	data := makeID(vm.data.PopBytes())
-	exth := makeID(vm.data.PopBytes())
-
-	cont := &cval{
-		src:  valsrc{ref, aval{asset, n}, pos},
-		prog: prog,
-		data: data,
-		exth: exth,
-	}
-	if entryID(cont) != prev {
-		panic(errors.New("input entryid mismatch"))
-	}
-	vm.contract = append(vm.contract, cont)
-	vm.traceUnlock(Contract{prog, asset, uint64(n)})
-}
-
-func opOpen(vm *vm) {
-	cont := vm.contract[len(vm.contract)-1]
-	vm.contract = vm.contract[:len(vm.contract)-1]
-	exec(vm, cont.prog)
-	av := makeValue(cont.src.aval.asset, cont.src.aval.n)
-	vm.value = append(vm.value, av)
-}
-
-func opSeal(vm *vm) {
-	//av := vm.value[len(vm.value)-1]
-	vm.value = vm.value[:len(vm.value)-1]
-
-	prog := vm.data.PopBytes()
-
-	cont := &cval{
-		//src:  valsrc{ID{}, aval{av.asset, av.n}, 0},
-		src:  valsrc{ID{}, aval{}, 0},
-		prog: prog,
-	}
-	vm.contract = append(vm.contract, cont)
-}
-
-func opOutput(vm *vm) {
-	cont := vm.contract[len(vm.contract)-1]
-	vm.contract = vm.contract[:len(vm.contract)-1]
-	vm.output = append(vm.output, entryID(cont))
-	vm.traceLock(Contract{cont.prog, cont.src.aval.asset, uint64(cont.src.aval.n)})
 }
 
 func opVarint(vm *vm) {

@@ -22,14 +22,14 @@ import (
 // to facilitate those things.
 // A notable example is computing the txid.
 type Tx struct {
-	Version     int64
-	Tmin, Tmax  int64
-	Runlimit    int64
-	In, Nonce   []ID
-	Out, Retire []ID
-	Data        ID
-	ExtHash     ID
-	Proof       []byte
+	Version          int64
+	MinTime, MaxTime uint64
+	Runlimit         int64
+	In, Nonce        []ID
+	Out, Retire      []ID
+	Data             ID
+	ExtHash          ID
+	Proof            []byte
 }
 
 type vm struct {
