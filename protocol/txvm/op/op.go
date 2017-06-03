@@ -42,8 +42,8 @@ const (
 	Max    = 31
 
 	// string
-	Cat    = 32
-	Substr = 33
+	Cat   = 32
+	Slice = 33
 
 	// bitwise (int64 or string)
 	BitNot = 34
