@@ -6,8 +6,9 @@ import (
 	"errors"
 	"hash"
 
-	"github.com/chain/txvm/data"
-	"github.com/chain/txvm/op"
+	"chain/protocol/txvm/data"
+	"chain/protocol/txvm/op"
+
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"

@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/chain/txvm/data"
-	"github.com/chain/txvm/op"
+	"chain/protocol/txvm/data"
+	"chain/protocol/txvm/op"
 
 	"chain/errors"
 )

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/chain/txvm/op"
+	"chain/protocol/txvm/op"
 )
 
 var asmValid = []struct {
