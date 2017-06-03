@@ -49,7 +49,7 @@ var ops = [op.NumOp]func(*vm){
 	op.Equal: opEqual,
 
 	op.Cat:    opCat,
-	op.Substr: opSubstr,
+	op.Slice:  opSlice,
 	op.Len:    opLen,
 	op.BitNot: opBitNot,
 	op.BitAnd: bitBinOp(func(x, y int64) int64 { return x & y }).run,
@@ -219,7 +219,7 @@ func opCat(vm *vm) {
 	vm.data.PushBytes(b)
 }
 
-func opSubstr(vm *vm) {
+func opSlice(vm *vm) {
 	b := vm.data.PopInt64()
 	a := vm.data.PopInt64()
 	s := vm.data.PopBytes()
