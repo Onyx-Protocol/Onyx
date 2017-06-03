@@ -51,15 +51,13 @@ const (
 	BitOr  = 36
 	BitXor = 37
 
-	// 38 - 41
-
 	// crypto
-	SHA256        = 42
-	SHA3          = 43
-	CheckSig      = 44
-	CheckMultiSig = 45
+	SHA256        = 38
+	SHA3          = 39
+	CheckSig      = 40
+	CheckMultiSig = 41
 
-	// 46
+	// 42 - 46
 
 	// entries
 	Cond         = 47 // prog => cond
