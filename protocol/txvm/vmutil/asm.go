@@ -9,7 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/chain/txvm/op"
+	"chain/protocol/txvm/op"
 )
 
 const (

@@ -1,6 +1,6 @@
 package txvm
 
-import "github.com/chain/txvm/data"
+import "chain/protocol/txvm/data"
 
 type Option func(*vm)
 
