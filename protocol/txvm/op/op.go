@@ -92,13 +92,16 @@ const (
 	VM1Withdraw       = 67 // vm1mux + amount asset => vm1mux + value
 	VM1CheckPredicate = 68 // list vm1prog => bool
 
-	// 69 - 73
-
 	// extensions
-	Nop0    = 74
-	Nop1    = 75
-	Nop2    = 76
-	Nop3    = 77
+	Nop0    = 69
+	Nop1    = 70
+	Nop2    = 71
+	Nop3    = 72
+	Nop4    = 73
+	Nop5    = 74
+	Nop6    = 75
+	Nop7    = 76
+	Nop8    = 77
 	Private = 78
 
 	NumOp = 79
