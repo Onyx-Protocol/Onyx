@@ -6,8 +6,6 @@ import (
 
 	"chain/protocol/txvm/data"
 	"chain/protocol/txvm/op"
-
-	"chain/errors"
 )
 
 // Tx contains the full transaction data.
@@ -58,7 +56,12 @@ type vm struct {
 	retire []ID
 }
 
-func Validate(x *Tx, o ...Option) (err error) {
+// Validate returns whether x is valid.
+//
+// To get detailed information about a Tx,
+// such as determining why an invalid Tx is invalid,
+// use Option funcs to trace execution.
+func Validate(x *Tx, o ...Option) bool {
 	vm := &vm{
 		input:       x.In,
 		traceUnlock: func(Contract) {},
@@ -68,29 +71,19 @@ func Validate(x *Tx, o ...Option) (err error) {
 		o(vm)
 	}
 
-	defer func() {
-		if x := recover(); x != nil {
-			err = errors.Wrap(&ExecError{vm.pc, vm.prog, x.(error)})
-		}
-	}()
+	defer func() { recover() }()
 
 	exec(vm, x.Proof)
 
-	switch {
-	case len(vm.input) > 0:
-		return errors.New("unused inputs")
-	case len(vm.value) > 0:
-		return errors.New("unused values")
-	case len(vm.pred) > 0:
-		return errors.New("unused predicates")
-	case len(vm.contract) > 0:
-		return errors.New("unused contracts")
-	case !idsEqual(vm.output, x.Out):
-		return errors.New("output mismatch")
-	case !idsEqual(vm.nonce, x.Nonce):
-		return errors.New("nonce mismatch")
-	}
-	return nil
+	// TODO(kr): call some tracing hook here
+	// to signal end of execution.
+
+	return len(vm.input) == 0 &&
+		len(vm.value) == 0 &&
+		len(vm.pred) == 0 &&
+		len(vm.contract) == 0 &&
+		idsEqual(vm.output, x.Out) &&
+		idsEqual(vm.nonce, x.Nonce)
 }
 
 func exec(vm *vm, prog []byte) {
