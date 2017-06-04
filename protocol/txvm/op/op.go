@@ -3,65 +3,64 @@ package op
 const (
 	// control flow
 	Fail = 0
-	// 1
-	PC     = 2
-	Exec   = 3
-	Jump   = 4
-	JumpIf = 5
+	PC     = 1
+	Exec   = 2
+	Jump   = 3
+	JumpIf = 4
 
 	// stack
-	Roll    = 6 // any stack
-	Bury    = 7 // any stack
-	Depth   = 8 // any stack
-	Drop    = 9
-	Dup     = 10
-	ToAlt   = 11
-	FromAlt = 12
+	Roll    = 5 // any stack
+	Bury    = 6 // any stack
+	Depth   = 7 // any stack
+	Drop    = 8
+	Dup     = 9
+	ToAlt   = 10
+	FromAlt = 11
 
 	// data
-	List   = 13
-	Cons   = 14
-	Uncons = 15
-	Len    = 16 // list or string
-	Varint = 17
-	Encode = 18
+	List   = 12
+	Cons   = 13
+	Uncons = 14
+	Len    = 15 // list or string
+	Varint = 16
+	Encode = 17
 
 	// boolean
-	Equal = 19
-	Not   = 20
-	And   = 21
-	Or    = 22
-	GT    = 23
-	GE    = 24
+	Equal = 18
+	Not   = 19
+	And   = 20
+	Or    = 21
+	GT    = 22
+	GE    = 23
 
 	// math
-	Abs    = 25
-	Add    = 26
-	Mul    = 27
-	Div    = 28
-	Mod    = 29
-	Lshift = 30
-	Rshift = 31
-	Min    = 32
-	Max    = 33
+	Abs    = 24
+	Add    = 25
+	Mul    = 26
+	Div    = 27
+	Mod    = 28
+	Lshift = 29
+	Rshift = 30
+	Min    = 31
+	Max    = 32
 
 	// string
-	Cat   = 34
-	Slice = 35
+	Cat   = 33
+	Slice = 34
 
 	// bitwise (int64 or string)
-	BitNot = 36
-	BitAnd = 37
-	BitOr  = 38
-	BitXor = 39
+	BitNot = 35
+	BitAnd = 36
+	BitOr  = 37
+	BitXor = 38
 
 	// crypto
-	SHA256        = 40
-	SHA3          = 41
-	CheckSig      = 42
-	CheckMultiSig = 43
+	SHA256        = 39
+	SHA3          = 40
+	CheckSig      = 41
+	CheckMultiSig = 42
 
-	// 44 - 46
+	// 43 - 46
 
 	// entries
 	Cond         = 47 // prog => cond
