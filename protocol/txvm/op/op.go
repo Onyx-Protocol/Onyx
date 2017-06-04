@@ -85,12 +85,12 @@ const (
 	Value = 62 // TODO(kr): name for this? "AssetAmount"?
 
 	// compatbility
-	VM1Nonce          = 63 // vm1nonce => vm1anchor + cond
-	VM1Issue          = 64 // vm1anchor => vm1value + cond
-	VM1Unlock         = 65 // vm1inputid + data => vm1value + cond
-	VM1Mux            = 66 // entire vm1value stack => vm1mux
-	VM1Withdraw       = 67 // vm1mux + amount asset => vm1mux + value
-	VM1CheckPredicate = 68 // list vm1prog => bool
+	VM1CheckPredicate = 63 // list vm1prog => bool
+	VM1Unlock         = 64 // vm1inputid + data => vm1value + cond
+	VM1Nonce          = 65 // vm1nonce => vm1anchor + cond
+	VM1Issue          = 66 // vm1anchor => vm1value + cond
+	VM1Mux            = 67 // entire vm1value stack => vm1mux
+	VM1Withdraw       = 68 // vm1mux + amount asset => vm1mux + value
 
 	// extensions
 	Nop0    = 69
