@@ -80,7 +80,9 @@ const (
 	IssueCA      = 59 // TODO(kr): review for CA
 	Retire       = 60 // valud + refdata => {}
 
-	// 61 - 62
+	// item data
+	ID    = 61
+	Value = 62 // TODO(kr): name for this? "AssetAmount"?
 
 	// compatbility
 	VM1Nonce          = 63 // vm1nonce => vm1anchor + cond
