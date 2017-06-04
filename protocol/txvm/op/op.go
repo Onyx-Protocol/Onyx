@@ -109,7 +109,7 @@ const (
 	// Small ints.
 	// For MinInt <= BaseInt+n < BaseData
 	// (so -1 <= n < 15),
-	// BaseInt+n pushes n.
+	// opcode BaseInt+n pushes n.
 	MinInt  = 79
 	BaseInt = 80
 
