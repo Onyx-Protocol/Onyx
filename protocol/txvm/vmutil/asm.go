@@ -30,7 +30,8 @@ var mnemonic = map[string]byte{
 }
 
 var composite = map[string]string{
-	"bool": "not not",
+	"bool":   "not not",
+	"verify": "pc 4 add jumpif fail",
 }
 
 // Notation:
