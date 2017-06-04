@@ -2,7 +2,7 @@ package op
 
 const (
 	// control flow
-	Fail = 0
+	Fail   = 0
 	PC     = 1
 	Exec   = 2
 	Jump   = 3
