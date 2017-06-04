@@ -59,8 +59,11 @@ const (
 	SHA3          = 40
 	CheckSig      = 41
 	CheckMultiSig = 42
+	PointAdd      = 43 // TODO(kr): review for CA
+	PointSub      = 44 // TODO(kr): review for CA
+	PointMul      = 45 // TODO(kr): review for CA
 
-	// 43 - 46
+	// 46
 
 	// entries
 	Cond         = 47 // prog => cond
@@ -89,7 +92,14 @@ const (
 	Nop2    = 66
 	Nop3    = 67
 
-	// 67 - 78
+	// CA-specific entries
+	ProveRange = 68 // TODO(kr): review for CA
+	ProveValue = 69 // TODO(kr): review for CA
+	ProveAsset = 70 // TODO(kr): review for CA
+	Blind      = 71 // TODO(kr): review for CA
+	IssueCA    = 72 // TODO(kr): review for CA
+
+	// 73 - 78
 
 	NumOp = MinInt
 
