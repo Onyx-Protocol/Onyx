@@ -63,51 +63,49 @@ const (
 	PointSub      = 44 // TODO(kr): review for CA
 	PointMul      = 45 // TODO(kr): review for CA
 
-	// 46
-
 	// entries
-	Cond         = 47 // prog => cond
-	Unlock       = 48 // inputid + data => value + cond
-	UnlockOutput = 49 // outputid + data => value + cond
-	Merge        = 50 // value value => value
-	Split        = 51 // value + amount => value value
-	Lock         = 52 // value + prog => outputid
-	Satisfy      = 53 // cond => {}
-	Anchor       = 54 // nonce + data => anchor + cond
-	Issue        = 55 // anchor + data => value + cond
-	Retire       = 56 // valud + refdata => {}
+	Cond         = 46 // prog => cond
+	Unlock       = 47 // inputid + data => value + cond
+	UnlockOutput = 48 // outputid + data => value + cond
+	Merge        = 49 // value value => value
+	Split        = 50 // value + amount => value value
+	ProveRange   = 51 // TODO(kr): review for CA
+	ProveValue   = 52 // TODO(kr): review for CA
+	ProveAsset   = 53 // TODO(kr): review for CA
+	Blind        = 54 // TODO(kr): review for CA
+	Lock         = 55 // value + prog => outputid
+	Satisfy      = 56 // cond => {}
+	Anchor       = 57 // nonce + data => anchor + cond
+	Issue        = 58 // anchor + data => value + cond
+	IssueCA      = 59 // TODO(kr): review for CA
+	Retire       = 60 // valud + refdata => {}
+
+	// 61 - 62
 
 	// compatbility
-	VM1Nonce          = 57 // vm1nonce => vm1anchor + cond
-	VM1Issue          = 58 // vm1anchor => vm1value + cond
-	VM1Unlock         = 60 // vm1inputid + data => vm1value + cond
-	VM1Mux            = 59 // entire vm1value stack => vm1mux
-	VM1Withdraw       = 61 // vm1mux + amount asset => vm1mux + value
-	VM1CheckPredicate = 62 // list vm1prog => bool
+	VM1Nonce          = 63 // vm1nonce => vm1anchor + cond
+	VM1Issue          = 64 // vm1anchor => vm1value + cond
+	VM1Unlock         = 65 // vm1inputid + data => vm1value + cond
+	VM1Mux            = 66 // entire vm1value stack => vm1mux
+	VM1Withdraw       = 67 // vm1mux + amount asset => vm1mux + value
+	VM1CheckPredicate = 68 // list vm1prog => bool
+
+	// 69 - 73
 
 	// extensions
-	Private = 63
-	Nop0    = 64
-	Nop1    = 65
-	Nop2    = 66
-	Nop3    = 67
+	Nop0    = 74
+	Nop1    = 75
+	Nop2    = 76
+	Nop3    = 77
+	Private = 78
 
-	// CA-specific entries
-	ProveRange = 68 // TODO(kr): review for CA
-	ProveValue = 69 // TODO(kr): review for CA
-	ProveAsset = 70 // TODO(kr): review for CA
-	Blind      = 71 // TODO(kr): review for CA
-	IssueCA    = 72 // TODO(kr): review for CA
-
-	// 73 - 78
-
-	NumOp = MinInt
+	NumOp = 79
 
 	// Small ints.
 	// For MinInt <= BaseInt+n < BaseData
 	// (so -1 <= n < 15),
 	// BaseInt+n pushes n.
-	MinInt  = BaseInt - 1
+	MinInt  = 79
 	BaseInt = 80
 
 	BaseData = 95 // data len in [0, 32] has 1-byte len prefix
