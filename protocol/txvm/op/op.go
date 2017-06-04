@@ -105,10 +105,10 @@ const (
 
 	// Small ints.
 	// For MinInt <= BaseInt+n < BaseData
-	// (so -1 <= n < 16),
+	// (so -1 <= n < 15),
 	// BaseInt+n pushes n.
 	MinInt  = BaseInt - 1
 	BaseInt = 80
 
-	BaseData = 96
+	BaseData = 95 // data len in [0, 32] has 1-byte len prefix
 )
