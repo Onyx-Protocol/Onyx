@@ -1,5 +1,5 @@
-import Container from 'features/container/components/Container'
-import prepareApplication from 'features/container/prepareApplication'
+import Bootstrap from 'features/bootstrap/components/Bootstrap'
+import prepareApplication from 'features/bootstrap/prepareApplication'
 import { routes as authn } from 'features/authn'
 import { routes as configuration } from 'features/configuration'
 import appRoutes from 'features/app/appRoutes'
@@ -7,7 +7,7 @@ import appRoutes from 'features/app/appRoutes'
 const makeRoutes = (store) => {
   return({
     path: '/',
-    component: Container,
+    component: Bootstrap,
     onEnter: prepareApplication(store),
     childRoutes: [
       authn(store),

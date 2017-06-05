@@ -1,7 +1,7 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import Loading from './Loading/Loading'
-import { showLogin, showConfiguration, showRoot } from 'features/container/actions'
+import { showLogin, showConfiguration, showRoot } from 'features/bootstrap/actions'
 
 // Dashboard breaks if this isn't included at this level.
 // TODO: investigate `actions` for circular dependencies?
