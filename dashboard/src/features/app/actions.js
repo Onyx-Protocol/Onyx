@@ -1,6 +1,4 @@
 const actions = {
-  dismissFlash: (param) => ({type: 'DISMISS_FLASH', param}),
-  displayedFlash: (param) => ({type: 'DISPLAYED_FLASH', param}),
   showModal: (body, accept, cancel, options = {}) => ({type: 'SHOW_MODAL', payload: { body, accept, cancel, options }}),
   hideModal: { type: 'HIDE_MODAL' },
   toggleDropdown: { type: 'TOGGLE_DROPDOWN' },

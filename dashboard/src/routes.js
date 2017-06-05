@@ -1,7 +1,7 @@
 import Bootstrap from 'features/bootstrap/components/Bootstrap'
 import prepareApplication from 'features/bootstrap/prepareApplication'
-import { routes as authn } from 'features/authn'
-import { routes as configuration } from 'features/configuration'
+import authnRoutes from 'features/authn/routes'
+import configurationRoutes from 'features/configuration/routes'
 import appRoutes from 'features/app/appRoutes'
 
 const makeRoutes = (store) => {
@@ -10,8 +10,8 @@ const makeRoutes = (store) => {
     component: Bootstrap,
     onEnter: prepareApplication(store),
     childRoutes: [
-      authn(store),
-      configuration,
+      authnRoutes(store),
+      configurationRoutes,
       appRoutes(store),
     ]
   })

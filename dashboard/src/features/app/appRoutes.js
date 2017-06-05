@@ -1,13 +1,13 @@
-import accessControl from 'features/accessControl/routes'
-import { routes as accounts } from 'features/accounts'
-import { routes as assets } from 'features/assets'
-import { routes as balances } from 'features/balances'
-import { routes as core } from 'features/core'
-import { routes as transactions } from 'features/transactions'
-import { routes as transactionFeeds } from 'features/transactionFeeds'
-import { routes as unspents } from 'features/unspents'
-import { routes as mockhsm } from 'features/mockhsm'
-import { NotFound } from 'features/shared/components'
+import accessControlRoutes from 'features/accessControl/routes'
+import accountRoutes from 'features/accounts/routes'
+import assetRoutes from 'features/assets/routes'
+import balanceRoutes from 'features/balances/routes'
+import coreRoutes from 'features/core/routes'
+import transactionRoutes from 'features/transactions/routes'
+import transactionFeedRoutes from 'features/transactionFeeds/routes'
+import unspentRoutes from 'features/unspents/routes'
+import mockhsmRoutes from 'features/mockhsm/routes'
+import NotFound from 'features/shared/components/NotFound'
 
 import Layout from './components/Layout/Layout'
 
@@ -15,15 +15,15 @@ export default (store) => ({
   useForBreadcrumbs: true, // key for app functions inspecting routes
   component: Layout,
   childRoutes: [
-    transactions(store),
-    accessControl(store),
-    accounts(store),
-    assets(store),
-    balances(store),
-    core,
-    transactionFeeds(store),
-    unspents(store),
-    mockhsm(store),
+    transactionRoutes(store),
+    accessControlRoutes(store),
+    accountRoutes(store),
+    assetRoutes(store),
+    balanceRoutes(store),
+    coreRoutes,
+    transactionFeedRoutes(store),
+    unspentRoutes(store),
+    mockhsmRoutes(store),
     {
       path: '*',
       component: NotFound

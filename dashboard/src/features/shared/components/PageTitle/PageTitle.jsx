@@ -4,7 +4,6 @@ import { Flash } from 'features/shared/components'
 import { Link } from 'react-router'
 import { humanize, capitalize } from 'utility/string'
 import makeRoutes from 'routes'
-import actions from 'actions'
 import styles from './PageTitle.scss'
 import componentClassNames from 'utility/componentClassNames'
 
@@ -47,11 +46,11 @@ class PageTitle extends React.Component {
 }
 
 const mapStateToProps = (state) => {
-  const routes = makeRoutes().childRoutes.find(route => route.useForBreadcrumbs)
+  const breadcrumbRoot = makeRoutes().childRoutes.find(route => route.useForBreadcrumbs)
   const pathname = state.routing.locationBeforeTransitions.pathname
   const breadcrumbs = []
 
-  let currentRoutes = routes.childRoutes
+  let currentRoutes = breadcrumbRoot.childRoutes
   let currentPath = []
   pathname.split('/').forEach(component => {
     let match = currentRoutes.find(route => {
@@ -82,7 +81,7 @@ const mapStateToProps = (state) => {
 export default connect(
   mapStateToProps,
   (dispatch) => ({
-    markFlashDisplayed: (key) => dispatch(actions.app.displayedFlash(key)),
-    dismissFlash: (key) => dispatch(actions.app.dismissFlash(key)),
+    markFlashDisplayed: (key) => dispatch({type: 'DISPLAYED_FLASH', param: key}),
+    dismissFlash: (key) => dispatch({type: 'DISMISS_FLASH', param: key}),
   })
 )(PageTitle)
