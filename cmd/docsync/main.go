@@ -56,8 +56,7 @@ func main() {
 		path := strings.Replace(k, "docs", os.Args[2], 1)
 		body, err = ioutil.ReadFile(path)
 		if err != nil {
-			fmt.Println(err.Error())
-			return
+			log.Fatalln(err.Error())
 		}
 
 		upload := &s3.PutObjectInput{
@@ -80,8 +79,7 @@ func main() {
 		_, err = svc.PutObject(upload)
 
 		if err != nil {
-			fmt.Println(err.Error())
-			return
+			log.Fatalln(err.Error())
 		}
 	}
 
@@ -96,8 +94,7 @@ func main() {
 		_, err = svc.DeleteObject(remove)
 
 		if err != nil {
-			fmt.Println(err.Error())
-			return
+			log.Fatalln(err.Error())
 		}
 	}
 }
