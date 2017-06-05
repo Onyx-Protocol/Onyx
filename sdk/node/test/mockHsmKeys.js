@@ -18,7 +18,7 @@ describe('MockHSM key', () => {
   })
 
   it('rejects key creation due to duplicate alias', () => {
-    return client.mockHsm.keys.create({ alias: `key-${uuid.v4()}`})
+    return client.mockHsm.keys.create({ alias: `key-${uuid.v4()}` })
       .then((resp) => {
         return expect(client.mockHsm.keys.create({ alias: resp.alias })).to.be.rejectedWith('CH050')
       })
@@ -26,7 +26,7 @@ describe('MockHSM key', () => {
 
   it('returns key in list after key creation', () => {
     let keyAlias
-    return client.mockHsm.keys.create({ alias: `key-${uuid.v4()}`})
+    return client.mockHsm.keys.create({ alias: `key-${uuid.v4()}` })
       .then((key) => {
         keyAlias = key.alias
         return client.mockHsm.keys.query({})
