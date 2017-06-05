@@ -2,7 +2,6 @@ package txvm
 
 import (
 	"encoding/binary"
-	"fmt"
 
 	"chain/protocol/txvm/data"
 	"chain/protocol/txvm/op"
@@ -124,14 +123,4 @@ func idsEqual(a, b []ID) bool {
 		}
 	}
 	return true
-}
-
-type ExecError struct {
-	PC   int
-	Prog []byte
-	Err  error
-}
-
-func (e ExecError) Error() string {
-	return fmt.Sprintf("pc 0x%x: %s", e.PC, e.Err)
 }
