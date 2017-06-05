@@ -1,3 +1,14 @@
+// Command docsync uploads a local directory to a specified
+// S3 bucket
+//
+// Usage:
+//
+//     docsync bucket bucketPrefix localDir
+//
+// where bucket is the name of your S3 bucket, bucketPrefix is the
+// S3 prefix to be applied to all uploaded files, and localDir is a
+// directory containing compiled docs (from docgenerate) or other
+// files to upload.
 package main
 
 import (
@@ -18,7 +29,11 @@ import (
 )
 
 func main() {
-	localKeys := mustListContents(os.Args[2])
+	bucket := os.Args[1]
+	bucketPrefix := os.Args[2]
+	localDir := os.Args[3]
+
+	localKeys := mustListContents(localDir)
 
 	region := "us-east-1"
 	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
@@ -26,8 +41,8 @@ func main() {
 
 	var remoteKeys []string
 	err := svc.ListObjectsPages(&s3.ListObjectsInput{
-		Bucket: aws.String(os.Args[1]),
-		Prefix: aws.String("docs/"),
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(bucketPrefix),
 	}, func(page *s3.ListObjectsOutput, lastPage bool) bool {
 		for _, obj := range page.Contents {
 			if !(*obj.Key == "docs/") {
@@ -53,14 +68,14 @@ func main() {
 	for _, k := range prefixedLocalKeys {
 		var body []byte
 
-		path := strings.Replace(k, "docs", os.Args[2], 1)
+		path := strings.Replace(k, "docs", localDir, 1)
 		body, err = ioutil.ReadFile(path)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 
 		upload := &s3.PutObjectInput{
-			Bucket: aws.String(os.Args[1]),
+			Bucket: aws.String(bucket),
 			Key:    aws.String(k),
 			Body:   bytes.NewReader(body),
 		}
@@ -85,7 +100,7 @@ func main() {
 
 	for _, k := range remoteOnly {
 		remove := &s3.DeleteObjectInput{
-			Bucket: aws.String(os.Args[1]),
+			Bucket: aws.String(bucket),
 			Key:    aws.String(k),
 		}
 

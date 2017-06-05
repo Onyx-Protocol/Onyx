@@ -8,6 +8,7 @@ then
 fi
 
 bucket_url=s3://$bucket
+bucket_prefix="docs/"
 
 generate_dest_path=`mktemp -d`
 trap "echo 'Error generating docs, cleaning up temp files...'; rm -rf $generate_dest_path" ERR
@@ -23,4 +24,4 @@ docgenerate $sourcePath $generate_dest_path
 
 echo
 echo "Uploading docs...."
-docsync $bucket $generate_dest_path
+docsync $bucket $bucket_prefix $generate_dest_path
