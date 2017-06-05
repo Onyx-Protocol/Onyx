@@ -56,19 +56,10 @@ func main() {
 		log.Fatalln("s3 list objects error:", err)
 	}
 
-	var prefixedLocalKeys []string
 	for _, k := range localKeys {
-		prefixedLocalKeys = append(prefixedLocalKeys, path.Join("docs", k))
-	}
-	fmt.Println("keys to upload:", len(prefixedLocalKeys)) // TEMP
-
-	remoteOnly := setDiff(remoteKeys, prefixedLocalKeys)
-	fmt.Println("keys to delete:", len(remoteOnly)) // TEMP
-
-	for _, k := range prefixedLocalKeys {
 		var body []byte
 
-		path := strings.Replace(k, "docs", localDir, 1)
+		path := fmt.Sprintf("%s/%s", localDir, k)
 		body, err = ioutil.ReadFile(path)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -76,7 +67,7 @@ func main() {
 
 		upload := &s3.PutObjectInput{
 			Bucket: aws.String(bucket),
-			Key:    aws.String(k),
+			Key:    aws.String(bucketPrefix + k),
 			Body:   bytes.NewReader(body),
 		}
 
@@ -89,8 +80,6 @@ func main() {
 			upload.SetContentType(contentType)
 		}
 
-		fmt.Println("uploading ", k, " with type ", contentType)
-
 		_, err = svc.PutObject(upload)
 
 		if err != nil {
@@ -98,13 +87,17 @@ func main() {
 		}
 	}
 
+	var prefixedLocalKeys []string
+	for _, k := range localKeys {
+		prefixedLocalKeys = append(prefixedLocalKeys, path.Join("docs", k))
+	}
+
+	remoteOnly := setDiff(remoteKeys, prefixedLocalKeys)
 	for _, k := range remoteOnly {
 		remove := &s3.DeleteObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(k),
 		}
-
-		fmt.Println("deleting ", k)
 
 		_, err = svc.DeleteObject(remove)
 
