@@ -124,17 +124,12 @@ func setDiff(a, b []string) []string {
 		if a[i] < b[j] {
 			diff = append(diff, a[i])
 			i++
-			continue
-		}
-
-		if b[j] < a[i] {
+		} else if b[j] < a[i] {
 			j++
-			continue
+		} else { // a[i] == b[j]
+			i++
+			j++
 		}
-
-		// invariant: a[i] == b[j]
-		i++
-		j++
 	}
 
 	return diff
