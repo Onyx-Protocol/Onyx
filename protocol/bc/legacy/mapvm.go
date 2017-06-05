@@ -21,7 +21,7 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 
 	// OpAnchor:
 	// nonce + program + timerange => anchor + condition
-	for i, oldinp := range oldTx.Inputs {
+	for _, oldinp := range oldTx.Inputs {
 		switch ti := oldinp.TypedInput.(type) {
 		case *IssuanceInput:
 			oldIss := ti
