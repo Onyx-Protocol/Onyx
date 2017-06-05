@@ -7,7 +7,7 @@ import useScroll from 'react-router-scroll/lib/useScroll'
 
 import makeRoutes from './routes'
 
-export default class Root extends React.Component {
+export default class Dashboard extends React.Component {
   componentWillMount() {
     document.title = 'Chain Core Dashboard'
   }
