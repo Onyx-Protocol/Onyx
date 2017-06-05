@@ -82,7 +82,7 @@ const (
 
 	// item data
 	ID    = 61
-	Value = 62 // TODO(kr): name for this? "AssetAmount"?
+	Field = 62
 
 	// compatbility
 	VM1CheckPredicate = 63 // list vm1prog => bool
