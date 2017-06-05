@@ -111,7 +111,7 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 	tx.Proof = append(tx.Proof, op.VM1Mux)
 
 	// loop in reverse so that output 0 is at the top
-	for i := len(oldTx.Outputs) - 1; i >= 0; i++ {
+	for i := len(oldTx.Outputs) - 1; i >= 0; i-- {
 		oldout := oldTx.Outputs[i]
 		pushInt64(&tx.Proof, int64(oldout.Amount))
 		pushID(&tx.Proof, oldout.AssetId.Byte32())
@@ -125,7 +125,7 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 		}
 	}
 
-	for i := len(argsProgs) - 1; i >= 0; i++ {
+	for i := len(argsProgs) - 1; i >= 0; i-- {
 		tx.Proof = append(tx.Proof, argsProgs[i]...)
 	}
 
