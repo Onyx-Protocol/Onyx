@@ -37,10 +37,12 @@
       <Directory Id="ProgramMenuFolder">
       </Directory>
 
-      <Directory Id="LOCALAPPDATA" Name="LocalDataDir">
-        <Component Id="CleanupDataDir" Guid="bc306bbe-8b53-413d-9ce0-59baf07e06b7" KeyPath="yes">
-          <util:RemoveFolderEx On="uninstall" Property="INSTALLFOLDER" />
-        </Component>
+      <Directory Id="LOCALAPPDATA">
+        <Directory Id="LocalDataDir" Name="LocalDataDir">
+          <Component Id="CleanupDataDir" Guid="bc306bbe-8b53-413d-9ce0-59baf07e06b7" KeyPath="yes">
+            <util:RemoveFolderEx On="uninstall" Property="" />
+          </Component>
+        </Directory>
       </Directory>
     </Directory>
 
