@@ -2,10 +2,10 @@
 
 * [Introduction](#introduction)
 * [Overview](#overview)
+  * [Upgrading to confidential assets](#upgrading-to-confidential-assets)
   * [Single-party transaction](#single-party-transaction)
   * [Multi-party transaction](#multi-party-transaction)
   * [Confidential issuance](#confidential-issuance)
-  * [Upgrading to confidential assets](#upgrading-to-confidential-assets)
   * [Creating disclosure](#creating-disclosure)
 * [Data structures](#data-structures)
 * [Annotations](#annotations)
@@ -57,6 +57,17 @@ Addressed problems:
         1. URL of this Core for streaming individual disclosures.
     6. Disclosure is encrypted directly to the other core's public key, so it's safe to carry around.
         1. Core's pubkey is blinded using ChainKD to prevent linkability to the same Core by counter-parties.
+
+
+### Upgrading to confidential assets
+
+All assets are encrypted by default. Application can opt out of encryption of asset IDs, amounts or reference data per output (e.g. to satisfy a contract that introspects these values).
+
+Change outputs for accounts are always encrypted.
+
+Existing unencrypted unspent outputs are spent first and upgraded to confidential assets automatically (using a combination of `Retirement` and `Upgrade` entries inserted by Chain Core automatically).
+
+New receivers introduce versioning and use version 2 with relevant encryption keys.
 
 
 ### Single-party transaction
@@ -172,7 +183,7 @@ To create a set of issuance candidates, Alice uses optional `issuance_choices` f
 She can refer to imported or her own assets by `asset_alias` or `asset_id`.
 
     tx = client.transactions.build do |b|
-      b.issue asset_alias: 'AliceIOU', amount: 10, confidential: {asset_id: true, amount: true}, issuance_choices: [ # optional override to Core's default behaviour to e.g. include all imported and local asset types
+      b.issue asset_alias: 'AliceIOU', amount: 10, issuance_choices: [ # optional override to Core's default behaviour to e.g. include all imported and local asset types
         {asset_alias: 'AliceIOU2'},
         {asset_alias: 'BobIOU'},
         {asset_id:    'CarlIOU'}
@@ -183,18 +194,6 @@ She can refer to imported or her own assets by `asset_alias` or `asset_id`.
 TBD: to create `confidential_issuance_spec` we need to generate an issuance key, and to support multisig we need to set up a threshold key (ChainTS).
 For now we'll only support either non-confidential issuance, or same-issuer assets with transient issuance keys (generated randomly per-issuance).
 
-
-### Upgrading to confidential assets
-
-All assets are being encrypted by default. Existing unspent outputs are spent first and upgraded to confidential assets automatically using a combination of `Retirement` and `Upgrade` entries inserted by Chain Core automatically in case spending is done to the outputs with version 2 (confidential).
-
-Legacy receivers are detected by using `output_version` which defaults to 1.
-
-If the receiver specifies `output_version=1` (or that field is missing), existing unspent output with version 1 is not upgraded: the change is set to another output 1 (non-confidential). This is done intentionally in order to preserve compatibility with not-yet-upgraded counterparty nodes. As soon as the nodes are upgraded and issue receivers with `output_version=2`, non-confidential unspent output start being upgraded in the following payments.
-
-If there is no version 1 unspent outputs, the payment cannot succeed. The recipient needs to upgrade, or the current Core needs to swap the version 2 unspent with the issuer or any other node that holds corresponding asset on a version 1 output.
-
-TBD: maybe allow creating v1 receivers explicitly to be compatible with older counterparties?
 
 ### Creating disclosure
 
@@ -461,16 +460,36 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
 ## Annotations
 
 
-TBD: such as `is_readable`, `asset_id_committment`, etc
+Outputs, inputs, retirements:
 
-TBD: what do you see on decrypted vs encrypted outputs
+Field                         | Description
+------------------------------|---------------------------
+`asset_id_commitment`         | Always present
+`value_commitment`            | Always present
+`asset_id`                    | Present when stored in plaintext or decrypted
+`amount`                      | Present when stored in plaintext or decrypted
+`asset_id_confidential`       | `true` if asset ID is confidential (encrypted)
+`amount_confidential`         | `true` if amount is confidential (encrypted) on-chain
+`data`                        | Hex-encoded raw data (encrypted or cleartext) on-chain
+`reference_data`              | Present when stored in plaintext or decrypted
+`reference_data_confidential` | `true` if reference data is encrypted on-chain
 
-TBD: also, how does reference data show up with the two states: encrypted and decrypted.
+Issuance:
+
+Field                         | Description
+------------------------------|---------------------------
+`asset_id_commitment`         | Always present
+`value_commitment`            | Always present
+`asset_id`                    | Present when stored in plaintext or decrypted
+`amount`                      | Present when stored in plaintext or decrypted
+`asset_id_confidential`       | `true` if asset ID is confidential (encrypted)
+`amount_confidential`         | `true` if amount is confidential (encrypted) on-chain
+`asset_id_candidates`         | Array of candidate asset IDs. For non-confidential issuance contains issued `asset_id`.
+`data`                        | Hex-encoded raw data (encrypted or cleartext) on-chain
+`reference_data`              | Present when stored in plaintext or decrypted
+`reference_data_confidential` | `true` if reference data is encrypted on-chain
 
 TBD: add annotated issuances/inputs/outputs/retirements to the Swagger spec.
-
-TBD: add encryption API and spec for tx reference data.
-
 
 
 
