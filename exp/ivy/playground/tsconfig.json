@@ -7,13 +7,10 @@
     "target": "es6",
     "moduleResolution": "node",
     "outDir": "lib",
-    "baseUrl": ".",
-    "paths": {
-      "ivy-compiler": [ "./ivy-compiler/src/index.ts" ]
-    }
+    "baseUrl": "."
   },
-  "include": ["./playground"],
-  "exclude": ["build/*", "node_modules"],
+  "include": ["./src"],
+  "exclude": ["public/*", "node_modules"],
   "awesomeTypescriptLoaderOptions": {
     "useBabel": true
   }

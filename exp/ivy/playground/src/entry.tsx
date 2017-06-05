@@ -23,10 +23,10 @@ import Lock from './templates/components/lock'
 import Unlock from './contracts/components/unlock'
 
 // Import css
-require('./static/playground.css')
+require('../static/playground.css')
 
 // Set favicon
-const faviconPath = require('!!url?name=favicon.ico!./static/images/favicon.png')
+const faviconPath = require('!!url?name=favicon.ico!../static/images/favicon.png')
 const favicon = document.createElement('link')
 favicon.type = 'image/png'
 favicon.rel = 'shortcut icon'

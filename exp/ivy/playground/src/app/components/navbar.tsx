@@ -12,8 +12,8 @@ import { isFirstTime } from '../../contracts/selectors'
 import Reset from './reset'
 import Seed from './seed'
 
-const logo = require('../../static/images/logo.png')
-const symbol = require('../../static/images/chain-symbol.svg')
+const logo = require('../../../static/images/logo.png')
+const symbol = require('../../../static/images/chain-symbol.svg')
 
 import { closeModal } from '../../contracts/actions'
 

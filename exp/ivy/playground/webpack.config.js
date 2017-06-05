@@ -1,31 +1,28 @@
 const webpack = require('webpack')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
 const { CheckerPlugin } = require('awesome-typescript-loader')
 
 module.exports = {
   resolve: {
-    extensions: ['', '.js', '.json', '.pegjs', '.jsx', '.ts', '.tsx'],
+    extensions: ['', '.js', '.json', '.jsx', '.ts', '.tsx'],
     alias: {
-      "ivy-compiler": path.resolve(__dirname, 'ivy-compiler/src/index.ts'),
-      "chain-sdk": path.resolve(__dirname, '../sdk/node/src/index.js')
+      "chain-sdk": path.resolve(__dirname, '../../../sdk/node/src/index.js')
     }
   },
   resolveLoader: {
     root: path.join(__dirname, 'node_modules')
   },
   entry: {
-    playground: path.resolve(__dirname, 'playground/entry'),
+    playground: path.resolve(__dirname, 'src/entry'),
   },
   output: {
-    path: path.resolve(__dirname, 'playground/public'),
+    path: path.resolve(__dirname, 'public'),
     filename: 'playground.bundle.js',
     publicPath: "/ivy/"
   },
   module: {
     loaders: [
       { test: /\.js$/, loader: 'babel', exclude: /node_modules/},
-      { test: /\.pegjs$/, loader: 'pegjs-loader'},
       { test: /\.json$/, loader: 'json'},
       { test: /\.tsx?$/, loaders: ['babel', 'awesome-typescript-loader']},
       { test: /\.(eot|svg|ttf|woff|woff2)$/, loader: 'file-loader' },
