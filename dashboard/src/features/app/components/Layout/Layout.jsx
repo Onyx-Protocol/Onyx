@@ -1,13 +1,13 @@
 import React from 'react'
-import styles from './Main.scss'
+import styles from './Layout.scss'
 import { Link } from 'react-router'
 import { connect } from 'react-redux'
-import actions from 'actions'
+import appActions from 'features/app/actions'
 import Tutorial from 'features/tutorial/components/Tutorial'
 import TutorialHeader from 'features/tutorial/components/TutorialHeader/TutorialHeader'
 import { Navigation, SecondaryNavigation } from '../'
 
-class Main extends React.Component {
+class Layout extends React.Component {
 
   constructor(props) {
     super(props)
@@ -66,7 +66,7 @@ export default connect(
     showDropwdown: state.app.dropdownState == 'open',
   }),
   (dispatch) => ({
-    toggleDropdown: () => dispatch(actions.app.toggleDropdown),
-    closeDropdown: () => dispatch(actions.app.closeDropdown),
+    toggleDropdown: () => dispatch(appActions.toggleDropdown),
+    closeDropdown: () => dispatch(appActions.closeDropdown),
   })
-)(Main)
+)(Layout)

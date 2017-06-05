@@ -9,11 +9,11 @@ import { routes as unspents } from 'features/unspents'
 import { routes as mockhsm } from 'features/mockhsm'
 import { NotFound } from 'features/shared/components'
 
-import Main from './components/Main/Main'
+import Layout from './components/Layout/Layout'
 
 export default (store) => ({
   useForBreadcrumbs: true, // key for app functions inspecting routes
-  component: Main,
+  component: Layout,
   childRoutes: [
     transactions(store),
     accessControl(store),
