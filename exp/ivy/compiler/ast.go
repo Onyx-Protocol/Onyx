@@ -81,6 +81,9 @@ type Clause struct {
 
 	// Values is the list of values unlocked or relocked in this clause.
 	Values []ValueInfo `json:"values"`
+
+	// Contracts is the list of contracts called by this clause.
+	Contracts []string `json:"contracts,omitempty"`
 }
 
 // HashCall describes a call to a hash function.

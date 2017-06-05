@@ -500,6 +500,8 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		if bi == nil {
 			if v, ok := e.fn.(varRef); ok {
 				if entry := env.lookup(string(v)); entry != nil && entry.t == contractType {
+					clause.Contracts = append(clause.Contracts, entry.c.Name)
+
 					partialName := fmt.Sprintf("%s(...)", v)
 					stk = b.addData(stk, nil)
 
