@@ -18,9 +18,9 @@ const (
 	FromAlt = 11
 
 	// data
-	Len    = 15 // list or string
-	Varint = 16
-	Encode = 17
+	Len   = 15 // list or string
+	ID    = 16
+	Field = 17
 
 	// boolean
 	Equal = 18
@@ -77,9 +77,10 @@ const (
 	IssueCA      = 59 // TODO(kr): review for CA
 	Retire       = 60 // value + refdata => {}
 
-	// item data
-	ID    = 61
-	Field = 62
+	// constructors
+	// TODO(kr): move adjacent to MinInt
+	Varint = 61
+	Encode = 62
 
 	// compatbility
 	VM1CheckPredicate = 63 // list vm1prog => bool
