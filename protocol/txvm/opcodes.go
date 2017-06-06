@@ -2,10 +2,10 @@ package txvm
 
 const (
 	// control flow
-	Fail   = 0
-	PC     = 1
-	Exec   = 2
-	Jump   = 3
+	Fail = 0
+	PC   = 1
+	Exec = 2
+	// 3
 	JumpIf = 4
 
 	// stack
@@ -17,7 +17,7 @@ const (
 	ToAlt   = 10
 	FromAlt = 11
 
-	// data=
+	// data
 	Len    = 15 // list or string
 	Varint = 16
 	Encode = 17

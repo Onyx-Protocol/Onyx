@@ -22,6 +22,7 @@ const (
 var composite = map[string]string{
 	"bool":   "not not",
 	"verify": "pc 4 add jumpif fail",
+	"jump":   "1 jumpif",
 }
 
 // Notation:

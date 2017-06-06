@@ -18,7 +18,6 @@ func init() { optab = ops }
 var optab [NumOp]func(*vm)
 var ops = [NumOp]func(*vm){
 	Fail:   func(vm *vm) { panic(errors.New("illegal instruction")) },
-	Jump:   opJump,
 	JumpIf: opJumpIf,
 	Exec:   opExec,
 	Roll:   opRoll,
@@ -57,11 +56,6 @@ var ops = [NumOp]func(*vm){
 	SHA3:          hashOp(sha3.New256).run,
 	CheckSig:      opCheckSig,
 	CheckMultiSig: opCheckMultiSig,
-}
-
-func opJump(vm *vm) {
-	p := vm.data.PopInt64()
-	vm.pc = int(p)
 }
 
 func opJumpIf(vm *vm) {
