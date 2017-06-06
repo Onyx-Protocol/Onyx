@@ -7,7 +7,7 @@
     "build": "NODE_ENV=production webpack",
     "start": "webpack-dev-server --content-base public --inline --hot",
     "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.config.js ./test/*.js",
-    "bundle": "go install chain/cmd/gobundle && yarn build && gobundle -package ivy public/ > ../generated/ivy/ivy.go && gofmt -w ../generated/ivy/ivy.go"
+    "bundle": "go install chain/cmd/gobundle && yarn build && gobundle -package ivy public/ > ../../../generated/ivy/ivy.go && gofmt -w ../../../generated/ivy/ivy.go"
   },
   "author": "",
   "license": "",
