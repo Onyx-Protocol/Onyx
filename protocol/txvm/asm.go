@@ -19,10 +19,10 @@ const (
 	eofTok = -1
 )
 
-var composite = map[string]string{
-	"bool":   "not not",
-	"verify": "pc 4 add jumpif fail",
-	"jump":   "1 jumpif",
+var composite = map[string][]byte{
+	"bool":   {Not, Not},
+	"verify": {PC, BaseInt + 4, Add, JumpIf, Fail},
+	"jump":   {BaseInt + 1, JumpIf},
 }
 
 // Notation:
@@ -37,11 +37,13 @@ func Assemble(src string) ([]byte, error) {
 		typ, lit, n := scan(src[r:])
 		switch typ {
 		case mnemonicTok:
-			opcode, ok := OpCodes[lit]
-			if !ok {
+			if opcode, ok := OpCodes[lit]; ok {
+				p = append(p, opcode)
+			} else if seq, ok := composite[lit]; ok {
+				p = append(p, seq...)
+			} else {
 				return nil, errors.New("bad mnemonic " + lit)
 			}
-			p = append(p, opcode)
 		case numberTok:
 			v, _ := strconv.ParseInt(lit, 0, 64)
 			if 0 <= v && v <= 0xf {
