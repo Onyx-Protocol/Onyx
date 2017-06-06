@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"chain/protocol/bc/legacy"
+	"chain/protocol/txvm"
 	"chain/protocol/vm"
 )
 
@@ -25,6 +26,7 @@ On Mac OS X, to decode an item from the pasteboard,
 	pbpaste|decode block
 	pbpaste|decode blockheader
 	pbpaste|decode script
+	pbpaste|decode txvm
 `
 
 func fatalf(format string, args ...interface{}) {
@@ -103,6 +105,15 @@ func main() {
 		if err != nil {
 			fatalf("error decoding script: %s", err)
 		}
+		fmt.Println(s)
+	case "txvm":
+		b := make([]byte, len(data)/2)
+		_, err := hex.Decode(b, data)
+		if err != nil {
+			fatalf("err decoding hex: %s", err)
+		}
+
+		s := txvm.Disassemble(b)
 		fmt.Println(s)
 	case "tx":
 		var tx legacy.Tx
