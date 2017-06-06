@@ -19,10 +19,10 @@ type Tx struct {
 	Version          int64
 	MinTime, MaxTime uint64
 	Runlimit         int64
-	In, Nonce        []VmID
-	Out, Retire      []VmID
-	Data             VmID
-	ExtHash          VmID
+	In, Nonce        []ID
+	Out, Retire      []ID
+	Data             ID
+	ExtHash          ID
 	Proof            []byte
 }
 
@@ -40,16 +40,16 @@ type vm struct {
 	data List
 
 	// linear types
-	input    []VmID   // must end empty
+	input    []ID     // must end empty
 	value    []*value // must end empty
 	pred     []pval   // must end empty
 	contract []*cval  // must end empty
-	anchor   []VmID
+	anchor   []ID
 
 	// results
-	output []VmID
-	nonce  []VmID
-	retire []VmID
+	output []ID
+	nonce  []ID
+	retire []ID
 }
 
 // Validate returns whether x is valid.
@@ -110,7 +110,7 @@ func decodeInst(buf []byte) (opcode byte, imm []byte, n int) {
 	return BaseData, buf[n:r], int(r)
 }
 
-func idsEqual(a, b []VmID) bool {
+func idsEqual(a, b []ID) bool {
 	if len(a) != len(b) {
 		return false
 	}
