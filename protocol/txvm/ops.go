@@ -27,7 +27,6 @@ var ops = [NumOp]func(*vm){
 
 	Varint: opVarint,
 
-	Abs:    opAbs,
 	Add:    intBinOp(checked.AddInt64).run,
 	Mul:    intBinOp(checked.MulInt64).run,
 	Div:    intBinOp(checked.DivInt64).run,
@@ -125,17 +124,6 @@ func opDup(vm *vm) {
 	x := vm.data.Pop()
 	vm.data.Push(x)
 	vm.data.Push(x)
-}
-
-func opAbs(vm *vm) {
-	x := vm.data.PopInt64()
-	if x == -x {
-		panic(errors.New("range"))
-	}
-	if x < 0 {
-		x = -x
-	}
-	vm.data.PushInt64(x)
 }
 
 type intBinOp func(x, y int64) (int64, bool)
