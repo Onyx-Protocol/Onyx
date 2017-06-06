@@ -31,6 +31,11 @@ func New() *State {
 	}
 }
 
+// SetAppliedIndex updates the applied index.
+func (s *State) SetAppliedIndex(index uint64) {
+	s.appliedIndex = index
+}
+
 // SetPeerAddr sets the address for the given peer.
 func (s *State) SetPeerAddr(id uint64, addr string) {
 	s.peers[id] = addr
