@@ -18,8 +18,8 @@ const (
 	FromAlt = 11
 
 	// data
-	Len   = 15 // list or string
-	ID    = 16
+	Len = 15 // list or string
+	// 16
 	Field = 17
 
 	// boolean
