@@ -19,10 +19,6 @@ const (
 	eofTok = -1
 )
 
-var mnemonic = map[string]byte{
-	"varint": Varint,
-}
-
 var composite = map[string]string{
 	"bool":   "not not",
 	"verify": "pc 4 add jumpif fail",
@@ -40,7 +36,7 @@ func Assemble(src string) ([]byte, error) {
 		typ, lit, n := scan(src[r:])
 		switch typ {
 		case mnemonicTok:
-			opcode := mnemonic[lit]
+			opcode := OpCodes[lit]
 			if opcode == 0 {
 				return nil, errors.New("bad mnemonic " + lit)
 			}

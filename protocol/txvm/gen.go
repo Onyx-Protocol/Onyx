@@ -64,7 +64,7 @@ var tpl = template.Must(template.New("").Parse(`package txvm
 
 //go:generate sh gen.sh
 
-var OpNames = []string{
+var OpNames = [...]string{
 {{- with $top := .}}
 {{- range $index, $name := .OpCodes }}
 	{{$name}}: "{{index $top.Lower $index}}",
@@ -72,7 +72,7 @@ var OpNames = []string{
 {{- end}}
 }
 
-var OpCodes = map[string]int{
+var OpCodes = map[string]byte{
 	{{- with $top := .}}
 	{{- range $index, $name := .OpCodes }}
 		"{{index $top.Lower $index}}": {{$name}},
