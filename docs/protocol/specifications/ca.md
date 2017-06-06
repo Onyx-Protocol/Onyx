@@ -539,7 +539,7 @@ Term                 | Description
 ---------------------|---------------------
 Statement            | An equation in terms of `l` secrets in form of `f(x0,x1...) == F` where `f(x0,x1,...) = A0*x0 + A1*x1 + ...`.
 Statement set        | A set of `m` statements that must all be true for a set to be true: `f0(x) == F0 && f1(x) == F1 && ...`
-Statement ring       | A collection of `n` statement sets, where at list one must be true in order for the ring to be valid.
+Statement ring       | A collection of `n` statement sets, where at least one must be true in order for the ring to be valid.
 `l`                  | Number of secret scalars subject to proof-of-knowledge.
 `m`                  | Number of statements in each statement set (equations in per ring item).
 `n`                  | Number of statement sets (ring items).
