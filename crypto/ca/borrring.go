@@ -44,6 +44,7 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 		e    ecmath.Scalar
 		w    byte
 	)
+	e0hasher := scalarHasher()
 	for t := uint64(0); t < n; t++ {
 		jt := j[t]
 		x := r[m*t+jt]
@@ -73,12 +74,9 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 			iPrime := (i + 1) % m
 			e = brsNextE(B, P[t][i], z, e, msghash, t, iPrime, cnt, w)
 		}
+		e0hasher.Write(e[:])
 	}
-	hasher := scalarHasher()
-	for t := uint64(0); t < n; t++ {
-		hasher.Write(e[:])
-	}
-	e0 := scalarHasherFinalize(hasher)
+	e0 := scalarHasherFinalize(e0hasher)
 	if e0[31]&0xf0 != 0 {
 		return createBorromeanRingSignature(msghash, B, P, p, j, payload, counter+1)
 	}
@@ -103,7 +101,9 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 		s[t][jt][31] |= mask[t]
 	}
 	// 9. Set top 4 bits of `e0` to the lower 4 bits of `counter`.
-	e0[31] |= byte(byte(counter) << 4)
+	counterByte := byte(counter & 0xff)
+	e0[31] |= ((counterByte << 4) & 0xf0)
+
 	return &BorromeanRingSignature{e: e0, s: s}
 }
 
@@ -112,16 +112,16 @@ func (brs *BorromeanRingSignature) Validate(msg []byte, B []ecmath.Point, P [][]
 	n := uint64(len(P))
 	m := uint64(len(P[0]))
 
-	hasher := scalarHasher()
-
 	e0 := brs.e
 	cnt := e0[31] >> 4
 	e0[31] &= 0x0f
+
 	var (
 		e ecmath.Scalar
 		z ecmath.Scalar
 		w byte
 	)
+	e0hasher := scalarHasher()
 	for t := uint64(0); t < n; t++ {
 		e = e0
 		for i := uint64(0); i < m; i++ {
@@ -132,12 +132,13 @@ func (brs *BorromeanRingSignature) Validate(msg []byte, B []ecmath.Point, P [][]
 			iPrime := (i + 1) % m
 			e = brsNextE(B, P[t][i], z, e, msghash[:], t, iPrime, cnt, w)
 		}
-		hasher.Write(e[:])
+		e0hasher.Write(e[:])
 	}
-	ePrime := scalarHasherFinalize(hasher)
+	ePrime := scalarHasherFinalize(e0hasher)
 	return ePrime == e0
 }
 
+// TBD
 func (brs *BorromeanRingSignature) Payload(msg []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64) [][32]byte {
 	// msghash := brsMsgHash(B, P, msg)
 	n := uint64(len(P))
@@ -193,13 +194,16 @@ func brsEHash(cnt byte, R []ecmath.Point, msghash []byte, t, i uint64, w byte) e
 	hasher.Write(uint64le(t))
 	hasher.Write(uint64le(i))
 	hasher.Write([]byte{w})
-	return scalarHasherFinalize(hasher)
+
+	e := scalarHasherFinalize(hasher)
+	return e
 }
 
 func brsNextE(B, P []ecmath.Point, z, e ecmath.Scalar, msghash []byte, t, i uint64, cnt, w byte) ecmath.Scalar {
 	M := len(B)
 	R := make([]ecmath.Point, M)
 	for u := 0; u < M; u++ {
+		// R = z*B - e*P
 		R[u].ScMul(&B[u], &z)
 		var R2 ecmath.Point
 		R2.ScMul(&P[u], &e)
