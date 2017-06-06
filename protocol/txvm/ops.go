@@ -34,6 +34,7 @@ var ops = [NumOp]func(*vm){
 	Mod:    intBinOp(checked.ModInt64).run,
 	Lshift: intBinOp(checked.LshiftInt64).run,
 	Rshift: intBinOp(rshift).run,
+	Negate: opNegate,
 
 	Not:   opNot,
 	And:   boolBinOp(func(x, y int64) bool { return x != 0 && y != 0 }),
@@ -154,6 +155,15 @@ func rshift(x, y int64) (int64, bool) {
 		return 0, false
 	}
 	return x >> uint64(y), true
+}
+
+func opNegate(vm *vm) {
+	x := vm.data.PopInt64()
+	y, ok := checked.NegateInt64(x)
+	if !ok {
+		panic(errors.New("range"))
+	}
+	vm.data.PushInt64(y)
 }
 
 func opNot(vm *vm) {

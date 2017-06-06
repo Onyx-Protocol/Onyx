@@ -51,18 +51,17 @@ func Assemble(src string) ([]byte, error) {
 		case numberTok:
 			v, _ := strconv.ParseInt(lit, 0, 64)
 			if 0 <= v && v <= 0xf {
-				p = append(p, BaseInt|byte(v))
+				p = append(p, BaseInt+byte(v))
 			} else if v == -1 {
-				p = append(p, MinInt)
+				p = append(p, BaseInt+1)
+				p = append(p, Negate)
 			} else if -0x10 < v && v < 0 {
-				p = append(p, BaseInt|byte(-v))
-				p = append(p, MinInt)
-				p = append(p, Mul)
+				p = append(p, BaseInt+byte(-v))
+				p = append(p, Negate)
 			} else if v <= -0x10 && v != -v {
 				p = append(p, pushData(encVarint(-v))...)
 				p = append(p, Varint)
-				p = append(p, MinInt)
-				p = append(p, Mul)
+				p = append(p, Negate)
 			} else {
 				p = append(p, pushData(encVarint(v))...)
 				p = append(p, Varint)
