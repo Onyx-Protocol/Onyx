@@ -37,8 +37,8 @@ func Assemble(src string) ([]byte, error) {
 		typ, lit, n := scan(src[r:])
 		switch typ {
 		case mnemonicTok:
-			opcode := OpCodes[lit]
-			if opcode == 0 {
+			opcode, ok := OpCodes[lit]
+			if !ok {
 				return nil, errors.New("bad mnemonic " + lit)
 			}
 			p = append(p, opcode)

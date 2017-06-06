@@ -23,6 +23,7 @@ var asmValid = []struct {
 	{`-16`, []byte{BaseData + 1, 16, Varint, MinInt, Mul}},
 	{`-9223372036854775808`, []byte{BaseData + 10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01, Varint}},
 	{`"55"x`, []byte{BaseData + 1, 0x55}},
+	{`fail`, []byte{Fail}},
 }
 
 func TestAssemble(t *testing.T) {
