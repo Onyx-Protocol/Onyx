@@ -85,4 +85,20 @@ func TestOlegZKP(t *testing.T) {
 	if !ozkp.Validate(msg, f, F) {
 		t.Error("failed to validate Oleg-ZKP")
 	}
+	ozkp = CreateOlegZKP(msg[1:], x, f, F, 0)
+	if ozkp.Validate(msg, f, F) {
+		t.Error("validated invalid Oleg-ZKP")
+	}
+	ozkp = CreateOlegZKP(msg, append(x[1:], x[0]), f, F, 0)
+	if ozkp.Validate(msg, f, F) {
+		t.Error("validated invalid Oleg-ZKP")
+	}
+	ozkp = CreateOlegZKP(msg, x, f, append(F[1:], F[0]), 0)
+	if ozkp.Validate(msg, f, F) {
+		t.Error("validated invalid Oleg-ZKP")
+	}
+	ozkp = CreateOlegZKP(msg, x, f, F, 1)
+	if ozkp.Validate(msg, f, F) {
+		t.Error("validated invalid Oleg-ZKP")
+	}
 }
