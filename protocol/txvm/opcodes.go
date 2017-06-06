@@ -2,93 +2,92 @@ package txvm
 
 const (
 	// control flow
-	Fail = 0
-	PC   = 1
-	Exec = 2
-	// 3
-	JumpIf = 4
+	Fail   = 0
+	PC     = 1
+	Exec   = 2
+	JumpIf = 3
 
 	// stack
-	Roll    = 5 // any stack
-	Bury    = 6 // any stack
-	Depth   = 7 // any stack
-	Drop    = 8
-	Dup     = 9
-	ToAlt   = 10
-	FromAlt = 11
+	Roll  = 4 // any stack
+	Bury  = 5 // any stack
+	Depth = 6 // any stack
 
-	// data
-	Len = 15 // list or string
-	// 16
-	Field = 17
+	// Data Stack
+	Equal   = 7
+	Type    = 8
+	Encode  = 9
+	Len     = 10
+	Drop    = 11
+	Dup     = 12
+	ToAlt   = 13
+	FromAlt = 14
+
+	// Tuple
+	Tuple   = 15
+	Untuple = 16
+	Field   = 17
 
 	// boolean
-	Equal = 18
-	Not   = 19
-	And   = 20
-	Or    = 21
-	GT    = 22
-	GE    = 23
+	Not = 18
+	And = 19
+	Or  = 20
+	GT  = 21
+	GE  = 22
 
 	// math
-	Abs    = 24
-	Add    = 25
-	Mul    = 26
-	Div    = 27
-	Mod    = 28
-	Lshift = 29
-	Rshift = 30
-	Negate = 31
-	// 32
+	Add    = 23
+	Mul    = 24
+	Div    = 25
+	Mod    = 26
+	Lshift = 27
+	Rshift = 28
+	Negate = 29
 
 	// string
-	Cat   = 33
-	Slice = 34
+	Cat   = 30
+	Slice = 31
 
 	// bitwise (int64 or string)
-	BitNot = 35
-	BitAnd = 36
-	BitOr  = 37
-	BitXor = 38
+	BitNot = 32
+	BitAnd = 33
+	BitOr  = 34
+	BitXor = 35
 
 	// crypto
-	SHA256        = 39
-	SHA3          = 40
-	CheckSig      = 41
-	CheckMultiSig = 42
-	PointAdd      = 43 // TODO(kr): review for CA
-	PointSub      = 44 // TODO(kr): review for CA
-	PointMul      = 45 // TODO(kr): review for CA
+	SHA256        = 36
+	SHA3          = 37
+	CheckSig      = 38
+	CheckMultiSig = 39
+	PointAdd      = 40 // TODO(kr): review for CA
+	PointSub      = 41 // TODO(kr): review for CA
+	PointMul      = 42 // TODO(kr): review for CA
 
 	// entries
-	Cond         = 46 // prog => cond
-	Unlock       = 47 // inputid + data => value + cond
-	UnlockOutput = 48 // outputid + data => value + cond
-	Merge        = 49 // value value => value
-	Split        = 50 // value + amount => value value
-	ProveRange   = 51 // TODO(kr): review for CA
-	ProveValue   = 52 // TODO(kr): review for CA
-	ProveAsset   = 53 // TODO(kr): review for CA
-	Blind        = 54 // TODO(kr): review for CA
-	Lock         = 55 // value + prog => outputid
-	Satisfy      = 56 // cond => {}
-	Anchor       = 57 // nonce + data => anchor + cond
-	Issue        = 58 // anchor + data => value + cond
-	IssueCA      = 59 // TODO(kr): review for CA
-	Retire       = 60 // value + refdata => {}
-
-	// constructors
-	// TODO(kr): move adjacent to MinInt
-	Varint = 61
-	Encode = 62
+	Cond         = 43 // prog => cond
+	Unlock       = 44 // inputid + data => value + cond
+	UnlockOutput = 45 // outputid + data => value + cond
+	Merge        = 46 // value value => value
+	Split        = 47 // value + amount => value value
+	ProveRange   = 48 // TODO(kr): review for CA
+	ProveValue   = 49 // TODO(kr): review for CA
+	ProveAsset   = 50 // TODO(kr): review for CA
+	Blind        = 51 // TODO(kr): review for CA
+	Lock         = 52 // value + prog => outputid
+	Satisfy      = 53 // cond => {}
+	Anchor       = 54 // nonce + data => anchor + cond
+	Issue        = 55 // anchor + data => value + cond
+	IssueCA      = 56 // TODO(kr): review for CA
+	Retire       = 57 // value + refdata => {}
 
 	// compatibility
-	VM1CheckPredicate = 63 // list vm1prog => bool
-	VM1Unlock         = 64 // vm1inputid + data => vm1value + cond
-	VM1Nonce          = 65 // vm1nonce => vm1anchor + cond
-	VM1Issue          = 66 // vm1anchor => vm1value + cond
-	VM1Mux            = 67 // entire vm1value stack => vm1mux
-	VM1Withdraw       = 68 // vm1mux + amount asset => vm1mux + value
+	VM1CheckPredicate = 58 // list vm1prog => bool
+	VM1Unlock         = 59 // vm1inputid + data => vm1value + cond
+	VM1Nonce          = 60 // vm1nonce => vm1anchor + cond
+	VM1Issue          = 61 // vm1anchor => vm1value + cond
+	VM1Mux            = 62 // entire vm1value stack => vm1mux
+	VM1Withdraw       = 63 // vm1mux + amount asset => vm1mux + value
+
+	// 64-68
 
 	// extensions
 	Nop0    = 69
@@ -102,14 +101,17 @@ const (
 	Nop8    = 77
 	Private = 78
 
-	NumOp = 79
+	// constructors
+	Varint = 79
+
+	NumOp = 80
 
 	// Small ints.
 	// For MinInt <= BaseInt+n < BaseData
-	// (so 0 <= n < 15),
+	// (so 0 <= n <= 15),
 	// opcode BaseInt+n pushes n.
-	MinInt  = 79
-	BaseInt = 79
+	MinInt  = 80
+	BaseInt = 80
 
-	BaseData = 95 // data len in [0, 32] has 1-byte len prefix
+	BaseData = 96 // data len in [0, 32] has 1-byte len prefix
 )
