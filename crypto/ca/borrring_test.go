@@ -37,8 +37,9 @@ func TestBorrRingSig111(t *testing.T) {
 	}
 	j := make([]uint64, n) // n zeroes
 	payload := make([][32]byte, m*n)
-	brs := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
-	if !brs.Validate(msg, B, P) {
+	brs, _ := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
+	ok, _ := brs.Validate(msg, B, P)
+	if !ok {
 		t.Error("failed to validate borromean ring signature")
 	}
 }
@@ -74,8 +75,9 @@ func TestBorrRingSig121(t *testing.T) {
 	}
 	j := make([]uint64, n) // n zeroes
 	payload := make([][32]byte, m*n)
-	brs := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
-	if !brs.Validate(msg, B, P) {
+	brs, _ := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
+	ok, _ := brs.Validate(msg, B, P)
+	if !ok {
 		t.Error("failed to validate borromean ring signature")
 	}
 }
@@ -117,8 +119,9 @@ func TestBorrRingSig112(t *testing.T) {
 	}
 	j := make([]uint64, n) // n zeroes
 	payload := make([][32]byte, m*n)
-	brs := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
-	if !brs.Validate(msg, B, P) {
+	brs, _ := CreateBorromeanRingSignature(msg, B, P, p, j, payload)
+	ok, _ := brs.Validate(msg, B, P)
+	if !ok {
 		t.Error("failed to validate borromean ring signature")
 	}
 }
@@ -167,8 +170,9 @@ func TestBorrRingSig211(t *testing.T) {
 	}
 
 	payload := make([][32]byte, m*n)
-	brs := CreateBorromeanRingSignature(msg, B, P, p, js, payload)
-	if !brs.Validate(msg, B, P) {
+	brs, _ := CreateBorromeanRingSignature(msg, B, P, p, js, payload)
+	ok, _ := brs.Validate(msg, B, P)
+	if !ok {
 		t.Error("failed to validate borromean ring signature")
 	}
 }
@@ -225,8 +229,9 @@ func TestBorrRingSig321(t *testing.T) {
 	}
 
 	payload := make([][32]byte, m*n)
-	brs := CreateBorromeanRingSignature(msg, B, P, p, js, payload)
-	if !brs.Validate(msg, B, P) {
+	brs, _ := CreateBorromeanRingSignature(msg, B, P, p, js, payload)
+	ok, _ := brs.Validate(msg, B, P)
+	if !ok {
 		t.Error("failed to validate borromean ring signature")
 	}
 }
@@ -293,8 +298,12 @@ func TestBorrRingSig_n_m_M(t *testing.T) {
 
 					payload := make([][32]byte, m*n)
 					//fmt.Printf("TEST: CreateBorromeanRingSignature (n=%d,m=%d,M=%d,c=%d)\n", n, m, M, c)
-					brs := CreateBorromeanRingSignature(msg, basepoints, P, p, js, payload)
-					if !brs.Validate(msg, basepoints, P) {
+					brs, err := CreateBorromeanRingSignature(msg, basepoints, P, p, js, payload)
+					if brs == nil {
+						t.Errorf("failed to validate borromean ring signature; error: %s", err)
+					}
+					ok, _ := brs.Validate(msg, basepoints, P)
+					if !ok {
 						t.Errorf("failed to validate borromean ring signature (n=%d,m=%d,M=%d,c=%d)", n, m, M, c)
 					}
 				}

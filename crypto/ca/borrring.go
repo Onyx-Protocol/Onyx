@@ -1,6 +1,9 @@
 package ca
 
-import "chain/crypto/ed25519/ecmath"
+import (
+	"chain/crypto/ed25519/ecmath"
+	"fmt"
+)
 
 type BorromeanRingSignature struct {
 	e ecmath.Scalar
@@ -16,15 +19,47 @@ type BorromeanRingSignature struct {
 // 7. {p[i]}: the list of n [scalars](#scalar) representing private keys.
 // 8. {j[i]}: the list of n indexes of the designated public keys within each ring, so that P[i,j] == p[i]·B[i].
 // 9. {payload[i]}: sequence of n·m random 32-byte elements.
-func CreateBorromeanRingSignature(msg []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][32]byte) *BorromeanRingSignature {
+func CreateBorromeanRingSignature(
+	msg []byte,
+	B []ecmath.Point,
+	P [][][]ecmath.Point,
+	p []ecmath.Scalar,
+	j []uint64,
+	payload [][32]byte,
+) (*BorromeanRingSignature, error) {
 	msghash := brsMsgHash(B, P, msg)
 	return createBorromeanRingSignature(msghash[:], B, P, p, j, payload, 0)
 }
 
-func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64, payload [][32]byte, counter uint64) *BorromeanRingSignature {
+func createBorromeanRingSignature(
+	msghash []byte,
+	B []ecmath.Point,
+	P [][][]ecmath.Point,
+	p []ecmath.Scalar,
+	j []uint64,
+	payload [][32]byte,
+	counter uint64,
+) (*BorromeanRingSignature, error) {
 	n := uint64(len(P))
+	if n < 1 {
+		return nil, fmt.Errorf("number of rings cannot be less than 1")
+	}
+
 	m := uint64(len(P[0]))
 	M := len(B)
+
+	if m < 1 {
+		return nil, fmt.Errorf("number of signatures per ring cannot be less than 1")
+	}
+	if uint64(len(p)) != n {
+		return nil, fmt.Errorf("number of secret keys must equal number of rings")
+	}
+	if uint64(len(j)) != n {
+		return nil, fmt.Errorf("number of secret indexes must equal number of rings")
+	}
+	if uint64(len(payload)) != n*m {
+		return nil, fmt.Errorf("number of random elements must equal n*m (rings*signatures)")
+	}
 
 	cnt := byte(counter & 0x0f)
 
@@ -104,13 +139,27 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 	counterByte := byte(counter & 0xff)
 	e0[31] |= ((counterByte << 4) & 0xf0)
 
-	return &BorromeanRingSignature{e: e0, s: s}
+	return &BorromeanRingSignature{e: e0, s: s}, nil
 }
 
-func (brs *BorromeanRingSignature) Validate(msg []byte, B []ecmath.Point, P [][][]ecmath.Point) bool {
+func (brs *BorromeanRingSignature) Validate(
+	msg []byte,
+	B []ecmath.Point,
+	P [][][]ecmath.Point,
+) (bool, error) {
 	msghash := brsMsgHash(B, P, msg)
+
 	n := uint64(len(P))
+	if n < 1 {
+		return false, fmt.Errorf("number of rings cannot be less than 1")
+	}
+
 	m := uint64(len(P[0]))
+	M := uint64(len(B))
+
+	if m < 1 {
+		return false, fmt.Errorf("number of signatures per ring cannot be less than 1")
+	}
 
 	e0 := brs.e
 	cnt := e0[31] >> 4
@@ -123,8 +172,16 @@ func (brs *BorromeanRingSignature) Validate(msg []byte, B []ecmath.Point, P [][]
 	)
 	e0hasher := scalarHasher()
 	for t := uint64(0); t < n; t++ {
+		if uint64(len(P[t])) != m {
+			return false, fmt.Errorf("number of pubkeys per ring must be %d*%d", m, M)
+		}
 		e = e0
 		for i := uint64(0); i < m; i++ {
+
+			if uint64(len(P[t][i])) != M {
+				return false, fmt.Errorf("number of pubkeys per signature must be %d", M)
+			}
+
 			z = brs.s[t][i]
 			z[31] &= 0x0f
 			w = brs.s[t][i][31] & 0xf0
@@ -135,11 +192,20 @@ func (brs *BorromeanRingSignature) Validate(msg []byte, B []ecmath.Point, P [][]
 		e0hasher.Write(e[:])
 	}
 	ePrime := scalarHasherFinalize(e0hasher)
-	return ePrime == e0
+	if ePrime != e0 {
+		return false, fmt.Errorf("signature is invalid")
+	}
+	return true, nil
 }
 
 // TBD
-func (brs *BorromeanRingSignature) Payload(msg []byte, B []ecmath.Point, P [][][]ecmath.Point, p []ecmath.Scalar, j []uint64) [][32]byte {
+func (brs *BorromeanRingSignature) Payload(
+	msg []byte,
+	B []ecmath.Point,
+	P [][][]ecmath.Point,
+	p []ecmath.Scalar,
+	j []uint64,
+) ([][32]byte, error) {
 	// msghash := brsMsgHash(B, P, msg)
 	n := uint64(len(P))
 	m := uint64(len(P[0]))
@@ -160,7 +226,7 @@ func (brs *BorromeanRingSignature) Payload(msg []byte, B []ecmath.Point, P [][][
 			// xxx left off here
 		}
 	}
-	return nil // xxx
+	return nil, nil // xxx
 }
 
 func brsMsgHash(B []ecmath.Point, P [][][]ecmath.Point, msg []byte) [32]byte {
