@@ -38,7 +38,7 @@ const (
 	Mod    = 28
 	Lshift = 29
 	Rshift = 30
-	// 31
+	Negate = 31
 	// 32
 
 	// string
@@ -82,7 +82,7 @@ const (
 	Varint = 61
 	Encode = 62
 
-	// compatbility
+	// compatibility
 	VM1CheckPredicate = 63 // list vm1prog => bool
 	VM1Unlock         = 64 // vm1inputid + data => vm1value + cond
 	VM1Nonce          = 65 // vm1nonce => vm1anchor + cond
@@ -106,10 +106,10 @@ const (
 
 	// Small ints.
 	// For MinInt <= BaseInt+n < BaseData
-	// (so -1 <= n < 15),
+	// (so 0 <= n < 15),
 	// opcode BaseInt+n pushes n.
 	MinInt  = 79
-	BaseInt = 80
+	BaseInt = 79
 
 	BaseData = 95 // data len in [0, 32] has 1-byte len prefix
 )
