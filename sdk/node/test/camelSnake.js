@@ -57,6 +57,7 @@ describe('camelizer', () => {
         DontCConvertMe: 1,
         DontConvertME: 1,
         DontConvertM: 1,
+        DontConvertMe2: 1,
       })
     ).deep.equals({
       convertMe: 1,
@@ -65,6 +66,7 @@ describe('camelizer', () => {
       DontCConvertMe: 1,
       DontConvertME: 1,
       DontConvertM: 1,
+      DontConvertMe2: 1,
     })
   })
 })
@@ -121,6 +123,7 @@ describe('snakeizer', () => {
         DontCConvertMe: 1,
         DontConvertME: 1,
         DontConvertM: 1,
+        DontConvertMe2: 1,
       })
     ).deep.equals({
       convert_me: 1,
@@ -129,6 +132,7 @@ describe('snakeizer', () => {
       DontCConvertMe: 1,
       DontConvertME: 1,
       DontConvertM: 1,
+      DontConvertMe2: 1,
     })
   })
 })

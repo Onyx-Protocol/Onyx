@@ -26,7 +26,7 @@ const snakeize = (object) => {
     }
 
     // Skip PascalCase keys
-    if (/^(?:[A-Z][a-z]*)+$/.test(key)) {
+    if (/^(?:[A-Z][a-z0-9]*)+$/.test(key)) {
       continue
     }
 
