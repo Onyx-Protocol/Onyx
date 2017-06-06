@@ -34,6 +34,13 @@ func newState() *state {
 	}
 }
 
+// SetAppliedIndex sets the applied index to the provided index.
+func (s *state) SetAppliedIndex(index uint64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.appliedIndex = index
+}
+
 // SetPeerAddr sets the address for the given peer.
 func (s *state) SetPeerAddr(id uint64, addr string) {
 	s.mu.Lock()

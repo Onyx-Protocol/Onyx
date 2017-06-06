@@ -44,6 +44,8 @@ const (
 	snapCount         = 10000
 	dummyWriteTimeout = 50 * time.Millisecond
 
+	// nSnapCatchupEntries must be <= snapCount because on restart
+	// the WAL will only load entries after the latest snapshot.
 	nSnapCatchupEntries uint64 = 10000
 
 	contentType = "application/octet-stream"
@@ -126,6 +128,7 @@ type State interface {
 	Apply(data []byte, index uint64) (satisfied bool)
 	Snapshot() (data []byte, index uint64, err error)
 	RestoreSnapshot(data []byte, index uint64) error
+	SetAppliedIndex(index uint64)
 	SetPeerAddr(id uint64, addr string)
 	GetPeerAddr(id uint64) (addr string)
 	RemovePeerAddr(id uint64)
@@ -786,32 +789,32 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 			panic(err)
 		}
 		sv.stateMu.Lock()
+		defer sv.stateMu.Unlock()
+		defer sv.stateCond.Broadcast()
+
 		sv.confState = *sv.raftNode.ApplyConfChange(cc)
-		sv.stateMu.Unlock()
+		sv.state.SetAppliedIndex(ent.Index)
 		switch cc.Type {
 		case raftpb.ConfChangeAddNode, raftpb.ConfChangeUpdateNode:
-			sv.stateMu.Lock()
-			defer sv.stateMu.Unlock()
-			defer sv.stateCond.Broadcast()
 			sv.state.SetPeerAddr(cc.NodeID, string(cc.Context))
 		case raftpb.ConfChangeRemoveNode:
 			if cc.NodeID == sv.id {
 				panic(errors.New("removed from cluster"))
 			}
-			sv.stateMu.Lock()
-			defer sv.stateMu.Unlock()
-			defer sv.stateCond.Broadcast()
 			sv.state.RemovePeerAddr(cc.NodeID)
+		default:
+			panic(fmt.Errorf("unknown confchange type: %v", cc.Type))
 		}
 	case raftpb.EntryNormal:
-		//raft will send empty request defaulted to EntryNormal on leader election
-		//we need to handle that here
-		if ent.Data == nil {
-			break
-		}
 		sv.stateMu.Lock()
 		defer sv.stateCond.Broadcast()
 		defer sv.stateMu.Unlock()
+		//raft will send empty request defaulted to EntryNormal on leader election
+		//we need to handle that here
+		if ent.Data == nil {
+			sv.state.SetAppliedIndex(ent.Index)
+			break
+		}
 		var p proposal
 		err := json.Unmarshal(ent.Data, &p)
 		if err != nil {
