@@ -481,10 +481,10 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Let `counter` integer equal `cnt`.
-5. Calculate a sequence of `n·m` 32-byte random overlay values:
-
-        `{o[i]} = StreamHash({"O", uint64le(counter), msghash, {p[i]}, {uint64le(j[i])}}, 32·n·m)`, where:
-
+5. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash({"O", uint64le(counter), msghash, {p[i]}, {uint64le(j[i])}}, 32·n·m)`, where:
+    * `counter` is encoded as a 64-bit little-endian integer,
+    * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
+    * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
 6. Set top 4 bits of `e0` to zero.
 7. For `t` from `0` to `n-1` (each ring):
     1. Let `e[t,0] = e0`.
