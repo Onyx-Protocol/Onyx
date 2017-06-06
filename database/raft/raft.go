@@ -736,8 +736,6 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 			defer sv.stateMu.Unlock()
 			defer sv.stateCond.Broadcast()
 			sv.state.RemovePeerAddr(cc.NodeID)
-		default:
-			panic(fmt.Errorf("unknown confchange type: %v", cc.Type))
 		}
 	case raftpb.EntryNormal:
 		//raft will send empty request defaulted to EntryNormal on leader election
