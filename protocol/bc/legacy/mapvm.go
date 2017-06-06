@@ -38,7 +38,7 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 				trID := bc.EntryID(tr)
 
 				nonceID := bc.EntryID(bc.NewNonce(&bc.Program{VmVersion: 1, Code: prog}, &trID))
-				tx.Nonce = append(tx.Nonce, txvm.VmID(nonceID.Byte32()))
+				tx.Nonce = append(tx.Nonce, txvm.ID(nonceID.Byte32()))
 
 				pushInt64(&tx.Proof, int64(oldTx.MinTime))
 				pushInt64(&tx.Proof, int64(oldTx.MaxTime))
