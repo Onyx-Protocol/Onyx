@@ -254,6 +254,8 @@ func main() {
 	err = errors.Root(sdb.Ping())
 	if err == context.DeadlineExceeded {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, "Unable to reach rest of raft cluster. Was the node evicted?")
+	} else if err != nil && err != raft.ErrUninitialized {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
 	resetIfAllowedAndRequested(db, sdb)

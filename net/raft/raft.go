@@ -883,6 +883,8 @@ func (sv *Service) send(msgs []raftpb.Message) {
 
 // best effort. if it fails, oh well -- that's why we're using raft.
 func sendmsg(addr string, data []byte, client *http.Client) {
+	// TODO(jackson): Parse the error response and try to detect
+	// eviction.
 	url := "https://" + addr + "/raft/msg"
 	resp, err := client.Post(url, contentType, bytes.NewReader(data))
 	if err != nil {
