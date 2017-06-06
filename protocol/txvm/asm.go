@@ -23,8 +23,8 @@ var composite = map[string][]byte{
 	"bool":   {Not, Not},
 	"verify": {PC, BaseInt + 4, Add, JumpIf, Fail},
 	"jump":   {BaseInt + 1, BaseInt + 1, Roll, JumpIf},
-	"max":    {GT, PC, BaseInt + 5, Add, JumpIf, BaseInt + 1, Roll, Drop},
-	"min":    {GT, Not, PC, BaseInt + 5, Add, JumpIf, BaseInt + 1, Roll, Drop},
+	"max":    {Dup, BaseInt + 2, Roll, Dup, BaseInt + 2, Bury, GT, PC, BaseInt + 5, Add, JumpIf, BaseInt + 1, Roll, Drop},
+	"min":    {Dup, BaseInt + 2, Roll, Dup, BaseInt + 2, Bury, GT, Not, PC, BaseInt + 5, Add, JumpIf, BaseInt + 1, Roll, Drop},
 	"sub":    {BaseInt - 1, Mul, Add},
 	"swap":   {BaseInt + 1, Roll},
 }
