@@ -1,0 +1,131 @@
+
+/* eslint-env mocha */
+
+const chain = require('../dist/index.js')
+const uuid = require('uuid')
+const assert = require('assert')
+const chai = require('chai')
+const chaiAsPromised = require('chai-as-promised')
+
+chai.use(chaiAsPromised)
+const expect = chai.expect
+
+const client = new chain.Client()
+const signer = new chain.HsmSigner()
+
+function createAccount() {
+  return client.mockHsm.keys.create()
+    .then((key) => {
+      signer.addKey(key, client.mockHsm.signerConnection)
+      return client.accounts.create({
+        alias: `account-${uuid.v4()}`,
+        rootXpubs: [key.xpub],
+        quorum: 1
+      })
+    })
+}
+
+function createAsset() {
+  return client.mockHsm.keys.create()
+    .then((key) => {
+      signer.addKey(key, client.mockHsm.signerConnection)
+      return client.assets.create({
+        alias: `asset-${uuid.v4()}`,
+        rootXpubs: [key.xpub],
+        quorum: 1
+      })
+    })
+}
+
+describe('Receiver', () => {
+
+  describe('Single receiver creation', () => {
+    it('succesfully creates receiver by account alias', () => {
+      return createAccount()
+        .then((account) => client.accounts.createReceiver({ accountAlias: account.alias }))
+        .then((resp) => expect(resp.controlProgram).not.to.be.empty)
+    })
+
+    it('succesfully creates receiver by account id', () => {
+      return createAccount()
+        .then((account) => client.accounts.createReceiver({ accountId: account.id }))
+        .then((resp) => expect(resp.controlProgram).not.to.be.empty)
+    })
+
+    it('rejects receiver creation due to missing params', () => {
+      return createAccount()
+        .then((account) => expect(client.accounts.createReceiver({})).to.be.rejectedWith('CH002'))
+    })
+  })
+
+  describe('Batch receiver creation', () => {
+    let batchResponse = {}
+
+    before(() => {
+      return createAccount()
+        .then((account) => client.accounts.createReceiverBatch([
+          { accountId: account.id }, // success
+          {}, // error
+          { accountAlias: account.alias } // success
+        ]))
+        .then((resp) => {batchResponse = resp})
+    })
+
+    it('returns two successes', () => assert.equal(batchResponse.successes[1], null))
+    it('returns one error', () => assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null]))
+  })
+
+  describe('Pay to receiver', () => {
+    let testAccountAlias, testAssetAlias, testAccountReceiver
+
+    before(() => {
+      return Promise.all([
+        createAccount(),
+        createAsset()
+      ])
+      .then((objects) => {
+        testAccountAlias = objects[0].alias
+        testAssetAlias = objects[1].alias
+      })
+      .then(() => client.accounts.createReceiver({ accountAlias: testAccountAlias }))
+      .then((receiver) => testAccountReceiver = receiver)
+    })
+
+    it('pays assets to the receiving account', () => {
+      return client.transactions.build(builder => {
+        builder.issue({
+          assetAlias: testAssetAlias,
+          amount: 1,
+        })
+        builder.controlWithReceiver({
+          receiver: testAccountReceiver,
+          assetAlias: testAssetAlias,
+          amount: 1,
+        })
+      })
+    .then((issuance) => signer.sign(issuance))
+    .then((signed) => client.transactions.submit(signed))
+    .then((tx) => expect(tx.id).not.to.be.empty)
+    })
+  })
+
+  // These just test that the callback is engaged correctly. Behavior is
+  // tested in the promises test.
+  describe('Callback support', () => {
+
+    it('Single receiver creation', (done) => {
+      client.accounts.createReceiver(
+        {}, // intentionally blank
+        () => done() // intentionally ignore errors
+      )
+    })
+
+    it('Batch receiver creation', (done) => {
+      client.accounts.createReceiverBatch(
+        [{}, {}], // intentionally blank
+        () => done() // intentionally ignore errors
+      )
+    })
+
+  })
+})
