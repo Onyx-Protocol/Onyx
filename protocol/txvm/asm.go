@@ -26,6 +26,7 @@ var composite = map[string][]byte{
 	"max":    {GT, PC, BaseInt + 5, Add, JumpIf, BaseInt + 1, Roll, Drop},
 	"min":    {GT, Not, PC, BaseInt + 5, Add, JumpIf, BaseInt + 1, Roll, Drop},
 	"sub":    {BaseInt - 1, Mul, Add},
+	"swap":   {BaseInt + 1, Roll},
 }
 
 // Notation:
