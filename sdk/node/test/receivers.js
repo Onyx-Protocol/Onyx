@@ -1,8 +1,6 @@
 
 /* eslint-env mocha */
 
-const chain = require('../dist/index.js')
-const uuid = require('uuid')
 const assert = require('assert')
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
@@ -10,32 +8,7 @@ const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const expect = chai.expect
 
-const client = new chain.Client()
-const signer = new chain.HsmSigner()
-
-function createAccount() {
-  return client.mockHsm.keys.create()
-    .then((key) => {
-      signer.addKey(key, client.mockHsm.signerConnection)
-      return client.accounts.create({
-        alias: `account-${uuid.v4()}`,
-        rootXpubs: [key.xpub],
-        quorum: 1
-      })
-    })
-}
-
-function createAsset() {
-  return client.mockHsm.keys.create()
-    .then((key) => {
-      signer.addKey(key, client.mockHsm.signerConnection)
-      return client.assets.create({
-        alias: `asset-${uuid.v4()}`,
-        rootXpubs: [key.xpub],
-        quorum: 1
-      })
-    })
-}
+import { client, createAccount, createAsset, signer } from '../testHelpers/util'
 
 describe('Receiver', () => {
 
