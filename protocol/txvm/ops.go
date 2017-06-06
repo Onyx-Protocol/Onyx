@@ -6,9 +6,6 @@ import (
 	"errors"
 	"hash"
 
-	"chain/protocol/txvm/data"
-	"chain/protocol/txvm/op"
-
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
@@ -18,48 +15,48 @@ import (
 // avoid initialization loop
 func init() { optab = ops }
 
-var optab [op.NumOp]func(*vm)
-var ops = [op.NumOp]func(*vm){
-	op.Fail:   func(vm *vm) { panic(errors.New("illegal instruction")) },
-	op.Jump:   opJump,
-	op.JumpIf: opJumpIf,
-	op.Exec:   opExec,
-	op.Roll:   opRoll,
-	op.Depth:  opDepth,
-	op.Drop:   opDrop,
-	op.Dup:    opDup,
+var optab [NumOp]func(*vm)
+var ops = [NumOp]func(*vm){
+	Fail:   func(vm *vm) { panic(errors.New("illegal instruction")) },
+	Jump:   opJump,
+	JumpIf: opJumpIf,
+	Exec:   opExec,
+	Roll:   opRoll,
+	Depth:  opDepth,
+	Drop:   opDrop,
+	Dup:    opDup,
 
-	op.Varint: opVarint,
+	Varint: opVarint,
 
-	op.Abs:    opAbs,
-	op.Add:    intBinOp(checked.AddInt64).run,
-	op.Mul:    intBinOp(checked.MulInt64).run,
-	op.Div:    intBinOp(checked.DivInt64).run,
-	op.Mod:    intBinOp(checked.ModInt64).run,
-	op.Lshift: intBinOp(checked.LshiftInt64).run,
-	op.Rshift: intBinOp(rshift).run,
-	op.Min:    intBinOp(min).run,
-	op.Max:    intBinOp(max).run,
+	Abs:    opAbs,
+	Add:    intBinOp(checked.AddInt64).run,
+	Mul:    intBinOp(checked.MulInt64).run,
+	Div:    intBinOp(checked.DivInt64).run,
+	Mod:    intBinOp(checked.ModInt64).run,
+	Lshift: intBinOp(checked.LshiftInt64).run,
+	Rshift: intBinOp(rshift).run,
+	Min:    intBinOp(min).run,
+	Max:    intBinOp(max).run,
 
-	op.Not:   opNot,
-	op.And:   boolBinOp(func(x, y int64) bool { return x != 0 && y != 0 }),
-	op.Or:    boolBinOp(func(x, y int64) bool { return x != 0 || y != 0 }),
-	op.GT:    boolBinOp(func(x, y int64) bool { return x > y }),
-	op.GE:    boolBinOp(func(x, y int64) bool { return x >= y }),
-	op.Equal: opEqual,
+	Not:   opNot,
+	And:   boolBinOp(func(x, y int64) bool { return x != 0 && y != 0 }),
+	Or:    boolBinOp(func(x, y int64) bool { return x != 0 || y != 0 }),
+	GT:    boolBinOp(func(x, y int64) bool { return x > y }),
+	GE:    boolBinOp(func(x, y int64) bool { return x >= y }),
+	Equal: opEqual,
 
-	op.Cat:    opCat,
-	op.Slice:  opSlice,
-	op.Len:    opLen,
-	op.BitNot: opBitNot,
-	op.BitAnd: bitBinOp(func(x, y int64) int64 { return x & y }).run,
-	op.BitOr:  bitBinOp(func(x, y int64) int64 { return x | y }).run,
-	op.BitXor: bitBinOp(func(x, y int64) int64 { return x ^ y }).run,
+	Cat:    opCat,
+	Slice:  opSlice,
+	Len:    opLen,
+	BitNot: opBitNot,
+	BitAnd: bitBinOp(func(x, y int64) int64 { return x & y }).run,
+	BitOr:  bitBinOp(func(x, y int64) int64 { return x | y }).run,
+	BitXor: bitBinOp(func(x, y int64) int64 { return x ^ y }).run,
 
-	op.SHA256:        hashOp(sha256.New).run,
-	op.SHA3:          hashOp(sha3.New256).run,
-	op.CheckSig:      opCheckSig,
-	op.CheckMultiSig: opCheckMultiSig,
+	SHA256:        hashOp(sha256.New).run,
+	SHA3:          hashOp(sha3.New256).run,
+	CheckSig:      opCheckSig,
+	CheckMultiSig: opCheckMultiSig,
 }
 
 func opJump(vm *vm) {
@@ -84,17 +81,17 @@ func opRoll(vm *vm) {
 	t := vm.data.PopInt64()
 	n := vm.data.PopInt64()
 	switch t {
-	case op.StackData:
+	case StackData:
 		vm.data.Roll(n)
-	case op.StackInput:
+	case StackInput:
 		panic(errors.New("todo"))
-	case op.StackValue:
+	case StackValue:
 		panic(errors.New("todo"))
-	case op.StackCond:
+	case StackCond:
 		panic(errors.New("todo"))
-	case op.StackOutput:
+	case StackOutput:
 		panic(errors.New("todo"))
-	case op.StackNonce:
+	case StackNonce:
 		panic(errors.New("todo"))
 	default:
 		panic(errors.New("bad stack selector"))
@@ -105,21 +102,21 @@ func opDepth(vm *vm) {
 	t := vm.data.PopInt64()
 	var n int
 	switch t {
-	case op.StackData:
+	case StackData:
 		n = int(vm.data.Len())
-	case op.StackInput:
+	case StackInput:
 		n = len(vm.input)
-	case op.StackValue:
+	case StackValue:
 		n = len(vm.value)
-	case op.StackCond:
+	case StackCond:
 		n = len(vm.pred)
-	case op.StackAnchor:
+	case StackAnchor:
 		n = len(vm.anchor)
-	case op.StackOutput:
+	case StackOutput:
 		n = len(vm.output)
-	case op.StackNonce:
+	case StackNonce:
 		n = len(vm.nonce)
-	case op.StackRetire:
+	case StackRetire:
 		n = len(vm.retire)
 	default:
 		panic(errors.New("bad stack selector"))
@@ -184,19 +181,19 @@ func max(x, y int64) (int64, bool) {
 func opNot(vm *vm) {
 	var v bool
 	switch x := vm.data.Pop().(type) {
-	case data.Int64:
+	case Int64:
 		v = x != 0
 	default:
 		v = true
 	}
-	vm.data.Push(data.Bool(v))
+	vm.data.Push(Bool(v))
 }
 
 func boolBinOp(f func(x, y int64) bool) func(vm *vm) {
 	return func(vm *vm) {
 		y := vm.data.PopInt64()
 		x := vm.data.PopInt64()
-		vm.data.Push(data.Bool(f(x, y)))
+		vm.data.Push(Bool(f(x, y)))
 	}
 }
 
@@ -218,15 +215,15 @@ func opSlice(vm *vm) {
 
 func opLen(vm *vm) {
 	s := vm.data.PopBytes()
-	vm.data.Push(data.Int64(len(s)))
+	vm.data.Push(Int64(len(s)))
 }
 
 func opBitNot(vm *vm) {
 	x := vm.data.Pop()
 	switch x := x.(type) {
-	case data.Int64:
+	case Int64:
 		vm.data.Push(^x)
-	case data.Bytes:
+	case Bytes:
 		z := make([]byte, len(x))
 		for i := range x {
 			z[i] = ^x[i]
@@ -241,15 +238,15 @@ func (o bitBinOp) run(vm *vm) {
 	y := vm.data.Pop()
 	x := vm.data.Pop()
 	switch x := x.(type) {
-	case data.Int64:
-		y := y.(data.Int64)
+	case Int64:
+		y := y.(Int64)
 		vm.data.PushInt64(o(int64(x), int64(y)))
-	case data.Bytes:
-		y := y.(data.Bytes)
+	case Bytes:
+		y := y.(Bytes)
 		if len(x) != len(y) {
 			panic(errors.New("unequal length"))
 		}
-		z := make(data.Bytes, len(x))
+		z := make(Bytes, len(x))
 		for i := range x {
 			xi := int64(x[i])
 			yi := int64(y[i])
@@ -265,7 +262,7 @@ func (o hashOp) run(vm *vm) {
 	s := vm.data.PopBytes()
 	h := o()
 	h.Write(s)
-	vm.data.Push(data.Bytes(h.Sum(nil)))
+	vm.data.Push(Bytes(h.Sum(nil)))
 }
 
 func opCheckSig(vm *vm) {
@@ -277,7 +274,7 @@ func opCheckSig(vm *vm) {
 	} else if len(k) != ed25519.PublicKeySize {
 		panic(errors.New("key len"))
 	}
-	vm.data.Push(data.Bool(ed25519.Verify(k, m, s)))
+	vm.data.Push(Bool(ed25519.Verify(k, m, s)))
 }
 
 func opCheckMultiSig(vm *vm) {
@@ -303,7 +300,7 @@ func opCheckMultiSig(vm *vm) {
 		panic(errors.New("message len"))
 	}
 
-	var sig []data.Bytes
+	var sig []Bytes
 	for i := int64(0); i < nsig; i++ {
 		sig = append(sig, vm.data.PopBytes())
 	}
@@ -314,7 +311,7 @@ func opCheckMultiSig(vm *vm) {
 		}
 		key = key[1:]
 	}
-	vm.data.Push(data.Bool(len(sig) == 0))
+	vm.data.Push(Bool(len(sig) == 0))
 }
 
 func opVarint(vm *vm) {
@@ -331,9 +328,9 @@ func opEqual(vm *vm) {
 	a := vm.data.Pop()
 	var ok bool
 	switch a := a.(type) {
-	case data.Int64:
-		b := b.(data.Int64)
+	case Int64:
+		b := b.(Int64)
 		ok = a == b
 	}
-	vm.data.Push(data.Bool(ok))
+	vm.data.Push(Bool(ok))
 }

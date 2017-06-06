@@ -2,9 +2,6 @@ package txvm
 
 import (
 	"encoding/binary"
-
-	"chain/protocol/txvm/data"
-	"chain/protocol/txvm/op"
 )
 
 // Tx contains the full transaction data.
@@ -22,10 +19,10 @@ type Tx struct {
 	Version          int64
 	MinTime, MaxTime uint64
 	Runlimit         int64
-	In, Nonce        []ID
-	Out, Retire      []ID
-	Data             ID
-	ExtHash          ID
+	In, Nonce        []VmID
+	Out, Retire      []VmID
+	Data             VmID
+	ExtHash          VmID
 	Proof            []byte
 }
 
@@ -33,26 +30,26 @@ type vm struct {
 	// config, doesn't change after init
 	traceUnlock func(Contract)
 	traceLock   func(Contract)
-	traceOp     func(data.List, []byte)
+	traceOp     func(List, []byte)
 	tmin        int64
 	tmax        int64
 
 	pc   int    // program counter
 	prog []byte // current program
 
-	data data.List
+	data List
 
 	// linear types
-	input    []ID     // must end empty
+	input    []VmID   // must end empty
 	value    []*value // must end empty
 	pred     []pval   // must end empty
 	contract []*cval  // must end empty
-	anchor   []ID
+	anchor   []VmID
 
 	// results
-	output []ID
-	nonce  []ID
-	retire []ID
+	output []VmID
+	nonce  []VmID
+	retire []VmID
 }
 
 // Validate returns whether x is valid.
@@ -93,10 +90,10 @@ func exec(vm *vm, prog []byte) {
 		vm.traceOp(vm.data, prog[vm.pc:])
 		opcode, data, n := decodeInst(prog[vm.pc:])
 		vm.pc += n
-		if opcode == op.BaseData {
+		if opcode == BaseData {
 			vm.data.PushBytes(data)
-		} else if opcode >= op.MinInt {
-			vm.data.PushInt64(int64(opcode) - op.BaseInt)
+		} else if opcode >= MinInt {
+			vm.data.PushInt64(int64(opcode) - BaseInt)
 		} else {
 			optab[opcode](vm)
 		}
@@ -106,14 +103,14 @@ func exec(vm *vm, prog []byte) {
 
 func decodeInst(buf []byte) (opcode byte, imm []byte, n int) {
 	v, n := binary.Uvarint(buf) // note v=0 on error
-	if v < op.BaseData {
+	if v < BaseData {
 		return byte(v), nil, n
 	}
-	r := v - op.BaseData + uint64(n)
-	return op.BaseData, buf[n:r], int(r)
+	r := v - BaseData + uint64(n)
+	return BaseData, buf[n:r], int(r)
 }
 
-func idsEqual(a, b []ID) bool {
+func idsEqual(a, b []VmID) bool {
 	if len(a) != len(b) {
 		return false
 	}

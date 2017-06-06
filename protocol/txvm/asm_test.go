@@ -1,10 +1,8 @@
-package vmutil
+package txvm
 
 import (
 	"bytes"
 	"testing"
-
-	"chain/protocol/txvm/op"
 )
 
 var asmValid = []struct {
@@ -16,18 +14,15 @@ var asmValid = []struct {
 	{`10`, []byte{0x5a}},
 	{`11`, []byte{0x5b}},
 	{`15`, []byte{0x5f}},
-	{`16`, []byte{0x61, 16, op.Varint}},
-	{`50`, []byte{0x61, 50, op.Varint}},
-	{`0x50`, []byte{0x61, 0x50, op.Varint}},
-	{`-1`, []byte{op.Neg1}},
-	{`-2`, []byte{0x52, op.Neg1, op.Mul}},
-	{`-15`, []byte{0x5f, op.Neg1, op.Mul}},
-	{`-16`, []byte{0x61, 16, op.Varint, op.Neg1, op.Mul}},
-	{`-9223372036854775808`, []byte{0x6a, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01, op.Varint}},
-	{`"55"x`, []byte{0x61, 0x55}},
-	{`input`, []byte{op.Input}},
-	{`[input]`, []byte{0x61, op.Input, op.Prog}},
-	{`[[input]]`, []byte{0x63, 0x61, op.Input, op.Prog, op.Prog}},
+	{`16`, []byte{BaseData + 1, 16, Varint}},
+	{`50`, []byte{BaseData + 1, 50, Varint}},
+	{`0x50`, []byte{BaseData + 1, 0x50, Varint}},
+	{`-1`, []byte{MinInt}},
+	{`-2`, []byte{0x52, MinInt, Mul}},
+	{`-15`, []byte{0x5f, MinInt, Mul}},
+	{`-16`, []byte{BaseData + 1, 16, Varint, MinInt, Mul}},
+	{`-9223372036854775808`, []byte{BaseData + 10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01, Varint}},
+	{`"55"x`, []byte{BaseData + 1, 0x55}},
 }
 
 func TestAssemble(t *testing.T) {

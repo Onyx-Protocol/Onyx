@@ -1,12 +1,10 @@
 package txvm
 
-import "chain/protocol/txvm/data"
-
 type Option func(*vm)
 
 type Contract struct {
 	Prog   []byte
-	Asset  ID
+	Asset  VmID
 	Amount uint64
 }
 
@@ -22,7 +20,7 @@ func TraceLock(f func(Contract)) Option {
 	}
 }
 
-func TraceOp(f func(stack data.List, prog []byte)) Option {
+func TraceOp(f func(stack List, prog []byte)) Option {
 	// TODO(kr): provide other state too (if necessary?)
 	return func(vm *vm) {
 		vm.traceOp = f

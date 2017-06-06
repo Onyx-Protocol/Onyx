@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 
 	"chain/protocol/txvm"
-	"chain/protocol/txvm/op"
 
 	"chain/protocol/bc"
 	"chain/protocol/vm"
@@ -39,15 +38,15 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 				trID := bc.EntryID(tr)
 
 				nonceID := bc.EntryID(bc.NewNonce(&bc.Program{VmVersion: 1, Code: prog}, &trID))
-				tx.Nonce = append(tx.Nonce, txvm.ID(nonceID.Byte32()))
+				tx.Nonce = append(tx.Nonce, txvm.VmID(nonceID.Byte32()))
 
 				pushInt64(&tx.Proof, int64(oldTx.MinTime))
 				pushInt64(&tx.Proof, int64(oldTx.MaxTime))
 				pushBytes(&tx.Proof, prog)
-				tx.Proof = append(tx.Proof, op.Anchor) // nonce => anchor + cond
+				tx.Proof = append(tx.Proof, txvm.Anchor) // nonce => anchor + cond
 
 				var argsProg []byte
-				argsProg = append(argsProg, op.Satisfy)
+				argsProg = append(argsProg, txvm.Satisfy)
 				argsProgs = append(argsProgs, argsProg)
 			}
 
@@ -57,15 +56,15 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 			pushID(&tx.Proof, hashData(oldinp.ReferenceData).Byte32())
 			pushInt64(&tx.Proof, int64(oldIss.Amount))
 			pushID(&tx.Proof, oldIss.AssetID().Byte32())
-			tx.Proof = append(tx.Proof, op.VM1Issue) // anchor => value + cond
+			tx.Proof = append(tx.Proof, txvm.VM1Issue) // anchor => value + cond
 
 			var argsProg []byte
 			for _, arg := range oldIss.Arguments {
 				pushBytes(&argsProg, arg)
 			}
 			pushInt64(&argsProg, int64(len(oldIss.Arguments)))
-			argsProg = append(argsProg, op.List)
-			argsProg = append(argsProg, op.Satisfy)
+			// tuple
+			argsProg = append(argsProg, txvm.Satisfy)
 			argsProgs = append(argsProgs, argsProg)
 		case *SpendInput:
 			oldSp := ti
@@ -87,8 +86,8 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 				pushBytes(&argsProg, arg)
 			}
 			pushInt64(&argsProg, int64(len(oldSp.Arguments)))
-			argsProg = append(argsProg, op.List)
-			argsProg = append(argsProg, op.Satisfy)
+			// tuple
+			argsProg = append(argsProg, txvm.Satisfy)
 			argsProgs = append(argsProgs, argsProg)
 
 			// prevout fields
@@ -103,25 +102,25 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 			pushID(&tx.Proof, hashData(oldinp.ReferenceData).Byte32())
 
 			// prevout id + data => vm1value + condition
-			tx.Proof = append(tx.Proof, op.VM1Unlock)
+			tx.Proof = append(tx.Proof, txvm.VM1Unlock)
 		}
 	}
 
 	pushInt64(&tx.Proof, int64(len(oldTx.Inputs)))
-	tx.Proof = append(tx.Proof, op.VM1Mux)
+	tx.Proof = append(tx.Proof, txvm.VM1Mux)
 
 	// loop in reverse so that output 0 is at the top
 	for i := len(oldTx.Outputs) - 1; i >= 0; i-- {
 		oldout := oldTx.Outputs[i]
 		pushInt64(&tx.Proof, int64(oldout.Amount))
 		pushID(&tx.Proof, oldout.AssetId.Byte32())
-		tx.Proof = append(tx.Proof, op.VM1Withdraw)
+		tx.Proof = append(tx.Proof, txvm.VM1Withdraw)
 		pushID(&tx.Proof, hashData(oldout.ReferenceData).Byte32())
 		if isRetirement(oldout.ControlProgram) {
-			tx.Proof = append(tx.Proof, op.Retire)
+			tx.Proof = append(tx.Proof, txvm.Retire)
 		} else {
 			pushBytes(&tx.Proof, oldout.ControlProgram)
-			tx.Proof = append(tx.Proof, op.Lock) // retains output object for checkoutput
+			tx.Proof = append(tx.Proof, txvm.Lock) // retains output object for checkoutput
 		}
 	}
 
@@ -137,7 +136,7 @@ func isRetirement(prog []byte) bool {
 }
 
 func data(p []byte) (g []byte) {
-	n := int64(len(p)) + op.BaseData
+	n := int64(len(p)) + txvm.BaseData
 	g = append(g, encVarint(n)...)
 	g = append(g, p...)
 	return g
@@ -145,7 +144,7 @@ func data(p []byte) (g []byte) {
 
 func pushInt64(g *[]byte, n int64) {
 	*g = append(*g, data(encVarint(n))...)
-	*g = append(*g, op.Varint)
+	*g = append(*g, txvm.Varint)
 }
 
 func pushBytes(g *[]byte, p []byte) {

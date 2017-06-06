@@ -9,10 +9,10 @@ import (
 	"chain/crypto/sha3pool"
 )
 
-type ID [32]byte
+type VmID [32]byte
 
-func makeID(x []byte) ID {
-	var id ID
+func makeID(x []byte) VmID {
+	var id VmID
 	if len(x) != len(id) {
 		panic("bad id len")
 	}
@@ -22,7 +22,7 @@ func makeID(x []byte) ID {
 
 // asset type and quantity data tuple
 type aval struct {
-	asset ID
+	asset VmID
 	n     int64
 }
 
@@ -30,7 +30,7 @@ type aval struct {
 type value struct {
 }
 
-func makeValue(asset ID, amount int64) *value {
+func makeValue(asset VmID, amount int64) *value {
 	//avalID := ID{}
 	//return value{avalID, asset, amount}
 	return &value{}
@@ -44,8 +44,8 @@ type pval struct {
 type cval struct {
 	src  valsrc
 	prog []byte
-	data ID
-	exth ID
+	data VmID
+	exth VmID
 }
 
 func (c *cval) typ() string { return "output1" }
@@ -60,7 +60,7 @@ func (c *cval) writeTo(w io.Writer) {
 }
 
 type valsrc struct {
-	ref  ID
+	ref  VmID
 	aval aval
 	pos  int64
 }
@@ -70,7 +70,7 @@ type entry interface {
 	writeTo(w io.Writer)
 }
 
-func entryID(v entry) ID {
+func entryID(v entry) VmID {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 
@@ -83,7 +83,7 @@ func entryID(v entry) ID {
 	v.writeTo(bh)
 	io.CopyN(h, bh, 32)
 
-	var id ID
+	var id VmID
 	h.Read(id[:])
 	return id
 }

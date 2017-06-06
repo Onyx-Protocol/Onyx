@@ -1,4 +1,20 @@
-package data
+package txvm
+
+type Value interface {
+	value()
+}
+
+// Bool converts x to a Value (either 0 or 1).
+func Bool(x bool) Value {
+	if x {
+		return Int64(1)
+	}
+	return Int64(0)
+}
+
+type Bytes []byte
+
+type Int64 int64
 
 type List struct {
 	a []Value
@@ -30,3 +46,7 @@ func (l *List) Roll(n int64) {
 	l.a = append(l.a[:i], l.a[i+1:]...)
 	l.Push(x)
 }
+
+func (Bytes) value() {}
+func (Int64) value() {}
+func (List) value()  {}

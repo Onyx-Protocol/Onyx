@@ -1,4 +1,4 @@
-package vmutil
+package txvm
 
 import (
 	"encoding/binary"
@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"unicode"
 	"unicode/utf8"
-
-	"chain/protocol/txvm/op"
 )
 
 const (
@@ -22,11 +20,7 @@ const (
 )
 
 var mnemonic = map[string]byte{
-	"varint": op.Varint,
-	"input":  op.Input,
-	"open":   op.Open,
-	"seal":   op.Seal,
-	"output": op.Output,
+	"varint": Varint,
 }
 
 var composite = map[string]string{
@@ -54,21 +48,21 @@ func Assemble(src string) ([]byte, error) {
 		case numberTok:
 			v, _ := strconv.ParseInt(lit, 0, 64)
 			if 0 <= v && v <= 0xf {
-				p = append(p, op.BaseInt|byte(v))
+				p = append(p, BaseInt|byte(v))
 			} else if v == -1 {
-				p = append(p, op.Neg1)
+				p = append(p, MinInt)
 			} else if -0x10 < v && v < 0 {
-				p = append(p, op.BaseInt|byte(-v))
-				p = append(p, op.Neg1)
-				p = append(p, op.Mul)
+				p = append(p, BaseInt|byte(-v))
+				p = append(p, MinInt)
+				p = append(p, Mul)
 			} else if v <= -0x10 && v != -v {
 				p = append(p, pushData(encVarint(-v))...)
-				p = append(p, op.Varint)
-				p = append(p, op.Neg1)
-				p = append(p, op.Mul)
+				p = append(p, Varint)
+				p = append(p, MinInt)
+				p = append(p, Mul)
 			} else {
 				p = append(p, pushData(encVarint(v))...)
-				p = append(p, op.Varint)
+				p = append(p, Varint)
 			}
 		case hexTok:
 			s := lit[1 : len(lit)-2] // remove " and "x
@@ -87,7 +81,6 @@ func Assemble(src string) ([]byte, error) {
 				return nil, fmt.Errorf("parsing quoted program %s: %v", lit, err)
 			}
 			p = append(p, pushData(innerProg)...)
-			p = append(p, op.Prog)
 		default:
 			return nil, errors.New("bad source")
 		}
@@ -193,7 +186,7 @@ func encVarint(v int64) []byte {
 }
 
 func pushData(buf []byte) (p []byte) {
-	n := uint64(len(buf)) + op.BaseData
+	n := uint64(len(buf)) + BaseData
 	pfx := make([]byte, 10)
 	pfx = pfx[:binary.PutUvarint(pfx, n)]
 	p = append(p, pfx...)
