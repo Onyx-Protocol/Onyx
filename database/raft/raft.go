@@ -719,31 +719,38 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 			panic(err)
 		}
 		sv.stateMu.Lock()
-		defer sv.stateMu.Unlock()
-		defer sv.stateCond.Broadcast()
 		sv.confState = *sv.raftNode.ApplyConfChange(cc)
 		sv.state.SetAppliedIndex(ent.Index)
+		sv.stateMu.Unlock()
 		switch cc.Type {
 		case raftpb.ConfChangeAddNode, raftpb.ConfChangeUpdateNode:
+			sv.stateMu.Lock()
+			defer sv.stateMu.Unlock()
+			defer sv.stateCond.Broadcast()
 			sv.state.SetPeerAddr(cc.NodeID, string(cc.Context))
 		case raftpb.ConfChangeRemoveNode:
 			if cc.NodeID == sv.id {
 				panic(errors.New("removed from cluster"))
 			}
+			sv.stateMu.Lock()
+			defer sv.stateMu.Unlock()
+			defer sv.stateCond.Broadcast()
 			sv.state.RemovePeerAddr(cc.NodeID)
 		default:
 			panic(fmt.Errorf("unknown confchange type: %v", cc.Type))
 		}
 	case raftpb.EntryNormal:
-		sv.stateMu.Lock()
-		defer sv.stateCond.Broadcast()
-		defer sv.stateMu.Unlock()
 		//raft will send empty request defaulted to EntryNormal on leader election
 		//we need to handle that here
 		if ent.Data == nil {
+			sv.stateMu.Lock()
 			sv.state.SetAppliedIndex(ent.Index)
+			sv.stateMu.Unlock()
 			break
 		}
+		sv.stateMu.Lock()
+		defer sv.stateCond.Broadcast()
+		defer sv.stateMu.Unlock()
 		var p proposal
 		err := json.Unmarshal(ent.Data, &p)
 		if err != nil {
