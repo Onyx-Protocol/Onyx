@@ -2,7 +2,7 @@ package txvm
 
 //go:generate sh gen.sh
 
-var OpNames = []string{
+var OpNames = [...]string{
 	Fail:              "fail",
 	PC:                "pc",
 	Exec:              "exec",
@@ -81,7 +81,7 @@ var OpNames = []string{
 	Private:           "private",
 }
 
-var OpCodes = map[string]int{
+var OpCodes = map[string]byte{
 	"fail":              Fail,
 	"pc":                PC,
 	"exec":              Exec,
