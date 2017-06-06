@@ -30,7 +30,7 @@ import (
 
 func main() {
 	bucket := os.Args[1]
-	bucketPrefix := os.Args[2]
+	bucketPrefix := strings.TrimSuffix(os.Args[2], "/") + "/"
 	localDir := os.Args[3]
 
 	localKeys := mustListContents(localDir)
@@ -45,7 +45,7 @@ func main() {
 		Prefix: aws.String(bucketPrefix),
 	}, func(page *s3.ListObjectsOutput, lastPage bool) bool {
 		for _, obj := range page.Contents {
-			if !(*obj.Key == "docs/") {
+			if !(*obj.Key == bucketPrefix) {
 				remoteKeys = append(remoteKeys, *obj.Key)
 			}
 		}
@@ -81,7 +81,6 @@ func main() {
 		}
 
 		_, err = svc.PutObject(upload)
-
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -100,7 +99,6 @@ func main() {
 		}
 
 		_, err = svc.DeleteObject(remove)
-
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -153,15 +151,17 @@ func mustListContents(parentPath string) []string {
 	for _, f := range files {
 		n := f.Name()
 
+		if strings.HasPrefix(n, ".") {
+			continue
+		}
+
 		if f.IsDir() {
 			descendants := mustListContents(path.Join(parentPath, n))
 			for _, d := range descendants {
 				res = append(res, path.Join(n, d))
 			}
 		} else {
-			if !strings.HasPrefix(n, ".") {
-				res = append(res, n)
-			}
+			res = append(res, n)
 		}
 	}
 
