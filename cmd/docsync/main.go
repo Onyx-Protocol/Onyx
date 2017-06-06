@@ -13,7 +13,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -59,7 +58,7 @@ func main() {
 	for _, k := range localKeys {
 		var body []byte
 
-		path := fmt.Sprintf("%s/%s", localDir, k)
+		path := path.Join(localDir, k)
 		body, err = ioutil.ReadFile(path)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -88,7 +87,7 @@ func main() {
 
 	var prefixedLocalKeys []string
 	for _, k := range localKeys {
-		prefixedLocalKeys = append(prefixedLocalKeys, path.Join("docs", k))
+		prefixedLocalKeys = append(prefixedLocalKeys, bucketPrefix+k)
 	}
 
 	remoteOnly := setDiff(remoteKeys, prefixedLocalKeys)
