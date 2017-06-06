@@ -38,8 +38,8 @@ const (
 	Mod    = 28
 	Lshift = 29
 	Rshift = 30
-	Min    = 31
-	Max    = 32
+	// 31
+	// 32
 
 	// string
 	Cat   = 33

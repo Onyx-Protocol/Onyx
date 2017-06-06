@@ -34,8 +34,6 @@ var ops = [NumOp]func(*vm){
 	Mod:    intBinOp(checked.ModInt64).run,
 	Lshift: intBinOp(checked.LshiftInt64).run,
 	Rshift: intBinOp(rshift).run,
-	Min:    intBinOp(min).run,
-	Max:    intBinOp(max).run,
 
 	Not:   opNot,
 	And:   boolBinOp(func(x, y int64) bool { return x != 0 && y != 0 }),
@@ -156,20 +154,6 @@ func rshift(x, y int64) (int64, bool) {
 		return 0, false
 	}
 	return x >> uint64(y), true
-}
-
-func min(x, y int64) (int64, bool) {
-	if x < y {
-		return x, true
-	}
-	return y, true
-}
-
-func max(x, y int64) (int64, bool) {
-	if x > y {
-		return x, true
-	}
-	return y, true
 }
 
 func opNot(vm *vm) {
