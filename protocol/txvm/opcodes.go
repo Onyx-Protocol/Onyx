@@ -1,4 +1,4 @@
-package op
+package txvm
 
 const (
 	// control flow
@@ -17,10 +17,7 @@ const (
 	ToAlt   = 10
 	FromAlt = 11
 
-	// data
-	List   = 12
-	Cons   = 13
-	Uncons = 14
+	// data=
 	Len    = 15 // list or string
 	Varint = 16
 	Encode = 17
@@ -78,7 +75,7 @@ const (
 	Anchor       = 57 // nonce + data => anchor + cond
 	Issue        = 58 // anchor + data => value + cond
 	IssueCA      = 59 // TODO(kr): review for CA
-	Retire       = 60 // valud + refdata => {}
+	Retire       = 60 // value + refdata => {}
 
 	// item data
 	ID    = 61
