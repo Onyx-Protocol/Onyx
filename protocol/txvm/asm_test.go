@@ -16,7 +16,6 @@ var asmValid = []struct {
 	{`15`, []byte{BaseInt + 15}},
 	{`16`, []byte{BaseData + 1, 16, Varint}},
 	{`50`, []byte{BaseData + 1, 50, Varint}},
-	{`0x50`, []byte{BaseData + 1, 0x50, Varint}},
 	{`-1`, []byte{BaseInt + 1, Negate}},
 	{`-2`, []byte{BaseInt + 2, Negate}},
 	{`-15`, []byte{BaseInt + 15, Negate}},
@@ -39,17 +38,11 @@ func TestAssemble(t *testing.T) {
 	}
 }
 
-/*
 func TestDisassemble(t *testing.T) {
 	for _, test := range asmValid {
-		src, err := Disassemble(test.prog)
-		if err != nil {
-			t.Errorf("Disassemble(%x) err = %v want nil", test.prog, err)
-			continue
-		}
+		src := Disassemble(test.prog)
 		if src != test.src {
 			t.Errorf("Disassemble(%x) = %#q want %#q", test.prog, src, test.src)
 		}
 	}
 }
-*/
