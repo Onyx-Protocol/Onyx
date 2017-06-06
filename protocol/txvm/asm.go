@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -63,6 +64,8 @@ func Assemble(src string) ([]byte, error) {
 				p = append(p, Varint)
 				p = append(p, Negate)
 			} else {
+				fmt.Println(v)
+				fmt.Println(v != -v)
 				p = append(p, pushData(encVarint(v))...)
 				p = append(p, Varint)
 			}
@@ -196,6 +199,50 @@ func pushData(buf []byte) (p []byte) {
 	return p
 }
 
-func Disassemble(prog []byte) (string, error) {
-	panic("todo")
+func Disassemble(prog []byte) string {
+	pc := 0
+
+	type instruction struct {
+		opcode byte
+		data   []byte
+	}
+
+	var instructions []instruction
+	for pc < len(prog) {
+		opcode, data, n := decodeInst(prog[pc:])
+		pc += n
+		instructions = append(instructions, instruction{opcode: opcode, data: data})
+	}
+
+	var parts []string
+	for i := 0; i < len(instructions); i++ {
+		inst := instructions[i]
+		if inst.opcode >= BaseData {
+			if len(instructions) > i+2 &&
+				instructions[i+1].opcode == Varint &&
+				instructions[i+2].opcode == Negate {
+				v, _ := binary.Uvarint(inst.data)
+				parts = append(parts, fmt.Sprintf("%d", -int64(v)))
+				i += 2
+			} else if len(instructions) > i+1 &&
+				instructions[i+1].opcode == Varint {
+				v, _ := binary.Uvarint(inst.data)
+				parts = append(parts, fmt.Sprintf("%d", int64(v)))
+				i += 1
+			} else {
+				parts = append(parts, fmt.Sprintf(`"%x"x`, inst.data))
+			}
+		} else if inst.opcode >= MinInt {
+			if len(instructions) > i+1 &&
+				instructions[i+1].opcode == Negate {
+				parts = append(parts, fmt.Sprintf("%d", -(int(inst.opcode)-int(BaseInt))))
+				i += 1
+			} else {
+				parts = append(parts, fmt.Sprintf("%d", int(inst.opcode)-int(BaseInt)))
+			}
+		} else {
+			parts = append(parts, OpNames[inst.opcode])
+		}
+	}
+	return strings.Join(parts, " ")
 }
