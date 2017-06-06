@@ -5,7 +5,7 @@ import { connect } from 'react-redux'
 import appActions from 'features/app/actions'
 import Tutorial from 'features/tutorial/components/Tutorial'
 import TutorialHeader from 'features/tutorial/components/TutorialHeader/TutorialHeader'
-import { Navigation, SecondaryNavigation } from '../'
+import { Navigation, SecondaryNavigation, Modal } from '../'
 
 class Layout extends React.Component {
 
@@ -54,6 +54,16 @@ class Layout extends React.Component {
             </TutorialHeader>
           {this.props.children}
         </div>
+
+         <Modal />
+
+         {/* For copyToClipboard(). TODO: move this some place cleaner. */}
+         <input
+           id='_copyInput'
+           onChange={() => 'do nothing'}
+           value='dummy'
+           style={{display: 'none'}}
+         />
       </div>
     )
   }
