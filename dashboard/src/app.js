@@ -3,7 +3,7 @@
 import 'bootstrap-loader'
 import React from 'react'
 import { render } from 'react-dom'
-import Root from 'Root'
+import Dashboard from 'Dashboard'
 import configureStore from 'configureStore'
 
 // Set favicon
@@ -17,6 +17,6 @@ document.getElementsByTagName('head')[0].appendChild(favicon)
 // Start app
 export const store = configureStore()
 render(
-	<Root store={store}/>,
+	<Dashboard store={store}/>,
 	document.getElementById('root')
 )

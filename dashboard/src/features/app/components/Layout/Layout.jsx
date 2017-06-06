@@ -1,13 +1,13 @@
 import React from 'react'
-import styles from './Main.scss'
+import styles from './Layout.scss'
 import { Link } from 'react-router'
 import { connect } from 'react-redux'
-import actions from 'actions'
+import appActions from 'features/app/actions'
 import Tutorial from 'features/tutorial/components/Tutorial'
 import TutorialHeader from 'features/tutorial/components/TutorialHeader/TutorialHeader'
-import { Navigation, SecondaryNavigation } from '../'
+import { Navigation, SecondaryNavigation, Modal } from '../'
 
-class Main extends React.Component {
+class Layout extends React.Component {
 
   constructor(props) {
     super(props)
@@ -54,6 +54,16 @@ class Main extends React.Component {
             </TutorialHeader>
           {this.props.children}
         </div>
+
+         <Modal />
+
+         {/* For copyToClipboard(). TODO: move this some place cleaner. */}
+         <input
+           id='_copyInput'
+           onChange={() => 'do nothing'}
+           value='dummy'
+           style={{display: 'none'}}
+         />
       </div>
     )
   }
@@ -61,12 +71,12 @@ class Main extends React.Component {
 
 export default connect(
   (state) => ({
-    canLogOut: state.core.requireClientToken,
-    connected: state.core.connected,
+    canLogOut: state.authn.authenticationRequired,
+    connected: state.authn.connected,
     showDropwdown: state.app.dropdownState == 'open',
   }),
   (dispatch) => ({
-    toggleDropdown: () => dispatch(actions.app.toggleDropdown),
-    closeDropdown: () => dispatch(actions.app.closeDropdown),
+    toggleDropdown: () => dispatch(appActions.toggleDropdown),
+    closeDropdown: () => dispatch(appActions.closeDropdown),
   })
-)(Main)
+)(Layout)

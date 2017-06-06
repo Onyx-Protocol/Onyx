@@ -17,7 +17,11 @@ if (process.env.NODE_ENV === 'production') {
 
 export const chainClient = () => new chainSdk.Client({
   url: apiHost,
-  accessToken: store.getState().core.clientToken
+  accessToken: store.getState().authn.clientToken
+})
+
+export const unauthedClient = () => new chainSdk.Client({
+  url: apiHost
 })
 
 export const chainSigner = () => new chainSdk.HsmSigner()

@@ -1,9 +1,9 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { ErrorBanner, TextField } from 'features/shared/components'
-import actions from 'actions'
 import styles from './Login.scss'
 import { reduxForm } from 'redux-form'
+import { logIn } from 'features/authn/actions'
 
 class Login extends React.Component {
   constructor(props) {
@@ -57,7 +57,7 @@ class Login extends React.Component {
 export default connect(
   () => ({}),
   (dispatch) => ({
-    logIn: (token) => dispatch(actions.core.logIn(token))
+    logIn: (token) => dispatch(logIn(token))
   })
 )(reduxForm({
   form: 'login',

@@ -5,6 +5,7 @@ import accessControl from 'features/accessControl/reducers'
 import { reducers as account } from 'features/accounts'
 import { reducers as app } from 'features/app'
 import { reducers as asset } from 'features/assets'
+import { reducers as authn } from 'features/authn'
 import { reducers as balance } from 'features/balances'
 import { reducers as core } from 'features/core'
 import { reducers as mockhsm } from 'features/mockhsm'
@@ -19,6 +20,7 @@ const makeRootReducer = () => (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO' &&
       !action.param.isConfigured) {
     const newState = {
+      authn: state.authn,
       form: state.form,
       routing: state.routing,
     }
@@ -48,6 +50,7 @@ const makeRootReducer = () => (state, action) => {
     account,
     app,
     asset,
+    authn,
     balance,
     core,
     form,
