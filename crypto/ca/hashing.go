@@ -63,3 +63,19 @@ func scalarHasherFinalize(h sha3.ShakeHash) (s ecmath.Scalar) {
 func scalarHash(input ...[]byte) ecmath.Scalar {
 	return scalarHasherFinalize(scalarHasher(input...))
 }
+
+// xxx placeholder
+func pointHash(input ...[]byte) ecmath.Point {
+	var result ecmath.Point
+	counter := byte(0)
+	for {
+		hasher := scalarHasher(input...)
+		hasher.Write([]byte{counter})
+		s := scalarHasherFinalize(hasher)
+		_, ok := result.Decode(s)
+		if ok {
+			return result
+		}
+		counter++
+	}
+}
