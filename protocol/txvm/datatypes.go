@@ -1,9 +1,9 @@
 package txvm
 
 const (
+	TypeInt64  = 0
 	TypeString = 1
-	TypeInt64  = 2
-	TypeTuple  = 3
+	TypeTuple  = 2
 )
 
 type Value interface {
