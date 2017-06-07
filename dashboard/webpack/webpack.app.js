@@ -117,7 +117,7 @@ config.plugins.push(new webpack.DefinePlugin({
 }))
 
 // Enable babel-polyfill
-config.entry.push('babel-polyfill')
+config.entry.unshift('babel-polyfill')
 
 config.output.publicPath = publicPath
 
