@@ -39,7 +39,11 @@ $ go install chain/cmd/corectl
 
 ## Configuration
 
-`corectl` requires a connection to the Chain Core server. By default, it assumes Chain Core is hosted at `http://localhost:1999`. You can configure this URL by setting the `CORE_URL` environment variable.
+`corectl` requires a connection to the Chain Core server. By default, it assumes Chain Core is hosted at `http://localhost:1999`. You can configure this URL by setting the `CORE_URL` environment variable. For example:
+
+```
+CORE_URL=https://cored.example.com:9999 corectl create-token ...
+```
 
 ## Commands
 
