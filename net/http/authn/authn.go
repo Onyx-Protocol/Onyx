@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/hex"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -48,10 +49,17 @@ func NewAPI(tokens *accesstoken.CredentialStore, crosscorePrefix string, rootCAs
 // Authenticate returns the request, with added tokens and/or localhost
 // flags in the context, as appropriate.
 func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
-	ctx := certAuthn(req, a.rootCAs)
+	var authnErrors []string
+
+	ctx, err := certAuthn(req, a.rootCAs)
+	if err != nil {
+		authnErrors = append(authnErrors, err.Error())
+	}
 
 	token, err := a.tokenAuthn(req)
-	if err == nil && token != "" {
+	if err != nil {
+		authnErrors = append(authnErrors, err.Error())
+	} else if token != "" {
 		// if this request was successfully authenticated with a token, pass the token along
 		ctx = newContextWithToken(ctx, token)
 	}
@@ -72,8 +80,14 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 
 	// if there is no authentication at all, we return an "unauthenticated" error,
 	// which may be helpful when debugging
-	if len(X509Certs(ctx)) < 1 && err != nil {
-		return req, errors.New("unauthenticated")
+	if len(X509Certs(ctx)) < 1 && Token(ctx) == "" {
+		err := errors.New("unauthenticated")
+		if len(authnErrors) > 0 {
+			err = errors.WithDetailf(err, "Invalid credentials: %s", strings.Join(authnErrors, "; "))
+		} else {
+			err = errors.WithDetail(err, "No authentication credentials provided.")
+		}
+		return req, err
 	}
 
 	return req.WithContext(ctx), nil
@@ -83,8 +97,10 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 // If found, it is added to the request's context.
 // Note that an *invalid* client cert is treated the
 // same as no client cert -- it is omitted from the
-// returned context, but the connection may proceed.
-func certAuthn(req *http.Request, rootCAs *x509.CertPool) context.Context {
+// returned context, but the returned error is non-nil.
+// The caller should allow the connection to proceed
+// even if the error is non-nil.
+func certAuthn(req *http.Request, rootCAs *x509.CertPool) (context.Context, error) {
 	if req.TLS != nil && len(req.TLS.PeerCertificates) > 0 {
 		certs := req.TLS.PeerCertificates
 
@@ -105,12 +121,12 @@ func certAuthn(req *http.Request, rootCAs *x509.CertPool) context.Context {
 			// errors.New("tls: failed to verify client's certificate: " + err.Error())
 			// For us, it is ok; we want to treat it the same as if there
 			// were no client cert presented.
-			return req.Context()
+			return req.Context(), err
 		}
 
-		return context.WithValue(req.Context(), x509CertsKey, certs)
+		return context.WithValue(req.Context(), x509CertsKey, certs), nil
 	}
-	return req.Context()
+	return req.Context(), nil
 }
 
 // returns true if this request is coming from a loopback address
@@ -128,7 +144,7 @@ func (a *API) localhostAuthn(req *http.Request) bool {
 func (a *API) tokenAuthn(req *http.Request) (string, error) {
 	user, pw, ok := req.BasicAuth()
 	if !ok {
-		return "", errors.New("no token")
+		return "", nil
 	}
 	return user, a.cachedTokenAuthnCheck(req.Context(), user, pw)
 }
@@ -156,7 +172,7 @@ func (a *API) cachedTokenAuthnCheck(ctx context.Context, user, pw string) error 
 		a.tokenMu.Unlock()
 	}
 	if !res.valid {
-		return errors.New("invalid token")
+		return fmt.Errorf("invalid token: %q", user)
 	}
 	return nil
 }
