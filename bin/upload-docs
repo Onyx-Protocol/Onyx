@@ -19,6 +19,7 @@ sourcePath=${PWD}
 
 go install chain/cmd/md2html
 go install chain/cmd/docgenerate
+go install chain/cmd/docsync
 
 docgenerate $sourcePath $generate_dest_path
 
