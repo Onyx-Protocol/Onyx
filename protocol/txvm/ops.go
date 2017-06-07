@@ -1,6 +1,7 @@
 package txvm
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
@@ -19,7 +20,6 @@ var optab [NumOp]func(*vm)
 var ops = [NumOp]func(*vm){
 	Fail:   func(vm *vm) { panic(errors.New("illegal instruction")) },
 	PC:     opPC,
-	Exec:   opExec,
 	JumpIf: opJumpIf,
 
 	Roll:  opRoll,
@@ -36,8 +36,6 @@ var ops = [NumOp]func(*vm){
 	Not:   opNot,
 	And:   boolBinOp(func(x, y int64) bool { return x != 0 && y != 0 }),
 	Or:    boolBinOp(func(x, y int64) bool { return x != 0 || y != 0 }),
-	GT:    boolBinOp(func(x, y int64) bool { return x > y }),
-	GE:    boolBinOp(func(x, y int64) bool { return x >= y }),
 
 	Add:    intBinOp(checked.AddInt64).run,
 	Mul:    intBinOp(checked.MulInt64).run,
@@ -45,6 +43,8 @@ var ops = [NumOp]func(*vm){
 	Mod:    intBinOp(checked.ModInt64).run,
 	Lshift: intBinOp(checked.LshiftInt64).run,
 	Rshift: intBinOp(rshift).run,
+	GT:     boolBinOp(func(x, y int64) bool { return x > y }),
+	GE:     boolBinOp(func(x, y int64) bool { return x >= y }),
 	Negate: opNegate,
 
 	Cat:   opCat,
@@ -255,6 +255,11 @@ func opEqual(vm *vm) {
 	case Int64:
 		b := b.(Int64)
 		ok = a == b
+	case Bytes:
+		b := b.(Bytes)
+		ok = bytes.Equal(a, b)
+	case VMTuple:
+		panic(errors.New("can't compare tuples"))
 	}
 	vm.data.Push(Bool(ok))
 }
