@@ -20,7 +20,7 @@ func TraceLock(f func(Contract)) Option {
 	}
 }
 
-func TraceOp(f func(stack List, prog []byte)) Option {
+func TraceOp(f func(s stack, prog []byte)) Option {
 	// TODO(kr): provide other state too (if necessary?)
 	return func(vm *vm) {
 		vm.traceOp = f

@@ -30,14 +30,14 @@ type vm struct {
 	// config, doesn't change after init
 	traceUnlock func(Contract)
 	traceLock   func(Contract)
-	traceOp     func(List, []byte)
+	traceOp     func(stack, []byte)
 	tmin        int64
 	tmax        int64
 
 	pc   int    // program counter
 	prog []byte // current program
 
-	data List
+	data stack
 
 	// linear types
 	input    []ID     // must end empty
