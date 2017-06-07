@@ -18,14 +18,26 @@ func init() { optab = ops }
 var optab [NumOp]func(*vm)
 var ops = [NumOp]func(*vm){
 	Fail:   func(vm *vm) { panic(errors.New("illegal instruction")) },
-	JumpIf: opJumpIf,
+	PC:     opPC,
 	Exec:   opExec,
-	Roll:   opRoll,
-	Depth:  opDepth,
-	Drop:   opDrop,
-	Dup:    opDup,
+	JumpIf: opJumpIf,
 
-	Varint: opVarint,
+	Roll:  opRoll,
+	Bury:  opBury,
+	Depth: opDepth,
+
+	Len:     opLen,
+	Drop:    opDrop,
+	Dup:     opDup,
+	ToAlt:   opToAlt,
+	FromAlt: opFromAlt,
+
+	Equal: opEqual,
+	Not:   opNot,
+	And:   boolBinOp(func(x, y int64) bool { return x != 0 && y != 0 }),
+	Or:    boolBinOp(func(x, y int64) bool { return x != 0 || y != 0 }),
+	GT:    boolBinOp(func(x, y int64) bool { return x > y }),
+	GE:    boolBinOp(func(x, y int64) bool { return x >= y }),
 
 	Add:    intBinOp(checked.AddInt64).run,
 	Mul:    intBinOp(checked.MulInt64).run,
@@ -35,25 +47,31 @@ var ops = [NumOp]func(*vm){
 	Rshift: intBinOp(rshift).run,
 	Negate: opNegate,
 
-	Not:   opNot,
-	And:   boolBinOp(func(x, y int64) bool { return x != 0 && y != 0 }),
-	Or:    boolBinOp(func(x, y int64) bool { return x != 0 || y != 0 }),
-	GT:    boolBinOp(func(x, y int64) bool { return x > y }),
-	GE:    boolBinOp(func(x, y int64) bool { return x >= y }),
-	Equal: opEqual,
+	Cat:   opCat,
+	Slice: opSlice,
 
-	Cat:    opCat,
-	Slice:  opSlice,
-	Len:    opLen,
 	BitNot: opBitNot,
 	BitAnd: bitBinOp(func(x, y int64) int64 { return x & y }).run,
 	BitOr:  bitBinOp(func(x, y int64) int64 { return x | y }).run,
 	BitXor: bitBinOp(func(x, y int64) int64 { return x ^ y }).run,
 
+	Encode: opEncode,
+	Varint: opVarint,
+
+	Tuple:   opTuple,
+	Untuple: opUntuple,
+	Field:   opField,
+
+	Type: opType,
+
 	SHA256:        hashOp(sha256.New).run,
 	SHA3:          hashOp(sha3.New256).run,
 	CheckSig:      opCheckSig,
 	CheckMultiSig: opCheckMultiSig,
+}
+
+func opPC(vm *vm) {
+	vm.data.PushInt64(int64(vm.pc))
 }
 
 func opJumpIf(vm *vm) {
@@ -90,6 +108,10 @@ func opRoll(vm *vm) {
 	}
 }
 
+func opBury(vm *vm) {
+	panic(errors.New("todo"))
+}
+
 func opDepth(vm *vm) {
 	t := vm.data.PopInt64()
 	var n int
@@ -124,6 +146,14 @@ func opDup(vm *vm) {
 	x := vm.data.Pop()
 	vm.data.Push(x)
 	vm.data.Push(x)
+}
+
+func opToAlt(vm *vm) {
+	panic(errors.New("todo"))
+}
+
+func opFromAlt(vm *vm) {
+	panic(errors.New("todo"))
 }
 
 type intBinOp func(x, y int64) (int64, bool)
@@ -194,6 +224,18 @@ func opLen(vm *vm) {
 	vm.data.Push(Int64(len(s)))
 }
 
+func opEqual(vm *vm) {
+	b := vm.data.Pop()
+	a := vm.data.Pop()
+	var ok bool
+	switch a := a.(type) {
+	case Int64:
+		b := b.(Int64)
+		ok = a == b
+	}
+	vm.data.Push(Bool(ok))
+}
+
 func opBitNot(vm *vm) {
 	x := vm.data.Pop()
 	switch x := x.(type) {
@@ -230,6 +272,35 @@ func (o bitBinOp) run(vm *vm) {
 		}
 		vm.data.Push(z)
 	}
+}
+
+func opEncode(vm *vm) {
+	panic(errors.New("todo"))
+}
+
+func opVarint(vm *vm) {
+	buf := vm.data.PopBytes()
+	x, n := binary.Uvarint(buf)
+	if n <= 0 {
+		panic("bad varint")
+	}
+	vm.data.PushInt64(int64(x))
+}
+
+func opTuple(vm *vm) {
+	panic(errors.New("tuple"))
+}
+
+func opUntuple(vm *vm) {
+	panic(errors.New("todo"))
+}
+
+func opField(vm *vm) {
+	panic(errors.New("todo"))
+}
+
+func opType(vm *vm) {
+	panic(errors.New("todo"))
 }
 
 type hashOp func() hash.Hash
@@ -288,25 +359,4 @@ func opCheckMultiSig(vm *vm) {
 		key = key[1:]
 	}
 	vm.data.Push(Bool(len(sig) == 0))
-}
-
-func opVarint(vm *vm) {
-	buf := vm.data.PopBytes()
-	x, n := binary.Uvarint(buf)
-	if n <= 0 {
-		panic("bad varint")
-	}
-	vm.data.PushInt64(int64(x))
-}
-
-func opEqual(vm *vm) {
-	b := vm.data.Pop()
-	a := vm.data.Pop()
-	var ok bool
-	switch a := a.(type) {
-	case Int64:
-		b := b.(Int64)
-		ok = a == b
-	}
-	vm.data.Push(Bool(ok))
 }
