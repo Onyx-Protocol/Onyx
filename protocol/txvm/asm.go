@@ -51,24 +51,7 @@ func Assemble(src string) ([]byte, error) {
 			}
 		case numberTok:
 			v, _ := strconv.ParseInt(lit, 0, 64)
-			if 0 <= v && v <= 0xf {
-				p = append(p, BaseInt+byte(v))
-			} else if v == -1 {
-				p = append(p, BaseInt+1)
-				p = append(p, Negate)
-			} else if -0x10 < v && v < 0 {
-				p = append(p, BaseInt+byte(-v))
-				p = append(p, Negate)
-			} else if v <= -0x10 && v != -v {
-				p = append(p, pushData(encVarint(-v))...)
-				p = append(p, Varint)
-				p = append(p, Negate)
-			} else {
-				fmt.Println(v)
-				fmt.Println(v != -v)
-				p = append(p, pushData(encVarint(v))...)
-				p = append(p, Varint)
-			}
+			p = append(p, pushInt64(v)...)
 		case hexTok:
 			s := lit[1 : len(lit)-2] // remove " and "x
 			b, err := hex.DecodeString(s)
@@ -182,6 +165,20 @@ func scanFunc(s string, f func(rune) bool) (n int) {
 		n += r
 	}
 	return n
+}
+
+func pushInt64(n int64) []byte {
+	if 0 <= n && n <= 0xf {
+		return []byte{BaseInt + byte(n)}
+	} else if n == -1 {
+		return []byte{BaseInt + 1, Negate}
+	} else if -0x10 < n && n < 0 {
+		return []byte{BaseInt + byte(-n), Negate}
+	} else if n <= -0x10 && n != -n {
+		return append(pushData(encVarint(-n)), Varint, Negate)
+	} else {
+		return append(pushData(encVarint(n)), Varint)
+	}
 }
 
 func encVarint(v int64) []byte {
