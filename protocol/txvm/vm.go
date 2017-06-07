@@ -38,6 +38,7 @@ type vm struct {
 	prog []byte // current program
 
 	data stack
+	alt  stack
 
 	// linear types
 	input    []ID     // must end empty
@@ -107,7 +108,7 @@ func decodeInst(buf []byte) (opcode byte, imm []byte, n int) {
 		return byte(v), nil, n
 	}
 	r := v - BaseData + uint64(n)
-	return BaseData, buf[n:r], int(r)
+	return BaseData, append([]byte{}, buf[n:r]...), int(r)
 }
 
 func idsEqual(a, b []ID) bool {

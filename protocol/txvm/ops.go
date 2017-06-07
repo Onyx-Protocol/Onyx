@@ -93,6 +93,8 @@ func opRoll(vm *vm) {
 	switch t {
 	case StackData:
 		vm.data.Roll(n)
+	case StackAlt:
+		vm.alt.Roll(n)
 	case StackInput:
 		panic(errors.New("todo"))
 	case StackValue:
@@ -109,7 +111,26 @@ func opRoll(vm *vm) {
 }
 
 func opBury(vm *vm) {
-	panic(errors.New("todo"))
+	t := vm.data.PopInt64()
+	n := vm.data.PopInt64()
+	switch t {
+	case StackData:
+		vm.data.Bury(n)
+	case StackAlt:
+		vm.alt.Bury(n)
+	case StackInput:
+		panic(errors.New("todo"))
+	case StackValue:
+		panic(errors.New("todo"))
+	case StackCond:
+		panic(errors.New("todo"))
+	case StackOutput:
+		panic(errors.New("todo"))
+	case StackNonce:
+		panic(errors.New("todo"))
+	default:
+		panic(errors.New("bad stack selector"))
+	}
 }
 
 func opDepth(vm *vm) {
@@ -118,6 +139,8 @@ func opDepth(vm *vm) {
 	switch t {
 	case StackData:
 		n = int(vm.data.Len())
+	case StackAlt:
+		n = int(vm.alt.Len())
 	case StackInput:
 		n = len(vm.input)
 	case StackValue:
@@ -149,11 +172,11 @@ func opDup(vm *vm) {
 }
 
 func opToAlt(vm *vm) {
-	panic(errors.New("todo"))
+	vm.alt.Push(vm.data.Pop())
 }
 
 func opFromAlt(vm *vm) {
-	panic(errors.New("todo"))
+	vm.data.Push(vm.alt.Pop())
 }
 
 type intBinOp func(x, y int64) (int64, bool)
@@ -275,7 +298,17 @@ func (o bitBinOp) run(vm *vm) {
 }
 
 func opEncode(vm *vm) {
-	panic(errors.New("todo"))
+	v := vm.data.Pop()
+	switch v.typ() {
+	case TypeString:
+		vm.data.PushBytes(pushData(v.(Bytes)))
+	case TypeInt64:
+		vm.data.PushBytes(pushInt64(int64(v.(Int64))))
+	case TypeTuple:
+		panic(errors.New("can't encode tuple"))
+	default:
+		panic(errors.New("invalid type"))
+	}
 }
 
 func opVarint(vm *vm) {
@@ -288,19 +321,47 @@ func opVarint(vm *vm) {
 }
 
 func opTuple(vm *vm) {
-	panic(errors.New("tuple"))
+	len := int(vm.data.PopInt64())
+	var vals []Value
+	for i := 0; i < len; i++ {
+		vals = append(vals, vm.data.Pop())
+	}
+	vm.data.PushTuple(vals)
 }
 
 func opUntuple(vm *vm) {
-	panic(errors.New("todo"))
+	tuple := vm.data.PopTuple()
+	for i := len(tuple) - 1; i >= 0; i-- {
+		vm.data.Push(tuple[i])
+	}
 }
 
 func opField(vm *vm) {
-	panic(errors.New("todo"))
+	t := vm.data.PopInt64()
+	n := vm.data.PopInt64()
+
+	switch t {
+	case StackData:
+		tuple := vm.data.Peek().(VMTuple)
+		vm.data.Push(tuple[n])
+	case StackAlt:
+		tuple := vm.alt.Peek().(VMTuple)
+		vm.data.Push(tuple[n])
+	case StackInput:
+	case StackValue:
+	case StackCond:
+	case StackAnchor:
+	case StackOutput:
+	case StackNonce:
+	case StackRetire:
+	default:
+		panic(errors.New("bad stack selector"))
+	}
 }
 
 func opType(vm *vm) {
-	panic(errors.New("todo"))
+	v := vm.data.Peek()
+	vm.data.PushInt64(int64(v.typ()))
 }
 
 type hashOp func() hash.Hash
