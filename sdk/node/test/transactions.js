@@ -203,23 +203,9 @@ describe('Transaction', () => {
       )
     })
 
-    it('Batch transaction build', (done) => {
-      client.transactions.buildBatch(
-        [() => {}, () => {}], // intentionally blank
-        () => done() // intentionally ignore errors
-      )
-    })
-
     it('Transaction submit', (done) => {
       client.transactions.submit(
         {}, // intentionally blank
-        () => done() // intentionally ignore errors
-      )
-    })
-
-    it('Batch transaction submit', (done) => {
-      client.transactions.submitBatch(
-        [{}, {}], // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
