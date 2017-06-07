@@ -2,11 +2,6 @@
 
 Command `corectl` provides miscellaneous control functions for a Chain Core.
 
-The database connection can be configured using the DATABASE_URL environment
-variable; the default is to connect to the "core" database on localhost.
-
-The config commands initialize the schema if necessary.
-
 ## Installation
 
 `corectl` is included with the Mac desktop application and Docker images by
@@ -40,6 +35,14 @@ Install the `corectl` command line tool:
 
 ```
 $ go install chain/cmd/corectl
+```
+
+## Configuration
+
+`corectl` requires a connection to the Chain Core server. By default, it assumes Chain Core is hosted at `http://localhost:1999`. You can configure this URL by setting the `CORE_URL` environment variable. For example:
+
+```
+CORE_URL=https://cored.example.com:9999 corectl create-token ...
 ```
 
 ## Commands
