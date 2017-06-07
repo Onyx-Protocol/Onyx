@@ -720,6 +720,7 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 		}
 		sv.stateMu.Lock()
 		sv.confState = *sv.raftNode.ApplyConfChange(cc)
+		sv.state.SetAppliedIndex(ent.Index)
 		sv.stateMu.Unlock()
 		switch cc.Type {
 		case raftpb.ConfChangeAddNode, raftpb.ConfChangeUpdateNode:
@@ -740,6 +741,9 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 		//raft will send empty request defaulted to EntryNormal on leader election
 		//we need to handle that here
 		if ent.Data == nil {
+			sv.stateMu.Lock()
+			sv.state.SetAppliedIndex(ent.Index)
+			sv.stateMu.Unlock()
 			break
 		}
 		sv.stateMu.Lock()
