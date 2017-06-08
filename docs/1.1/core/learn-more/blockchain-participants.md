@@ -1,3 +1,7 @@
+<!---
+This guide will walk you through the three types of blockchain participants, as well as their basic network functions.
+-->
+
 # Participating in a blockchain
 
 ## Overview

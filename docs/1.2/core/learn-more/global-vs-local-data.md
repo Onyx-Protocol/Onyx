@@ -1,3 +1,7 @@
+<!---
+There are two types of data in Chain Core: global data that is committed to the blockchain and shared by all cores in a network, and local data that is private to a specific Chain Core. Transactions and assets are the only global objects. All other objects are local.
+-->
+
 # Global vs Local Data
 
 ## Introduction

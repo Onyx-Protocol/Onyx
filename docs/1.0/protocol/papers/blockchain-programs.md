@@ -1,3 +1,7 @@
+<!---
+This document discusses design and use cases for custom programs on the blockchain.
+-->
+
 # Blockchain Programs
 
 * [Introduction](#introduction)
@@ -165,7 +169,7 @@ This condition would compile to the CVM bytecode:
 
     1 1 + 2 EQUAL VERIFY
 
-A condition fails if the given expression evaluates to `false`. 
+A condition fails if the given expression evaluates to `false`.
 
 Ivy supports the same arithmetic, logical, cryptographic, and string operations as the CVM, but uses more familiar infix and function-call syntax.
 
@@ -194,7 +198,7 @@ Here is an example of a control program written in Ivy:
 Let’s break this program down piece by piece.
 
 * Programs can have **parameters**. This program has one parameter, `publicKey`. Values for a program’s parameters, called **arguments**, are specified at the time the program is *instantiated*, or created. In the case of a control program like this, that is the time that an unspent output is added to the blockchain state by a transaction.
-* Programs define one or more **paths**. This program has only one path: `spend`. If this control program could be satisfied in different ways, it would have more than one path. 
+* Programs define one or more **paths**. This program has only one path: `spend`. If this control program could be satisfied in different ways, it would have more than one path.
 * Each path can define its own parameters. Arguments for path parameters are provided in the input witness. These arguments are passed — and the path is chosen — at the time the program is executed. In the case of a control program like this, that is the time the unspent output is used as an input in a new transaction. This program takes one argument: a `signature`.
 * Paths contain one or more **conditions**. This path only uses a single condition, which uses the `CHECKSIG` instruction to check that the provided signature on the hash of the new transaction corresponds to the previously specified public key.
 
@@ -209,9 +213,9 @@ When the program is instantiated with a `publicKey` value — to be used in an o
 When the output is spent and the control program is run:
 
 1. The virtual machine first takes arguments specified in the input witness and pushes them to the stack. In this case, that argument is a signature.
-2. The program then executes, first pushing the public key and then the transaction hash to the stack. 
-3. The public key and transaction hash are then swapped to put them in the correct order for the following `CHECKSIG` instruction. 
-4. `CHECKSIG` pops all three items off the stack to check the signature, pushing `true` or `false` to the stack. 
+2. The program then executes, first pushing the public key and then the transaction hash to the stack.
+3. The public key and transaction hash are then swapped to put them in the correct order for the following `CHECKSIG` instruction.
+4. `CHECKSIG` pops all three items off the stack to check the signature, pushing `true` or `false` to the stack.
 5. `VERIFY` then pops the top value from the stack and causes the program to fail if the value is `false`. (In an actual control program, the `VERIFY` instruction of the last condition in a path is omitted, since it is performed by the VM itself.)
 
 Many control, issuance, and consensus programs use a multisignature check.
@@ -242,7 +246,7 @@ Bitcoin supports a similar pattern, known as “[Pay to Script Hash](https://git
 		}
 	}
 
-This technique is useful for describing and developing generic patterns for control programs and as a result is used throughout the rest of this guide. 
+This technique is useful for describing and developing generic patterns for control programs and as a result is used throughout the rest of this guide.
 
 Programs *themselves* can instantiate programs with arguments to create new programs. In combination with output introspection, this allows construction of complex state machines.
 
@@ -252,7 +256,7 @@ This is examined in more detail in the [examples](#examples) below.
 
 ## Program functionality
 
-Chain Protocol uses programs in three contexts: 
+Chain Protocol uses programs in three contexts:
 
 * **Transferring assets** using control programs.
 * **Issuing assets** using issuance programs.
@@ -260,7 +264,7 @@ Chain Protocol uses programs in three contexts:
 
 ### Control programs
 
-Control programs define the conditions for spending assets on a blockchain. 
+Control programs define the conditions for spending assets on a blockchain.
 
 Control programs are sometimes called **addresses**.
 
@@ -287,7 +291,7 @@ A simple issuance program might just check one or more signatures on the transac
 
 ### Consensus programs
 
-Consensus programs define the rules for accepting a new block. 
+Consensus programs define the rules for accepting a new block.
 
 Each block includes the consensus program that must be satisfied by the *next* block.
 
@@ -301,7 +305,7 @@ Chain’s [federated consensus protocol](federated-consensus.md) relies on a quo
 
 ### Signature programs
 
-CVM and Ivy also enable a powerful new way to authorize transactions. 
+CVM and Ivy also enable a powerful new way to authorize transactions.
 
 In the above examples of control programs and issuance programs, asset holders and issuers authorize transactions by signing a hash that commits to the entire transaction. This is the typical way that authorization works in UTXO-based cryptocurrencies such as Bitcoin.
 
@@ -311,7 +315,7 @@ Bitcoin provides “signature hash types” that offer some of the functionality
 
 [/sidenote]
 
-Signing the entire transaction hash is fine if you only want to authorize an input to be spent in a particular transaction. However, what if you only know or care about a particular part of a transaction at the time you sign it? 
+Signing the entire transaction hash is fine if you only want to authorize an input to be spent in a particular transaction. However, what if you only know or care about a particular part of a transaction at the time you sign it?
 
 For example, suppose Alice wants to sell **5 Acme shares** to Bob, in exchange for **10 USD**. Alice wants to authorize the transfer of her Acme shares if and only if she receive payment of 10 USD to her own address. However, Alice does not care what the other input in the transaction will be — i.e., where the other payment will come from. If Alice sends the partially filled transaction to Bob to allow him to fill out the rest, he will have to return it to her to examine (verifying that it pays her the 10 USD she expects) and then sign.
 
@@ -341,7 +345,7 @@ For example:
 This program turns a signature program into a traditional signature by committing to a specific transaction hash. This is useful if Alice wants to move funds between accounts or make a simple payment. To do that, she would:
 
 1. compose the target transaction,
-2. compute its hash, 
+2. compute its hash,
 3. instantiate a `TransactionHashCheck` program with that hash,
 4. sign the program,
 5. place the program and the signature in the input witness to authorize the target transaction.
@@ -354,7 +358,7 @@ But a signature program can do much more than that. For example, this program so
     	}
     }
 
-If this program is initialized with the details of the desired output — say, **10 USD** sent to Alice’s new address — and signed with Alice’s private key, the combined signature program will authorize Alice’s input to be spent only in a transaction that includes the desired output. 
+If this program is initialized with the details of the desired output — say, **10 USD** sent to Alice’s new address — and signed with Alice’s private key, the combined signature program will authorize Alice’s input to be spent only in a transaction that includes the desired output.
 
 [sidenote]
 
@@ -409,7 +413,7 @@ What if we want to be able to fill a *partial* order, allowing someone to pay fo
     	path lift(purchasedAmount, paymentIndex, remainderIndex) {
     		verify purchasedAmount > 0
     		verify tx.outputs[paymentIndex] == (purchasedAmount * pricePerUnit, currency, sellerProgram)
-    		verify tx.outputs[remainderIndex] == (tx.currentInput.amount - purchasedAmount, 
+    		verify tx.outputs[remainderIndex] == (tx.currentInput.amount - purchasedAmount,
     											  tx.currentInput.asset,
     											  tx.currentInput.program)
     	}
@@ -432,14 +436,14 @@ This program will prevent its assets from being transferred more than once withi
     		// check that the spending is otherwise authorized
     		// this could be a signature check
     		verify authorizationPredicate(arguments)
-            
+
     		// check that at least one day has passed
     		verify tx.mintime > lastSpend
-            
+
     		nextControlProgram = OncePerPeriod(authorizationPredicate,
     										   tx.maxtime,
     										   period)
-                                               
+
     		verify tx.outputs[m] == (tx.currentInput.amount,
     								 tx.currentInput.asset,
     								 nextControlProgram)
@@ -459,10 +463,10 @@ First, one needs to create an asset for which only one unit can ever be issued. 
     		verify nonce == tx.currentInput.nonce
     		verify mintime == tx.mintime
     		verify maxtime == tx.maxtime
-            
+
     		// ensure that only one unit is issued
     		verify tx.currentInput.amount == 1
-            
+
     		// ensure that the issued unit is locked with the target lockProgram
     		verify tx.outputs[outputIndex] == (tx.currentInput.amount,
     										   tx.currentInput.asset,
@@ -482,10 +486,10 @@ How does that help us with metered issuance? We can create a separate asset with
     	path issue(singletonControlProgram, singletonIndex, m, arguments[m]) {
     		// check that the issuance is otherwise authorized
     		verify authorizationPredicate(arguments)
-            
+
     		// check that no more than the max amount is being issued
     		verify tx.currentInput.amount < maxAmount
-            
+
     		// check that the singleton token is being spent
     		// its index and control program don't need to be checked
     		// which is why they are passed as arguments
@@ -524,4 +528,3 @@ This idea can be extended to implement full [Merklized Abstract Syntax Trees](ht
 ## Conclusion
 
 The Chain Protocol enables flexible control over assets through programmatic conditions that govern both issuance and transfer, as well as integrity of the ledger. Programs are executed by a Chain Virtual Machine with a Turing-complete instruction set. Programs are evaluated as predicates in a restricted, stateless environment that ensures safety and scalability. Programs can use powerful transaction introspection instructions that allow building sophisticated smart contracts and state machines. To make it more efficient to design programs, Chain is developing Ivy, a high-level programming language that compiles to CVM bytecode.
-

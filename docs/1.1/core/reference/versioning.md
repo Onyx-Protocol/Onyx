@@ -1,3 +1,7 @@
+<!---
+An overview of the core/network versioning schemes.
+-->
+
 # Versioning
 
 ## Summary

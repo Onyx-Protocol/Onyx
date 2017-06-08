@@ -1,3 +1,7 @@
+<!---
+In this paper, we present the Chain Protocol: a design for a shared, multi-asset, cryptographic ledger.
+-->
+
 # Chain Protocol Whitepaper
 
 1. [Introduction](#1-introduction)
@@ -19,7 +23,7 @@ The Chain Protocol allows any network participant to define and issue assets by 
 
 Each network is secured by a federation of “block signers.” The system is secure against forks as long as a quorum of block signers follows the protocol. For efficiency, block creation is delegated to a single “block generator.” Any node on the network can validate blocks and submit transactions to the network.
 
-Chain Core is an enterprise software product that implements the Chain Protocol. An open-source [developer edition](https://github.com/chain/chain) is freely available, and Chain operates a Chain blockchain network as a freely accessible testnet. 
+Chain Core is an enterprise software product that implements the Chain Protocol. An open-source [developer edition](https://github.com/chain/chain) is freely available, and Chain operates a Chain blockchain network as a freely accessible testnet.
 
 In the [second section](#2-motivation), we explain the background and motivation for the design of the protocol.
 
@@ -74,7 +78,7 @@ Each input must satisfy an *issuance program* (if the source of value is a new i
 
 [sidenote]
 
-This “witness” field is not included in the transaction ID, and is therefore not covered by signatures of the transaction, which is why such signatures can themselves be included in the witness. This design is partially inspired by the “segregated witness” proposal, described in [BIP 141](https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki) by Pieter Wuille et al., which is expected to be adopted by the Bitcoin network by the end of 2016. 
+This “witness” field is not included in the transaction ID, and is therefore not covered by signatures of the transaction, which is why such signatures can themselves be included in the witness. This design is partially inspired by the “segregated witness” proposal, described in [BIP 141](https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki) by Pieter Wuille et al., which is expected to be adopted by the Bitcoin network by the end of 2016.
 
 [/sidenote]
 
@@ -88,7 +92,7 @@ Once a transaction has spent a particular output, no other transaction is allowe
 
 ![Blockchain](whitepaper-blocks.png)
 
-A *block* is a data structure that batches multiple transactions to be executed. Each *block header* contains the hash of the previous block, turning the series of blocks into an immutable *blockchain*. 
+A *block* is a data structure that batches multiple transactions to be executed. Each *block header* contains the hash of the previous block, turning the series of blocks into an immutable *blockchain*.
 
 [sidenote]
 
@@ -116,7 +120,7 @@ Programs are flexible enough to allow implementing a wide range of financial ins
 
 #### Virtual machine
 
-A *program* is written in *bytecode* — instructions for the Chain Virtual Machine (CVM). The CVM is a stack machine: each instruction performs operations on a data stack. 
+A *program* is written in *bytecode* — instructions for the Chain Virtual Machine (CVM). The CVM is a stack machine: each instruction performs operations on a data stack.
 
 When validating a program, the CVM initializes the data stack with *program arguments* passed from the witness. The program is then executed, and either succeeds or fails.
 
@@ -156,7 +160,7 @@ The protocol also specifies several *block introspection* instructions (`BLOCKSI
 
 Programs can implement conditional branches and loops using the `JUMP` and `JUMPIF` instructions, which allow branching to a statically defined address in the program. The run limit ensures that infinite loops are not possible.
 
-Programs can verify other programs using the `CHECKPREDICATE` instruction, which evaluates an arbitrary byte string as a program with given arguments. 
+Programs can verify other programs using the `CHECKPREDICATE` instruction, which evaluates an arbitrary byte string as a program with given arguments.
 
 This instruction permits a generalization of signatures where, instead of signing a specific message (such as a transaction hash), the signer signs a predicate in its byte-string form. The combined signature and predicate is a “signature program” that is considered a valid signature on any message for which the predicate evaluates to true. When combined with the introspection instructions, signature programs allow much greater flexibility in spending a transaction: instead of authorizing a specific transaction by signing its hash, a spender can sign a set of conditions that the transaction must fulfill (which may include having a specific hash). This enables partially signing a transaction before it is completed or balanced.
 
@@ -180,7 +184,7 @@ Because of this rule, block signers must coordinate to make sure they sign the s
 
 The generator sends each proposed new block to the block signers. Block signers only sign blocks that have already been signed by the generator.
 
-While the block generator is not capable of forking the blockchain, it does have a privileged role. The block generator has control over network liveness: if the block generator crashes or otherwise stops producing new blocks, the blockchain halts. The block generator can also deadlock the network by sending inconsistent blocks to different block signers. Additionally, the block generator has control over the block timestamp, and can produce blocks with artificially “slow” timestamps. 
+While the block generator is not capable of forking the blockchain, it does have a privileged role. The block generator has control over network liveness: if the block generator crashes or otherwise stops producing new blocks, the blockchain halts. The block generator can also deadlock the network by sending inconsistent blocks to different block signers. Additionally, the block generator has control over the block timestamp, and can produce blocks with artificially “slow” timestamps.
 
 These tradeoffs are considered acceptable based on the current business use cases for the protocol. For most permissioned networks, it makes sense to have a single company or market utility responsible for continued operation of the network. High-availability of the block generator is an engineering problem that can be solved through replication, without the need for Byzantine-fault-tolerant distribution. If the block generator behaves maliciously, or is intentionally shut down, it is probably better (in these use cases) for the network to stop. Such misbehavior can be detected and dealt with out-of-band.
 
@@ -222,7 +226,7 @@ Block generators can implement local policies that filter out non-compliant tran
 
 #### Compact proofs
 
-The block header includes the Merkle root of the transactions in the block as well as the current UTXO state, which allows compact *Merkle proofs* about a given part of the blockchain, such as whether a transaction has been accepted, or whether a particular UTXO remains unspent. Merkle proofs link a piece of data to a block header, from which a participant can check the timestamp and the block signers’ signatures. 
+The block header includes the Merkle root of the transactions in the block as well as the current UTXO state, which allows compact *Merkle proofs* about a given part of the blockchain, such as whether a transaction has been accepted, or whether a particular UTXO remains unspent. Merkle proofs link a piece of data to a block header, from which a participant can check the timestamp and the block signers’ signatures.
 
 As a result, entities can participate in the network without seeing any transactions other than the ones in which they are involved. They only need to validate block headers, along with compact proofs of the relevant transactions and/or UTXOs.
 
@@ -240,7 +244,7 @@ Finally, compact proofs allow users to validate only the parts of the blockchain
 
 ## 8. Extensibility
 
-The Chain Protocol is extensible to allow fixing bugs and adding new security features while keeping all network nodes compatible with the blockchain. Changes can be applied using a “soft fork” method that preserves both backward and forward compatibility, allowing outdated clients to continue validating the blockchain. 
+The Chain Protocol is extensible to allow fixing bugs and adding new security features while keeping all network nodes compatible with the blockchain. Changes can be applied using a “soft fork” method that preserves both backward and forward compatibility, allowing outdated clients to continue validating the blockchain.
 
 Blocks, assets, transactions, and programs each have version numbers and extensible fields. New versions can fix security flaws or add features — such as adding an instruction to the VM, changing the VM completely, or introducing an entirely new accounting system and a new category of assets.
 
@@ -258,7 +262,7 @@ The Chain Protocol uses standard cryptographic tools such as SHA-2 and SHA-3 has
 
 This paper has presented the Chain Protocol: a design for a shared, multi-asset, cryptographic ledger that can underpin modern financial networks. The protocol is designed for large scale applications, offering a scalable and extensible data model with a flexible yet robust programming environment.
 
-The Chain Protocol allows participants to issue and control assets programmatically using digital signatures and custom rules. Transactions issuing and controlling assets are collected into a cryptographic chain of blocks forming a shared ledger. Block signers follow a [federated consensus protocol](#5-consensus) to replicate a single copy of the ledger across all nodes to prevent reversal of transactions and double-spending. 
+The Chain Protocol allows participants to issue and control assets programmatically using digital signatures and custom rules. Transactions issuing and controlling assets are collected into a cryptographic chain of blocks forming a shared ledger. Block signers follow a [federated consensus protocol](#5-consensus) to replicate a single copy of the ledger across all nodes to prevent reversal of transactions and double-spending.
 
 Chain Core is software that implements the Chain Protocol. Using Chain Core, organizations can launch a blockchain network in their market or connect to a growing list of networks that are enabling this new medium for assets – one that reduces the time, cost, and complexity of asset transfer and custody in the financial system and can give rise to new products and services that are difficult or impossible to realize on traditional infrastructure.
 
@@ -272,4 +276,3 @@ Chain Core is software that implements the Chain Protocol. Using Chain Core, org
 * [Virtual Machine Specification](../specifications/vm1.md)
 * [Key Derivation Specification](../specifications/chainkd.md)
 * [Chain Core Documentation](../../)
-

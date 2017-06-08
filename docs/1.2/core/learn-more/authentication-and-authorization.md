@@ -1,3 +1,7 @@
+<!---
+An overview of the types of credentials/policies that can be used to authenticate requests and authorize access.
+-->
+
 # Authentication and Authorization
 
 ## Authentication

@@ -1,3 +1,7 @@
+<!---
+This guide will illustrate how to configure Chain Core and the Chain SDKs to use mutual TLS authentication.
+-->
+
 # Mutual TLS Authentication
 
 Chain Core 1.2 introduces support for mutual TLS authentication. This means both Chain Core and your client application can authenticate each other using X.509 certificates via the TLS protocol. Client-side certificates may be used as an alternative to access tokens for authenticating client applications to Chain Core.

@@ -1,3 +1,7 @@
+<!---
+This document describes the transaction graph structure.
+-->
+
 # Transaction graph structure
 
 ## Transaction entry types

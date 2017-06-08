@@ -1,3 +1,7 @@
+<!---
+This is a simple deterministic key derivation scheme consisting of two instances using different hash functions.
+-->
+
 # Chain Key Derivation
 
 * [Introduction](#introduction)
@@ -189,7 +193,7 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 5. Perform a fixed-base scalar multiplication `P = s*B` where `B` is a base point of Ed25519.
 6. [Encode](#encode-public-key) point `P` as `pubkey`.
 7. Compute `Hash512(prefix || message)`. Interpret the 64-byte digest as a little-endian integer `r`.
-8. Compute the point `r*B`.  For efficiency, do this by first reducing `r` modulo `L`, the group order of `B`. 
+8. Compute the point `r*B`.  For efficiency, do this by first reducing `r` modulo `L`, the group order of `B`.
 9. Let the string `R` be the encoding of the point `r*B`.
 10. Compute `Hash512(R || pubkey || message)`, and interpret the 64-byte digest as a little-endian integer `k`.
 11. Compute `S = (r + k * s) mod L`. For efficiency, again reduce `k` modulo `L` first.
@@ -229,7 +233,7 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 **Output:** `pubkey`, a 32-byte string representing a point on Ed25519 curve.
 
 1. First encode the y coordinate (in the range 0 <= y < p) as a little-endian string of 32 bytes. The most significant bit of the final byte is always zero.
-2. To form the encoding of the point `P`, copy the least significant bit of the x coordinate to the most significant bit of the final byte. 
+2. To form the encoding of the point `P`, copy the least significant bit of the x coordinate to the most significant bit of the final byte.
 3. Return the resulting 32-byte string as `pubkey`.
 
 
@@ -260,27 +264,27 @@ All values use hexadecimal encoding.
         seed:     010203
         xprv:     e892d064d9658a3405e97f5dfaefab9b3a08a2341cdeb427ae7d6f2eb96b3952967a0ec62a845bccb318935c012f6900b330d2831f6407eb0dd7df1082c2e22b
         xpub:     254a6f2c96f84aabaef5f2922026360c03d29ce3eb3de739c8c243053e1a3cbe967a0ec62a845bccb318935c012f6900b330d2831f6407eb0dd7df1082c2e22b
-            
+
     Master/010203(H):
         selector: 010203
         xprv:     209f3ae66a0ef7bef75497fd214b821133d44ff2f8eb80b50b738b3e9ec67f5f2b037c3ec24d503128664eb2e773c0c96b6e102faf898568177491188180bd4f
         xpub:     e844c655dfced878e489d42c3ea26b9877e1c7f8c2dbad679525f8056fa5cfba2b037c3ec24d503128664eb2e773c0c96b6e102faf898568177491188180bd4f
-        
+
     Master/010203(N):
         selector: 010203
         xprv:     3e42fb09bd0b6360e51c9b7ab70d1010e53eca59be378764535b0143b3a0ca0e4ee9f0b88260285f0b93b6b115e8e978351e4f1491d622821d78cde389c44e28
         xpub:     061155751a79a3d7dda52a7ea9980bdb1d06bf793be6b78cc8f5724541d5b1c64ee9f0b88260285f0b93b6b115e8e978351e4f1491d622821d78cde389c44e28
-    
+
     Master/010203(H)/""(N):
         selector: (empty string)
         xprv:     97ae121e2d8b7ca893406edd6d170f260c1d8282eceee975eeb506af2dfbc808dd979ffd561bd9e60cced900e878de425868e0c70b944f7421816fafb6e3b224
         xpub:     3eca1608be5fa17867bddccd2b99eef344097c6ba17f19b9f54604c77f196813dd979ffd561bd9e60cced900e878de425868e0c70b944f7421816fafb6e3b224
-        
+
     Master/010203(N)/""(H):
         selector: (empty string)
         xprv:     981da97280c994c3c0f5fe1990a263bbaf5493576c98102e9a1dd635e728c65eff84c4ba93c29e42cc6f89981b6bd903c3b78f03fa6e9d694a123abcfe024357
         xpub:     bc6a0009d5249872e94e1058a95f226560ab9c218665e18f34b168dd45b70b41ff84c4ba93c29e42cc6f89981b6bd903c3b78f03fa6e9d694a123abcfe024357
-    
+
     Master/010203(N)/""(N):
         selector: (empty string)
         xprv:     604e33854c66f785e05d36d774b0b3dbe1286526ab8ded41f0cbfe5dfbf68a0a6bd8b033689d38055b58baff8eccceb623871e9c23be82606e903f2d71304208
@@ -293,27 +297,27 @@ All values use hexadecimal encoding.
         seed:     fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542
         xprv:     f06907ad9298c685a4fd250538605bea7fa387388954e15a90b337c4ac889e467730a16f62d5159c3a0d390a0e4639be86c766ad779c810458adb532164a9211
         xpub:     55b33d123033131c8642ef736b4b1bf9430f52dbcb3b7d6bbf721040cf504bd57730a16f62d5159c3a0d390a0e4639be86c766ad779c810458adb532164a9211
-        
+
     Master/0(N):
         selector: 00
         xprv:     2cb4d70521f62eeedb0e2d68a6843431800b9271c83a49a9ba598f85b2229e0446fb34a28f8cc239bfc700c9002aca2d5f2affff27955de947a1b4d3e232b229
         xpub:     06820e5ee702c54efea0aeea41f89dab5dd82d0797bb79689dee1ebc1ac00a1646fb34a28f8cc239bfc700c9002aca2d5f2affff27955de947a1b4d3e232b229
-    
+
     Master/0(N)/2147483647(H):
         selector: ffffff7f
         xprv:     98c4c05731fed5f944345bdec859403d26cf8825f358740db2c107f720a8d2704f785675bea750ef52c78e56d973b4d0638ce5b3e76a8957c2d2c45dafb87c95
         xpub:     a30818e3b50163b0f346eba0dfef70e66041b7de97273c1b8cb0804d4645f1d44f785675bea750ef52c78e56d973b4d0638ce5b3e76a8957c2d2c45dafb87c95
-        
+
     Master/0(N)/2147483647(H)/1(N):
         selector: 01
         xprv:     67f882c251a541d68460934283f78c38eb94b1d1b85ca64ebbf860bdd63ded0b811476e6e32936d8d6164d9f28ec7a3278b24758433ebe7d74e0db8a56930aaf
         xpub:     437835c60770e2890bf622df3ee66c07ba8628ed87591fbe0907607888435178811476e6e32936d8d6164d9f28ec7a3278b24758433ebe7d74e0db8a56930aaf
-    
+
     Master/0(N)/2147483647(H)/1(N)/2147483646(H):
         selector: feffff7f
         xprv:     08cb5d261af0d47b4dadfe4b21b71decc844249892644a3f892d79eb38a3dc4db1dcbf10a891e1c3c1e49e6d6d5bda12049501ddb8121a52d7ed5c6658c71bc0
         xpub:     80923c7d5bbf37a269c862764b14a53b751a9cb786bce7c3d463d899806014fdb1dcbf10a891e1c3c1e49e6d6d5bda12049501ddb8121a52d7ed5c6658c71bc0
-        
+
     Master/0(N)/2147483647(H)/1(N)/2147483646(H)/2(N):
         selector: 02
         xprv:     6e9f9333156b5bb074456fdf75a2acb3d67a0b1dce044cf00efd331087719807574d3c263a60a4e40425032a89dd36bbf02fb98ccb9495bceaea1d1ad3d91973

@@ -1,3 +1,7 @@
+<!---
+This document describes the serialization format for the blockchain data structures used in the Chain Protocol.
+-->
+
 # Data Model Specification
 
 * [Introduction](#introduction)
@@ -503,7 +507,7 @@ The tree contains [non-retired](#retired-asset) unspent outputs (one or more per
 
 Key                       | Value
 --------------------------|------------------------------
-`<txhash><index int32be>` | [SHA3-256](#sha3) of the [output commitment](#transaction-output-commitment) 
+`<txhash><index int32be>` | [SHA3-256](#sha3) of the [output commitment](#transaction-output-commitment)
 
 
 Note: unspent output indices are encoded with a fixed-length big-endian format to support lexicographic ordering.
@@ -574,6 +578,3 @@ In case a list contains multiple items, all keys have a common bit-prefix extrac
 * [LEB128] [Little-Endian Base-128 Encoding](https://developers.google.com/protocol-buffers/docs/encoding)
 * [CFRG1] [Edwards-curve Digital Signature Algorithm (EdDSA) draft-irtf-cfrg-eddsa-05](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)
 * [RFC 6962](https://tools.ietf.org/html/rfc6962#section-2.1)
-
-
-

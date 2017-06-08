@@ -1,3 +1,7 @@
+<!---
+This is a specification of the semantic data structures used by blocks and transactions.
+-->
+
 # Blockchain Specification
 
 * [Introduction](#introduction)
@@ -52,7 +56,7 @@ A **block** is a [block header](#block-header) together with a list of [transact
 
 ### Transaction
 
-A **transaction** is composed of a set of [entries](#entries). Each transaction must include one and only one [transaction header](#transaction-header), which references other entries in the transaction, which in turn can reference additional entries. 
+A **transaction** is composed of a set of [entries](#entries). Each transaction must include one and only one [transaction header](#transaction-header), which references other entries in the transaction, which in turn can reference additional entries.
 
 Every entry is identified by its [Entry ID](#entry-id). No two entries in a transaction may have the same [Entry ID].
 
@@ -72,7 +76,7 @@ A [LEB128](#leb128) integer with a maximum allowed value of 0x7fffffffffffffff (
 A binary string with a [LEB128](#leb128) prefix specifying its length in bytes.
 The maximum allowed length of the underlying string is 0x7fffffff (2<sup>31</sup> – 1).
 
-The empty string is encoded as a single byte 0x00, a one-byte string is encoded with two bytes 0x01 0xNN, a two-byte string is 0x02 0xNN 0xMM, etc. 
+The empty string is encoded as a single byte 0x00, a one-byte string is encoded with two bytes 0x01 0xNN, a two-byte string is 0x02 0xNN 0xMM, etc.
 
 ### String32
 
@@ -111,17 +115,17 @@ Auxiliary data structures are [Structs](#struct) that are not [entries](#entries
 
 ### Extension Struct
 
-An `Extension Struct` is encoded as a single [32-byte string](#string32). 
+An `Extension Struct` is encoded as a single [32-byte string](#string32).
 Future versions of the protocol may add additional fields as `Extension Structs` that will be compressed in a single hash for backwards compatibility.
 
 ### Pointer
 
-A `Pointer` is encoded as a [String32](#string32), and identifies another [entry](#entry) by its [ID](#entry-id). 
+A `Pointer` is encoded as a [String32](#string32), and identifies another [entry](#entry) by its [ID](#entry-id).
 
 `Pointer` restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
 
 A `Pointer` can be `nil` (not pointing to any entry), in which case it is represented by the all-zero 32-byte hash:
-    
+
     0x0000000000000000000000000000000000000000000000000000000000000000
 
 ### Program
@@ -352,7 +356,7 @@ Program Arguments        | List\<String\>    | List of [signatures](#signature) 
 
 #### Block Header Validation
 
-**Inputs:** 
+**Inputs:**
 
 1. BlockHeader entry,
 2. BlockHeader entry from the previous block, `PrevBlockHeader`.

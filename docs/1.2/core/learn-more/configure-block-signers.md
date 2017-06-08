@@ -1,3 +1,7 @@
+<!---
+This guide describes how to create a blockchain network with two Chain Cores in the consensus group, one core acting as the block generator, and the other acting as a block signer. A block must contain signatures from both parties for the block to be considered valid.
+-->
+
 # Setting up a blockchain with multiple block signers
 
 This guide describes how to create a blockchain network with two Chain Cores in the consensus group, one core acting as the block generator, and the other acting as a block signer. A block must contain signatures from both parties for the block to be considered valid.

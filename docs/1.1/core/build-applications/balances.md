@@ -1,3 +1,7 @@
+<!---
+Any balance on the blockchain is simply a summation of unspent outputs. For example, the balance of Alice’s account is a summation of all the unspent outputs whose control programs were created from the keys in Alice’s account.
+-->
+
 # Balances
 
 ## Introduction

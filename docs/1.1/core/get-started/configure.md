@@ -1,3 +1,7 @@
+<!---
+This guide is an overview on how to configure your Chain Core to create a new blockchain, connect to an existing blockchain, or connect to the Chain testnet.
+-->
+
 # Configure Chain Core
 
 ## Overview

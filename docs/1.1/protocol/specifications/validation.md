@@ -1,3 +1,7 @@
+<!---
+This document describes all the algorithms involved in participating as a node in a blockchain network, including their interfaces and requirements for persistent state.
+-->
+
 # Blockchain Validation Protocol
 
 * [Introduction](#introduction)
@@ -344,5 +348,3 @@ Note: requirement for the input and output sums to be below 2<sup>63</sup> impli
 3. [Prepare VM](vm1.md#prepare-vm).
 4. Set the VM’s program to the predicate program and execute [Verify Predicate](vm1.md#verify-predicate) operation. If it fails, halt and return false.
 5. Return true.
-
-

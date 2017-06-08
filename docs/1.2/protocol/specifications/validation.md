@@ -1,3 +1,7 @@
+<!---
+This document describes all the algorithms involved in participating as a node in a blockchain network, including their interfaces and requirements for persistent state.
+-->
+
 # Blockchain Validation Protocol
 
 * [Introduction](#introduction)
@@ -171,5 +175,3 @@ A new node starts here when joining a running network (with height > 1). In that
     1. Add that output’s [ID](blockchain.md#entry-id) to `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
 6. Return `S`.
-
-

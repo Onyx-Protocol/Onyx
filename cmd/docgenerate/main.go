@@ -16,6 +16,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -46,15 +47,19 @@ func main() {
 		panic(err)
 	}
 
-	// Generate guides and reference docs
-	mustRunIn(path.Join(srcdir, "docs"), "md2html", "build", outdir)
-
-	// Generate SDK-specific documentation
 	wg := new(sync.WaitGroup)
+
+	// Generate SDK-specific documentation and search index files
 	for _, v := range versionPaths(srcdir) {
 		wg.Add(1)
 		go makeSdkDocs(wg, v, srcdir, outdir)
+		wg.Add(1)
+		go makeIndexInputFiles(wg, v, srcdir) // Note: this updates your local searchIndex.js file in $CHAIN in order to be copied out in the following md2html call.
 	}
+
+	// Generate guides and reference docs
+	mustRunIn(path.Join(srcdir, "docs"), "md2html", "build", outdir)
+
 	wg.Wait()
 }
 
@@ -136,6 +141,44 @@ func makeTempRepo(srcdir string) string {
 	return d
 }
 
+func makeIndexInputFiles(wg *sync.WaitGroup, version, srcdir string) {
+	var err error
+
+	defer wg.Done()
+
+	jsPath := path.Join(srcdir, "docs", version, "searchIndex.js")
+
+	_, err = os.Create(jsPath)
+	if err != nil {
+		panic(err)
+	}
+
+	f, err := os.OpenFile(jsPath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	_, err = f.WriteString("window.searchIndex = [")
+	if err != nil {
+		panic(err)
+	}
+
+	versionPath := path.Join(srcdir, "docs", version)
+	srcPath := path.Join(srcdir, "docs")
+	contents := createIndexFile(versionPath, srcPath, version)
+
+	_, err = f.WriteString(contents)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = f.WriteString("]")
+	if err != nil {
+		panic(err)
+	}
+}
+
 func mustRun(command string, args ...string) {
 	c := exec.Command(command, args...)
 	c.Stderr = os.Stderr
@@ -172,4 +215,80 @@ func versionPaths(srcdir string) []string {
 	}
 
 	return paths
+}
+
+func createIndexFile(parentPath string, srcPath string, version string) string {
+
+	files, err := ioutil.ReadDir(parentPath)
+	if err != nil {
+		log.Fatalln("ReadDir error:", err)
+	}
+
+	var contents []string
+
+	for _, f := range files {
+		n := f.Name()
+
+		if strings.HasPrefix(n, ".") {
+			continue
+		}
+
+		if f.IsDir() {
+			if n == "enterprise" {
+				continue
+			}
+			contents = append(contents, createIndexFile(path.Join(parentPath, n), srcPath, version))
+		} else {
+			ext := filepath.Ext(n)
+			if ext == ".md" {
+				if n == "license.md" {
+					continue
+				}
+
+				tempPath := path.Join(parentPath, n)
+				tempFile, err := ioutil.ReadFile(tempPath)
+				if err != nil {
+					panic(err)
+				}
+
+				contents = append(contents, generateJSONFromBytes(tempFile, tempPath))
+			}
+		}
+	}
+	return strings.Join(contents, ",")
+}
+
+func generateJSONFromBytes(tempFile []byte, tempPath string) string {
+	type Index struct {
+		URL     string
+		Body    string
+		Title   string
+		Snippet string
+	}
+
+	tempString := string(tempFile)
+	lines := strings.Split(tempString, "\n")
+	title := ""
+	snippet := ""
+
+	if lines[0] == "<!---" {
+		snippet = lines[1]
+	}
+
+	for i := 0; i < len(lines); i++ {
+		if strings.HasPrefix(lines[i], "# ") {
+			title = strings.TrimPrefix(lines[i], "# ")
+			break
+		}
+	}
+
+	urlSlice := strings.Split(tempPath, "src/chain")
+	url := strings.TrimSuffix(urlSlice[len(urlSlice)-1], ".md")
+	indexed := &Index{URL: url, Body: tempString, Title: title, Snippet: snippet}
+	b, err := json.Marshal(indexed)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(b)
 }

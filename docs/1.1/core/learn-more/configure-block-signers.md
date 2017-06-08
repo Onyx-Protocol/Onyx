@@ -1,3 +1,7 @@
+<!---
+In this example, we configure a blockchain with a Chain Core as a block generator on one machine and another Chain Core as a block signer on another machine.
+-->
+
 # Create blockchain with block signers
 
 ## Introduction

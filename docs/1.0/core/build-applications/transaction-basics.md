@@ -1,3 +1,7 @@
+<!---
+A blockchain consists of an immutable set of cryptographically linked transactions. Each transaction contains one or more inputs, and one or more outputs.
+-->
+
 # Transaction Basics
 
 ## Introduction

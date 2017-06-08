@@ -36,6 +36,11 @@ function prepareUpNextButton() {
 
 	var p = location.pathname;
 	p = p.replace(/\/+$/,"")
+
+	if(p.split("/").slice(-1)[0] == "search-results") {
+		return
+	}
+	
 	var toc = $('.docs-nav .inner a')
 	var currentIndex = -100
 

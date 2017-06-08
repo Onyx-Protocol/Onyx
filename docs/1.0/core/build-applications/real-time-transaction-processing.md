@@ -1,3 +1,7 @@
+<!---
+You can use transaction feeds to process transactions as they arrive on the blockchain. This is helpful for real-time applications such as notifications or live-updating interfaces.
+-->
+
 # Real-time Transaction Processing
 
 ## Overview

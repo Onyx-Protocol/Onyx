@@ -1,3 +1,7 @@
+<!---
+An introduction to Chain Core.
+-->
+
 # Introduction
 
 Chain Core is software designed to operate and participate in permissioned blockchain networks. Each network maintains a cryptographically-secured multi-asset shared ledger. Using this ledger, participants can issue digital assets directly to custodians, who can then transfer them to each other in real time with no transactional intermediary. Each Chain Core holds a copy of the ledger and independently validates each update. A federation of block signers ensures global consistency of the ledger.

@@ -1,3 +1,7 @@
+<!---
+Each new transaction in the blockchain consumes some unspent outputs and creates others. An output is considered unspent when it has not yet been used as an input to a new transaction.
+-->
+
 # Unspent Outputs Guide
 
 ## Introduction

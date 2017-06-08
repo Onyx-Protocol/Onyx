@@ -1,3 +1,7 @@
+<!---
+Using Docker and Docker Machine, you can deploy Chain Core Developer Edition to a cloud services provider like AWS or Digital Ocean in a matter of minutes.
+-->
+
 # Deploying to the cloud
 
 Using Docker and Docker Machine, you can deploy Chain Core Developer Edition to a cloud services provider like AWS or Digital Ocean in a matter of minutes.

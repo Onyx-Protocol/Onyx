@@ -1,6 +1,10 @@
+<!---
+Instructions to download Java, Node.js, and Ruby Chain Core SDKs.
+-->
+
 # Download Chain Core SDKs
 
-Chain Core SDKs enable your appplication to communicate with Chain Core.
+Chain Core SDKs enable your application to communicate with Chain Core.
 
 ## Java
 

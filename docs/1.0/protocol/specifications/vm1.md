@@ -1,3 +1,7 @@
+<!---
+The Chain Protocol uses a bytecode language to express short programs used to authenticate blockchain activity.
+-->
+
 # Virtual Machine Specification
 
 * [Introduction](#introduction)
@@ -48,7 +52,7 @@ Blocks do not specify VM version explicitly. [Consensus programs](data.md#consen
 
 A program comprises a sequence of zero or more **instructions**. Each instruction contains a one-byte **opcode** followed by zero or more **continuation bytes**, determined by the operation. Data in this format is informally known as **bytecode**.
 
-Instructions that push arbitrary data onto the stack use one of the [PUSHDATA](#pushdata) opcode followed by a variable-length binary string to be placed on stack. The length of the string is either encoded within the opcode itself, or prepended to the string. 
+Instructions that push arbitrary data onto the stack use one of the [PUSHDATA](#pushdata) opcode followed by a variable-length binary string to be placed on stack. The length of the string is either encoded within the opcode itself, or prepended to the string.
 
 All other instructions are encoded simply by a single-byte opcode. The protocol reserves unassigned opcodes for future extensions.
 
@@ -1292,5 +1296,3 @@ The unassigned codes are reserved for future expansion and have no effect on the
 * [LEB128] [Little-Endian Base-128 Encoding](https://developers.google.com/protocol-buffers/docs/encoding)
 * [CFRG1] [Edwards-curve Digital Signature Algorithm (EdDSA) draft-irtf-cfrg-eddsa-05](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)
 * [RFC 6962](https://tools.ietf.org/html/rfc6962#section-2.1)
-
-

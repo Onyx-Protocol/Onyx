@@ -1,3 +1,7 @@
+<!---
+corectl command usage information.
+-->
+
 # corectl Command
 
 Command `corectl` provides miscellaneous control functions for a Chain Core.
