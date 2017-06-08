@@ -34,8 +34,8 @@ var ops = [NumOp]func(*vm){
 
 	Equal: opEqual,
 	Not:   opNot,
-	And:   boolBinOp(func(x, y int64) bool { return x != 0 && y != 0 }),
-	Or:    boolBinOp(func(x, y int64) bool { return x != 0 || y != 0 }),
+	And:   boolBinOp(func(x, y bool) bool { return x && y }),
+	Or:    boolBinOp(func(x, y bool) bool { return x || y }),
 
 	Add:    intBinOp(checked.AddInt64).run,
 	Mul:    intBinOp(checked.MulInt64).run,
@@ -43,8 +43,8 @@ var ops = [NumOp]func(*vm){
 	Mod:    intBinOp(checked.ModInt64).run,
 	Lshift: intBinOp(checked.LshiftInt64).run,
 	Rshift: intBinOp(rshift).run,
-	GT:     boolBinOp(func(x, y int64) bool { return x > y }),
-	GE:     boolBinOp(func(x, y int64) bool { return x >= y }),
+	GT:     opGT,
+	GE:     opGE,
 	Negate: opNegate,
 
 	Cat:   opCat,
@@ -76,15 +76,10 @@ func opPC(vm *vm) {
 
 func opJumpIf(vm *vm) {
 	p := vm.data.PopInt64()
-	x := vm.data.PopInt64()
-	if x != 0 {
+	x := vm.data.Pop()
+	if toBool(x) {
 		vm.pc = int(p)
 	}
-}
-
-func opExec(vm *vm) {
-	prog := vm.data.PopBytes()
-	exec(vm, prog)
 }
 
 func opRoll(vm *vm) {
@@ -198,6 +193,18 @@ func rshift(x, y int64) (int64, bool) {
 	return x >> uint64(y), true
 }
 
+func opGT(vm *vm) {
+	y := vm.data.PopInt64()
+	x := vm.data.PopInt64()
+	vm.data.Push(Bool(x > y))
+}
+
+func opGE(vm *vm) {
+	y := vm.data.PopInt64()
+	x := vm.data.PopInt64()
+	vm.data.Push(Bool(x >= y))
+}
+
 func opNegate(vm *vm) {
 	x := vm.data.PopInt64()
 	y, ok := checked.NegateInt64(x)
@@ -208,20 +215,14 @@ func opNegate(vm *vm) {
 }
 
 func opNot(vm *vm) {
-	var v bool
-	switch x := vm.data.Pop().(type) {
-	case Int64:
-		v = x != 0
-	default:
-		v = true
-	}
-	vm.data.Push(Bool(v))
+	x := toBool(vm.data.Pop())
+	vm.data.Push(Bool(!x))
 }
 
-func boolBinOp(f func(x, y int64) bool) func(vm *vm) {
+func boolBinOp(f func(x, y bool) bool) func(vm *vm) {
 	return func(vm *vm) {
-		y := vm.data.PopInt64()
-		x := vm.data.PopInt64()
+		y := toBool(vm.data.Pop())
+		x := toBool(vm.data.Pop())
 		vm.data.Push(Bool(f(x, y)))
 	}
 }

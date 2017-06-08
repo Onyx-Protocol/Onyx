@@ -19,6 +19,12 @@ func Bool(x bool) Value {
 	return Int64(0)
 }
 
+// toBool converts v from a Value to a bool
+func toBool(v Value) bool {
+	n, ok := v.(Int64)
+	return !ok || n != 0
+}
+
 type Bytes []byte
 
 type Int64 int64
