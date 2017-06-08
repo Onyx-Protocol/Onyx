@@ -1,11 +1,7 @@
 /* eslint-env mocha */
 
-const chain = require('../dist/index.js')
-const uuid = require('uuid')
-const assert = require('assert')
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
-
 chai.use(chaiAsPromised)
 const expect = chai.expect
 
@@ -21,7 +17,7 @@ const buildSignSubmit = buildFunc =>
     .then(tpl => signer.sign(tpl))
     .then(tpl => client.transactions.submit(tpl))
 
-describe('Transaction feeds', () => {
+describe('Transaction feed', () => {
   let gold, silver, alice, bob, issuanceFeed, spendFeed
 
   before(() =>
