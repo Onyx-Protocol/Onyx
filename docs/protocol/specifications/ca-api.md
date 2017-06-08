@@ -191,20 +191,20 @@ See [Key Derivation](#key-derivation) section for details.
                  "control_program"              |
                  "retire")
         },
+
+        // "retire" action:
         {
           type:           "retire",
           asset_id:       <string>,
           asset_alias:    <string>,
           amount:         <number>,
           reference_data: <string>
-        }
+        },
       ]
     }
 
 New optional `version` is set to 2 for new SDKs, so Chain Core may support legacy SDK that use implicit version 1. 
 The following updates apply to requests with `version=2`.
-
-Field `base_transaction` is removed.
 
 New action type `retire` is introduced that works like `control_program`, but without the `program` parameter.
 
@@ -214,21 +214,60 @@ Parameter `confidential` indicates which fields of the output should be encrypte
 
 If the transfer is made to an account, it is encrypted with the keys associated with this account.
 
+If the transfer is made to an arbitrary control program, it is encrypted with the keys derived from the root key and that control program.
+
 If the transfer is made to a receiver, the output or retirement is encrypted with keys specified by the receiver. If some keys are omitted,
 then no encryption takes place.
 
-To control confidentiality of specific entries, `confidential` key is used (defaults are `true` for all fields).
+See [Key Derivation](#key-derivation) and [CA specification](ca.md) section for details.
+
+**Response**
+
+    {
+      version: 2,
+      entries: [
+        ...
+      ]
+    }
+
+See [Transaction template](#transaction-template) for details.
+
+**Ruby**
 
     chain.transactions.build do |b|
-        b.base_transaction tx  # (optional)
+        b.base_transaction tx 
         b.issue                ..., confidential: {reference_data: true, asset_id: true, amount: true}
+        b.spend_from_account   ..., confidential: {reference_data: true}
         b.control_with_account ..., confidential: {reference_data: true, asset_id: true, amount: true}
         b.retire               ..., confidential: {reference_data: true, asset_id: true, amount: true}
     end
 
-It is an error to use `confidential:{asset_id:/amount:}` for action `spend_*`. Only `confidential:{reference_data:true/false}` is allowed for spends. And confidentiality of the value is already controlled by an existing spendable output.
+**JS**
 
-Procedure:
+    client.transactions.build(builder => {
+      builder.spendFromAccount({
+        accountAlias: 'alice',
+        assetAlias: 'gold',
+        amount: 10,
+        confidential: {reference_data: true}
+      })
+      builder.controlWithAccount({
+        accountAlias: 'bob',
+        assetAlias: 'gold',
+        amount: 10,
+        confidential: {reference_data: true, asset_id: true, amount: true}
+      })
+    })
+    .then(payment => signer.sign(payment))
+    .then(signed => client.transactions.submit(signed))
+
+
+**Java**
+
+TBD.
+
+
+**Building process**
 
 1. Prepare a partial transaction with data from the `base_transaction`:
     1. Reserve unspent outputs.
@@ -260,7 +299,9 @@ Procedure:
     * hashes each entry with a unique per-tx key (derived from `EK`, derived from `payload_id`)
     * sorts the list lexicographically
 
-#### Sign WIP
+
+
+#### Sign transaction WIP
 
 1. Send transaction template to Core to decrypt and verify signing instructions:
     1. If `excess` factor in the MUX entry is non-zero:
@@ -349,21 +390,6 @@ TBD: Should we support querying all stored disclosures too?
 
 
 ### Data structures
-
-#### Receiver
-
-Receiver is shared with a sending party with minimum information necessary to correctly encrypt
-the output.
-
-    {
-        version: 2,                        // version of the output (default is 1)
-        control_program: "fa90e031...",           // control program
-        expires_at: "2017-10-02T10:00:00-05:00",  // expiration date
-        dek: "de01836...",                        // data-encryption key
-        aek: "ae819f7...",                        // asset ID-encryption key
-        vek: "fe791c0..."                         // amount-encryption key
-    }
-
 
 #### Transaction template
 
@@ -615,8 +641,6 @@ Field                         | Description
 `reference_data_confidential` | `true` if reference data is encrypted on-chain
 
 TBD: add annotated issuances/inputs/outputs/retirements to the Swagger spec.
-
-
 
 
 
