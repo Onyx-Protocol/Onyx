@@ -636,15 +636,15 @@ Core is initialized with a **root secret key** `RK` which is stored in the Core'
 
 From that key, Core creates a **root import key** `RIK`, an xprv/xpub pair using RK as a seed:
 
-    RIK = ChainKD(seed: "RIK" || RK)
+    RIK = ChainKD(seed: "Root Import Key" || RK)
 
 For accounts and outputs Core creates **root confidentiality key** `RCK`:
 
-    RCK = TupleHash128({RK}, S="RCK", 32 bytes)
+    RCK = TupleHash128({RK}, S="Root Confidentiality Key", 32 bytes)
 
 To encrypt fields, `RCK` is expanded to a vector key containing 3 32-byte keys:
 
-    RDEK, RAEK, RVEK = TupleHash128({RCK}, S="RDEK", 3·32 bytes)
+    RDEK, RAEK, RVEK = TupleHash128({RCK}, S="Expanded Root Key", 3·32 bytes)
 
     RDEK — Root Data Encryption Key
     RAEK — Root Asset ID Encryption Key
@@ -652,24 +652,28 @@ To encrypt fields, `RCK` is expanded to a vector key containing 3 32-byte keys:
 
 For each account a deterministic account selector is made that's used to generate per-account keys:
 
-    {ADEK,AAEK,AVEK} = TupleHash128({RDEK,RAEK,RVEK,m,n,xpub1,xpub2,xpub3}, S="A", 3·32 bytes)
+    (ADEK|AAEK|AVEK) = TupleHash128({(RDEK|RAEK|RVEK),m,n,xpub1,xpub2,xpub3}, S="Account Key", 32 bytes)
                        (m,n encoded as little-endian 64-bit unsigned integers)
 
-For each output, a key is derived using control program as a selector:
+For each account output ("internal output"), a key is derived using control program and a per-account key:
 
-    {ODEK,OAEK,OVEK} = TupleHash128({ADEK,AAEK,AVEK,control_program}, S="O", 3·32 bytes)
+    (ODEK|OAEK|OVEK) = TupleHash128({(ADEK|AAEK|AVEK),control_program}, S="Internal Output Key", 32 bytes)
+
+For each output for an arbitrary control program, a key is derived using control program and a corresponding root key:
+
+    (ODEK|OAEK|OVEK) = TupleHash128({(RDEK|RAEK|RVEK),control_program}, S="External Output Key", 32 bytes)
 
 For the retirement entry, a key is derived using the serialized `value_source` as selector and root keys:
 
-    {TDEK,TAEK,TVEK} = TupleHash128({RDEK,RAEK,RVEK,value_source}, S="T", 3·32 bytes)
+    (TDEK|TAEK|TVEK) = TupleHash128({(RDEK|RAEK|RVEK),value_source}, S="Retirement Key", 32 bytes)
 
-Asset ID-specific vector key:
+Asset ID-specific key:
 
-    {SDEK,SAEK,SVEK} = TupleHash128({RDEK,RAEK,RVEK,assetid}, S="S", 3·32 bytes)
+    (SDEK|SAEK|SVEK) = TupleHash128({(RDEK|RAEK|RVEK),assetid}, S="Asset ID Key", 32 bytes)
 
 For each issuance, a key is derived using the anchor ID as a selector and asset ID-specific keys:
 
-    {YDEK,YAEK,YVEK} = TupleHash128({SDEK,SAEK,SVEK,anchorID}, S="Y", 3·32 bytes)
+    (YDEK|YAEK|YVEK) = TupleHash128({(SDEK|SAEK|SVEK),anchorID}, S="Issuance Key", 32 bytes)
 
 For each access token there is a separate _access key_ `AK`:
 
