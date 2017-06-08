@@ -2,6 +2,7 @@ package txvm
 
 import (
 	"encoding/binary"
+	"errors"
 )
 
 // Tx contains the full transaction data.
@@ -40,17 +41,20 @@ type vm struct {
 	data stack
 	alt  stack
 
-	// linear types
-	input    []ID     // must end empty
-	value    []*value // must end empty
-	pred     []pval   // must end empty
-	contract []*cval  // must end empty
-	anchor   []ID
-
-	// results
-	output []ID
-	nonce  []ID
-	retire []ID
+	inputs        []VMTuple
+	values        []VMTuple
+	outputs       []VMTuple
+	conditions    []VMTuple
+	nonces        []VMTuple
+	anchors       []VMTuple
+	txheader      []VMTuple
+	vm1inputs     []VMTuple
+	vm1values     []VMTuple
+	vm1muxes      []VMTuple
+	vm1outputs    []VMTuple
+	vm1conditions []VMTuple
+	vm1nonces     []VMTuple
+	vm1anchors    []VMTuple
 }
 
 // Validate returns whether x is valid.
@@ -60,7 +64,6 @@ type vm struct {
 // use Option funcs to trace execution.
 func Validate(x *Tx, o ...Option) bool {
 	vm := &vm{
-		input:       x.In,
 		traceUnlock: func(Contract) {},
 		traceLock:   func(Contract) {},
 	}
@@ -75,12 +78,8 @@ func Validate(x *Tx, o ...Option) bool {
 	// TODO(kr): call some tracing hook here
 	// to signal end of execution.
 
-	return len(vm.input) == 0 &&
-		len(vm.value) == 0 &&
-		len(vm.pred) == 0 &&
-		len(vm.contract) == 0 &&
-		idsEqual(vm.output, x.Out) &&
-		idsEqual(vm.nonce, x.Nonce)
+	return len(vm.inputs) == 0 &&
+		len(vm.values) == 0
 }
 
 func exec(vm *vm, prog []byte) {
@@ -121,4 +120,39 @@ func idsEqual(a, b []ID) bool {
 		}
 	}
 	return true
+}
+
+func getStack(vm *vm, t int64) *[]VMTuple {
+	switch t {
+	case StackInput:
+		return &vm.inputs
+	case StackValue:
+		return &vm.values
+	case StackOutput:
+		return &vm.outputs
+	case StackCond:
+		return &vm.conditions
+	case StackNonce:
+		return &vm.nonces
+	case StackAnchor:
+		return &vm.anchors
+	case StackTxHeader:
+		return &vm.txheader
+	case StackVM1Input:
+		return &vm.vm1inputs
+	case StackVM1Value:
+		return &vm.vm1values
+	case StackVM1Mux:
+		return &vm.vm1muxes
+	case StackVM1Output:
+		return &vm.vm1outputs
+	case StackVM1Cond:
+		return &vm.vm1conditions
+	case StackVM1Nonce:
+		return &vm.vm1nonces
+	case StackVM1Anchor:
+		return &vm.vm1anchors
+	default:
+		panic(errors.New("bad stack identifier"))
+	}
 }

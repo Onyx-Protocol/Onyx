@@ -90,18 +90,14 @@ func opRoll(vm *vm) {
 		vm.data.Roll(n)
 	case StackAlt:
 		vm.alt.Roll(n)
-	case StackInput:
-		panic(errors.New("todo"))
-	case StackValue:
-		panic(errors.New("todo"))
-	case StackCond:
-		panic(errors.New("todo"))
-	case StackOutput:
-		panic(errors.New("todo"))
-	case StackNonce:
-		panic(errors.New("todo"))
 	default:
-		panic(errors.New("bad stack selector"))
+		stackp := getStack(vm, t)
+		stack := *stackp
+		i := len(stack) - int(n)
+		x := stack[i]
+		stack = append(stack[:i], stack[i+1:]...)
+		stack = append(stack, x)
+		stackp = &stack
 	}
 }
 
@@ -113,18 +109,14 @@ func opBury(vm *vm) {
 		vm.data.Bury(n)
 	case StackAlt:
 		vm.alt.Bury(n)
-	case StackInput:
-		panic(errors.New("todo"))
-	case StackValue:
-		panic(errors.New("todo"))
-	case StackCond:
-		panic(errors.New("todo"))
-	case StackOutput:
-		panic(errors.New("todo"))
-	case StackNonce:
-		panic(errors.New("todo"))
 	default:
-		panic(errors.New("bad stack selector"))
+		stackp := getStack(vm, t)
+		stack := *stackp
+		x := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		i := len(stack) - int(n)
+		stack = append(append(append([]VMTuple{}, stack[:i]...), x), stack[i:]...)
+		stackp = &stack
 	}
 }
 
@@ -136,22 +128,8 @@ func opDepth(vm *vm) {
 		n = int(vm.data.Len())
 	case StackAlt:
 		n = int(vm.alt.Len())
-	case StackInput:
-		n = len(vm.input)
-	case StackValue:
-		n = len(vm.value)
-	case StackCond:
-		n = len(vm.pred)
-	case StackAnchor:
-		n = len(vm.anchor)
-	case StackOutput:
-		n = len(vm.output)
-	case StackNonce:
-		n = len(vm.nonce)
-	case StackRetire:
-		n = len(vm.retire)
 	default:
-		panic(errors.New("bad stack selector"))
+		n = len(*getStack(vm, t))
 	}
 	vm.data.PushInt64(int64(n))
 }
@@ -354,14 +332,9 @@ func opField(vm *vm) {
 		tuple := vm.alt.Peek().(VMTuple)
 		vm.data.Push(tuple[n])
 	case StackInput:
-	case StackValue:
-	case StackCond:
-	case StackAnchor:
-	case StackOutput:
-	case StackNonce:
-	case StackRetire:
 	default:
-		panic(errors.New("bad stack selector"))
+		stack := *getStack(vm, t)
+		vm.data.Push(stack[len(stack)-1])
 	}
 }
 
