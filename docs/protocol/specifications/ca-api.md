@@ -1,63 +1,35 @@
 # Confidential Assets API
 
 * [Introduction](#introduction)
-* [Overview](#overview)
-  * [Upgrading to confidential assets](#upgrading-to-confidential-assets)
-  * [Single-party transaction](#single-party-transaction)
-  * [Multi-party transaction](#multi-party-transaction)
-  * [Confidential issuance](#confidential-issuance)
-  * [Creating disclosure](#creating-disclosure)
-* [Data structures](#data-structures)
-* [Annotations](#annotations)
-* [Actions](#actions)
-* [Encryption](#encryption)
-* [API specification](#api-specification)
+* [Roadmap](#roadmap)
+* [Specification](#specification)
+  * [Actions](#actions)
+  * [Data structures](#data-structures)
+  * [Annotations](#annotations)
+  * [Encryption](#encryption)
+  * [API objects](#api-objects)
+* [Examples](#examples)
 * [Discussion](#discussion)
 
 ## Introduction
 
-New design for transaction builder that focuses on privacy.
+New design for transaction builder and related APIs that focuses on privacy.
 
-Goals:
+### Goals
 
 1. Native support for transaction entries.
-2. Privacy-preserving transaction signing
-3. Confidential assets support.
+2. Privacy-preserving transaction signing.
+3. Support for confidential assets.
 4. Support for constructing witnesses for custom control and issuance programs.
 5. Built-in support for encrypting payload inside and outside the range proof.
 
-Addressed problems:
+### Addressed problems
 
 1. Linkability of inputs and outputs in multi-party transfers.
 2. Asset range proofs for outputs with asset ID that’s missing among inputs.
 3. Automated verification for additional rounds of finalization.
 4. Future extensibility to custom signing schemes.
 5. Privacy of metadata (such as signing instructions, account IDs etc) for shared tx templates.
-
-## Overview
-
-1. Building transaction:
-    1. Single-party transaction (with one-shot signing)
-    2. Multi-party transaction (with second round of signing)
-    3. Confidential issuance
-    3. Encrypting outputs by default
-    4. Encrypting outputs with receiver details (externally provided key material)
-2. Selective disclosure:
-    1. Export "disclosure"
-    2. Import "disclosure"
-    3. Per-output disclosure:
-        1. Account - on/off (proving linkability to an account with forward secrecy)
-        2. Asset ID - on/off
-        3. Amount - on/off
-        4. Payload - on/off
-    4. Per-transaction disclosure:
-        1. Select output(s)
-        2. Toggle assetid/amount/payload for the transaction
-    5. Per-account disclosure (for tracking accounts):
-        1. URL of this Core for streaming individual disclosures.
-    6. Disclosure is encrypted directly to the other core's public key, so it's safe to carry around.
-        1. Core's pubkey is blinded using ChainKD to prevent linkability to the same Core by counter-parties.
-
 
 ### Upgrading to confidential assets
 
@@ -69,163 +41,168 @@ Existing unencrypted unspent outputs are spent first and upgraded to confidentia
 
 New receivers introduce versioning and use version 2 with relevant encryption keys.
 
+## Roadmap
 
-### Single-party transaction
+#### Phase 1: non-confidential transaction builder
 
-Alice wants to send money to Bob.
+* New receiver format v2 (without encryption keys).
+* New transaction builder with necessary fields for non-confidential txs.
 
-Both Alice and Bob add keys to their Chain::HSMSigner associated with a Chain::Client object,
-so Client can do sign requests:
+#### Phase 2: confidential transaction builder
 
-    client.signer.add_key(key, hsm.signer_conn)
+* Encryption keys in v2 receivers.
+* Transaction builder with support for encryption of assetids, amounts and reference data.
 
-Bob generates a receiver `rcvr` that encapsulates control program and
-encryption keys.
+#### Phase 3: issuance specs
 
-    bob_rcvr = chain.accounts.create_receiver(
-        account_alias: 'bob'
-    )
+* Create an issuance key
+* Export/import issuance pubkey ("issuance spec")
 
-First party (Alice) uses `client.transactions` API to build a transaction to send funds to a given receiver from Bob:
+#### Phase 4: disclosures
 
-    tx1 = client.transactions.build do |b|
-      b.spend_from_account    account_alias: 'alice', asset_id: 'USD',  amount: 140
-      b.control_with_receiver receiver: bob_rcvr,     asset_id: 'USD',  amount: 140, reference_data: "Hello, world!"
+* Generate an import key
+* Configure and export disclosure to an import key
+* Import a disclosure and use it to annotate transactions.
+
+
+## Specification
+
+### Actions
+
+#### Build
+
+The API to build a transaction makes transfers confidential by default without explicit handling of encryption keys.
+
+If the transfer is made to an account, it is encrypted with the keys associated with this account.
+
+If the transfer is made to a receiver, the output or retirement is encrypted with keys specified by the receiver. If some keys are omitted,
+then no encryption takes place.
+
+To control confidentiality of specific entries, `confidential` key is used (defaults are `true` for all fields).
+
+    chain.transactions.build do |b|
+        b.base_transaction tx  # (optional)
+        b.issue                ..., confidential: {reference_data: true, asset_id: true, amount: true}
+        b.control_with_account ..., confidential: {reference_data: true, asset_id: true, amount: true}
+        b.retire               ..., confidential: {reference_data: true, asset_id: true, amount: true}
     end
 
-Suppose Alice has 1000 USD on the inputs. Transaction builder creates two outputs:
+It is an error to use `confidential` key with action `control_with_receiver`. This is because receivers fully control confidentiality options.
 
-* Output 1: 140 USD to Bob's account
-* Output 2: 860 USD to Alice's account
+It is an error to use `confidential:{asset_id:/amount:}` for action `spend_*`. Only `confidential:{reference_data:true/false}` is allowed for spends. And confidentiality of the value is already controlled by an existing spendable output.
 
-Output 1 is using one-time program described in Bob's receiver, and payload and amount are encrypted with the keys specified in the receiver.
+Procedure:
 
-Output 2 uses one-time program for Alice's change address and the amount is encrypted with the keys derived for the Alice's account.
+1. Prepare a partial transaction with data from the `base_transaction`:
+    1. Reserve unspent outputs.
+    2. Add necessary inputs spending reserved unspent outputs.
+    3. Add necessary issuances.
+    4. Prepare `signing_instructions` for each input and issuance.
+    5. Create and encrypts new outputs, adds VRPs (but not ARPs).
+    6. Compute the `excess` blinding factor.
+    7. Set mintime to current time: `mintime = currentTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
+    8. Set maxtime to expiration time: `maxtime = expirationTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
+    9. Prepare ARP instructions for each output: `asset_range_proof_instructions: {asset_id:..., factor:..., [input_id:..., input_factor:...]}`.
+        * Input ID and input's blinding factor are included if such input is known.
+    10. For each output in `base_transaction` where `asset_range_proof_instructions` are specified and partial tx has an input with the matching asset ID:
+        1. Copy that output to the partial transaction.
+        2. Add `input_id/input_factor` to `asset_range_proof_instructions` for that copy.
+        3. Strip `asset_range_proof_instructions` from that output in `base_transaction`.
+    11. Encrypt the partial transaction:
+        1. Generate unique uniform `payload-id`.
+        2. Derive [payload encryption key](#key-derivation) from Chain Core's master key: `PK`.
+        3. Encrypt the partial transaction and wraps it with `{payload_id:, blob:}` structure.
+2. Merge the data from partial transaction with the existing template (`base_transaction`):
+    1. Merge tx.mintime with partial's mintime: `mintime = MAX(basetx.mintime, partialtx.mintime)`.
+    2. Merge tx.maxtime with partial's maxtime: `maxtime = MIN(basetx.maxtime, partialtx.maxtime)`.
+    3. Add outputs, stripping `asset_range_proof_instructions` from those outputs where `input_id/input_factor` is specified.
+    4. Add `{payload_id:, blob:}` to the list of payloads in the `base_transaction`.
+    5. Add `excess` from the partial transaction to the `excess` value in the MUX entry in the `base_transaction`.
+    6. Replaces `placeholder:true` outputs with re-computed placeholder outputs based on additional inputs/outputs.
+3. Shuffles entries:
+    * hashes each entry with a unique per-tx key (derived from `EK`, derived from `payload_id`)
+    * sorts the list lexicographically
 
-When transaction is built, it must be signed and submitted.
+#### Sign
 
-    tx = client.transactions.sign(tx)
-    client.transactions.submit(tx)
+1. Send transaction template to Core to decrypt and verify signing instructions:
+    1. If `excess` factor in the MUX entry is non-zero:
+        1. If the transaction ID is not fixed yet and the current party has at least one output in it:
+            * `excess` is added to the value commitment and value range proof is re-created.
+        2. Otherwise, `excess` is transformed into an "excess commitment" with signature and added to the MUX entry in the transaction.
+        3. `excess` value is zeroed from the transaction template.
+    2. Transaction ID is computed from the given transaction template.
+    3. For each encrypted payload:
+        1. Derive [payload encryption key](#key-derivation) from Chain Core's master key: `PK`.
+        2. If the key successfully decrypts and authenticates the payload:
+            1. If `txheader` entry is present:
+                1. If `entry.version` is set, verify that it is equal to `tx.txheader.version`.
+                2. If `entry.mintime` is set, verify that `txheader.mintime` is greater or equal to the `entry.mintime`.
+                3. If `entry.maxtime` is set, verify that `txheader.maxtime` is less or equal to the `entry.maxtime`.
+            2. For each `input/issuance` entry:
+                1. Verify that it's present in the transaction.
+            2. For each `output/retirement` entry:
+                1. Verify that there's an entry with such asset/value commitment, program, data and exthash.
+                2. If `asset_range_proof_instructions` has `input_id/input_factor`, create a corresponding ARP and add to the corresponding output entry.
+        3. If the payload is not authenticated by the key `EK`, ignore it.
+    4. If verification succeeded:
+        1. Remove the processed payload
+        2. Send `signing_instructions` for inputs/issuances to the client.
+2. Client receives signing instructions and sends them to the HSM signer:
+    1. HSM signer signs using the signing instructions.
+    2. Client places the signature over TXSIGHASH in the entry inside the transaction.
 
-Core verifies the fully-signed transaction and publishes it if it's valid.
+
+#### Create Disclosure Import Key
+
+The Core that needs to import a disclosure must first generate a recipient key to ensure
+that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
+
+   import_key = client.disclosures.create_import_key()
+   import_key_serialized = import_key.to_json
 
 
-### Multi-party transaction
+#### Export Disclosure
 
-In a multi-party transaction receivers are not necessary (although, can be used as well).
-Instead, each party can specify outputs they are interested in and immediately encrypt
-with their own encryption keys without excessive disclosure with other parties.
+Bob receives `import_key` from Alice and uses it to build a disclosure object:
 
-First party (Alice) uses `client.transactions` API to build a partial transaction:
-
-    tx1 = client.transactions.build do |b|
-      b.spend_from_account   account_alias: 'alice', asset_id: 'USD',  amount: 140
-      b.control_with_account account_alias: 'alice', asset_id: 'AAPL', amount: 1
+    encrypted_disclosure = client.disclosures.build(import_key: import_key) do |d|
+      d.disclose_entry(entry_id: "fa0e8fb0ad...",            fields: {asset_id: true, amount: true, reference_data: true})
+      d.disclose_transaction(transaction_id: "57ad0fea9...", fields: {asset_id: true, amount: true, reference_data: true})
+      d.disclose_account(account_alias: "bob",               fields: {asset_id: true, amount: true, reference_data: true})
     end
+    disclosure_serialized = encrypted_disclosure.to_json
 
-Alice sends `tx1` to Bob to add additional steps. Bob sets `base_transaction` to `tx1` to build on top of it.
+The resulting object is encrypted to an `import_key`, contains minimal metadata needed for decryption
+and can be safely transmitted to the receiving Core for import.
 
-    tx2 = client.transactions.build do |b|
-      b.base_transaction     tx1
-      b.spend_from_account   account_alias: 'bob', asset_id: 'USD',  amount: 140
-      b.control_with_account account_alias: 'bob', asset_id: 'AAPL', amount: 1
-    end
-
-Bob can in turn leave `tx2` unbalanced and forward it to Carl, etc.
-
-When no one else is adding to the transaction, it must be signed:
-
-    tx3 = client.transactions.sign(tx2)
-
-Each party has to sign the transaction, so it becomes fully signed.
-
-When it is fully signed, it can be submitted.
-
-    if tx3.signed?
-        client.transactions.submit(tx3)
-    end
-
-Core verifies the fully-signed transaction and publishes it if it's valid.
+* `disclose_entry` — adds proofs and decryption keys for a single output/retirement/issuance.
+* `disclose_transaction` — adds proofs and decryption keys for each output in the transaction (omits outputs not decrypted by this Core).
+* `disclose_account` — adds account xpubs, derivation path and root decryption keys for tracking all outputs for a given account.
 
 
-### Confidential issuance
+#### Import Disclosure
 
-Confidential issuance works by hiding the issued asset ID among a specified set of asset IDs.
-For instance, `AliceIOU` can be issued among `{AliceIOU,BobIOU,CarolIOU}` so that the fact that
-Alice is issuing more debt can be kept private from the market and only disclose it to regulators
-and concerned counter-parties.
+Alice receives `disclosure` object from Bob and attempts to import in the Core:
 
-There are three ways to issue assets confidentially:
+    cleartext_disclosure = client.disclosures.import(disclosure)
 
-1. You use only _your_ asset IDs (which you can issue).
-2. You use other issuers’ asset IDs that support a specific _issuance key_ in their issuance programs. 
-   This is an option for newer asset IDs created with a built-in issuance key support.
-3. You use other issuers’ asset IDs that have publicly available signed signature programs with _issuance key_ support.
-   This is an option for legacy asset IDs created without built-in issuance key support.
+Alice can decrypt and inspect the disclosure without importing:
 
-To support second and third option, user must import other issuers’ assets with necessary issuance public keys and witness data:
+    cleartext_disclosure = client.disclosures.decrypt(disclosure)
+    cleartext_disclosure.scope                       # => 'output'/'transaction_id'/'account'
+    cleartext_disclosure.items[0].asset_id.asset_id  # => "fae9f0af..."
 
-    chain.assets.import(
-      alias: 'BobIOU',
-      confidential_issuance_spec: {
-        asset_id:         'fa0bd0ad1241...',
-        initial_block_id: 'a9f03712fad1...',     # the initial_block_id, issuance_program, reference_data define asset ID
-        issuance_program: '5604afe9baf0...',
-        reference_data:   '9af9f9839102...',
-        arguments: ['ad3703...', 'fe8a7210...'], # VM arguments to satisfy issuance program
-        issuance_key:     '048af9bd9e01...',     # issuance public key
-      }
-    )
-
-Structure `confidential_issuance_spec` is published by the issuer so that other issuers could use it.
-
-To create a set of issuance candidates, Alice uses optional `issuance_choices` field.
-She can refer to imported or her own assets by `asset_alias` or `asset_id`.
-
-    tx = client.transactions.build do |b|
-      b.issue asset_alias: 'AliceIOU', amount: 10, issuance_choices: [ # optional override to Core's default behaviour to e.g. include all imported and local asset types
-        {asset_alias: 'AliceIOU2'},
-        {asset_alias: 'BobIOU'},
-        {asset_id:    'CarlIOU'}
-      ]
-      ...
-    end
-
-TBD: to create `confidential_issuance_spec` we need to generate an issuance key, and to support multisig we need to set up a threshold key (ChainTS).
-For now we'll only support either non-confidential issuance, or same-issuer assets with transient issuance keys (generated randomly per-issuance).
-
-
-### Creating disclosure
-
-Alice wants to have read access to Bob's transactions.
-
-1. Alice generates an `Import Key` in her Chain Core — one-time pubkey used for encrypting and authenticating a "disclosure" document.
-2. Alice sends `Import Key` to Bob who generates a "Disclosure" in his Core that will be encrypted to that Import Key.
-3. Bob configures a new disclosure:
-    1. Disclosure scope:
-        * Output(s)
-        * Transaction(s)
-        * Account(s)
-    2. Disclosed fields:
-        * Asset ID
-        * Amount
-        * Data
-4. Bob's Core prepares cryptographic keys and proofs necessary for a given disclosure. For example:
-    * for per-output disclosure it simply contains proofs revealing little identifying information,
-    * for account it exports xpubs to track the account and provides root keys to decrypt necessary fields.
-5. Bob's Core encrypts disclosure to the given `Import Key`.
-6. Bob sends the encrypted disclosure to Alice.
-7. Alice imports the encrypted disclosure to Alice's Core.
-8. Core derives the decryption key from its root key, verifies the proofs and imports the keys.
-9. If the disclosure is at account level, Core begins watching the blockchain for that account and indexing past (?) and future transactions.
+TBD: Should we support querying all stored disclosures too?
 
 
 
 
 
-## Data structures
 
-### Receiver
+### Data structures
+
+#### Receiver
 
 Receiver is shared with a sending party with minimum information necessary to correctly encrypt
 the output.
@@ -240,7 +217,7 @@ the output.
     }
 
 
-### Transaction template
+#### Transaction template
 
 Transaction template contains transaction entries and additional data that helps multiple parties to cooperatively create the transaction.
 
@@ -335,7 +312,7 @@ Transaction template contains transaction entries and additional data that helps
         ]
     }
 
-### Signing instructions
+#### Signing instructions
 
 **Program signing instructions** represent context data, concrete witness data, AST paths and signature templates for satisfying a control/issuance program.
 
@@ -376,7 +353,7 @@ This does not include other possible witnesses.
         ]
     }
 
-### Entry data
+#### Entry data
 
 The raw data string associated with an output/retirement/issuance entry is composed of the following encrypted strings:
 
@@ -385,7 +362,7 @@ The raw data string associated with an output/retirement/issuance entry is compo
 If the asset ID is not confidential, its ciphertext is omitted from the data attachment.
 Likewise, if the amount is not confidential, its ciphertext is omitted from the data attachment.
 
-#### Encode data
+##### Encode data
 
 1. If the asset ID is confidential, [encrypt it](ca.md#encrypt-asset-id) and set `ea` to a 64-byte ciphertext. Otherwise, set `ea` to an empty string.
 2. If the amount is confidential, [encrypt it](ca.md#encrypt-value) and set `ev` to a 40-byte ciphertext. Otherwise, set `ea` to an empty string.
@@ -393,16 +370,16 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
 4. Concatenate `d = ea || ev || ed`.
 5. Attach `d` to the transaction entry (output, retirement or issuance).
 
-#### Decode data
+##### Decode data
 
 1. If the asset ID is confidential, extract first 64 bytes of the data attachment and [decrypt them](ca.md#decrypt-asset-id).
 2. If the amount is confidential, extract next 40 bytes of the data attachment and [decrypt them](ca.md#decrypt-value).
 3. If the data is confidential, [decrypt](#reference-data-encryption) the remaining bytes of the data. Otherwise, set the cleartext to the remaining bytes without modification.
 
 
-### Disclosure
+#### Disclosure
 
-#### Encrypted Disclosure
+##### Encrypted Disclosure
 
     {
         type: "encdisclosure1",              # version of the encrypted disclosure
@@ -411,7 +388,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
         ciphertext: "cc9e012f7a8f99ea9b...", # encrypted hex of the Cleartext Disclosure object
     }
 
-#### Cleartext Disclosure
+##### Cleartext Disclosure
 
     {
         type: "disclosure1",                     # version of the cleartext disclosure
@@ -457,7 +434,7 @@ Likewise, if the amount is not confidential, its ciphertext is omitted from the 
 
 
 
-## Annotations
+### Annotations
 
 
 Outputs, inputs, retirements:
@@ -493,144 +470,12 @@ TBD: add annotated issuances/inputs/outputs/retirements to the Swagger spec.
 
 
 
-## Actions
-
-### Build
-
-The API to build a transaction makes transfers confidential by default without explicit handling of encryption keys.
-
-If the transfer is made to an account, it is encrypted with the keys associated with this account.
-
-If the transfer is made to a receiver, the output or retirement is encrypted with keys specified by the receiver. If some keys are omitted,
-then no encryption takes place.
-
-To control confidentiality of specific entries, `confidential` key is used (defaults are `true` for all fields).
-
-    chain.transactions.build do |b|
-        b.base_transaction tx  # (optional)
-        b.issue                ..., confidential: {reference_data: true, asset_id: true, amount: true}
-        b.control_with_account ..., confidential: {reference_data: true, asset_id: true, amount: true}
-        b.retire               ..., confidential: {reference_data: true, asset_id: true, amount: true}
-    end
-
-It is an error to use `confidential` key with action `control_with_receiver`. This is because receivers fully control confidentiality options.
-
-It is an error to use `confidential:{asset_id:/amount:}` for action `spend_*`. Only `confidential:{reference_data:true/false}` is allowed for spends. And confidentiality of the value is already controlled by an existing spendable output.
-
-Procedure:
-
-1. Prepare a partial transaction with data from the `base_transaction`:
-    1. Reserve unspent outputs.
-    2. Add necessary inputs spending reserved unspent outputs.
-    3. Add necessary issuances.
-    4. Prepare `signing_instructions` for each input and issuance.
-    5. Create and encrypts new outputs, adds VRPs (but not ARPs).
-    6. Compute the `excess` blinding factor.
-    7. Set mintime to current time: `mintime = currentTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
-    8. Set maxtime to expiration time: `maxtime = expirationTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
-    9. Prepare ARP instructions for each output: `asset_range_proof_instructions: {asset_id:..., factor:..., [input_id:..., input_factor:...]}`.
-        * Input ID and input's blinding factor are included if such input is known.
-    10. For each output in `base_transaction` where `asset_range_proof_instructions` are specified and partial tx has an input with the matching asset ID:
-        1. Copy that output to the partial transaction.
-        2. Add `input_id/input_factor` to `asset_range_proof_instructions` for that copy.
-        3. Strip `asset_range_proof_instructions` from that output in `base_transaction`.
-    11. Encrypt the partial transaction:
-        1. Generate unique uniform `payload-id`.
-        2. Derive [payload encryption key](#key-derivation) from Chain Core's master key: `PK`.
-        3. Encrypt the partial transaction and wraps it with `{payload_id:, blob:}` structure.
-2. Merge the data from partial transaction with the existing template (`base_transaction`):
-    1. Merge tx.mintime with partial's mintime: `mintime = MAX(basetx.mintime, partialtx.mintime)`.
-    2. Merge tx.maxtime with partial's maxtime: `maxtime = MIN(basetx.maxtime, partialtx.maxtime)`.
-    3. Add outputs, stripping `asset_range_proof_instructions` from those outputs where `input_id/input_factor` is specified.
-    4. Add `{payload_id:, blob:}` to the list of payloads in the `base_transaction`.
-    5. Add `excess` from the partial transaction to the `excess` value in the MUX entry in the `base_transaction`.
-    6. Replaces `placeholder:true` outputs with re-computed placeholder outputs based on additional inputs/outputs.
-3. Shuffles entries:
-    * hashes each entry with a unique per-tx key (derived from `EK`, derived from `payload_id`)
-    * sorts the list lexicographically
-
-### Sign
-
-1. Send transaction template to Core to decrypt and verify signing instructions:
-    1. If `excess` factor in the MUX entry is non-zero:
-        1. If the transaction ID is not fixed yet and the current party has at least one output in it:
-            * `excess` is added to the value commitment and value range proof is re-created.
-        2. Otherwise, `excess` is transformed into an "excess commitment" with signature and added to the MUX entry in the transaction.
-        3. `excess` value is zeroed from the transaction template.
-    2. Transaction ID is computed from the given transaction template.
-    3. For each encrypted payload:
-        1. Derive [payload encryption key](#key-derivation) from Chain Core's master key: `PK`.
-        2. If the key successfully decrypts and authenticates the payload:
-            1. If `txheader` entry is present:
-                1. If `entry.version` is set, verify that it is equal to `tx.txheader.version`.
-                2. If `entry.mintime` is set, verify that `txheader.mintime` is greater or equal to the `entry.mintime`.
-                3. If `entry.maxtime` is set, verify that `txheader.maxtime` is less or equal to the `entry.maxtime`.
-            2. For each `input/issuance` entry:
-                1. Verify that it's present in the transaction.
-            2. For each `output/retirement` entry:
-                1. Verify that there's an entry with such asset/value commitment, program, data and exthash.
-                2. If `asset_range_proof_instructions` has `input_id/input_factor`, create a corresponding ARP and add to the corresponding output entry.
-        3. If the payload is not authenticated by the key `EK`, ignore it.
-    4. If verification succeeded:
-        1. Remove the processed payload
-        2. Send `signing_instructions` for inputs/issuances to the client.
-2. Client receives signing instructions and sends them to the HSM signer:
-    1. HSM signer signs using the signing instructions.
-    2. Client places the signature over TXSIGHASH in the entry inside the transaction.
-
-
-### Create Disclosure Import Key
-
-The Core that needs to import a disclosure must first generate a recipient key to ensure
-that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
-
-   import_key = client.disclosures.create_import_key()
-   import_key_serialized = import_key.to_json
-
-
-### Export Disclosure
-
-Bob receives `import_key` from Alice and uses it to build a disclosure object:
-
-    encrypted_disclosure = client.disclosures.build(import_key: import_key) do |d|
-      d.disclose_entry(entry_id: "fa0e8fb0ad...",            fields: {asset_id: true, amount: true, reference_data: true})
-      d.disclose_transaction(transaction_id: "57ad0fea9...", fields: {asset_id: true, amount: true, reference_data: true})
-      d.disclose_account(account_alias: "bob",               fields: {asset_id: true, amount: true, reference_data: true})
-    end
-    disclosure_serialized = encrypted_disclosure.to_json
-
-The resulting object is encrypted to an `import_key`, contains minimal metadata needed for decryption
-and can be safely transmitted to the receiving Core for import.
-
-* `disclose_entry` — adds proofs and decryption keys for a single output/retirement/issuance.
-* `disclose_transaction` — adds proofs and decryption keys for each output in the transaction (omits outputs not decrypted by this Core).
-* `disclose_account` — adds account xpubs, derivation path and root decryption keys for tracking all outputs for a given account.
-
-
-### Import Disclosure
-
-Alice receives `disclosure` object from Bob and attempts to import in the Core:
-
-    cleartext_disclosure = client.disclosures.import(disclosure)
-
-Alice can decrypt and inspect the disclosure without importing:
-
-    cleartext_disclosure = client.disclosures.decrypt(disclosure)
-    cleartext_disclosure.scope                       # => 'output'/'transaction_id'/'account'
-    cleartext_disclosure.items[0].asset_id.asset_id  # => "fae9f0af..."
-
-TBD: Should we support querying all stored disclosures too?
 
 
 
+### Encryption
 
-
-
-
-
-## Encryption
-
-### Key derivation
+#### Key derivation
 
 Core manages two hierarchies of keys for encrypting transaction templates and asset amounts.
 The first hierarchy is used to protect transaction building process and is not tied to any
@@ -689,13 +534,13 @@ For encryption of a transaction template payload, a unique key is derived from t
 
 
 
-### Import key
+#### Import key
 
 Import key is created and used to encrypt/decrypt disclosure within Chain Core.
 
 Applications are exposed to an opaque object that encapsulates a versioned import public key.
 
-#### Generate Import Key
+##### Generate Import Key
 
 1. Load the `Root Import Key`, a ChainKD xpub.
 2. Generate a unique selector used for blinding the root key:
@@ -714,7 +559,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
             selector: b
         }
 
-#### Encrypt Disclosure
+##### Encrypt Disclosure
 
 1. Verify that import key’s `type` equals `importkey1`.
 2. Serialize cleartext disclosure as `data`.
@@ -747,7 +592,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
             ciphertext: <ciphertext>
         }
 
-#### Decrypt Disclosure
+##### Decrypt Disclosure
 
 1. Verify that encrypted disclosure's `type` equals `encdisclosure1`.
 2. Derive import private key using the selector `b`:
@@ -771,7 +616,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
         deserialize(data)
 
 
-### Reference data encryption
+#### Reference data encryption
 
 Reference data is encrypted/decrypted using [Packet Encryption](#packet-encryption) algorithm with one of the entry-specific keys:
 
@@ -780,23 +625,23 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
     YDEK — Data Encryption Key for an issuance entry
 
 
-### Payload encryption
+#### Payload encryption
 
 Payload is encrypted/decrypted using [Packet Encryption](#packet-encryption) algorithm with the _payload encryption key_ `PK` derived from payload ID and _access key_ `AK`:
 
     PK = SHAKE128(AK || payloadID, 32)
 
 
-### Packet Encryption
+#### Packet Encryption
 
-#### Encrypt Packet
+##### Encrypt Packet
 
 1. Compute keystream of the same length as cleartext: `keystream = SHAKE128(EK, len(payload))`
 2. Encrypt the payload with the keystream: `ct = payload XOR keystream`.
 3. Compute MAC on the ciphertext `ct`: `mac = SHAKE128(ct || EK, 32)`.
 4. Append MAC to the ciphertext: `ct’ = ct || mac`.
 
-#### Decrypt Packet
+##### Decrypt Packet
 
 1. Split ciphertext into raw ciphertext and MAC (last 32 bytes): `ct, mac`.
 2. Compute MAC on the ciphertext `ct`: `mac’ = SHAKE128(ct || EK, 32)`.
@@ -812,10 +657,7 @@ Payload is encrypted/decrypted using [Packet Encryption](#packet-encryption) alg
 
 
 
-
-
-
-## API specification
+### API objects
 
     ---
     swagger: '2.0'
@@ -1580,6 +1422,160 @@ Payload is encrypted/decrypted using [Packet Encryption](#packet-encryption) alg
 
 
 
+
+## Examples
+
+### Single-party transaction
+
+Alice wants to send money to Bob.
+
+Both Alice and Bob add keys to their Chain::HSMSigner associated with a Chain::Client object,
+so Client can do sign requests:
+
+    client.signer.add_key(key, hsm.signer_conn)
+
+Bob generates a receiver `rcvr` that encapsulates control program and
+encryption keys.
+
+    bob_rcvr = chain.accounts.create_receiver(
+        account_alias: 'bob'
+    )
+
+First party (Alice) uses `client.transactions` API to build a transaction to send funds to a given receiver from Bob:
+
+    tx1 = client.transactions.build do |b|
+      b.spend_from_account    account_alias: 'alice', asset_id: 'USD',  amount: 140
+      b.control_with_receiver receiver: bob_rcvr,     asset_id: 'USD',  amount: 140, reference_data: "Hello, world!"
+    end
+
+Suppose Alice has 1000 USD on the inputs. Transaction builder creates two outputs:
+
+* Output 1: 140 USD to Bob's account
+* Output 2: 860 USD to Alice's account
+
+Output 1 is using one-time program described in Bob's receiver, and payload and amount are encrypted with the keys specified in the receiver.
+
+Output 2 uses one-time program for Alice's change address and the amount is encrypted with the keys derived for the Alice's account.
+
+When transaction is built, it must be signed and submitted.
+
+    tx = client.transactions.sign(tx)
+    client.transactions.submit(tx)
+
+Core verifies the fully-signed transaction and publishes it if it's valid.
+
+
+### Multi-party transaction
+
+In a multi-party transaction receivers are not necessary (although, can be used as well).
+Instead, each party can specify outputs they are interested in and immediately encrypt
+with their own encryption keys without excessive disclosure with other parties.
+
+First party (Alice) uses `client.transactions` API to build a partial transaction:
+
+    tx1 = client.transactions.build do |b|
+      b.spend_from_account   account_alias: 'alice', asset_id: 'USD',  amount: 140
+      b.control_with_account account_alias: 'alice', asset_id: 'AAPL', amount: 1
+    end
+
+Alice sends `tx1` to Bob to add additional steps. Bob sets `base_transaction` to `tx1` to build on top of it.
+
+    tx2 = client.transactions.build do |b|
+      b.base_transaction     tx1
+      b.spend_from_account   account_alias: 'bob', asset_id: 'USD',  amount: 140
+      b.control_with_account account_alias: 'bob', asset_id: 'AAPL', amount: 1
+    end
+
+Bob can in turn leave `tx2` unbalanced and forward it to Carl, etc.
+
+When no one else is adding to the transaction, it must be signed:
+
+    tx3 = client.transactions.sign(tx2)
+
+Each party has to sign the transaction, so it becomes fully signed.
+
+When it is fully signed, it can be submitted.
+
+    if tx3.signed?
+        client.transactions.submit(tx3)
+    end
+
+Core verifies the fully-signed transaction and publishes it if it's valid.
+
+
+### Confidential issuance
+
+Confidential issuance works by hiding the issued asset ID among a specified set of asset IDs.
+For instance, `AliceIOU` can be issued among `{AliceIOU,BobIOU,CarolIOU}` so that the fact that
+Alice is issuing more debt can be kept private from the market and only disclose it to regulators
+and concerned counter-parties.
+
+There are three ways to issue assets confidentially:
+
+1. You use only _your_ asset IDs (which you can issue).
+2. You use other issuers’ asset IDs that support a specific _issuance key_ in their issuance programs. 
+   This is an option for newer asset IDs created with a built-in issuance key support.
+3. You use other issuers’ asset IDs that have publicly available signed signature programs with _issuance key_ support.
+   This is an option for legacy asset IDs created without built-in issuance key support.
+
+To support second and third option, user must import other issuers’ assets with necessary issuance public keys and witness data:
+
+    chain.assets.import(
+      alias: 'BobIOU',
+      confidential_issuance_spec: {
+        asset_id:         'fa0bd0ad1241...',
+        initial_block_id: 'a9f03712fad1...',     # the initial_block_id, issuance_program, reference_data define asset ID
+        issuance_program: '5604afe9baf0...',
+        reference_data:   '9af9f9839102...',
+        arguments: ['ad3703...', 'fe8a7210...'], # VM arguments to satisfy issuance program
+        issuance_key:     '048af9bd9e01...',     # issuance public key
+      }
+    )
+
+Structure `confidential_issuance_spec` is published by the issuer so that other issuers could use it.
+
+To create a set of issuance candidates, Alice uses optional `issuance_choices` field.
+She can refer to imported or her own assets by `asset_alias` or `asset_id`.
+
+    tx = client.transactions.build do |b|
+      b.issue asset_alias: 'AliceIOU', amount: 10, issuance_choices: [ # optional override to Core's default behaviour to e.g. include all imported and local asset types
+        {asset_alias: 'AliceIOU2'},
+        {asset_alias: 'BobIOU'},
+        {asset_id:    'CarlIOU'}
+      ]
+      ...
+    end
+
+TBD: to create `confidential_issuance_spec` we need to generate an issuance key, and to support multisig we need to set up a threshold key (ChainTS).
+For now we'll only support either non-confidential issuance, or same-issuer assets with transient issuance keys (generated randomly per-issuance).
+
+
+### Creating disclosure
+
+Alice wants to have read access to Bob's transactions.
+
+1. Alice generates an `Import Key` in her Chain Core — one-time pubkey used for encrypting and authenticating a "disclosure" document.
+2. Alice sends `Import Key` to Bob who generates a "Disclosure" in his Core that will be encrypted to that Import Key.
+3. Bob configures a new disclosure:
+    1. Disclosure scope:
+        * Output(s)
+        * Transaction(s)
+        * Account(s)
+    2. Disclosed fields:
+        * Asset ID
+        * Amount
+        * Data
+4. Bob's Core prepares cryptographic keys and proofs necessary for a given disclosure. For example:
+    * for per-output disclosure it simply contains proofs revealing little identifying information,
+    * for account it exports xpubs to track the account and provides root keys to decrypt necessary fields.
+5. Bob's Core encrypts disclosure to the given `Import Key`.
+6. Bob sends the encrypted disclosure to Alice.
+7. Alice imports the encrypted disclosure to Alice's Core.
+8. Core derives the decryption key from its root key, verifies the proofs and imports the keys.
+9. If the disclosure is at account level, Core begins watching the blockchain for that account and indexing past (?) and future transactions.
+
+
+
 ## Discussion
 
 ### Compatibility
@@ -1630,11 +1626,7 @@ In the present specification we omit support for inline data entirely for simpli
 intend to introduce it as an additional feature that allows applications to optimize bandwidth usage.
 
 
-
-
-
-
-## Discussion
+### FAQ
 
 
 Jeff asks on May 9, 2017:
