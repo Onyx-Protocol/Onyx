@@ -83,24 +83,22 @@ New receivers introduce versioning and use version 2 with relevant encryption ke
 
 #### Create receiver
 
-**JSON**
+**Request**
 
     POST /create-account-receiver
 
-    {
-      body: [
-        {
-          "account_id":       <string>,
-          "account_alias":    <string>,
-          "expires_at":       <string:RFC3339>,
-          "confidential": {
-            "reference_data": <boolean>,
-            "asset_id":       <boolean>,
-            "amount":         <boolean>
-          }
+    [
+      {
+        "account_id":       <string>,
+        "account_alias":    <string>,
+        "expires_at":       <string:RFC3339>,
+        "confidential": {
+          "reference_data": <boolean>,
+          "asset_id":       <boolean>,
+          "amount":         <boolean>
         }
-      ]
-    }
+      }
+    ]
 
 One API call allows creating multiple individual receivers. SDK implementations may restrict usage to one receiver at a time and be expanded with batch support later.
 
@@ -174,9 +172,45 @@ See [Key Derivation](#key-derivation) section for details.
       .create(client);
 
 
-#### Build WIP
+#### Build transaction
 
-The API to build a transaction makes transfers confidential by default without explicit handling of encryption keys.
+**Request**
+
+    POST /build-transaction
+
+    {
+      version: 2,
+      ttl:             <number:milliseconds>,
+      actions: [
+        {
+          type: ("issue"                        |
+                 "spend_account"                |
+                 "spend_account_unspent_output" |
+                 "control_account"              |
+                 "control_receiver"             |
+                 "control_program"              |
+                 "retire")
+        },
+        {
+          type:           "retire",
+          asset_id:       <string>,
+          asset_alias:    <string>,
+          amount:         <number>,
+          reference_data: <string>
+        }
+      ]
+    }
+
+New optional `version` is set to 2 for new SDKs, so Chain Core may support legacy SDK that use implicit version 1. 
+The following updates apply to requests with `version=2`.
+
+Field `base_transaction` is removed.
+
+New action type `retire` is introduced that works like `control_program`, but without the `program` parameter.
+
+Actions `issue`, `control_account`, `control_program`, `retire` have an optional `confidential` parameter with boolean fields `asset_id`, `amount`, `reference_data`. Confidentiality of `control_receiver` action is determined by the receiver, not by the user. Actions `spend_*` can only use `confidential.reference_data` field since confidentiality of asset ID and amount is already determined in the corresponding unspent outputs.
+
+Parameter `confidential` indicates which fields of the output should be encrypted by the user of the receiver. Parameter `confidential` and all its fields are optional. Default value for each field is `true`. If the value for a given field is `true`, a corresponding encryption key is generated and used to encrypt the specified data.
 
 If the transfer is made to an account, it is encrypted with the keys associated with this account.
 
@@ -191,8 +225,6 @@ To control confidentiality of specific entries, `confidential` key is used (defa
         b.control_with_account ..., confidential: {reference_data: true, asset_id: true, amount: true}
         b.retire               ..., confidential: {reference_data: true, asset_id: true, amount: true}
     end
-
-It is an error to use `confidential` key with action `control_with_receiver`. This is because receivers fully control confidentiality options.
 
 It is an error to use `confidential:{asset_id:/amount:}` for action `spend_*`. Only `confidential:{reference_data:true/false}` is allowed for spends. And confidentiality of the value is already controlled by an existing spendable output.
 
@@ -680,7 +712,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
 2. Serialize cleartext disclosure as `data`.
 3. Generate a sender private key using Core's root key `RK` as a seed:
 
-        r = ScalarHash("DH" || RK || IKpub || b || data)
+        r = ScalarHash("DH", RK, IKpub, b, data)
 
 4. Compute public sender key:
 
@@ -744,7 +776,7 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
 
 Payload is encrypted/decrypted using [Packet Encryption](#packet-encryption) algorithm with the _payload encryption key_ `PK` derived from payload ID and _access key_ `AK`:
 
-    PK = SHAKE128(AK || payloadID, 32)
+    PK = TupleHash128({AK, payloadID}, S="PK", 32 bytes)
 
 
 #### Packet Encryption
