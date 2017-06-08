@@ -65,11 +65,116 @@ New receivers introduce versioning and use version 2 with relevant encryption ke
 * Import a disclosure and use it to annotate transactions.
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 ## Specification
 
 ### Actions
 
-#### Build
+#### Create receiver
+
+**JSON**
+
+    POST /create-account-receiver
+
+    {
+      body: [
+        {
+          "account_id":       <string>,
+          "account_alias":    <string>,
+          "expires_at":       <string:RFC3339>,
+          "confidential": {
+            "reference_data": <boolean>,
+            "asset_id":       <boolean>,
+            "amount":         <boolean>
+          }
+        }
+      ]
+    }
+
+One API call allows creating multiple individual receivers. SDK implementations may restrict usage to one receiver at a time and be expanded with batch support later.
+
+Account is specified via `account_id` or `account_alias` (one and only one of them must be specified).
+
+Expiration date `expires_at` is optional. Defaults to 30 days in the future. It is not possible to create non-expiring receivers via this API call.
+
+Parameter `confidential` indicates which fields of the output should be encrypted by the user of the receiver. Parameter `confidential` and all its fields are optional. Default value for each field is `true`. If the value for a given field is `true`, a corresponding encryption key is generated and returned as a part of the receiver (see **Response**).
+
+**Response**
+
+    [
+      {
+        version:         2,
+        control_program: <string:hex>,
+        expires_at:      <string:RFC3339>,
+        dek:             <string:hex>,
+        aek:             <string:hex>,
+        vek:             <string:hex>
+      }
+    ]
+
+Receivers are versioned. Legacy receivers have implicit version 1. New receivers have version 2.
+
+Raw `control_program` is computed as always, from account’s xpubs.
+
+Expiration date `expires_at` is not necessarily the same as requested. It can be shortened by Chain Core.
+
+Data-encryption key `dek` is included if `confidential.reference_data` was set to `true`.
+
+Data-encryption key `aek` is included if `confidential.asset_id` was set to `true`.
+
+Data-encryption key `vek` is included if `confidential.amount` was set to `true`.
+
+See [Key Derivation](#key-derivation) section for details.
+
+**Ruby**
+
+    receiver = client.accounts.create_receiver(
+      account_alias:   'my-account',
+      expires_at:      '2017-01-01T00:00:00Z', # may also accept Time, Date and DateTime objects
+      confidential: {
+        asset_id:       false,
+        amount:         true,
+        reference_data: true
+      }
+    )
+
+**JS**
+
+    client.accounts.create_receiver({
+      accountAlias:    'my-account',
+      expiresAt:       '2017-01-01T00:00:00Z', // may also take Date object
+      confidential: {
+        asset_id:       false,
+        amount:         true,
+        reference_data: true
+      }
+    }).then(receiver => {
+      ...
+    })
+
+**Java**
+
+    Receiver r = new Account.ReceiverBuilder()
+      .setAccountAlias("my-account")
+      .setExpiresAt("2017-01-01T00:00:00Z") // also take native time and date objects?
+      .setConfidentialAssetID(false)
+      .setConfidentialAmount(true)
+      .setConfidentialReferenceData(true)
+      .create(client);
+
+
+#### Build WIP
 
 The API to build a transaction makes transfers confidential by default without explicit handling of encryption keys.
 
@@ -123,7 +228,7 @@ Procedure:
     * hashes each entry with a unique per-tx key (derived from `EK`, derived from `payload_id`)
     * sorts the list lexicographically
 
-#### Sign
+#### Sign WIP
 
 1. Send transaction template to Core to decrypt and verify signing instructions:
     1. If `excess` factor in the MUX entry is non-zero:
@@ -153,7 +258,7 @@ Procedure:
     2. Client places the signature over TXSIGHASH in the entry inside the transaction.
 
 
-#### Create Disclosure Import Key
+#### Create Disclosure Import Key WIP
 
 The Core that needs to import a disclosure must first generate a recipient key to ensure
 that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
@@ -162,7 +267,7 @@ that the document is encrypted in-transit (without assuming direct secure connec
    import_key_serialized = import_key.to_json
 
 
-#### Export Disclosure
+#### Export Disclosure WIP
 
 Bob receives `import_key` from Alice and uses it to build a disclosure object:
 
@@ -181,7 +286,7 @@ and can be safely transmitted to the receiving Core for import.
 * `disclose_account` — adds account xpubs, derivation path and root decryption keys for tracking all outputs for a given account.
 
 
-#### Import Disclosure
+#### Import Disclosure WIP
 
 Alice receives `disclosure` object from Bob and attempts to import in the Core:
 
@@ -200,6 +305,17 @@ TBD: Should we support querying all stored disclosures too?
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 ### Data structures
 
 #### Receiver
@@ -208,7 +324,7 @@ Receiver is shared with a sending party with minimum information necessary to co
 the output.
 
     {
-        output_version: 2,                        // version of the output (default is 1)
+        version: 2,                        // version of the output (default is 1)
         control_program: "fa90e031...",           // control program
         expires_at: "2017-10-02T10:00:00-05:00",  // expiration date
         dek: "de01836...",                        // data-encryption key
@@ -492,11 +608,11 @@ From that key, Core creates a **root import key** `RIK`, an xprv/xpub pair using
 
 For accounts and outputs Core creates **root confidentiality key** `RCK`:
 
-    RCK = SHAKE128("RCK" || RK , 32)
+    RCK = TupleHash128({RK}, S="RCK", 32 bytes)
 
 To encrypt fields, `RCK` is expanded to a vector key containing 3 32-byte keys:
 
-    RDEK, RAEK, RVEK = SHAKE128("RDEK" || RCK, 3·32)
+    RDEK, RAEK, RVEK = TupleHash128({RCK}, S="RDEK", 3·32 bytes)
 
     RDEK — Root Data Encryption Key
     RAEK — Root Asset ID Encryption Key
@@ -504,33 +620,32 @@ To encrypt fields, `RCK` is expanded to a vector key containing 3 32-byte keys:
 
 For each account a deterministic account selector is made that's used to generate per-account keys:
 
-    accsel = m,n,xpub1,xpub2,xpub3
-
-    {ADEK,AAEK,AVEK} = SHAKE128("A" || {RDEK,RAEK,RVEK} || accsel, 32)
+    {ADEK,AAEK,AVEK} = TupleHash128({RDEK,RAEK,RVEK,m,n,xpub1,xpub2,xpub3}, S="A", 3·32 bytes)
+                       (m,n encoded as little-endian 64-bit unsigned integers)
 
 For each output, a key is derived using control program as a selector:
 
-    {ODEK,OAEK,OVEK} = SHAKE128("O" || {ADEK,AAEK,AVEK} || control_program, 32)
+    {ODEK,OAEK,OVEK} = TupleHash128({ADEK,AAEK,AVEK,control_program}, S="O", 3·32 bytes)
 
 For the retirement entry, a key is derived using the serialized `value_source` as selector and root keys:
 
-    {TDEK,TAEK,TVEK} = SHAKE128("T" || {RDEK,RAEK,RVEK} || value_source, 32)
+    {TDEK,TAEK,TVEK} = TupleHash128({RDEK,RAEK,RVEK,value_source}, S="T", 3·32 bytes)
 
 Asset ID-specific vector key:
 
-    {SDEK,SAEK,SVEK} = SHAKE128("A" || {RDEK,RAEK,RVEK} || assetid, 32)
+    {SDEK,SAEK,SVEK} = TupleHash128({RDEK,RAEK,RVEK,assetid}, S="S", 3·32 bytes)
 
-For each issuance, a key is derived using the anchor ID as selector and asset ID-specific keys:
+For each issuance, a key is derived using the anchor ID as a selector and asset ID-specific keys:
 
-    {YDEK,YAEK,YVEK} = SHAKE128("T" || {SDEK,SAEK,SVEK} || anchorID, 32)
+    {YDEK,YAEK,YVEK} = TupleHash128({SDEK,SAEK,SVEK,anchorID}, S="Y", 3·32 bytes)
 
 For each access token there is a separate _access key_ `AK`:
 
-    AK = SHAKE128(RK || access_token, 32)
+    AK = TupleHash128({RK, access_token}, S="AK", 32 bytes)
 
 For encryption of a transaction template payload, a unique key is derived from the _access key_ and _payload ID_:
 
-    PK = SHAKE128(AK || payloadID, 32)
+    PK = TupleHash128({AK, payloadID}, S="PK", 32 bytes)
 
 
 
@@ -672,7 +787,7 @@ Payload is encrypted/decrypted using [Packet Encryption](#packet-encryption) alg
           - control_program
           - expires_at
         properties:
-          output_version:
+          version:
             type: integer
             description: The version of the accepted output. Default is 1,
               which means a non-confidential (pre-CA) output is expected.
