@@ -72,7 +72,6 @@ func TestAssetRangeProof(t *testing.T) {
 			}
 		}
 
-		// xxx what if c or cPrime is nil?
 		arp := CreateAssetRangeProof(msg, ac, acPrime, 0, *c, *cPrime)
 		if !arp.Validate(msg, acPrime) {
 			t.Error("what we have here is failure to validate")
