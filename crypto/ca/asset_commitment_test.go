@@ -21,9 +21,8 @@ func TestAssetCommitment(t *testing.T) {
 
 	var aekBuf [32]byte
 	hex.Decode(aekBuf[:], []byte("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
-	aek := aekBuf[:]
 
-	ac2, c := CreateAssetCommitment(assetID, (*AssetKey)(&aek))
+	ac2, c := CreateAssetCommitment(assetID, aekBuf[:])
 	if ac2.Point2.ConstTimeEqual(&ecmath.ZeroPoint) {
 		t.Error("expected nonzero point")
 	}
