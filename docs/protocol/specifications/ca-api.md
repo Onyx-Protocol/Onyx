@@ -81,7 +81,7 @@ New receivers introduce versioning and use version 2 with relevant encryption ke
 
 ### Actions
 
-#### Create receiver
+#### Create Receiver
 
 **Request**
 
@@ -172,7 +172,7 @@ See [Key Derivation](#key-derivation) section for details.
       .create(client);
 
 
-#### Build transaction
+#### Build Transaction
 
 **Request**
 
@@ -192,13 +192,38 @@ See [Key Derivation](#key-derivation) section for details.
                  "retire")
         },
 
-        // "retire" action:
+        // "issue" action:
         {
-          type:           "retire",
+          type:           "issue",
           asset_id:       <string>,
           asset_alias:    <string>,
-          amount:         <number>,
-          reference_data: <string>
+          amount:         <integer>,
+          reference_data: <string>,
+          confidential: {                  // new field
+            asset_id:       <boolean>,
+            amount:         <boolean>,
+            reference_data: <boolean>
+          },
+          issuance_choices: [              // new field
+            {
+              asset_id:       <string>,
+              asset_alias:    <string>,
+            }
+          ]
+        },
+
+        // "retire" action:
+        {
+          type:           "retire",        // new type
+          asset_id:       <string>,
+          asset_alias:    <string>,
+          amount:         <integer>,
+          reference_data: <string>,
+          confidential: {
+            asset_id:       <boolean>,
+            amount:         <boolean>,
+            reference_data: <boolean>
+          }
         },
       ]
     }
@@ -211,6 +236,12 @@ New action type `retire` is introduced that works like `control_program`, but wi
 Actions `issue`, `control_account`, `control_program`, `retire` have an optional `confidential` parameter with boolean fields `asset_id`, `amount`, `reference_data`. Confidentiality of `control_receiver` action is determined by the receiver, not by the user. Actions `spend_*` can only use `confidential.reference_data` field since confidentiality of asset ID and amount is already determined in the corresponding unspent outputs.
 
 Parameter `confidential` indicates which fields of the output should be encrypted by the user of the receiver. Parameter `confidential` and all its fields are optional. Default value for each field is `true`. If the value for a given field is `true`, a corresponding encryption key is generated and used to encrypt the specified data.
+
+For issuance actions, if `confidential.asset_id` is set to `true`, an array `issuance_choices` can be used. 
+`issuance_choices` specify asset IDs (by ID or alias) among which the actually issued asset ID is hidden.
+`issuance_choices` is allowed (but not required) to include the asset ID being issued. User can specify only asset IDs that 
+they are an issuer of (and can sign each individual issuance program) or the asset IDs imported via [Import Asset](#import-asset) API.
+Build fails if `issuance_choices` are specified while `confidential.asset_id` is set to `false`.
 
 If the transfer is made to an account, it is encrypted with the keys associated with this account.
 
@@ -236,7 +267,10 @@ See [Transaction template](#transaction-template) for details.
 
     chain.transactions.build do |b|
         b.base_transaction tx 
-        b.issue                ..., confidential: {reference_data: true, asset_id: true, amount: true}
+        b.issue                ..., confidential: {reference_data: true, asset_id: true, amount: true}, issuance_choices: [
+          {asset_id:    "a8fd0177d1..."},
+          {asset_alias: "gold"}
+        ]
         b.spend_from_account   ..., confidential: {reference_data: true}
         b.control_with_account ..., confidential: {reference_data: true, asset_id: true, amount: true}
         b.retire               ..., confidential: {reference_data: true, asset_id: true, amount: true}
@@ -245,6 +279,19 @@ See [Transaction template](#transaction-template) for details.
 **JS**
 
     client.transactions.build(builder => {
+       builder.issue({
+        assetAlias: 'gold',
+        amount: 10,
+        confidential: {
+          reference_data: true, 
+          asset_id: true, 
+          amount: true
+        }, 
+        issuance_choices: [
+          {asset_id:    "a8fd0177d1..."},
+          {asset_alias: "gold"}
+        ]
+      })
       builder.spendFromAccount({
         accountAlias: 'alice',
         assetAlias: 'gold',
@@ -264,7 +311,26 @@ See [Transaction template](#transaction-template) for details.
 
 **Java**
 
-TBD.
+    Transaction.Template payment = new Transaction.Builder()
+      .addAction(new Transaction.Action.Issue()
+        .setAssetAlias("gold")
+        .setAmount(10)
+        .setConfidentialAssetID(true)
+        .addIssuanceChoiceAssetID("a8fd0177d1...")
+        .addIssuanceChoiceAssetAlias("gold")
+      ).addAction(new Transaction.Action.SpendFromAccount()
+        .setAccountAlias("alice")
+        .setAssetAlias("gold")
+        .setAmount(10)
+        .setConfidentialReferenceData(true)
+      ).addAction(new Transaction.Action.ControlWithAccount()
+        .setAccountAlias("bob")
+        .setAssetAlias("gold")
+        .setAmount(10)
+        .setConfidentialAssetID(false)
+        .setConfidentialAmount(true)
+        .setConfidentialReferenceData(true)
+      ).build(client);
 
 
 **Building process**
@@ -329,6 +395,13 @@ TBD.
 2. Client receives signing instructions and sends them to the HSM signer:
     1. HSM signer signs using the signing instructions.
     2. Client places the signature over TXSIGHASH in the entry inside the transaction.
+
+
+
+#### Import Asset
+
+TBD:
+
 
 
 #### Create Disclosure Import Key WIP
