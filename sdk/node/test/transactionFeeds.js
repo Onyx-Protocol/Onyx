@@ -9,13 +9,8 @@ const {
   client,
   createAccount,
   createAsset,
-  signer
+  buildSignSubmit,
 } = require('../testHelpers/util')
-
-const buildSignSubmit = buildFunc =>
-  client.transactions.build(buildFunc)
-    .then(tpl => signer.sign(tpl))
-    .then(tpl => client.transactions.submit(tpl))
 
 describe('Transaction feed', () => {
   let gold, silver, alice, bob, issuanceFeed, spendFeed

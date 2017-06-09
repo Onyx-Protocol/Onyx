@@ -38,10 +38,19 @@ const createAsset = (asset = 'asset') => {
     })
 }
 
+const buildSignSubmit = (buildFunc, optClient, optSigner) => {
+  const c = optClient || client
+  const s = optSigner || signer
+  return c.transactions.build(buildFunc)
+    .then(tpl => s.sign(tpl))
+    .then(tpl => c.transactions.submit(tpl))
+}
+
 module.exports = {
   balanceByAssetAlias,
   client,
   createAccount,
   createAsset,
-  signer
+  signer,
+  buildSignSubmit,
 }
