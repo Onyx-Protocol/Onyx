@@ -25,6 +25,16 @@
 
 "Boolean" is not a separate type, but rather the two Int64 values `0` (for false) and `1` (for true). Operations that expect booleans fail if the value on top of the stack is not `0` or `1`.
 
+# Encoding formats
+
+## Varint
+
+TODO: Describe rules for encoding and decoding unsigned varints.
+
+## Ed25519 Curve Points
+
+TODO: Describe rules for Ed25519 curve point encoding (including checks that should be done when decoding.)
+
 # Operations
 
 ## Control flow operations
@@ -147,9 +157,15 @@ TODO: clarify behavior. Should act like Go.
 
 ### LeftShift
 
-Pops two integers `a` and `b` from the stack, shifts `a` to the left by 
+Pops two integers `a` and `b` from the stack, shifts `a` to the left by `b` bits.
+
+TODO: clarify behavior. Fail if overflows Int64.
 
 ### RightShift
+
+Pops two integers `a` and `b` from the stack, shifts `a` to the right by `b` bits.
+
+TODO: clarify behavior. 
 
 ### GreaterThan
 
@@ -197,13 +213,19 @@ Pops a string `a` from the data stack. Performs a Sha3-256 hash on it, and pushe
 
 Pops a string `pubKey`, a string `msg`, and a string `sig` from the data stack. Performs an Ed25519 signature check with `pubKey` as the public key, `msg` as the message, and `sig` as the signature. Pushes `true` to the data stack if the signature check succeeded, and `false` otherwise.
 
-TODO: Should we switch order of `pubKey` and `msg`.
+TODO: Should we switch order of `pubKey` and `msg`?
 
 ### PointAdd
 
+Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#ed25519-curve-points), performs an elliptic curve addition `a + b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
+
 ### PointSub
 
+Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#ed25519-curve-points), performs an elliptic curve subtraction `a - b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
+
 ### PointMul
+
+Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed25519 curve points](#ed25519-curve-points), performs an elliptic curve scalar multiplication `i*a`, encodes the result as a string, and pushes it to the data stack. Fails if `a` is not a valid curve point.
 
 ## Entry operations
 
@@ -236,22 +258,28 @@ TODO: add descriptions.
 
 ## Extension opcodes
 
-	Nop0    = 69
-	Nop1    = 70
-	Nop2    = 71
-	Nop3    = 72
-	Nop4    = 73
-	Nop5    = 74
-	Nop6    = 75
-	Nop7    = 76
-	Nop8    = 77
-	Private = 78
+### NOPs 0–9
+
+Have no effect when executed.
+
+### Reserved
+
+Causes the VM to halt and fail.
 
 ## Encoding opcodes
 
+### Int64
+
+Pops a string `a` from the stack, decodes it as a [varint](#varint), and pushes the result to the data stack as an Int64. Fails execution if `a` is not a valid varint encoding of an integer, or if the decoded `a` is greater than or equal to `2^63`.
+
 ### Negate
+
+Pops an integer `x` from the data stack, negates it, and pushes the result `-x` to the data stack.
 
 ### Small integers
 
+[Descriptions of opcodes that push the numbers 0-32 to the stack.]
+
 ### Pushdata
 
+Followed by an integer `n` encoded as a varint, then `n` bytes of data. Fails if `n` is greater than 2^31.
