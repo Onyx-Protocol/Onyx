@@ -31,7 +31,8 @@ type vm struct {
 	// config, doesn't change after init
 	traceUnlock func(Contract)
 	traceLock   func(Contract)
-	traceOp     func(stack, []byte)
+	traceOp     func(stack, byte, []byte, []byte)
+	traceError  func(error)
 	tmin        int64
 	tmax        int64
 
@@ -71,7 +72,12 @@ func Validate(x *Tx, o ...Option) bool {
 		o(vm)
 	}
 
-	defer func() { recover() }()
+	defer func() {
+		err := recover()
+		if err, ok := err.(error); ok {
+			vm.traceError(err)
+		}
+	}()
 
 	exec(vm, x.Proof)
 
@@ -87,8 +93,8 @@ func exec(vm *vm, prog []byte) {
 	vm.pc = 0
 	vm.prog = prog // for errors
 	for vm.pc < len(prog) {
-		vm.traceOp(vm.data, prog[vm.pc:])
 		opcode, data, n := decodeInst(prog[vm.pc:])
+		vm.traceOp(vm.data, opcode, data, prog[vm.pc:])
 		vm.pc += n
 		if opcode == BaseData {
 			vm.data.PushBytes(data)
