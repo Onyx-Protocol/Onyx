@@ -70,14 +70,14 @@ describe('Access token', () => {
       const queried = []
 
       return createToken().then(token =>
-        created = token
+        created = token.id
       ).then(() =>
         client.accessTokens.queryAll({}, (token, next, done) => {
-          queried.push(token)
+          queried.push(token.id)
           next()
         })
       ).then(() =>
-        expect(queried.find(token => token.id == created.id)).to.be.an('object')
+        expect(queried).to.include(created)
       )
     })
   })

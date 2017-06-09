@@ -131,14 +131,14 @@ describe('Asset', () => {
         rootXpubs: [mockHsmKey.xpub],
         quorum: 1
       }).then(asset =>
-        created = asset
+        created = asset.id
       ).then(() =>
         client.assets.queryAll({}, (asset, next, done) => {
-          queried.push(asset)
+          queried.push(asset.id)
           next()
         })
       ).then(() => {
-        expect(queried.find(asset => asset.id == created.id)).to.be.an('object')
+        expect(queried).to.include(created)
       })
     })
   })

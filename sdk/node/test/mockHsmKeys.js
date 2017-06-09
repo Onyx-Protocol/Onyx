@@ -44,14 +44,14 @@ describe('MockHSM key', () => {
       return client.mockHsm.keys.create({
         alias: uuid.v4()
       }).then(key =>
-        created = key
+        created = key.alias
       ).then(() =>
         client.mockHsm.keys.queryAll({}, (key, next, done) => {
-          queried.push(key)
+          queried.push(key.alias)
           next()
         })
       ).then(() => {
-        expect(queried.find(key => key.alias == created.alias)).to.be.an('object')
+        expect(queried).to.include(created)
       })
     })
   })

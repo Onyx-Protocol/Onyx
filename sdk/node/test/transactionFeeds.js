@@ -126,14 +126,14 @@ describe('Transaction feed', () => {
       const queried = []
 
       return client.transactionFeeds.create({}).then(txfeed =>
-        created = txfeed
+        created = txfeed.id
       ).then(() =>
         client.transactionFeeds.queryAll({}, (txfeed, next, done) => {
-          queried.push(txfeed)
+          queried.push(txfeed.id)
           next()
         })
       ).then(() => {
-        expect(queried.find(txfeed => txfeed.id == created.id)).to.be.an('object')
+        expect(queried).to.include(created)
       })
     })
   })

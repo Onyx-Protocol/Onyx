@@ -131,14 +131,14 @@ describe('Account', () => {
         rootXpubs: [mockHsmKey.xpub],
         quorum: 1
       }).then(account =>
-        created = account
+        created = account.id
       ).then(() =>
         client.accounts.queryAll({}, (account, next, done) => {
-          queried.push(account)
+          queried.push(account.id)
           next()
         })
       ).then(() =>
-        expect(queried.find(account => account.id == created.id)).to.be.an('object')
+        expect(queried).to.include(created)
       )
     })
   })

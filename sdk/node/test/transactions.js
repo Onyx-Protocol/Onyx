@@ -207,14 +207,14 @@ describe('Transaction', () => {
       ).then(signed =>
         client.transactions.submit(signed)
       ).then(tx =>
-        created = tx
+        created = tx.id
       ).then(() =>
         client.transactions.queryAll({}, (tx, next, done) => {
-          queried.push(tx)
+          queried.push(tx.id)
           next()
         })
       ).then(() => {
-        expect(queried.find(tx => tx.id == created.id)).to.be.an('object')
+        expect(queried).to.include(created)
       })
     })
   })
