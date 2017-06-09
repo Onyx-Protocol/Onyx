@@ -1,4 +1,34 @@
+
+
 # Stacks
+
+## Types
+
+There are three types of items on the VM stacks, with the following identifiers.
+
+0. Int64
+1. String
+2. Tuple
+
+"Boolean" is not a separate type, but rather the two Int64 values `0` (for false) and `1` (for true). Operations that expect booleans fail if the value on top of the stack is not `0` or `1`.
+
+### Int64
+
+An integer between 2^-63 and 2^63 - 1.
+
+### String
+
+A bytestring with length between 0 and 2^31 - 1 bytes.
+
+### Tuple
+
+An immutable collection of items of any type.
+
+## Item IDs
+
+TODO: describe
+
+## Stack identifiers
 
 0. Data stack
 1. Alt stack
@@ -17,13 +47,57 @@
 14. Version 1 Nonces Stack
 15. Version 1 Anchors Stack
 
-# Types
+## Data stack
 
-0. Int64
-1. String
-2. Tuple
+Items on the data stack can be int64s, strings, or tuples.
 
-"Boolean" is not a separate type, but rather the two Int64 values `0` (for false) and `1` (for true). Operations that expect booleans fail if the value on top of the stack is not `0` or `1`.
+### Alt stack
+
+Items on the alt stack have the same types as items on the data stack. The alt stack starts out empty. Items can be moved from the data stack to the alt stack with the [toaltstack](#toaltstack) instruction, and from the alt stack to the data stack with the [fromaltstack](#fromaltstack).
+
+### Inputs stack
+
+Items on the inputs stack are 32-byte strings. The inputs stack is initialized with the IDs in the "inputs" field of the transaction header.
+
+### Values stack
+
+Items on the values stack are tuples, with the following fields:
+
+0. The item ID, a string.
+1. The amount, an int64.
+2. The asset ID, a string.
+3. The item history, a tuple (TBD)
+
+### Outputs stack
+
+0. The item ID, a string.
+1. The control program, a string.
+2. The value IDs, a tuple.
+3. The output reference data.
+4. The item history, a tuple (TBD) 
+
+### Conditions stack
+
+Items on the conditions stack are strings, representing programs.
+
+At the end of VM execution, the conditions stack must be empty.
+
+### Nonces stack
+
+Items on the nonces stack are tuples, with the following fields:
+
+0. The item ID, a string.
+1. The program, a string.
+2. The minimum time, an int64.
+3. The maximum time, an int64.
+4. The reference data hash, a string.
+
+### Anchors stack
+
+Items on the anchors stack are tuples.
+
+0. The item ID, a string.
+1. The item history, a tuple.
 
 # Encoding formats
 
