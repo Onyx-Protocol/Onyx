@@ -24,9 +24,51 @@ A bytestring with length between 0 and 2^31 - 1 bytes.
 
 An immutable collection of items of any type.
 
+#### Value
+
+0. `amount`, an int64
+1. `assetID`, a string
+2. `history`, a tuple (TBD)
+
+#### Output
+
+0. `program`, a string
+1. `values`, a tuple of `Value`s
+2. `history`, a tuple (TBD)
+3. `referencedata`, a string
+
+#### Nonce
+
+0. `program`, a string
+1. `mintime`, an int64
+2. `maxtime`, an int64
+3. `referencedata`, a string
+
+#### Retirement
+
+0. `history`, a tuple (TBD)
+
+#### Anchor
+
+0. `history`, a tuple (TBD)
+
+#### Asset Definition
+
+0. `initialblockID`, a string
+1. `issuanceprogram`, a string
+2. `referencedata`, a string
+
+#### Transaction Header
+
+0. `outputs`, a tuple of [output IDs](#output)
+1. `retirements`, a tuple of [retirement](#retirement)
+2. `mintime`, an int64
+3. `maxtime`, an int64
+4. `referencedata`, a string
+
 ## Item IDs
 
-TODO: describe
+TODO: describe process
 
 ## Stack identifiers
 
@@ -38,14 +80,15 @@ TODO: describe
 5. Conditions stack
 6. Nonces stack
 7. Anchors stack
-8. Transaction header stack
-9. Version 1 Inputs Stack
-10. Version 1 Values Stack
-11. Muxes Stacks
-12. Version 1 Outputs Stack
-13. Version 1 Conditions Stack
-14. Version 1 Nonces Stack
-15. Version 1 Anchors Stack
+8. Retirements stack
+9. Transaction header stack
+10. Version 1 Inputs Stack
+11. Version 1 Values Stack
+12. Muxes Stacks
+13. Version 1 Outputs Stack
+14. Version 1 Conditions Stack
+15. Version 1 Nonces Stack
+16. Version 1 Anchors Stack
 
 ## Data stack
 
@@ -57,47 +100,29 @@ Items on the alt stack have the same types as items on the data stack. The alt s
 
 ### Inputs stack
 
-Items on the inputs stack are 32-byte strings. The inputs stack is initialized with the IDs in the "inputs" field of the transaction header.
+Items on the inputs stack are 32-byte strings, representing IDs of [outputs](#output). The inputs stack is initialized with the IDs in the "inputs" field of the transaction header.
 
 ### Values stack
 
-Items on the values stack are tuples, with the following fields:
-
-0. The item ID, a string.
-1. The amount, an int64.
-2. The asset ID, a string.
-3. The item history, a tuple (TBD)
+Items on the values stack are [Values](#value).
 
 ### Outputs stack
 
-0. The item ID, a string.
-1. The control program, a string.
-2. The value IDs, a tuple.
-3. The output reference data.
-4. The item history, a tuple (TBD) 
+Items on the outputs stack are [Outputs](#output).
+
+### Nonces stack
+
+Items on the nonces stack are 32-byte strings, representing IDs of [nonces](#nonce).
+
+### Anchors stack
+
+Items on the anchors stack are [Anchors](#anchor).
 
 ### Conditions stack
 
 Items on the conditions stack are strings, representing programs.
 
 At the end of VM execution, the conditions stack must be empty.
-
-### Nonces stack
-
-Items on the nonces stack are tuples, with the following fields:
-
-0. The item ID, a string.
-1. The program, a string.
-2. The minimum time, an int64.
-3. The maximum time, an int64.
-4. The reference data hash, a string.
-
-### Anchors stack
-
-Items on the anchors stack are tuples.
-
-0. The item ID, a string.
-1. The item history, a tuple.
 
 # Encoding formats
 
@@ -305,21 +330,66 @@ Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed2
 
 TODO: add descriptions.
 
-	Cond         = 46 // prog => cond
-	Unlock       = 47 // inputid + data => value + cond
-	UnlockOutput = 48 // outputid + data => value + cond
-	Merge        = 49 // value value => value
-	Split        = 50 // value + amount => value value
-	ProveRange   = 51 // TODO(kr): review for CA
-	ProveValue   = 52 // TODO(kr): review for CA
-	ProveAsset   = 53 // TODO(kr): review for CA
-	Blind        = 54 // TODO(kr): review for CA
-	Lock         = 55 // value + prog => outputid
-	Satisfy      = 56 // cond => {}
-	Anchor       = 57 // nonce + data => anchor + cond
-	Issue        = 58 // anchor + data => value + cond
-	IssueCA      = 59 // TODO(kr): review for CA
-	Retire       = 60 // valud + refdata => {}
+### Defer
+
+Pops a string from the data stack and pushes it as an condition to the conditions stack.
+
+### Satisfy
+
+Pops a condition from the conditions stack and executes it.
+
+### Unlock
+
+Pops a string `inputid` from the Inputs stack. Pops a tuple of type [Output](#output) from the data stack. Verifies that the [id](#Item-ID) of the tuple matches `inputid`. Pushes its `program` as a string to the Conditions stack, and pushes each of the `values` to the Values stack.
+
+### UnlockOutput
+
+Pops an output `output` from the Outputs stack. Pushes its `program` as a string to the Conditions stack, and pushes each of the `values` to the Values stack.
+
+### Merge
+
+Pops two [Values](#value) from the Values stack. If their asset IDs are different, execution fails. Pushes a new [Value](#value) to the Values stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
+
+### Split
+
+Pops a [Value](#value) `value` from the Values stack. Pops an int64 `newamount` from the data stack. If `newamount` is greater than or equal to `value.amount`, fail execution. Pushes a new Value with amount `newamount` and assetID `value.assetID`, then pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`.
+
+### Lock
+
+Pops a string `referencedata` from the data stack. Pops a number `n` from the data stack. Pops `n` [values](#value), `values`, from the Values stack. Pops a string `program` from the data stack. Pushes an [output](#output) to the Outputs stack with `referencedata` as the `referencedata`, a tuple of the `values` as the `values`, and `program` as the `program`.
+
+### Retire
+
+Pops a [Value](#value) `value` from the Values stack. Pushes a retirement to the retirements stack.
+
+### Anchor
+
+Pop a [nonce](#nonce) tuple from the data stack. Pop a string `nonceID` from the nonces stack. Verify that the ID of the `nonce` is equal to `nonceID`. Push an [anchor](#anchor) to the anchors stack, and push `nonce.program` as a condition to the conditions stack.
+
+### Issue
+
+Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pops an int64, `amount`, from the data stack. Push `assetdefinition.issuanceprogram` as a condition to the conditions stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`.
+
+### IssueCA
+
+TBD
+
+### ProveRange
+
+TBD
+
+### ProveValue
+
+TBD
+
+### ProveAsset
+
+TBD
+
+### Blind
+
+TBD
+
 
 ## Legacy operations
 
