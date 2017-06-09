@@ -238,7 +238,7 @@ Parameter `confidential` indicates which fields of the output should be encrypte
 For issuance actions, if `confidential.asset_id` is set to `true`, an array `issuance_choices` can be used. 
 `issuance_choices` specify asset IDs (by ID or alias) among which the actually issued asset ID is hidden.
 `issuance_choices` is allowed (but not required) to include the asset ID being issued. User can specify only asset IDs that 
-they are an issuer of (and can sign each individual issuance program) or the asset IDs imported via [Import Asset](#import-asset) API.
+they are an issuer of (and can sign each individual issuance program) or the asset IDs imported via [Import Issuance Key](#import-issuance-key) API.
 Build fails if `issuance_choices` are specified while `confidential.asset_id` is set to `false`.
 
 If the transfer is made to an account, it is encrypted with the keys associated with this account.
@@ -249,6 +249,38 @@ If the transfer is made to a receiver, the output or retirement is encrypted wit
 then no encryption takes place.
 
 See [Key Derivation](#key-derivation) and [CA specification](ca.md) section for details.
+
+Procedure:
+
+1. Prepare a partial transaction with data from the `base_transaction`:
+    1. Reserve unspent outputs.
+    2. Add necessary inputs spending reserved unspent outputs.
+    3. Add necessary issuances.
+    4. Prepare `signing_instructions` for each input and issuance.
+    5. Create and encrypts new outputs, adds VRPs (but not ARPs).
+    6. Compute the `excess` blinding factor.
+    7. Set mintime to current time: `mintime = currentTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
+    8. Set maxtime to expiration time: `maxtime = expirationTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
+    9. Prepare ARP instructions for each output: `asset_range_proof_instructions: {asset_id:..., factor:..., [input_id:..., input_factor:...]}`.
+        * Input ID and input's blinding factor are included if such input is known.
+    10. For each output in `base_transaction` where `asset_range_proof_instructions` are specified and partial tx has an input with the matching asset ID:
+        1. Copy that output to the partial transaction.
+        2. Add `input_id/input_factor` to `asset_range_proof_instructions` for that copy.
+        3. Strip `asset_range_proof_instructions` from that output in `base_transaction`.
+    11. Encrypt the partial transaction:
+        1. Generate unique uniform `payload-id`.
+        2. Derive [payload encryption key](#key-derivation) from Chain Core's master key: `PK`.
+        3. Encrypt the partial transaction and wraps it with `{payload_id:, blob:}` structure.
+2. Merge the data from partial transaction with the existing template (`base_transaction`):
+    1. Merge tx.mintime with partial's mintime: `mintime = MAX(basetx.mintime, partialtx.mintime)`.
+    2. Merge tx.maxtime with partial's maxtime: `maxtime = MIN(basetx.maxtime, partialtx.maxtime)`.
+    3. Add outputs, stripping `asset_range_proof_instructions` from those outputs where `input_id/input_factor` is specified.
+    4. Add `{payload_id:, blob:}` to the list of payloads in the `base_transaction`.
+    5. Add `excess` from the partial transaction to the `excess` value in the MUX entry in the `base_transaction`.
+    6. Replaces `placeholder:true` outputs with re-computed placeholder outputs based on additional inputs/outputs.
+3. Shuffle entries according to [Entry Shuffling](#entry-shuffling) specification.
+
+
 
 #### Response
 
@@ -303,7 +335,7 @@ See [Transaction template](#transaction-template) for details.
         confidential: {reference_data: true, asset_id: true, amount: true}
       })
     })
-    .then(payment => signer.sign(payment))
+    .then(payment => client.sign(payment))
     .then(signed => client.transactions.submit(signed))
 
 
@@ -331,41 +363,26 @@ See [Transaction template](#transaction-template) for details.
       ).build(client);
 
 
-#### Building process
 
-1. Prepare a partial transaction with data from the `base_transaction`:
-    1. Reserve unspent outputs.
-    2. Add necessary inputs spending reserved unspent outputs.
-    3. Add necessary issuances.
-    4. Prepare `signing_instructions` for each input and issuance.
-    5. Create and encrypts new outputs, adds VRPs (but not ARPs).
-    6. Compute the `excess` blinding factor.
-    7. Set mintime to current time: `mintime = currentTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
-    8. Set maxtime to expiration time: `maxtime = expirationTime`. TBD: this should be randomized slightly to avoid Core fingerprinting.
-    9. Prepare ARP instructions for each output: `asset_range_proof_instructions: {asset_id:..., factor:..., [input_id:..., input_factor:...]}`.
-        * Input ID and input's blinding factor are included if such input is known.
-    10. For each output in `base_transaction` where `asset_range_proof_instructions` are specified and partial tx has an input with the matching asset ID:
-        1. Copy that output to the partial transaction.
-        2. Add `input_id/input_factor` to `asset_range_proof_instructions` for that copy.
-        3. Strip `asset_range_proof_instructions` from that output in `base_transaction`.
-    11. Encrypt the partial transaction:
-        1. Generate unique uniform `payload-id`.
-        2. Derive [payload encryption key](#key-derivation) from Chain Core's master key: `PK`.
-        3. Encrypt the partial transaction and wraps it with `{payload_id:, blob:}` structure.
-2. Merge the data from partial transaction with the existing template (`base_transaction`):
-    1. Merge tx.mintime with partial's mintime: `mintime = MAX(basetx.mintime, partialtx.mintime)`.
-    2. Merge tx.maxtime with partial's maxtime: `maxtime = MIN(basetx.maxtime, partialtx.maxtime)`.
-    3. Add outputs, stripping `asset_range_proof_instructions` from those outputs where `input_id/input_factor` is specified.
-    4. Add `{payload_id:, blob:}` to the list of payloads in the `base_transaction`.
-    5. Add `excess` from the partial transaction to the `excess` value in the MUX entry in the `base_transaction`.
-    6. Replaces `placeholder:true` outputs with re-computed placeholder outputs based on additional inputs/outputs.
-3. Shuffle entries:
-    * hashes each entry with a unique per-tx key (derived from `EK`, derived from `payload_id`)
-    * sorts the list lexicographically
+### Finalize transaction
+
+Finalization creates missing range proofs, shuffles outputs and 
+verifies that transaction is balanced and ready to be signed.
+
+Transaction is finalized as first half of the `sign` SDK function. 
+The second half is sending the finalized transaction to the HSM for actual signing.
 
 
+#### Request
 
-### Sign transaction WIP
+    POST /finalize-transaction
+
+    {
+      ... // transaction template
+    }
+
+
+Process:
 
 1. Send transaction template to Core to decrypt and verify signing instructions:
     1. If `excess` factor in the MUX entry is non-zero:
@@ -394,15 +411,206 @@ See [Transaction template](#transaction-template) for details.
     1. HSM signer signs using the signing instructions.
     2. Client places the signature over TXSIGHASH in the entry inside the transaction.
 
+#### Response
+
+    {
+      ... // updated transaction template with `finalized:true` and updated signing instructions
+    }
+
+#### Ruby
+
+    tx = chain.transactions.finalize(tx) // this happens within `chain.sign(tx)`
+
+#### JS
+
+    chain.transactions.finalize(tx).then(
+      finaltx => signer.sign(finaltx)
+    )
+
+#### Java
+
+    Transaction.Template finaltx = client.finalize(tx);
+    HsmSigner.sign(finaltx);
+
+
+
 
 
 ### Import Asset
 
-TBD:
+#### Request
+
+    POST /import-asset
+
+    {
+      alias:               <string>,
+      asset_id:            <string:hex>,
+      issuance_key_spec: {                  // optional
+        version:           1,
+        asset_id:          <string:hex>,
+        initial_block_id:  <string:hex>,
+        issuance_program:  <string:hex>,
+        reference_data:    <string:hex>,
+        arguments:        [<string:hex>,...],
+        issuance_key:      <string:hex>
+      }
+    }
+
+Imports externally-defined `asset_id` and associates with a given `alias`.
+`alias` is optional if the `asset_id` already exists in Chain Core with some alias.
+
+If the optional `issuance_key_spec` is specified, stores it together with the given `asset_id`.
+
+Validation:
+
+1. `issuance_key_spec.version` must be set to 1.
+2. `issuance_key_spec.asset_id` must be equal to `asset_id`.
+3. `issuance_key_spec.asset_id` must be equal to asset ID computed from the defining `initial_block_id`, `issuance_program` and `reference_data`.
+4. `arguments` must satisfy `issuance_program` for any transaction provided the issuance choice specifies the given `issuance_key`. See [VERIFYISSUANCEKEY](vm2.md#verifyissuancekey).
+
+#### Response
+
+If validation succeeded and asset ID was imported, returns the import details as submitted by the user.
+
+    {
+      alias:             <string>,
+      asset_id:          <string:hex>,
+      issuance_key_spec: {...}
+    }
+
+
+#### Ruby
+
+    chain.assets.import_issuance_key(
+      alias: 'acme_common',
+      issuance_key_spec: {
+        version:          1,
+        asset_id:         'fa0bd0ad1241...',
+        initial_block_id: 'a9f03712fad1...',
+        issuance_program: '5604afe9baf0...',
+        reference_data:   '9af9f9839102...',
+        arguments: ['ad3703...', 'fe8a7210...'],
+        issuance_key:     '048af9bd9e01...',
+      }
+    )
+
+#### JS
+
+    client.assets.import_issuance_key({
+      alias: 'acme_common',
+      issuance_key_spec: {
+        version:          1,
+        asset_id:         'fa0bd0ad1241...',
+        initial_block_id: 'a9f03712fad1...',
+        issuance_program: '5604afe9baf0...',
+        reference_data:   '9af9f9839102...',
+        arguments: ['ad3703...', 'fe8a7210...'],
+        issuance_key:     '048af9bd9e01...',
+      }
+    })
+
+#### Java
+
+    new Asset.IssuanceKeyImport()
+      .setAlias("acme_common")
+      .setIssuanceKeySpec(spec) // opaque object from `Create Issuance Key Spec`
+      .create(client);
 
 
 
-### Create Disclosure Import Key WIP
+### List Asset Imports
+
+TBD: need to figure if we need to support queries. We need some minimal API to show imported assets and their issuance key specs in the dashboard.
+
+
+### Create Issuance Key Spec
+
+#### Request
+
+    POST /create-issuance-key
+
+    {
+      asset_alias: <string>,
+      asset_id:    <string:hex>,
+    }
+
+Requests creation of an issuance key for a given asset ID (either `asset_alias` or `asset_id` must be specified).
+
+Chain Core returns signing instructions to generate valid a issuance key spec (that specifies reusable `arguments` for the `issuance_program`).
+
+1. If the issuance program is defined by **1 public key**, that key is used without modifications as an `issuance_key`.
+2. If the issuance program is defined by **N public keys** with the quorum of the **same size N**:
+  1. All public keys are decoded as EC [points](ca.md#point).
+  2. Each public key is hashed via [ScalarHash](ca.md#scalarhash) to form a per-key _shielding scalar_.
+  3. Public key points are multiplied by their shielding scalars and added together:
+  
+        issuance_key = Sum[ScalarHash(P_i)·P_i, for i = 1..N]
+
+  4. The resulting key is encoded as standard EdDSA public key.
+3. If the issuance program is defined by **M-of-N multisig condition** or an **arbitrary issuance program**, API returns an error. Support for threshold issuance keys or more complex configurations may be introduced in future versions of the SDK.
+
+The result of executing `signing_instructions` is a valid list of `arguments` satisfying the `issuance_program` in the context of an [asset issuance choice](blockchain.md#asset-issuance-choice).
+
+The complete issuance spec must be imported ([Import Asset](#import-asset)) after signing to be usable by issuer themselves in their confidential issuances.
+
+
+#### Response
+
+    {
+      version:          1,
+      asset_id:         'fa0bd0ad1241...',
+      initial_block_id: 'a9f03712fad1...',
+      issuance_program: '5604afe9baf0...',
+      reference_data:   '9af9f9839102...',
+      signing_instructions: {
+        ...
+      },
+      issuance_key:     '048af9bd9e01...',
+    }
+
+See [signing instructions](#signing-instructions) for format details.
+
+
+#### Ruby
+
+    spec = chain.assets.create_issuance_key(
+      alias: 'acme_common'
+    )
+
+    chain.sign_issuance_key_spec(spec)
+
+    chain.assets.import_issuance_key(
+      issuance_key_spec: spec
+    )
+
+#### JS
+
+    spec = client.assets.create_issuance_key({
+      alias: 'acme_common'
+    })
+
+    chain.sign_issuance_key_spec(spec)
+
+    client.assets.import_issuance_key({
+      issuance_key_spec: spec
+    })
+
+#### Java
+
+    spec = new Asset.IssuanceKeySpec()
+      .setAlias("acme_common")
+      .create(client);
+
+    client.sign(spec)
+
+    new Asset.IssuanceKeyImport()
+      .setIssuanceKeySpec(spec)
+      .create(client);
+
+
+
+
+### Create Disclosure Import Key
 
 The Core that needs to import a disclosure must first generate a recipient key to ensure
 that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
@@ -411,7 +619,7 @@ that the document is encrypted in-transit (without assuming direct secure connec
    import_key_serialized = import_key.to_json
 
 
-### Export Disclosure WIP
+### Export Disclosure
 
 Bob receives `import_key` from Alice and uses it to build a disclosure object:
 
@@ -430,7 +638,7 @@ and can be safely transmitted to the receiving Core for import.
 * `disclose_account` — adds account xpubs, derivation path and root decryption keys for tracking all outputs for a given account.
 
 
-### Import Disclosure WIP
+### Import Disclosure
 
 Alice receives `disclosure` object from Bob and attempts to import in the Core:
 
@@ -779,8 +987,24 @@ For encryption of a transaction template payload, a unique key is derived from t
     PK = TupleHash128({AK, payloadID}, S="PK", 32 bytes)
 
 
+#### Entry Shuffling
 
-#### Import key
+To shuffle transaction entries before finalization:
+
+1. Compute transaction ID `tempTxID` using the current order of entries.
+2. For each entry, compute the [entry ID](blockchain.md#entry-id) `tempEntryID` (note: output entries will have their entry ID changed after shuffling).
+3. Compute the per-tx key using Core's root key `RK`, tx id and payloadID:
+    
+        k = TupleHash128({RK, tempTxID, payloadID}, 32)
+
+4. Compute per-entry sort descriptor:
+
+        d = TupleHash128({k, tempEntryID}, 32)
+
+5. Sort all entries using `d` interpreted as big-endian integer, lower values first.
+
+
+#### Disclosure Import key
 
 Import key is created and used to encrypt/decrypt disclosure within Chain Core.
 
@@ -1766,9 +1990,10 @@ There are three ways to issue assets confidentially:
 
 To support second and third option, user must import other issuers’ assets with necessary issuance public keys and witness data:
 
-    chain.assets.import(
+    chain.assets.import_issuance_key(
       alias: 'BobIOU',
-      confidential_issuance_spec: {
+      issuance_key_spec: {
+        version:          1,
         asset_id:         'fa0bd0ad1241...',
         initial_block_id: 'a9f03712fad1...',     # the initial_block_id, issuance_program, reference_data define asset ID
         issuance_program: '5604afe9baf0...',
@@ -1778,7 +2003,7 @@ To support second and third option, user must import other issuers’ assets wit
       }
     )
 
-Structure `confidential_issuance_spec` is published by the issuer so that other issuers could use it.
+Structure `issuance_key_spec` is published by the issuer so that other issuers could use it.
 
 To create a set of issuance candidates, Alice uses optional `issuance_choices` field.
 She can refer to imported or her own assets by `asset_alias` or `asset_id`.
@@ -1792,7 +2017,7 @@ She can refer to imported or her own assets by `asset_alias` or `asset_id`.
       ...
     end
 
-TBD: to create `confidential_issuance_spec` we need to generate an issuance key, and to support multisig we need to set up a threshold key (ChainTS).
+TBD: to create `issuance_key_spec` we need to generate an issuance key, and to support multisig we need to set up a threshold key (ChainTS).
 For now we'll only support either non-confidential issuance, or same-issuer assets with transient issuance keys (generated randomly per-issuance).
 
 
