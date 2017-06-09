@@ -38,6 +38,7 @@ func TLSConfig(certFile, keyFile, rootCAs string) (*tls.Config, error) {
 		// See also the comment on TLSNextProto in $CHAIN/cmd/cored/main.go.
 		//NextProtos: []string{"http/1.1", "h2"},
 		ClientAuth: tls.RequestClientCert,
+		MinVersion: tls.VersionTLS12,
 	}
 
 	cert, certErr := ioutil.ReadFile(certFile)
