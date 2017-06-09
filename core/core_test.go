@@ -57,8 +57,8 @@ func TestForwardToLeader(t *testing.T) {
 		httpClient: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
-					RootCAs: certpool,
-				},
+					RootCAs:    certpool,
+					MinVersion: tls.VersionTLS12},
 			},
 		},
 	}
