@@ -79,11 +79,9 @@ New receivers introduce versioning and use version 2 with relevant encryption ke
 
 ## Specification
 
-### Actions
+### Create Receiver
 
-#### Create Receiver
-
-**Request**
+#### Request
 
     POST /create-account-receiver
 
@@ -108,7 +106,7 @@ Expiration date `expires_at` is optional. Defaults to 30 days in the future. It 
 
 Parameter `confidential` indicates which fields of the output should be encrypted by the user of the receiver. Parameter `confidential` and all its fields are optional. Default value for each field is `true`. If the value for a given field is `true`, a corresponding encryption key is generated and returned as a part of the receiver (see **Response**).
 
-**Response**
+#### Response
 
     [
       {
@@ -135,7 +133,7 @@ Data-encryption key `vek` is included if `confidential.amount` was set to `true`
 
 See [Key Derivation](#key-derivation) section for details.
 
-**Ruby**
+#### Ruby
 
     receiver = client.accounts.create_receiver(
       account_alias:   'my-account',
@@ -147,7 +145,7 @@ See [Key Derivation](#key-derivation) section for details.
       }
     )
 
-**JS**
+#### JS
 
     client.accounts.create_receiver({
       accountAlias:    'my-account',
@@ -161,7 +159,7 @@ See [Key Derivation](#key-derivation) section for details.
       ...
     })
 
-**Java**
+#### Java
 
     Receiver r = new Account.ReceiverBuilder()
       .setAccountAlias("my-account")
@@ -172,9 +170,9 @@ See [Key Derivation](#key-derivation) section for details.
       .create(client);
 
 
-#### Build Transaction
+### Build Transaction
 
-**Request**
+#### Request
 
     POST /build-transaction
 
@@ -252,7 +250,7 @@ then no encryption takes place.
 
 See [Key Derivation](#key-derivation) and [CA specification](ca.md) section for details.
 
-**Response**
+#### Response
 
     {
       version: 2,
@@ -263,7 +261,7 @@ See [Key Derivation](#key-derivation) and [CA specification](ca.md) section for 
 
 See [Transaction template](#transaction-template) for details.
 
-**Ruby**
+#### Ruby
 
     chain.transactions.build do |b|
         b.base_transaction tx 
@@ -276,7 +274,7 @@ See [Transaction template](#transaction-template) for details.
         b.retire               ..., confidential: {reference_data: true, asset_id: true, amount: true}
     end
 
-**JS**
+#### JS
 
     client.transactions.build(builder => {
        builder.issue({
@@ -309,7 +307,7 @@ See [Transaction template](#transaction-template) for details.
     .then(signed => client.transactions.submit(signed))
 
 
-**Java**
+#### Java
 
     Transaction.Template payment = new Transaction.Builder()
       .addAction(new Transaction.Action.Issue()
@@ -333,7 +331,7 @@ See [Transaction template](#transaction-template) for details.
       ).build(client);
 
 
-**Building process**
+#### Building process
 
 1. Prepare a partial transaction with data from the `base_transaction`:
     1. Reserve unspent outputs.
@@ -361,13 +359,13 @@ See [Transaction template](#transaction-template) for details.
     4. Add `{payload_id:, blob:}` to the list of payloads in the `base_transaction`.
     5. Add `excess` from the partial transaction to the `excess` value in the MUX entry in the `base_transaction`.
     6. Replaces `placeholder:true` outputs with re-computed placeholder outputs based on additional inputs/outputs.
-3. Shuffles entries:
+3. Shuffle entries:
     * hashes each entry with a unique per-tx key (derived from `EK`, derived from `payload_id`)
     * sorts the list lexicographically
 
 
 
-#### Sign transaction WIP
+### Sign transaction WIP
 
 1. Send transaction template to Core to decrypt and verify signing instructions:
     1. If `excess` factor in the MUX entry is non-zero:
@@ -398,13 +396,13 @@ See [Transaction template](#transaction-template) for details.
 
 
 
-#### Import Asset
+### Import Asset
 
 TBD:
 
 
 
-#### Create Disclosure Import Key WIP
+### Create Disclosure Import Key WIP
 
 The Core that needs to import a disclosure must first generate a recipient key to ensure
 that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
@@ -413,7 +411,7 @@ that the document is encrypted in-transit (without assuming direct secure connec
    import_key_serialized = import_key.to_json
 
 
-#### Export Disclosure WIP
+### Export Disclosure WIP
 
 Bob receives `import_key` from Alice and uses it to build a disclosure object:
 
@@ -432,7 +430,7 @@ and can be safely transmitted to the receiving Core for import.
 * `disclose_account` — adds account xpubs, derivation path and root decryption keys for tracking all outputs for a given account.
 
 
-#### Import Disclosure WIP
+### Import Disclosure WIP
 
 Alice receives `disclosure` object from Bob and attempts to import in the Core:
 
