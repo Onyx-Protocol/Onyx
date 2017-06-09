@@ -9,7 +9,6 @@ const {
   client,
   createAccount,
   createAsset,
-  signer,
   buildSignSubmit,
 } = require('../testHelpers/util')
 
