@@ -120,6 +120,24 @@ describe('Transaction feed', () => {
       })
   })
 
+  describe('queryAll', () => {
+    it('success example', () => {
+      let created
+      const queried = []
+
+      return client.transactionFeeds.create({}).then(txfeed =>
+        created = txfeed.id
+      ).then(() =>
+        client.transactionFeeds.queryAll({}, (txfeed, next, done) => {
+          queried.push(txfeed.id)
+          next()
+        })
+      ).then(() => {
+        expect(queried).to.include(created)
+      })
+    })
+  })
+
   // These just test that the callback is engaged correctly. Behavior is
   // tested in the promises test.
   describe('Callback support', () => {

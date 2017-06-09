@@ -122,6 +122,27 @@ describe('Account', () => {
     })
   })
 
+  describe('queryAll', () => {
+    it('success example', () => {
+      let created
+      const queried = []
+
+      return client.accounts.create({
+        rootXpubs: [mockHsmKey.xpub],
+        quorum: 1
+      }).then(account =>
+        created = account.id
+      ).then(() =>
+        client.accounts.queryAll({}, (account, next, done) => {
+          queried.push(account.id)
+          next()
+        })
+      ).then(() =>
+        expect(queried).to.include(created)
+      )
+    })
+  })
+
   // These just test that the callback is engaged correctly. Behavior is
   // tested in the promises test.
   describe('Callback support', () => {

@@ -8,7 +8,7 @@ const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const expect = chai.expect
 
-import { balanceByAssetAlias, client, createAccount, createAsset, signer } from '../testHelpers/util'
+const { balanceByAssetAlias, client, createAccount, createAsset, signer } = require('../testHelpers/util')
 
 describe('Transaction', () => {
 
@@ -67,7 +67,7 @@ describe('Transaction', () => {
     let goldAlias, silverAlias, aliceAlias, bobAlias
 
     before(() => {
-      return  Promise.all([
+      return Promise.all([
         createAsset('gold'),
         createAsset('silver'),
         createAccount('alice'),
@@ -183,6 +183,40 @@ describe('Transaction', () => {
     )
     .then(issuance => signer.sign(issuance))
     .then(signed => expect(client.transactions.submit(signed)).to.be.rejectedWith('CH735'))
+  })
+
+  describe('queryAll', () => {
+    it('success example', () => {
+      let created
+      const queried = []
+
+      return Promise.all([
+        createAsset(),
+        createAccount()
+      ]).then(([asset, account]) =>
+        client.transactions.build(builder => {
+          builder.issue({assetAlias: asset.alias, amount: 1})
+          builder.controlWithAccount({
+            accountAlias: account.alias,
+            assetAlias: asset.alias,
+            amount: 1
+          })
+        })
+      ).then(txtpl =>
+        signer.sign(txtpl)
+      ).then(signed =>
+        client.transactions.submit(signed)
+      ).then(tx =>
+        created = tx.id
+      ).then(() =>
+        client.transactions.queryAll({}, (tx, next, done) => {
+          queried.push(tx.id)
+          next()
+        })
+      ).then(() => {
+        expect(queried).to.include(created)
+      })
+    })
   })
 
   // These just test that the callback is engaged correctly. Behavior is

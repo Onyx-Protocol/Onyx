@@ -64,6 +64,24 @@ describe('Access token', () => {
       .then(resp => expect(resp.items.map(item => item.id)).to.not.contain(tokenId))
   })
 
+  describe('queryAll', () => {
+    it('success example', () => {
+      let created
+      const queried = []
+
+      return createToken().then(token =>
+        created = token.id
+      ).then(() =>
+        client.accessTokens.queryAll({}, (token, next, done) => {
+          queried.push(token.id)
+          next()
+        })
+      ).then(() =>
+        expect(queried).to.include(created)
+      )
+    })
+  })
+
   describe('Deprecated syntax', () => {
     let clientTokenId, networkTokenId
 

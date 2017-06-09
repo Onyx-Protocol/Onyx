@@ -36,6 +36,26 @@ describe('MockHSM key', () => {
       })
   })
 
+  describe('queryAll', () => {
+    it('success example', () => {
+      let created
+      const queried = []
+
+      return client.mockHsm.keys.create({
+        alias: uuid.v4()
+      }).then(key =>
+        created = key.alias
+      ).then(() =>
+        client.mockHsm.keys.queryAll({}, (key, next, done) => {
+          queried.push(key.alias)
+          next()
+        })
+      ).then(() => {
+        expect(queried).to.include(created)
+      })
+    })
+  })
+
   // These just test that the callback is engaged correctly. Behavior is
   // tested in the promises test.
   describe('Callback style', () => {
