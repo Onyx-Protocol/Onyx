@@ -122,6 +122,27 @@ describe('Asset', () => {
     })
   })
 
+  describe('queryAll', () => {
+    it('success example', () => {
+      let created
+      const queried = []
+
+      return client.assets.create({
+        rootXpubs: [mockHsmKey.xpub],
+        quorum: 1
+      }).then(asset =>
+        created = asset
+      ).then(() =>
+        client.assets.queryAll({}, (asset, next, done) => {
+          queried.push(asset)
+          next()
+        })
+      ).then(() => {
+        expect(queried.find(asset => asset.id == created.id)).to.be.an('object')
+      })
+    })
+  })
+
   // These just test that the callback is engaged correctly. Behavior is
   // tested in the promises test.
   describe('Callback support', () => {
