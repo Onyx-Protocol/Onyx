@@ -58,7 +58,7 @@ describe('Unspent output', () => {
     it('simple example', () => {
       let queried = []
 
-      client.unspentOutputs.queryAll({
+      return client.unspentOutputs.queryAll({
         filter: "asset_id=$1",
         filterParams: [asset.id],
       }, (utxo, next, done) => {
