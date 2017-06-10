@@ -44,21 +44,21 @@ describe('Unspent output', () => {
   )
 
   describe('Query with filter', () => {
-    it('simple example', () => {
+    it('simple example', () =>
       client.unspentOutputs.query({
         filter: "account_id=$1",
         filterParams: [account1.id],
       }).then(page =>
         expect(page.items.map(output => output.transactionId)).to.include(tx1)
       )
-    })
+    )
   })
 
   describe('queryAll', () => {
     it('simple example', () => {
       let queried = []
 
-      client.unspentOutputs.queryAll({
+      return client.unspentOutputs.queryAll({
         filter: "asset_id=$1",
         filterParams: [asset.id],
       }, (utxo, next, done) => {
