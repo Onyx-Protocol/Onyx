@@ -44,7 +44,7 @@ describe('Balance', () => {
   )
 
   describe('Query with filter', () => {
-    it('simple example', () => {
+    it('simple example', () =>
       client.balances.query({
         filter: "asset_id=$1",
         filterParams: [asset1.id],
@@ -52,7 +52,7 @@ describe('Balance', () => {
       }).then(page =>
         expect(page.items[0].amount).to.equal(1)
       )
-    })
+    )
   })
 
   describe('queryAll', () => {
