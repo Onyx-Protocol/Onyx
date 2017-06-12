@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"chain/errors"
+	"chain/net"
 )
 
 var ErrNoTLS = errors.New("no TLS configuration available")
@@ -29,16 +30,16 @@ var ErrNoTLS = errors.New("no TLS configuration available")
 // and the environment vars are both unset,
 // TLSConfig returns ErrNoTLS.
 func TLSConfig(certFile, keyFile, rootCAs string) (*tls.Config, error) {
-	config := &tls.Config{
-		// This is the default set of protocols for package http.
-		// ListenAndServeTLS and Transport set this automatically,
-		// but since we're supplying our own TLS config,
-		// we have to set it here.
-		// TODO(kr): disabled for now; consider adding h2 support here.
-		// See also the comment on TLSNextProto in $CHAIN/cmd/cored/main.go.
-		//NextProtos: []string{"http/1.1", "h2"},
-		ClientAuth: tls.RequestClientCert,
-	}
+	config := net.DefaultTLSConfig()
+
+	// This is the default set of protocols for package http.
+	// ListenAndServeTLS and Transport set this automatically,
+	// but since we're supplying our own TLS config,
+	// we have to set it here.
+	// TODO(kr): disabled for now; consider adding h2 support here.
+	// See also the comment on TLSNextProto in $CHAIN/cmd/cored/main.go.
+	//NextProtos: []string{"http/1.1", "h2"},
+	config.ClientAuth = tls.RequestClientCert
 
 	cert, certErr := ioutil.ReadFile(certFile)
 	key, keyErr := ioutil.ReadFile(keyFile)
