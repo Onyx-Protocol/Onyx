@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="">
+  <meta name="viewport" content ="width=device-width,initial-scale=1,user-scalable=yes" />
+  <title>Chain Documentation</title>
+  <link rel="stylesheet" href="/docs/common/css/style.css">
+  <link rel="stylesheet" href="/docs/common/css/prettify.css">
+  <script src="https://chain.com/docs/versions.js"></script>
+  <script src="/docs/common/js/jquery.min.js"></script>
+  <script src="/docs/common/js/layout.js"></script>
+  <script src="/docs/common/js/init.js"></script>
+  <script src="/docs/common/js/codeSelector.js"></script>
+  <meta name="viewport" content="width=1060">
+</head>
+<body>
+<div id="docs">
+  <div id="side-nav">
+    <div class="row">
+      <div class="brand">
+        <a class="mainsite" href="https://chain.com" title="Chain"><img src="/docs/common/images/chain-brand.png"> </a>
+        <a class="subsite" href="/docs">Docs</a>
+      </div>
+    </div>
+
+    <div class="docs-nav">
+      <select id="version-select"></select>
+
+      <ul class="accordion">
+        <li class="nav-header">Chain Core</li>
+        <li>
+          <a class="toggle" href="javascript:void(0);">Get Started</a>
+          <ul class="inner">
+            <li><a href="/docs/1.2/core/get-started/introduction">Introduction</a></li>
+            <li><a href="/docs/1.2/core/get-started/install" title="Install Chain Core">Install</a></li>
+            <li><a href="/docs/1.2/core/get-started/sdk" title="Download SDK">SDK</a></li>
+            <li><a href="/docs/1.2/core/get-started/configure" title="Configure Chain Core">Configure</a></li>
+            <li><a href="/docs/1.2/core/get-started/five-minute-guide">5-Minute Guide</a></li>
+          </ul>
+        </li>
+        <li>
+          <a class="toggle" href="javascript:void(0);">Build Applications</a>
+          <ul class="inner">
+            <li><a href="/docs/1.2/core/build-applications/keys">Keys</a></li>
+            <li><a href="/docs/1.2/core/build-applications/assets">Assets</a></li>
+            <li><a href="/docs/1.2/core/build-applications/accounts">Accounts</a></li>
+            <li><a href="/docs/1.2/core/build-applications/transaction-basics">Transaction Basics</a></li>
+            <li><a href="/docs/1.2/core/build-applications/unspent-outputs">Unspent Outputs</a></li>
+            <li><a href="/docs/1.2/core/build-applications/control-programs">Control Programs</a></li>
+            <li><a href="/docs/1.2/core/build-applications/queries">Queries</a></li>
+            <li><a href="/docs/1.2/core/build-applications/multiparty-trades">Multiparty Trades</a></li>
+            <li><a href="/docs/1.2/core/build-applications/real-time-transaction-processing">Real-time Processing</a></li>
+            <li><a href="/docs/1.2/core/build-applications/batch-operations">Batch Operations</a></li>
+          </ul>
+        </li>
+        <li>
+          <a class="toggle" href="javascript:void(0);">Ivy Playground</a>
+          <ul class="inner">
+            <li><a href="/docs/1.2/ivy-playground/install" title="Install Ivy">Install</a></li>
+            <li><a href="/docs/1.2/ivy-playground/tutorial" title="Ivy Playground Tutorial">Tutorial</a></li>
+            <li><a href="/docs/1.2/ivy-playground/docs" title="Ivy Docs">Docs</a></li>
+          </ul>
+        </li>
+        <li>
+          <a class="toggle" href="javascript:void(0);">Learn More</a>
+          <ul class="inner">
+            <li><a href="/docs/1.2/core/learn-more/global-vs-local-data">Global vs Local Data</a></li>
+            <li><a href="/docs/1.2/core/learn-more/authentication-and-authorization" title="Authentication and Authorization">Authentication and Authorization</a></li>
+            <li><a href="/docs/1.2/core/learn-more/blockchain-operators">Blockchain Operators</a></li>
+            <li><a href="/docs/1.2/core/learn-more/blockchain-participants">Blockchain Participants</a></li>
+          </ul>
+        </li>
+        <li>
+          <a class="toggle" href="javascript:void(0);">Reference</a>
+          <ul class="inner">
+            <li><a href="/docs/1.2/core/reference/cored">cored Command</a></li>
+            <li><a href="/docs/1.2/core/reference/corectl">corectl Command</a></li>
+            <li><a href="/docs/1.2/java/javadoc/index.html" target="_blank" class="skip-next-up">Java SDK</a></li>
+            <li><a href="/docs/1.2/node/doc/index.html" target="_blank" class="skip-next-up">Node SDK</a></li>
+            <li><a href="/docs/1.2/ruby/doc/index.html" target="_blank" class="skip-next-up">Ruby SDK</a></li>
+            <li><a href="/docs/1.2/core/reference/versioning">Versioning</a></li>
+            <li><a href="/docs/1.2/core/reference/api-objects">API Objects</a></li>
+            <li><a href="/docs/1.2/core/reference/changelog">Changelog</a></li>
+            <li><a href="/docs/1.2/core/reference/license" class="skip-next-up">License</a></li>
+          </ul>
+        </li>
+
+        <li class="nav-header">Chain Protocol</li>
+        <li>
+          <a class="toggle" href="javascript:void(0);">Papers</a>
+          <ul class="inner">
+            <li><a href="/docs/1.2/protocol/papers/whitepaper">Whitepaper</a></li>
+            <li><a href="/docs/1.2/protocol/papers/federated-consensus">Federated Consensus</a></li>
+            <li><a href="/docs/1.2/protocol/papers/blockchain-programs">Blockchain Programs</a></li>
+            <li><a href="/docs/1.2/protocol/papers/blockchain-extensibility">Blockchain Extensibility</a></li>
+          </ul>
+        </li>
+        <li>
+          <a class="toggle" href="javascript:void(0);">Specifications</a>
+          <ul class="inner">
+            <li><a href="/docs/1.2/protocol/specifications/blockchain" title="Blockchain Specification">Blockchain</a></li>
+            <li><a href="/docs/1.2/protocol/specifications/validation" title="Validation Specification">Validation</a></li>
+            <li><a href="/docs/1.2/protocol/specifications/consensus"  title="Consensus Specification">Consensus</a></li>
+            <li><a href="/docs/1.2/protocol/specifications/vm1" title="Virtual Machine Specification">Virtual Machine</a></li>
+            <li><a href="/docs/1.2/protocol/specifications/chainkd" title="Chain Key Derivation Specification">ChainKD</a></li>
+          </ul>
+        </li>
+      </ul>
+
+    </div>
+  </div>
+  <div id="doc-wrapper" tabindex="0">
+    <article id="doc-content" class="{{.Filename}}">
+      <div id='version-alert' class='alert'>
+        <p>
+          <strong>Legacy documentation</strong>:
+          You are viewing version <span class='current'>CURRENT</span>;
+          the latest available is <strong class='latest'>LATEST</strong>.
+        </p>
+        <a href='' class='latest-link'>Go to latest →</a>
+      </div>
+
+      {{.Body}}
+
+      <footer>
+        <div id="up-next" style="display:none">
+          <h2 data-backtitle="Back to">Up next</h2>
+
+          <a href="" class="next-step"><span>Placeholder</span>
+            <img src="/docs/common/images/arrow-right.png" class="btn-icon icon-next">
+          </a>
+
+        </div>
+      </footer>
+
+    </article>
+
+  </div>
+</div>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-50822719-1', 'auto');
+  ga('send', 'pageview');
+
+  function track(a, l) {
+    ga('send', 'event', {
+      eventCategory: 'docs',
+      eventAction: a,
+      eventLabel: l
+    }) ;
+    return true;
+  }
+
+
+</script>
+
+</body>
+</html>
