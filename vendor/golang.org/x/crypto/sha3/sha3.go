@@ -42,9 +42,12 @@ type state struct {
 	storage [maxRate]byte
 
 	// Specific to SHA-3 and SHAKE.
-	fixedOutput bool            // whether this is a fixed-ouput-length instance
+	fixedOutput bool            // whether this is a fixed-output-length instance
 	outputLen   int             // the default output size in bytes
 	state       spongeDirection // whether the sponge is absorbing or squeezing
+
+	// Specific to cSHAKE.
+	varintbuf [9]byte // temporary space for encoding integers in cSHAKE functions
 }
 
 // BlockSize returns the rate of sponge underlying this hash function.
