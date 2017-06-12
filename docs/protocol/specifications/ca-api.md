@@ -922,9 +922,6 @@ See [Cleartext Disclosure](#cleartext-disclosure) for details.
 
 
 
-
-
-
 ## Data structures
 
 ### Transaction Template
@@ -1029,51 +1026,74 @@ Transaction template contains transaction entries and additional data that helps
 Signing instructions is a structured representation of data necessary for creation of valid _arguments_ to be used in blockchain data structures such as block headers, transaction inputs, issuance entries and issuance choices.
 
 Signing instructions form a template for a _list of program arguments_, with minimal instructions necessary to compute the arguments.
-Additional _context_ is provided to allow HSM to verify the instructions and perform additional validation logic.
+Additional _contexts_ (per-program `program_context` and per-signature `signature_context`) are provided to allow HSM to verify the instructions and perform additional validation logic.
 
 New versions of the signing instructions can expand the definition of _context_ to enable additional rules governing the signing process.
 
-
- 
-
-**Program signing instructions** represent context data, concrete witness data, AST paths and signature templates for satisfying a control/issuance program.
-
-This does not include other possible witnesses.
+_Completed_ instructions have all their _arguments_ of type `data`, meaning, all signatures are computed and nothing is left for signing.
+Instructions may be partially completed: either some arguments are `type:data` items, or some of `type:multisig` items contain some keys precomputed.
 
     {
-        context: {
-            type: "tx",                   // type of context - "transaction", "block" etc
-            entry_type: "input",          // type of entry in the transaction context
-            vm_version: 2,                // version of the VM (affects allowed types of witness components)
-            program: "fae89bcdfaf23...",  // program AST
-            position: 0,                  // position of the destination of the current entry
-            asset_id: "4f39abd7...",      // asset id of the current entry
-            amount:   1,                  // number of asset units in the current entry
-        },
-        arguments: [                      // stack of arguments for the program
+        arguments: [ // stack of arguments for the program
             {
-                type: "clause",           // which clause to trigger in a program
-                clause: "unlock",         // name of a clause - the
+                type: "data",         // indicates that a raw piece of data is already computed
+                data: <string:hex>,
             },
             {
-                type: "data",             // raw piece of data
-                datatype: "string",       //
-                hex: "8e92af820..."
+                type:     "sig",
+                hash:     <string:hex>, // raw hash of the message to be signed
+                pubkey:   <string:hex>, // EdDSA pubkey
+
+                // `xpub` and `path` are optional, in case the EdDSA pubkey is derived from the ChainKD xpub:
+                xpub:     <string:hex>, // ChainKD extended pubkey
+                path:     [<string:hex>], // sequence of selectors for non-hardened derivation
+
+                signature_context: {
+                  hash_type: ("txsighash" | "msghash"),
+
+                  // if hash_type=msghash:
+                  hash_function: ("sha3" | "sha2"),
+                  message: <string:hex>,  // raw message being signed
+                }
             },
             {
-                type: "multisig",
-                "quorum": 1,
-                "keys": [
+                type:      "multisig",
+                hash:      <string:hex>
+
+                quorum: 1,
+                keys: [
                     {
-                        "xpub": "...",
-                        "derivation_path": [...]
+                        pubkey:   <string:hex>, // EdDSA pubkey
+                        xpub:     <string:hex>, // ChainKD xpub
+                        path:     [<string:hex>], // sequence of selectors for non-hardened derivation
+                    },
+                    {
+                        pubkey:   <string:hex>, // EdDSA pubkey
+                        sig:      <string:hex>, // already computed signature for a given pubkey
                     }
                 ],
-                hash_type: "txsighash", // either 'hash' (exact value) or 'hash_type' (placeholder)
+                signature_context: {
+                  hash_type: ("txsighash" | "msghash"),
+
+                  // if hash_type=msghash:
+                  hash_function: ("sha3" | "sha2"),
+                  message: <string:hex>,  // raw message being signed
+                }
             },
-            ...
-        ]
+        ],
+        program_context: {
+            type:            ("tx"|"block"|"issuancechoice"),
+            entry_type:      "input",            // type of entry in the "tx" context
+            vm_version:       2,                 // version of the VM (affects allowed types of witness components)
+            program:          <string:hex>,      // program bytecode
+            position:         0,                 // position of the destination of the current entry (0 for all inputs)
+            asset_id:         <string:hex>,      // asset id of the current entry (a)
+            asset_commitment: <string:hex>,      // asset commitment of the current entry (b) 
+            amount:           <integer>,         // number of asset units in the current entry
+            value_commitment: <string:hex>       // value commitment of the current entry (b)
+        },
     }
+ 
 
 ### Entry data
 
