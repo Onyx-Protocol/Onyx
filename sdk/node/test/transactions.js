@@ -8,7 +8,7 @@ const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const expect = chai.expect
 
-const { balanceByAssetAlias, client, createAccount, createAsset, signer } = require('../testHelpers/util')
+const { balanceByAssetAlias, client, createAccount, createAsset, signer } = require('./testHelpers')
 
 describe('Transaction', () => {
 

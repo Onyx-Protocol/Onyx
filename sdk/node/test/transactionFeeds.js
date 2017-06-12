@@ -10,7 +10,7 @@ const {
   createAccount,
   createAsset,
   buildSignSubmit,
-} = require('../testHelpers/util')
+} = require('./testHelpers')
 
 describe('Transaction feed', () => {
   let gold, silver, alice, bob, issuanceFeed, spendFeed
