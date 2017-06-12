@@ -14,8 +14,8 @@ func DefaultTLSConfig() *tls.Config {
 		PreferServerCipherSuites: true,
 		// Only use curves which have constant-time implementations
 		CurvePreferences: []tls.CurveID{
-			tls.CurveP256,
 			tls.X25519,
+			tls.CurveP256,
 		},
 	}
 }
