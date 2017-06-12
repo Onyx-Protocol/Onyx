@@ -105,7 +105,7 @@ func rightEncode(d *state, value uint64) int {
 
 // leftEncode encodes integer in a variable-length encoding
 // unambiguously parseable from the beginning of a string.
-// Used to encode stringsfor all cSHAKE functions.
+// Used to encode strings for all cSHAKE functions.
 func leftEncode(d *state, value uint64) int {
 	input := d.varintbuf[:]
 	copy(input, zero[:])
