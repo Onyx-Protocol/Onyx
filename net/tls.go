@@ -2,6 +2,7 @@ package net
 
 import "crypto/tls"
 
+// DefaultTLSConfig returns a tls.Config object with system default security restrictions
 // This is from gtank's cryptopasta defaults
 // https://github.com/gtank/cryptopasta
 func DefaultTLSConfig() *tls.Config {
