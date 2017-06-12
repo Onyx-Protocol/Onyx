@@ -416,7 +416,8 @@ Process:
 #### Response
 
     {
-      ... // updated transaction template with `finalized:true` and updated signing instructions
+      finalized: true,
+      ... // the rest of tx template with the updated signing instructions
     }
 
 See [Transaction template](#transaction-template) for the data structure description.
