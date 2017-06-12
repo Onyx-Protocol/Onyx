@@ -1,0 +1,116 @@
+Determining if files byteswap.h exist failed with the following output:
+Change Dir: /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_b4c81/fast"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_b4c81.dir/build.make CMakeFiles/cmTC_b4c81.dir/build
+Building C object CMakeFiles/cmTC_b4c81.dir/CheckIncludeFiles.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk   -o CMakeFiles/cmTC_b4c81.dir/CheckIncludeFiles.c.o   -c /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp/CheckIncludeFiles.c:2:10: fatal error: 'byteswap.h' file not found
+#include <byteswap.h>
+         ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_b4c81.dir/CheckIncludeFiles.c.o] Error 1
+make: *** [cmTC_b4c81/fast] Error 2
+
+Source:
+/* */
+#include <byteswap.h>
+
+
+int main(void){return 0;}
+
+Determining if files sys/byteswap.h exist failed with the following output:
+Change Dir: /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_88fe4/fast"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_88fe4.dir/build.make CMakeFiles/cmTC_88fe4.dir/build
+Building C object CMakeFiles/cmTC_88fe4.dir/CheckIncludeFiles.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk   -o CMakeFiles/cmTC_88fe4.dir/CheckIncludeFiles.c.o   -c /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp/CheckIncludeFiles.c:2:10: fatal error: 'sys/byteswap.h' file not found
+#include <sys/byteswap.h>
+         ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_88fe4.dir/CheckIncludeFiles.c.o] Error 1
+make: *** [cmTC_88fe4/fast] Error 2
+
+Source:
+/* */
+#include <sys/byteswap.h>
+
+
+int main(void){return 0;}
+
+Determining if files sys/endian.h exist failed with the following output:
+Change Dir: /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_36886/fast"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_36886.dir/build.make CMakeFiles/cmTC_36886.dir/build
+Building C object CMakeFiles/cmTC_36886.dir/CheckIncludeFiles.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk   -o CMakeFiles/cmTC_36886.dir/CheckIncludeFiles.c.o   -c /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp/CheckIncludeFiles.c:2:10: fatal error: 'sys/endian.h' file not found
+#include <sys/endian.h>
+         ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_36886.dir/CheckIncludeFiles.c.o] Error 1
+make: *** [cmTC_36886/fast] Error 2
+
+Source:
+/* */
+#include <sys/endian.h>
+
+
+int main(void){return 0;}
+
+Determining if files windows.h exist failed with the following output:
+Change Dir: /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_7e1d8/fast"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_7e1d8.dir/build.make CMakeFiles/cmTC_7e1d8.dir/build
+Building C object CMakeFiles/cmTC_7e1d8.dir/CheckIncludeFiles.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk   -o CMakeFiles/cmTC_7e1d8.dir/CheckIncludeFiles.c.o   -c /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp/CheckIncludeFiles.c
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp/CheckIncludeFiles.c:2:10: fatal error: 'windows.h' file not found
+#include <windows.h>
+         ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_7e1d8.dir/CheckIncludeFiles.c.o] Error 1
+make: *** [cmTC_7e1d8/fast] Error 2
+
+Source:
+/* */
+#include <windows.h>
+
+
+int main(void){return 0;}
+
+Determining if the function lzo1x_1_15_compress exists in the lzo2 failed with the following output:
+Change Dir: /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_84a38/fast"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_84a38.dir/build.make CMakeFiles/cmTC_84a38.dir/build
+Building C object CMakeFiles/cmTC_84a38.dir/CheckFunctionExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=lzo1x_1_15_compress -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk   -o CMakeFiles/cmTC_84a38.dir/CheckFunctionExists.c.o   -c /Applications/CMake.app/Contents/share/cmake-3.8/Modules/CheckFunctionExists.c
+Linking C executable cmTC_84a38
+/Applications/CMake.app/Contents/bin/cmake -E cmake_link_script CMakeFiles/cmTC_84a38.dir/link.txt --verbose=1
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=lzo1x_1_15_compress -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/cmTC_84a38.dir/CheckFunctionExists.c.o  -o cmTC_84a38 -llzo2 
+ld: library not found for -llzo2
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [cmTC_84a38] Error 1
+make: *** [cmTC_84a38/fast] Error 2
+
+
+Determining if the function fastlz_compress exists in the fastlz failed with the following output:
+Change Dir: /Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_421ce/fast"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_421ce.dir/build.make CMakeFiles/cmTC_421ce.dir/build
+Building C object CMakeFiles/cmTC_421ce.dir/CheckFunctionExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=fastlz_compress -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk   -o CMakeFiles/cmTC_421ce.dir/CheckFunctionExists.c.o   -c /Applications/CMake.app/Contents/share/cmake-3.8/Modules/CheckFunctionExists.c
+Linking C executable cmTC_421ce
+/Applications/CMake.app/Contents/bin/cmake -E cmake_link_script CMakeFiles/cmTC_421ce.dir/link.txt --verbose=1
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=fastlz_compress -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/cmTC_421ce.dir/CheckFunctionExists.c.o  -o cmTC_421ce -lfastlz 
+ld: library not found for -lfastlz
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [cmTC_421ce] Error 1
+make: *** [cmTC_421ce/fast] Error 2
+
+
