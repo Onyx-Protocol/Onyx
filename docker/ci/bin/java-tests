@@ -18,9 +18,9 @@ mvn -Dmaven.repo.local=$CACHE_DIR -Djar.finalName=$SDKTARGET integration-test
 export CLASSPATH=$CHAIN/sdk/java/target/$SDKTARGET.jar
 cd $CHAIN/perf
 for file in *.java
-do /usr/lib/jvm/default-jvm/bin/javac $file
+do javac $file
 done
 cd $CHAIN/docs/core/examples/java
 for file in *.java
-do /usr/lib/jvm/default-jvm/bin/javac $file
+do javac $file
 done
