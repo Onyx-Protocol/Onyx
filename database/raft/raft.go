@@ -666,14 +666,14 @@ func (sv *Service) join(addr, baseURL string) (*wal.WAL, error) {
 	}
 
 	if !raft.IsEmptySnap(raftSnap) {
-		err := sv.saveSnapshot(&raftSnap)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		err = wal.SaveSnapshot(walpb.Snapshot{
+		err := wal.SaveSnapshot(walpb.Snapshot{
 			Index: raftSnap.Metadata.Index,
 			Term:  raftSnap.Metadata.Term,
 		})
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		err = sv.saveSnapshot(&raftSnap)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
