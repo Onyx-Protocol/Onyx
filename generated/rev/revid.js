@@ -1,2 +1,2 @@
 
-export const rev_id = "1.0-stable/rev2511"
+export const rev_id = "1.0-stable/rev2512"
