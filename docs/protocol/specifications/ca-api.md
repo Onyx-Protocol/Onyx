@@ -291,7 +291,7 @@ Procedure:
       ]
     }
 
-See [Transaction template](#transaction-template) for details.
+See [Transaction template](#transaction-template) for the data structure description.
 
 #### Ruby
 
@@ -364,14 +364,15 @@ See [Transaction template](#transaction-template) for details.
 
 
 
-### Finalize transaction
+### Finalize Transaction
 
 Finalization creates missing range proofs, shuffles outputs and 
 verifies that transaction is balanced and ready to be signed.
 
-Transaction is finalized as first half of the `sign` SDK function. 
+Users normally do not explicitly finalize the transaction.
+Finalization happens in the first half of the `sign` SDK function. 
 The second half is sending the finalized transaction to the HSM for actual signing.
-
+See [Sign transaction](#sign-transaction) for details.
 
 #### Request
 
@@ -381,6 +382,7 @@ The second half is sending the finalized transaction to the HSM for actual signi
       ... // transaction template
     }
 
+See [Transaction template](#transaction-template) for the data structure description.
 
 Process:
 
@@ -417,20 +419,55 @@ Process:
       ... // updated transaction template with `finalized:true` and updated signing instructions
     }
 
+See [Transaction template](#transaction-template) for the data structure description.
+
 #### Ruby
 
-    tx = chain.transactions.finalize(tx) // this happens within `chain.sign(tx)`
+    // Both actions happen within `chain.transactions.sign(tx)`
+    tx = chain.transactions.finalize(tx)
+    hsmsigner.sign(tx)
 
 #### JS
 
+    // Both actions happen within `chain.transactions.sign(tx)`
     chain.transactions.finalize(tx).then(
-      finaltx => signer.sign(finaltx)
+      finaltx => hsmsigner.sign(finaltx)
     )
 
 #### Java
 
+    // Both actions happen within `client.signTransaction(tx)`
     Transaction.Template finaltx = client.finalize(tx);
     HsmSigner.sign(finaltx);
+
+
+
+
+### Sign Transaction
+
+Transaction signing is a function in the SDK that encapsulates two API requests:
+
+1. [Finalize Transaction](#finalize-transaction): a request to Chain Core that verifies that the transaction is balanced, computes missing range proofs and shuffles the outputs.
+2. HSM Sign: a request to the HSM that signs the inputs to authorize the transaction.
+
+HSM signer returns [Transaction template](#transaction-template) with some inputs having [signing instructions](#signing-instructions) replaced with actual signatures.
+
+#### Ruby
+
+    signed_tx = chain.transactions.sign(tx)
+    chain.transactions.submit(signed_tx)
+
+#### JS
+
+    chain.transactions.sign(tx).then(
+      signedTx => chain.transactions.submit(signedTx)
+    )
+
+#### Java
+
+    Transaction.Template signedTx = client.signTransaction(tx);
+    Transaction.submit(client, signedTx);
+
 
 
 
@@ -546,7 +583,7 @@ Chain Core returns signing instructions to generate valid a issuance key spec (t
   
         issuance_key = Sum[ScalarHash(P_i)·P_i, for i = 1..N]
 
-  4. The resulting key is encoded as standard EdDSA public key.
+  4. The resulting key is encoded as a standard EdDSA public key ([RFC8032](https://tools.ietf.org/html/rfc8032)).
 3. If the issuance program is defined by **M-of-N multisig condition** or an **arbitrary issuance program**, API returns an error. Support for threshold issuance keys or more complex configurations may be introduced in future versions of the SDK.
 
 The result of executing `signing_instructions` is a valid list of `arguments` satisfying the `issuance_program` in the context of an [asset issuance choice](blockchain.md#asset-issuance-choice).
