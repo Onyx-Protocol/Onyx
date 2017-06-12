@@ -136,17 +136,22 @@ describe('Transaction feed', () => {
   // These just test that the callback is engaged correctly. Behavior is
   // tested in the promises test.
   describe('Callback support', () => {
-    it('Creation', done => {
+    it('create', done => {
       client.transactionFeeds.create(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Querying', done => {
-      client.transactionFeeds.query(
-        {}, // intentionally blank
-        () => done() // intentionally ignore errors
+    it('query', done => {
+      client.transactionFeeds.query({}, done)
+    })
+
+    it('queryAll', done => {
+      client.transactionFeeds.queryAll(
+        {},
+        (t, next, queryDone) => queryDone(),
+        done
       )
     })
   })

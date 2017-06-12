@@ -223,24 +223,29 @@ describe('Transaction', () => {
   // tested in the promises test.
   describe('Callback support', () => {
 
-    it('Transaction query', (done) => {
-      client.transactions.query(
-        {}, // intentionally blank
-        () => done() // intentionally ignore errors
-      )
-    })
-
-    it('Transaction build', (done) => {
+    it('build', (done) => {
       client.transactions.build(
         () => {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Transaction submit', (done) => {
+    it('submit', (done) => {
       client.transactions.submit(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
+      )
+    })
+
+    it('query', done => {
+      client.transactions.query({}, done)
+    })
+
+    it('queryAll', done => {
+      client.transactions.queryAll(
+        {},
+        (t, next, queryDone) => queryDone(),
+        done
       )
     })
 
