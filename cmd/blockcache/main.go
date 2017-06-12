@@ -25,6 +25,7 @@ import (
 	"chain/env"
 	"chain/errors"
 	"chain/log"
+	"chain/net"
 	"chain/net/http/httpjson"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -125,12 +126,13 @@ func main() {
 			log.Fatal(context.Background(), log.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
 		}
 
+		tlsConfig := net.DefaultTLSConfig()
+		tlsConfig.Certificates = []tls.Certificate{cert}
+
 		server := &http.Server{
-			Addr:    *listen,
-			Handler: http.DefaultServeMux,
-			TLSConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
+			Addr:      *listen,
+			Handler:   http.DefaultServeMux,
+			TLSConfig: tlsConfig,
 		}
 		err = server.ListenAndServeTLS("", "")
 		if err != nil {

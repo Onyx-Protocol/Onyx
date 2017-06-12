@@ -46,6 +46,7 @@ import (
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
+	"chain/net"
 	"chain/net/http/limit"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -150,9 +151,10 @@ func runServer() {
 	config.TLS = *tlsCrt != ""
 
 	if *rootCAs != "" {
-		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-			RootCAs: loadRootCAs(*rootCAs),
-		}
+		tlsConfig := net.DefaultTLSConfig()
+		tlsConfig.RootCAs = loadRootCAs(*rootCAs)
+
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = tlsConfig
 	}
 
 	sql.EnableQueryLogging(*logQueries)
@@ -224,9 +226,10 @@ func runServer() {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
 		}
 
-		server.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
+		tlsConfig := net.DefaultTLSConfig()
+		tlsConfig.Certificates = []tls.Certificate{cert}
+
+		server.TLSConfig = tlsConfig
 		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
