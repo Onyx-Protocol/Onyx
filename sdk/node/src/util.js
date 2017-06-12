@@ -17,7 +17,7 @@ const sanitizeX509GuardData = guardData => {
   }
 
   const newSubject = {}
-  const oldSubject = Object.values(guardData)[0]
+  const oldSubject = guardData[keys[0]]
   for (let k in oldSubject) {
     const attrib = x509SubjectAttributes[k.toUpperCase()]
     if (!attrib) {
