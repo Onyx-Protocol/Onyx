@@ -2,7 +2,8 @@ package net
 
 import "crypto/tls"
 
-// This is gtank's cryptopasta defaults
+// This is from gtank's cryptopasta defaults
+// https://github.com/gtank/cryptopasta
 func DefaultTLSConfig() *tls.Config {
 	return &tls.Config{
 		// Avoids most of the memorably-named TLS attacks
