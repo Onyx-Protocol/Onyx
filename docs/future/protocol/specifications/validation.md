@@ -39,7 +39,8 @@ A *blockchain state* comprises:
 
 * A [block header](blockchain.md#block-header).
 * A *timestamp* equal to the timestamp in the [block header](blockchain.md#block-header).
-* A *UTXO set*: a set of output [IDs](blockchain.md#entry-id) representing unspent [outputs](blockchain.md#output-1).
+* A *UTXO1 set*: a set of output [IDs](blockchain.md#entry-id) representing unspent [outputs version 1](blockchain.md#output-1).
+* A *UTXO2 set*: a set of output [IDs](blockchain.md#entry-id) representing unspent [outputs version 2](blockchain.md#output-2).
 * A *nonce set*: a set of ([Nonce ID](blockchain.md#nonce), expiration timestamp) pairs. It records recent nonce entries in the state in order to prevent duplicates. Expiration timestamp is used to prune outdated records.
 
 
@@ -137,9 +138,10 @@ A new node starts here when joining a running network (with height > 1). In that
     1. [Apply the transaction](#apply-transaction) using the input block’s header to blockchain state `S`, yielding a new state `S′`.
     2. If transaction failed to be applied (did not change blockchain state), halt and return the input blockchain state unchanged.
     3. Replace `S` with `S′`.
-4. Test that [assets merkle root](blockchain.md#assets-merkle-root) of `S` is equal to the assets merkle root declared in the block header; if not, halt and return blockchain state unchanged.
-5. Remove elements of the nonce set in `S` where the expiration timestamp is less than the block’s timestamp, yielding a new state `S′`.
-6. Return the state `S’`.
+4. Test that [assets merkle root 1](blockchain.md#assets-merkle-root-1) of `S` is equal to the assets merkle root 1 declared in the block header; if not, halt and return blockchain state unchanged.
+5. Test that [assets merkle root 2](blockchain.md#assets-merkle-root-2) of `S` is equal to the assets merkle root 2 declared in the block header; if not, halt and return blockchain state unchanged.
+6. Remove elements of the nonce set in `S` where the expiration timestamp is less than the block’s timestamp, yielding a new state `S′`.
+7. Return the state `S’`.
 
 
 ### Apply transaction
@@ -156,9 +158,10 @@ A new node starts here when joining a running network (with height > 1). In that
 
 1. Validate transaction using the checks below. If any check fails, halt and return the input blockchain state unchanged.
     1. If the block header version is 1, verify that transaction version is equal to 1.
-    2. If the `Mintime` is greater than zero: verify that it is less than or equal to the block header timestamp.
-    3. If the `Maxtime` is greater than zero: verify that it is greater than or equal to the block header timestamp.
-    4. [Validate transaction header](blockchain.md#transaction-header-validation).
+    2. If the block header version is 2, verify that transaction version is equal to 1 or 2.
+    3. If the `Mintime` is greater than zero: verify that it is less than or equal to the block header timestamp.
+    4. If the `Maxtime` is greater than zero: verify that it is greater than or equal to the block header timestamp.
+    5. [Validate transaction header](blockchain.md#transaction-header-validation).
 2. Let `S` be the input blockchain state.
 3. For each visited [nonce entry](blockchain.md#nonce) in the transaction:
     1. If [nonce ID](blockchain.md#entry-id) is already stored in the nonce set of the blockchain state, halt and return the input blockchain state unchanged.
@@ -171,6 +174,13 @@ A new node starts here when joining a running network (with height > 1). In that
 5. For each [output version 1](blockchain.md#output-1) in the transaction header:
     1. Add that output’s [ID](blockchain.md#entry-id) to `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
-6. Return `S`.
+6. For each visited [spend version 2](blockchain.md#spend-2) in the transaction:
+    1. Test that the spent output ID is stored in the set of unspent outputs in `S`. If not, halt and return the input blockchain state unchanged.
+    2. Delete the spent output ID from `S`, yielding a new state `S′`.
+    3. Replace `S` with `S′`.
+7. For each [output version 2](blockchain.md#output-2) in the transaction header:
+    1. Add that output’s [ID](blockchain.md#entry-id) to `S`, yielding a new state `S′`.
+    2. Replace `S` with `S′`.
+8. Return `S`.
 
 

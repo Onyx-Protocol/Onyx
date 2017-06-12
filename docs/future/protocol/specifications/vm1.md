@@ -1,4 +1,4 @@
-# Virtual Machine Specification
+# Virtual Machine 1 Specification
 
 * [Introduction](#introduction)
 * [Versioning](#versioning)
@@ -106,6 +106,7 @@ Execution of any of the following instructions results in immediate failure:
 7. Execution Context:
     a. Block
     b. (Transaction, Current Entry)
+8. Confidential Issuance Choice Flag
 
 **Initial State** has empty stacks, uninitialized program, PC set to zero, and *run limit* set to 10,000.
 
@@ -120,6 +121,8 @@ Execution of any of the following instructions results in immediate failure:
 **Expansion Flag** indicates whether the [expansion opcodes](#expansion-opcodes) are allowed in the program or not. If the flag is off, these opcodes immediately fail the program execution.
 
 **Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-context).
+
+**Confidential Issuance Choice Flag** is switched on when the VM is instantiated to verify an [Asset Issuance Choice](blockchain.md#asset-issuance-choice) within an [Issuance Asset Range Proof](ca.md#issuance-asset-range-proof).
 
 
 ## Operations
@@ -377,7 +380,7 @@ If the remaining run limit is less than 256, execution fails immediately.
 3. Coerces `n` to an [integer](#vm-number).
 4. If `limit` equals zero, sets it to the VM's remaining run limit minus 256.
 5. Reduces VM’s run limit by `256 + limit`.
-6. Instantiates a new VM instance (“child VM”) with its run limit set to `limit`.
+6. Instantiates a new VM1 instance (“child VM”) with its run limit set to `limit`.
 7. Moves the top `n` items from the parent VM’s data stack to the child VM’s data stack without incurring run limit refund or charge of their [standard memory cost](#standard-memory-cost) in either VM. The order of the moved items is unchanged. The memory cost of these items will be refunded when the child VM pops them, or when the child VM is destroyed and its parent VM is refunded.
 8. Child VM evaluates the predicate and pushes `true` to the parent VM data stack if the evaluation did not fail and the child VM’s data stack is non-empty with a `true` value on top (this implements the same semantics as for the top-level [verify predicate](#verify-predicate) operation). It pushes `false` otherwise. Note that the parent VM does not fail when the child VM exhausts its run limit or otherwise fails.
 9. After the child VM finishes execution (normally or due to a failure), the parent VM’s run limit is refunded with a `leftover` value computed as a sum of the following values:
@@ -1035,6 +1038,19 @@ Code  | Stack Diagram                  | Cost
 Replaces top stack item with its [SHA3-256](blockchain.md#sha3) hash value.
 
 
+#### VERIFYISSUANCEKEY
+
+Code  | Stack Diagram               | Cost
+------|-----------------------------|-----------------------------------------------------
+0xab  | (issuancekey → issuancekey) | 1; [standard memory cost](#standard-memory-cost)
+
+Verifies that the argument issuance public key is the same used in the [issuance asset range proof](ca.md#issuance-asset-range-proof) at the index corresponding to the current asset ID in the [asset issuance choice](blockchain.md#asset-issuance-choice).
+
+Fails if the issuance key on stack is not equal to the issuance key in the [Asset Issuance Choice](blockchain.md#asset-issuance-choice).
+
+Fails if executed outside [Asset Issuance Choice](blockchain.md#asset-issuance-choice) context (that is, [confidential issuance choice flag](#vm-state) is off).
+
+
 #### CHECKSIG
 
 Code  | Stack Diagram                  | Cost
@@ -1130,6 +1146,8 @@ Code  | Stack Diagram                                        | Cost
         3. if the destination is a retirement:
             * `version` equals 1,
             * `prog` begins with a [FAIL](#fail) instruction.
+            * if transaction version is 2 or higher:
+                * upgrade program’s VM version is 0.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
         6. `data` is an empty string or it matches the 32-byte data string in the destination entry.
@@ -1165,9 +1183,12 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
-1. If the current entry is an [Issuance1](blockchain.md#issuance-1), pushes `Value.Amount`.
-2. If the current entry is a [Spend1](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.Amount` of that entry.
-3. If the current entry is a [Nonce](blockchain.md#nonce) entry:
+1. If [Confidential Issuance Choice Flag](#vm-state) is on:
+    1. If the amount in the current issuance entry is [non-confidential](#non-confidential-value-range-proof), pushes the amount.
+    2. If the amount in the current issuance entry is [confidential](#confidential-value-range-proof), fails execution.
+2. If the current entry is an [Issuance1](blockchain.md#issuance-1), pushes `Value.Amount`.
+3. If the current entry is a [Spend1](blockchain.md#spend-1), pushes the `SpentOutput.Source.Value.Amount` of that entry.
+4. If the current entry is a [Nonce](blockchain.md#nonce) entry:
     1. Verifies that the `AnchoredEntry` field is an [Issuance1](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry.
     2. Fails if `AnchoredEntry` is not an [Issuance1](blockchain.md#issuance-1).
 
@@ -1189,6 +1210,7 @@ Entry Type                                               | Program
 [Block header] ([block context](#block-context))         | Current [consensus program](blockchain.md#block-header) being executed (specified in the previous block header)
 [Nonce](blockchain.md#nonce)                             | Nonce program
 [Issuance1](blockchain.md#issuance-1)                    | Issuance program for the asset ID
+[Issuance2](blockchain.md#issuance-2) (issuance choice)  | Issuance program for a given [asset ID choice](#asset-issuance-choice) (when [Confidential Issuance Choice Flag](#vm-state) is on)
 [Spend1](blockchain.md#spend-1)                          | Control program of the output being spent
 [Mux1](blockchain.md#mux-1)                              | Mux program
 
@@ -1316,7 +1338,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xb0..0xbf, 0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion.
 
