@@ -60,17 +60,22 @@ describe('MockHSM key', () => {
   // tested in the promises test.
   describe('Callback style', () => {
 
-    it('Key creation', (done) => {
+    it('create', (done) => {
       client.mockHsm.keys.create(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Key querying', (done) => {
-      client.mockHsm.keys.query(
-        {}, // intentionally blank
-        () => done() // intentionally ignore errors
+    it('query', done => {
+      client.mockHsm.keys.query({}, done)
+    })
+
+    it('queryAll', done => {
+      client.mockHsm.keys.queryAll(
+        {},
+        (t, next, queryDone) => queryDone(),
+        done
       )
     })
 

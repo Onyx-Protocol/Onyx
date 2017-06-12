@@ -147,32 +147,45 @@ describe('Account', () => {
   // tested in the promises test.
   describe('Callback support', () => {
 
-    it('Single account creation', (done) => {
+    it('create', (done) => {
       client.accounts.create(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Batch account creation', (done) => {
+    it('createBatch', (done) => {
       client.accounts.createBatch(
         [{}, {}], // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Single account tags update', (done) => {
+    it('updateTags', (done) => {
       client.accounts.updateTags(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Batch account tags update', (done) => {
+    it('updateTagsBatch', (done) => {
       client.accounts.updateTagsBatch(
         [{}, {}], // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
+
+    it('query', done => {
+      client.accounts.query({}, done)
+    })
+
+    it('queryAll', done => {
+      client.accounts.queryAll(
+        {},
+        (t, next, queryDone) => queryDone(),
+        done
+      )
+    })
+
   })
 })

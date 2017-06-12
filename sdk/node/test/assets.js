@@ -147,32 +147,45 @@ describe('Asset', () => {
   // tested in the promises test.
   describe('Callback support', () => {
 
-    it('Single asset creation', (done) => {
+    it('create', (done) => {
       client.assets.create(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Batch asset creation', (done) => {
+    it('createBatch', (done) => {
       client.assets.createBatch(
         [{}, {}], // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Single asset tags update', (done) => {
+    it('updateTags', (done) => {
       client.assets.updateTags(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Batch asset tags update', (done) => {
+    it('updateTagsBatch', (done) => {
       client.assets.updateTagsBatch(
         [{}, {}], // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
+
+    it('query', done => {
+      client.assets.query({}, done)
+    })
+
+    it('queryAll', done => {
+      client.assets.queryAll(
+        {},
+        (t, next, queryDone) => queryDone(),
+        done
+      )
+    })
+
   })
 })

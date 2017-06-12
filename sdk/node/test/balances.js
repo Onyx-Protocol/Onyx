@@ -73,4 +73,20 @@ describe('Balance', () => {
     })
   })
 
+  describe('Callback support', () => {
+
+    it('query', done => {
+      client.balances.query({}, done)
+    })
+
+    it('queryAll', done => {
+      client.balances.queryAll(
+        {},
+        (t, next, queryDone) => queryDone(),
+        done
+      )
+    })
+
+  })
+
 })

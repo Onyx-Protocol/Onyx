@@ -71,4 +71,18 @@ describe('Unspent output', () => {
     })
   })
 
+  describe('Callback support', () => {
+    it('query', done => {
+      client.unspentOutputs.query({}, done)
+    })
+
+    it('queryAll', done => {
+      client.unspentOutputs.queryAll(
+        {},
+        (t, next, queryDone) => queryDone(),
+        done
+      )
+    })
+  })
+
 })

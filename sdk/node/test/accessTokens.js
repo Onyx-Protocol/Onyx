@@ -168,25 +168,34 @@ describe('Access token', () => {
   // tested in the promises test.
   describe('Callback support', () => {
 
-    it('Access token creation', (done) => {
+    it('create', (done) => {
       client.accessTokens.create(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Access token deletion', (done) => {
+    it('delete', (done) => {
       client.accessTokens.delete(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Access token query', (done) => {
+    it('query', done => {
       client.accessTokens.query(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
+
+    it('queryAll', done => {
+      client.accessTokens.queryAll(
+        {},
+        (t, next, queryDone) => queryDone(),
+        done
+      )
+    })
+
   })
 })

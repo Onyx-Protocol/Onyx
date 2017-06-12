@@ -88,24 +88,22 @@ describe('Authorization grant', () => {
   // tested in the promises test.
   describe('Callback support', () => {
 
-    it('Authorization grant creation', (done) => {
+    it('create', (done) => {
       client.authorizationGrants.create(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Authorization grant deletion', (done) => {
+    it('delete', (done) => {
       client.authorizationGrants.delete(
         {}, // intentionally blank
         () => done() // intentionally ignore errors
       )
     })
 
-    it('Authorization grant list', (done) => {
-      client.authorizationGrants.list(
-        () => done() // intentionally ignore errors
-      )
+    it('list', (done) => {
+      client.authorizationGrants.list(done)
     })
   })
 })
