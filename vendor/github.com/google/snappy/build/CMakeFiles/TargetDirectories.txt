@@ -1,0 +1,9 @@
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/install/strip.dir
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/install.dir
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/list_install_components.dir
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/rebuild_cache.dir
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/edit_cache.dir
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/install/local.dir
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/snappy.dir
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/test.dir
+/Users/tessr/src/chain/vendor/github.com/google/snappy/build/CMakeFiles/snappy-unittest.dir
