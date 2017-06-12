@@ -155,11 +155,15 @@ Bytecode         | [String](#string)   | The program code to be executed.
 
 **Algorithm:**
 
-1. If the `VM Version` is greater than 1:
-    1. If the transaction version is 1, validation fails.
-    2. If the transaction version is greater than 1, validation succeeds.
+1. If the `VM Version` is greater than 2:
+    1. If the transaction version is less than or equal to 2, validation fails.
+    2. If the transaction version is greater than 2, validation succeeds.
 2. If the `VM Version` is equal to 1:
-    1. Instantiate [VM version 1](vm1.md) with initial state and expansion flag set to `true` iff transaction version is greater than 1.
+    1. Instantiate [VM version 1](vm1.md) with initial state and expansion flag set to `true` iff transaction version is greater than 2.
+    2. Evaluate the `Bytecode` with the given arguments.
+    3. If the program evaluates successfully, validation succeeds. If the program fails evaluation, validation fails.
+3. If the `VM Version` is equal to 2:
+    1. Instantiate [VM version 2](vm2.md) with initial state and expansion flag set to `true` iff transaction version is greater than 2.
     2. Evaluate the `Bytecode` with the given arguments.
     3. If the program evaluates successfully, validation succeeds. If the program fails evaluation, validation fails.
 
