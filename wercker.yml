@@ -41,6 +41,16 @@ java:
         code: |
           run-jfmt
 
+node:
+  steps:
+    - wercker/npm-install@1.1.4:
+      cwd: $WERCKER_SOURCE_DIR/sdk/node
+    - script:
+        name: node tests
+        code: |
+          cp -a $WERCKER_SOURCE_DIR $CHAIN
+          DATABASE_URL="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" node-tests
+
 ruby:
   steps:
     - bundle-install:
