@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 
 	"chain/core/config"
 	"chain/core/leader"
+	"chain/net"
 	"chain/net/http/httpjson"
 	"chain/testutil"
 )
@@ -51,14 +51,16 @@ func TestForwardToLeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	tlsConfig := net.DefaultTLSConfig()
+	tlsConfig.RootCAs = certpool
+
 	api := &API{
 		config: &config.Config{},
 		leader: alwaysFollower{leaderAddress: u.Host},
 		httpClient: &http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs: certpool,
-				},
+				TLSClientConfig: tlsConfig,
 			},
 		},
 	}
