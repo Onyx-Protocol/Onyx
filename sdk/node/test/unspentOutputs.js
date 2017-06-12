@@ -10,7 +10,7 @@ const {
   createAccount,
   createAsset,
   buildSignSubmit,
-} = require('../testHelpers/util')
+} = require('./testHelpers')
 
 describe('Unspent output', () => {
   let asset, account1, account2, tx1, tx2

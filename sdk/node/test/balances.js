@@ -10,7 +10,7 @@ const {
   createAccount,
   createAsset,
   buildSignSubmit,
-} = require('../testHelpers/util')
+} = require('./testHelpers')
 
 describe('Balance', () => {
   let asset1, asset2, account
