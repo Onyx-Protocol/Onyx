@@ -623,11 +623,13 @@ See [signing instructions](#signing-instructions) for format details.
 
 #### JS
 
-    spec = client.assets.create_issuance_key({
+    client.assets.create_issuance_key({
       alias: 'acme_common'
-    })
+    }).then(
+      spec => chain.sign_issuance_key_spec(spec)
+    )
 
-    chain.sign_issuance_key_spec(spec)
+    ...
 
     client.assets.import_issuance_key({
       issuance_key_spec: spec
@@ -650,14 +652,43 @@ See [signing instructions](#signing-instructions) for format details.
 
 ### Create Disclosure Import Key
 
-The Core that needs to import a disclosure must first generate a recipient key to ensure
-that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
+The Core that needs to import a disclosure must first
+generate a recipient key to ensure that the document is 
+encrypted in-transit (without assuming direct secure connection between two Cores).
+
+See [Disclosure Import key](#disclosure-import-key) for details on key derivation and encoding.
+
+#### Request
+
+    POST /disclosures/create-import-key
+
+    {}
+
+#### Response
+
+    {
+      type:     "disclosureimportkey1",
+      key:      <string:hex>,  // 32-byte public key
+      selector: <string:hex>   // 32-byte selector
+    }  
+
+#### Ruby
 
     import_key = client.disclosures.create_import_key()
     import_key_serialized = import_key.to_json
 
+#### JS
+
+    client.disclosures.create_import_key()
+
+#### Java
+
+    Disclosure.ImportKey importKey = Disclosure.createImportKey(client)
+
 
 ### Export Disclosure
+
+Request/response API definitions: TBD.
 
 Bob receives `import_key` from Alice and uses it to build a disclosure object:
 
@@ -677,6 +708,8 @@ and can be safely transmitted to the receiving Core for import.
 
 
 ### Import Disclosure
+
+Request/response API definitions: TBD.
 
 Alice receives `disclosure` object from Bob and attempts to import in the Core:
 
@@ -802,6 +835,8 @@ Transaction template contains transaction entries and additional data that helps
             }
         ]
     }
+
+
 
 #### Signing instructions
 
