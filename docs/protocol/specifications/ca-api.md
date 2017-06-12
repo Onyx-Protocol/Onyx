@@ -14,9 +14,9 @@
   * [Export Disclosure](#export-disclosure)
   * [Import Disclosure](#import-disclosure)
 * [Data structures](#data-structures)
-  * [Transaction template](#transaction-template)
-  * [Signing instructions](#signing-instructions)
-  * [Entry data](#entry-data)
+  * [Transaction Template](#transaction-template)
+  * [Signing Instructions](#signing-instructions)
+  * [Entry Data](#entry-data)
   * [Disclosure](#disclosure)
 * [Annotations](#annotations)
 * [Encryption](#encryption)
@@ -406,7 +406,7 @@ See [Transaction template](#transaction-template) for the data structure descrip
 
 Process:
 
-1. Send transaction template to Core to decrypt and verify signing instructions:
+1. Send transaction template to Core to decrypt and verify [signing instructions](#signing-instructions):
     1. If `excess` factor in the MUX entry is non-zero:
         1. If the transaction ID is not fixed yet and the current party has at least one output in it:
             * `excess` is added to the value commitment and value range proof is re-created.
@@ -429,7 +429,7 @@ Process:
     4. If verification succeeded:
         1. Remove the processed payload
         2. Send `signing_instructions` for inputs/issuances to the client.
-2. Client receives signing instructions and sends them to the HSM signer:
+2. Client receives [signing instructions](#signing-instructions) and sends them to the HSM signer:
     1. HSM signer signs using the signing instructions.
     2. Client places the signature over TXSIGHASH in the entry inside the transaction.
 
@@ -708,43 +708,209 @@ See [Disclosure Import key](#disclosure-import-key) for details on key derivatio
 
 ### Export Disclosure
 
-Request/response API definitions: TBD.
-
-Bob receives `import_key` from Alice and uses it to build a disclosure object:
-
-    encrypted_disclosure = client.disclosures.build(import_key: import_key) do |d|
-      d.disclose_entry(entry_id: "fa0e8fb0ad...",            fields: {asset_id: true, amount: true, reference_data: true})
-      d.disclose_transaction(transaction_id: "57ad0fea9...", fields: {asset_id: true, amount: true, reference_data: true})
-      d.disclose_account(account_alias: "bob",               fields: {asset_id: true, amount: true, reference_data: true})
-    end
-    disclosure_serialized = encrypted_disclosure.to_json
+Bob receives a [disclosure import key](#disclosure-import-key) from Alice and uses it to build a disclosure object.
 
 The resulting object is encrypted to an `import_key`, contains minimal metadata needed for decryption
 and can be safely transmitted to the receiving Core for import.
 
 * `disclose_entry` — adds proofs and decryption keys for a single output/retirement/issuance.
-* `disclose_transaction` — adds proofs and decryption keys for each output in the transaction (omits outputs not decrypted by this Core).
-* `disclose_account` — adds account xpubs, derivation path and root decryption keys for tracking all outputs for a given account.
+* `disclose_transaction` — adds proofs and decryption keys for each decryptable entry in the transaction (omits entries not decrypted by this Core).
+
+#### Request
+
+    POST /disclosures/export
+
+    {
+      import_key: {...}, // disclosure import key structure
+      disclosures: [
+        {
+          kind:              ("entry" | "transaction"),
+          entry_id:          <string:hex>,               // if kind == "entry"
+          transaction_id:    <string:hex>,               // if kind == "transaction"
+          asset_id:          <boolean>,
+          amount:            <boolean>,
+          reference_data:    <boolean>,
+        }
+      ]
+    }
+
+#### Response
+
+    {
+        type:         "encdisclosure1",
+        sender_key:   <string:hex>,
+        selector:     <string:hex>,
+        ciphertext:   <string:hex>
+    }
+
+See [Disclosure](#disclosure) for details of the encrypted and cleartext structures.
+
+#### Ruby
+
+    encrypted_disclosure = client.disclosures.build(import_key: {...}) do |d|
+      d.disclose_entry(
+        entry_id:       "fa0e8fb0ad...",
+        asset_id:        true,
+        amount:          true,
+        reference_data:  true
+      )
+      d.disclose_transaction(
+        transaction_id: "57ad0fea9...",
+        asset_id:        true,
+        amount:          true,
+        reference_data:  true
+      )
+    end
+
+#### JS
+
+    client.disclosures.build({import_key: {...}}, builder => {
+      builder.disclose_entry({
+        entryID:        "fa0e8fb0ad...",
+        asset_id:        true,
+        amount:          true,
+        reference_data:  true
+      })
+      builder.disclose_transaction({
+        transaction_id: "57ad0fea9...",
+        asset_id:        true,
+        amount:          true,
+        reference_data:  true
+      })
+    })
+    .then(encdisclosure => ...)
+
+#### Java
+
+    Disclosure.EncryptedDisclosure disclosure = new Disclosure.Builder()
+      .addEntryDisclosure(new Disclosure.EntryDisclosureRequest()
+        .setEntryID("fa0e8fb0ad...")
+        .setAssetID(true)
+        .setAmount(true)
+        .setReferenceData(true)
+      ).addTransactionDisclosure(new Disclosure.TransactionDisclosureRequest()
+        .setTransactionID("57ad0fea9...")
+        .setAssetID(true)
+        .setAmount(true)
+        .setReferenceData(true)
+      ).build(client);
+
+
+
 
 
 ### Import Disclosure
 
-Request/response API definitions: TBD.
-
 Alice receives `disclosure` object from Bob and attempts to import in the Core:
 
-    cleartext_disclosure = client.disclosures.import(disclosure)
+    cleartext_disclosure = client.disclosures.import(
+      alias: "Bob's transaction",
+      encrypted_disclosure: {...}
+    )
 
-Alice can decrypt and inspect the disclosure without importing:
+TBD: Should we support querying all stored disclosures too?
+
+#### Request
+
+    POST /disclosures/import
+
+    {
+      alias: <string>,
+      encrypted_disclosure: {
+        type:         "encdisclosure1",
+        sender_key:   <string:hex>,
+        selector:     <string:hex>,
+        ciphertext:   <string:hex>
+      }
+    }
+
+#### Response
+
+    {
+        alias: <string>,      # alias as specified during import
+        type: "disclosure1",  # version of the cleartext disclosure
+        items: [
+            {
+                scope: "output"/"retirement"/"issuance",
+                ...
+            },
+        ]
+    }
+
+See [Cleartext Disclosure](#cleartext-disclosure) for details.
+
+#### Ruby
+
+    cleartext_disclosure = client.disclosures.import(
+      alias: "Bob's transaction",
+      encrypted_disclosure: {...}
+    )
+
+#### JS
+
+    client.disclosures.import({
+       alias: "Bob's transaction",
+       encrypted_disclosure: {...}
+    })
+    .then(cleartextdisclosure => ...)
+
+#### Java
+
+    Disclosure disclosure = new Disclosure.Import(client, "Bob's transaction", encdisclosure)
+
+
+
+### Decrypt Disclosure
+
+Alice can decrypt and inspect the disclosure without importing it:
 
     cleartext_disclosure = client.disclosures.decrypt(disclosure)
     cleartext_disclosure.scope                       # => 'output'/'transaction_id'/'account'
     cleartext_disclosure.items[0].asset_id.asset_id  # => "fae9f0af..."
 
-TBD: Should we support querying all stored disclosures too?
+#### Request
 
+    POST /disclosures/decrypt
 
+    {
+      encrypted_disclosure: {
+        type:         "encdisclosure1",
+        sender_key:   <string:hex>,
+        selector:     <string:hex>,
+        ciphertext:   <string:hex>
+      }
+    }
 
+#### Response
+
+    {
+        type: "disclosure1",   # version of the cleartext disclosure
+        items: [
+            {
+                scope: "output"/"retirement"/"issuance",
+                ...
+            },
+        ]
+    }
+
+See [Cleartext Disclosure](#cleartext-disclosure) for details.
+
+#### Ruby
+
+    cleartext_disclosure = client.disclosures.decrypt(
+      encrypted_disclosure: {...}
+    )
+
+#### JS
+
+    client.disclosures.import({
+       encrypted_disclosure: {...}
+    })
+    .then(cleartextdisclosure => ...)
+
+#### Java
+
+    Disclosure disclosure = new Disclosure.Decrypt(client, encdisclosure)
 
 
 
@@ -761,7 +927,7 @@ TBD: Should we support querying all stored disclosures too?
 
 ## Data structures
 
-### Transaction template
+### Transaction Template
 
 Transaction template contains transaction entries and additional data that helps multiple parties to cooperatively create the transaction.
 
@@ -2130,6 +2296,9 @@ Should be an opaque type to hide versioned content inside for future-proofing.
             type: array
             items:
               $ref: '#/definitions/DisclosureItem'
+          alias:
+            type: string
+            description: Optional alias for the disclosure. Specified during import by the receiving party.
 
       DisclosureItem:
         type: object
