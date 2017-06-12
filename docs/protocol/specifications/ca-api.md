@@ -653,8 +653,8 @@ See [signing instructions](#signing-instructions) for format details.
 The Core that needs to import a disclosure must first generate a recipient key to ensure
 that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
 
-   import_key = client.disclosures.create_import_key()
-   import_key_serialized = import_key.to_json
+    import_key = client.disclosures.create_import_key()
+    import_key_serialized = import_key.to_json
 
 
 ### Export Disclosure
