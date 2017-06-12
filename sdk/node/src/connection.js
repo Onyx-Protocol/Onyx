@@ -30,7 +30,7 @@ const snakeize = (object) => {
       delete object[key]
     }
 
-    if (typeof value == 'object' && !blacklistAttributes.includes(newKey)) {
+    if (typeof value == 'object' && blacklistAttributes.indexOf(newKey) == -1) {
       value = snakeize(value)
     }
 
@@ -50,7 +50,7 @@ const camelize = (object) => {
       delete object[key]
     }
 
-    if (typeof value == 'object' && !blacklistAttributes.includes(key)) {
+    if (typeof value == 'object' && blacklistAttributes.indexOf(key) == -1) {
       value = camelize(value)
     }
 
