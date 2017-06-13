@@ -54,15 +54,12 @@ $ git clone https://github.com/chain/chain $CHAIN
 $ cd $CHAIN
 ```
 
-You can build Chain Core using the `build-cored-release` script.
-The build product allows connections over HTTP, unauthenticated
-requests from localhost, and the ability to reset the Chain Core.
+You can build Chain Core Developer Edition using the `build-ccde` script. The build product allows connections over HTTP, unauthenticated requests from localhost, and the ability to reset the Chain Core.
 
-`build-cored-release` accepts a accepts a Git ref (branch, tag, or commit SHA)
-from the chain repository and an output directory:
+By default, `build-ccde` places output artifacts in `$GOPATH/bin`. It accepts an optional output directory:
 
 ```sh
-$ ./bin/build-cored-release chain-core-server-1.2.0 .
+$ OUTPUT_DIR=. ./bin/build-ccde
 ```
 
 This will create two binaries in the current directory:
