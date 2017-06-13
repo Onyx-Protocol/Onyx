@@ -4,11 +4,25 @@ This changelog covers updates to cored, the Chain Core server binary.
 
 For updates to subpackages, see below:
 
-- [Mac installer](https://github.com/chain/chain/blob/1.2-stable/installer/mac/CHANGELOG.md)
-- [Windows installer](https://github.com/chain/chain/blob/1.2-stable/installer/windows/CHANGELOG.md)
+- [Mac installer](https://github.com/chain/chain/blob/1.2-stable/desktop/mac/CHANGELOG.md)
+- [Windows installer](https://github.com/chain/chain/blob/1.2-stable/desktop/windows/CHANGELOG.md)
 - [Java SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/java/CHANGELOG.md)
 - [Node.js SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/node/CHANGELOG.md)
 - [Ruby SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/ruby/CHANGELOG.md)
+
+<a name="1.2.1"></a>
+## 1.2.1 (June 13, 2017)
+
+### Major changes
+
+TLS version 1.2 is now required for all HTTPS connections ([#1314](https://github.com/chain/chain/pull/1314)).
+
+Other fixes:
+
+* Performance improvements when submitting transactions containing large
+numbers of assets and issuances ([#1221](https://github.com/chain/chain/pull/1221)).
+* Improved checks for invalidating expired transactions ([1226](https://github.com/chain/chain/pull/1226))
+* Resolved multiple unexpected crashes ([#1283](https://github.com/chain/chain/pull/1283), [#1310](https://github.com/chain/chain/pull/1310))
 
 <a name="1.2.0"></a>
 ## 1.2.0 (May 12, 2017)
