@@ -41,6 +41,9 @@ java:
         code: |
           run-jfmt
 
+node:
+  steps: []
+
 ruby:
   steps:
     - bundle-install:
