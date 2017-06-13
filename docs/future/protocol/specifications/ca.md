@@ -264,11 +264,32 @@ Each 32-byte element is an integer coded using little endian convention. I.e., a
 
 Ring signature described below supports proving knowledge of multiple discrete logarithms at once.
 
-#### Create Ring Signature
+#### Ring Signature Message Hash
+
+This is an example of the message hash that can be used with the ring signature.
+
+The resulting hash unambiguously commits to all base points, public keys, and a message string.
+
+Derived algorithms (e.g. [asset range proof](#asset-range-proof)) can use a different hash that
+commits to the same inputs indirectly.
 
 **Inputs:**
 
 1. `msg`: the string to be signed.
+2. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
+3. `{B[u]}`: `M` base [points](#point) to validate the signature.
+4. `{P[i,u]}`: `n·M` [points](#point) representing the public keys.
+
+**Output:**
+
+    msghash = Hash256("RS.msg", {byte(48+M), B[0],...,B[M-1], P[0,0],...,P[n-1,0], ..., P[0,M-1],...,P[n-1,M-1], msg})
+
+
+#### Create Ring Signature
+
+**Inputs:**
+
+1. `msghash`: the hash being signed that commits to all base points `{B[u]}` and public keys `{P[i,u]}`. See [Ring Signature Message Hash](#ring-signature-message-hash) for an example.
 2. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
 3. `{B[u]}`: `M` base [points](#point) to validate the signature.
 4. `{P[i,u]}`: `n·M` [points](#point) representing the public keys.
@@ -280,17 +301,16 @@ Ring signature described below supports proving knowledge of multiple discrete l
 **Algorithm:**
 
 1. Let `counter = 0`.
-2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS.msg", {byte(48+M), B[0],...,B[M-1], P[0],...,P[n-1], msg})`.
-3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash("RS.rand", {uint64le(counter), msghash, p, uint64le(j)}, 32·(n-1) + 64 + 1)`, where:
+2. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash("RS.rand", {uint64le(counter), msghash, p, uint64le(j)}, 32·(n-1) + 64 + 1)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * `p` is encoded as a 256-bit little-endian integer,
     * `j` is encoded as a 64-bit little-endian integer.
-4. Calculate `k = nonce mod L`, where `nonce` is interpreted as a 64-byte little-endian integer and reduced modulo subgroup order `L`.
-5. Calculate the initial e-value, let `i = j+1 mod n`:
+3. Calculate `k = nonce mod L`, where `nonce` is interpreted as a 64-byte little-endian integer and reduced modulo subgroup order `L`.
+4. Calculate the initial e-value, let `i = j+1 mod n`:
     1. For each `u` from 0 to `M-1`: calculate `R[u,i]` as the [point](#point) `k·B[u]`.
     2. Define `w[j]` as `mask` with lower 4 bits set to zero: `w[j] = mask & 0xf0`.
     3. Calculate `e[i] = ScalarHash("RS.e", {R[0,i], ..., R[M-1,i], msghash, uint64le(i), w[j]})` where `i` is encoded as a 64-bit little-endian integer.
-6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
+5. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
     2. Calculate the forged s-value `s[i] = r[step-1]`.
     3. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero.
@@ -299,17 +319,17 @@ Ring signature described below supports proving knowledge of multiple discrete l
     6. For each `u` from 0 to `M-1`:
         1. Calculate point `R[u,i’] = z[i]·B[u] - e[i]·P[i,u]`.
     7. Calculate `e[i’] = ScalarHash("RS.e", {R[0,i’], ..., R[M-1,i’], msghash, uint64le(i’), w[i]})` where `i’` is encoded as a 64-bit little-endian integer.
-7. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
-8. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
-9. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
-10. Return the ring signature `{e[0], s[0], ..., s[n-1]}`, total `n+1` 32-byte elements.
+6. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
+7. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
+8. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
+9. Return the ring signature `{e[0], s[0], ..., s[n-1]}`, total `n+1` 32-byte elements.
 
 
 #### Validate Ring Signature
 
 **Inputs:**
 
-1. `msg`: the string being signed.
+1. `msghash`: the hash being signed that commits to all base points `{B[u]}` and public keys `{P[i,u]}`. See [Ring Signature Message Hash](#ring-signature-message-hash) for an example.
 2. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
 3. `{B[u]}`: `M` base [points](#point) to validate the signature.
 4. `{P[i,u]}`: `n·M` [points](#point) representing the public keys.
@@ -320,18 +340,16 @@ Ring signature described below supports proving knowledge of multiple discrete l
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS.msg", {byte(48+M), B, P[0],..., P[n-1], msg})`.
-2. For each `i` from `0` to `n-1`:
+1. For each `i` from `0` to `n-1`:
     1. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero (see note below).
     2. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     3. Let `i’ = i+1 mod n`.
     4. For each `u` from 0 to `M-1`:
         1. Calculate point `R[u,i’] = z[i]·B[u] - e[i]·P[u,i]`.
     5. Calculate `e[i’] = ScalarHash("RS.e", {R[0,i’], ..., R[M-1,i’], msghash, i’, w[i]})` where `i’` is encoded as a 64-bit little-endian integer.
-3. Return true if `e[0]` equals `e[n]`, otherwise return false.
+2. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
 Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
-
 
 
 
@@ -357,11 +375,36 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
       s[1,0], s[1,1], s[1,2], s[1,3], # base-4 digit at position 1 (proof for the higher two bits)
     }
 
-#### Create Borromean Ring Signature
+#### Borromean Ring Signature Message Hash
+
+This is an example of the message hash that can be used with the borromean ring signature.
+
+The resulting hash unambiguously commits to the structure of the signature, all base points, public keys, and a message string.
+
+Derived algorithms (e.g. [value range proof](#value-range-proof)) can use a different hash that
+commits to the same inputs indirectly.
 
 **Inputs:**
 
 1. `msg`: the string to be signed.
+2. `n`: number of rings.
+3. `m`: number of signatures in each ring.
+4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
+5. `{B[u]}`: `M` base [points](#point) to validate the signature.
+6. `{P[i,j,u]}`: `n·m·M` [points](#point) representing public keys.
+
+**Output:**
+
+    msghash = Hash256("BRS", {byte(48+M), uint64le(n), uint64le(m), {B[u]}, {P[i,j,u]}, msg})
+
+ Where `n` and `m` are encoded as 64-bit little-endian integers.
+
+
+#### Create Borromean Ring Signature
+
+**Inputs:**
+
+1. `msghash`: the hash being signed that commits to all public parameters. See [Borromean Ring Signature Message Hash](#borromean-ring-signature-message-hash) for an example.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
@@ -375,15 +418,14 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS", byte(48+M), uint64le(n), uint64le(m), {B[i]}, {P[i,j]}, msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
-2. Let `counter = 0`.
-3. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
-4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash({"O", uint64le(counter), msghash, {p[i]}, {uint64le(j[i])}}, 32·n·m)`, where:
+1. Let `counter = 0`.
+2. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
+3. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash("BRS.Overlay", {uint64le(counter), msghash, {p[i]}, {uint64le(j[i])}}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
-5. Define `r[i] = payload[i] XOR o[i]` for all `i` from 0 to `n·m - 1`.
-6. For `t` from `0` to `n-1` (each ring):
+4. Define `r[i] = payload[i] XOR o[i]` for all `i` from 0 to `n·m - 1`.
+5. For `t` from `0` to `n-1` (each ring):
     1. Let `j = j[t]`
     2. Let `x = r[m·t + j]` interpreted as a little-endian integer.
     3. Define `k[t]` as the lower 252 bits of `x`.
@@ -393,7 +435,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         1. Let `j’ = j+1 mod m`.
         2. For each `u` from 0 to `M-1`:
             1. Calculate `R[t,j’,u]` as the point `k[t]·B[u]`.
-        3. Calculate `e[t,j’] = ScalarHash("e", byte(cnt), R[t,j’,0], ..., R[t,j’,M-1], msghash, uint64le(t), uint64le(j’), w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
+        3. Calculate `e[t,j’] = ScalarHash("BRS.e", {byte(cnt), R[t,j’,0], ..., R[t,j’,M-1], msghash, uint64le(t), uint64le(j’), w[t,j]})` where `t` and `j’` are encoded as 64-bit little-endian integers.
     7. If `j ≠ m-1`, then for `i` from `j+1` to `m-1`:
         1. Calculate the forged s-value: `s[t,i] = r[m·t + i]`.
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
@@ -401,12 +443,12 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         4. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`.
-        6. Calculate `e[t,i’] = ScalarHash("e", byte(cnt), R[t,i’,0], ..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
-7. Calculate the shared e-value `e0` for all the rings:
+        6. Calculate `e[t,i’] = ScalarHash("BRS.e", {byte(cnt), R[t,i’,0], ..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i]})` where `t` and `i’` are encoded as 64-bit little-endian integers.
+6. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
     2. Calculate `e0 = ScalarHash(E)`.
-    3. If `e0` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
-8. For `t` from `0` to `n-1` (each ring):
+    3. If `e0` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 2. The chance of this happening is below 1 in 2<sup>124</sup>.
+7. For `t` from `0` to `n-1` (each ring):
     1. Let `j = j[t]`.
     2. Let `e[t,0] = e0`.
     3. If `j` is not zero, then for `i` from `0` to `j-1`:
@@ -416,12 +458,12 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         4. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`. If `i` is zero, use `e0` in place of `e[t,0]`.
-        6. Calculate `e[t,i’] = ScalarHash("e", byte(cnt), R[t,i’,0],..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash("BRS.e", {byte(cnt), R[t,i’,0],..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i]})` where `t` and `i’` are encoded as 64-bit little-endian integers.
     4. Calculate the non-forged `z[t,j] = k[t] + p[t]·e[t,j] mod L` and encode it as a 32-byte little-endian integer.
-    5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
+    5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 2. The chance of this happening is below 1 in 2<sup>124</sup>.
     6. Define `s[t,j]` as `z[t,j]` with 4 high bits set to `mask[t]` bits.
-9. Set top 4 bits of `e0` to the lower 4 bits of `counter`.
-10. Return the [borromean ring signature](#borromean-ring-signature):
+8. Set top 4 bits of `e0` to the lower 4 bits of `counter`.
+9. Return the [borromean ring signature](#borromean-ring-signature):
     * `{e,s[t,j]}`: `n·m+1` 32-byte elements.
 
 
@@ -430,7 +472,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 **Inputs:**
 
-1. `msg`: the string to be signed.
+1. `msghash`: the hash being signed that commits to all public parameters. See [Borromean Ring Signature Message Hash](#borromean-ring-signature-message-hash) for an example.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
@@ -442,11 +484,10 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS", byte(48+M), uint64le(n), uint64le(m), {B[i]}, {P[i,j]}, msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
-2. Define `E` to be an empty binary string.
-3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
-4. Set top 4 bits of `e0` to zero.
-5. For `t` from `0` to `n-1` (each ring):
+1. Define `E` to be an empty binary string.
+2. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
+3. Set top 4 bits of `e0` to zero.
+4. For `t` from `0` to `n-1` (each ring):
     1. Let `e[t,0] = e0`.
     2. For `i` from `0` to `m-1` (each item):
         1. Calculate `z[t,i]` as `s[t,i]` with the most significant 4 bits set to zero.
@@ -454,10 +495,10 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         3. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`. Use `e0` instead of `e[t,0]` in each ring.
-        6. Calculate `e[t,i’] = ScalarHash("e", byte(cnt), R[t,i’,0],..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash("BRS.e", {byte(cnt), R[t,i’,0],..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i]})` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
-6. Calculate `e’ = ScalarHash(E)`.
-7. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
+5. Calculate `e’ = ScalarHash(E)`.
+6. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
 
 
 
@@ -479,16 +520,15 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS", byte(48+M), n, m, {B[i]}, {P[i,j]}, msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
-2. Define `E` to be an empty binary string.
-3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
-4. Let `counter` integer equal `cnt`.
-5. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash({"O", uint64le(counter), msghash, {p[i]}, {uint64le(j[i])}}, 32·n·m)`, where:
+1. Define `E` to be an empty binary string.
+2. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
+3. Let `counter` integer equal `cnt`.
+4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash("BRS.Overlay", {uint64le(counter), msghash, {p[i]}, {uint64le(j[i])}}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
-6. Set top 4 bits of `e0` to zero.
-7. For `t` from `0` to `n-1` (each ring):
+5. Set top 4 bits of `e0` to zero.
+6. For `t` from `0` to `n-1` (each ring):
     1. Let `e[t,0] = e0`.
     2. For `i` from `0` to `m-1` (each item):
         1. Calculate `z[t,i]` as `s[t,i]` with the most significant 4 bits set to zero.
@@ -502,10 +542,10 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         5. Let `i’ = i+1 mod m`.
         6. For each `u` from 0 to `M-1`:
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
-        7. Calculate `e[t,i’] = ScalarHash("e", byte(cnt), R[t,i’,0], ..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        7. Calculate `e[t,i’] = ScalarHash("BRS.e", {byte(cnt), R[t,i’,0], ..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i]})` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
-8. Calculate `e’ = ScalarHash(E)`.
-9. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
+7. Calculate `e’ = ScalarHash(E)`.
+8. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
 
 
 
@@ -554,12 +594,39 @@ Statement ring       | A collection of `n` statement sets, where at least one mu
 `F[i,j]`             | Commitment for a function value `f[i,j]` at index `j` within set `i`.
 
 
+#### OLEG-ZKP Message Hash
+
+This is an example of the message hash that can be used with the borromean ring signature.
+
+The resulting hash unambiguously commits to the structure of the signature, all base points, public keys, and a message string.
+
+Derived algorithms (e.g. [issuance asset range proof](#issuance-asset-range-proof)) can use a different hash that
+commits to the same inputs indirectly.
+
+**Inputs:**
+
+1. `msg`: the string to be signed.
+2. `{F[i,j]}`: `n·m` commitments for functions `{f[i,j]}`.
+
+**Output:**
+
+        msghash = Hash256("OZKP.msg", 
+                          {
+                            uint64le(n), uint64le(m), uint64le(l),
+                            F[0,0]  , ..., F[0,m-1],
+                            ...
+                            F[n-1,0], ..., F[n-1,m-1],
+                            msg
+                          })
+
+
+
 #### Create OLEG-ZKP
 
 
 **Inputs:**
 
-1. `msg`: the string to be signed.
+1. `msghash`: the hash being signed that commits to all public parameters. See [OLEG-ZKP Message Hash](#oleg-zkp-message-hash) for an example.
 2. `{x[k]}`: the `l` secret [scalars](#scalar).
 3. `{f[i,j]({x[k]})}`: `n·m` functions over `l` secrets.
 4. `{F[i,j]}`: `n·m` commitments for functions `{f[i,j]}`.
@@ -570,17 +637,10 @@ Statement ring       | A collection of `n` statement sets, where at least one mu
 **Algorithm:**
 
 1. Let `counter = 0`.
-2. Let the `msghash` be a hash of the input non-secret data:
+2. Calculate a sequence of: `(n-1)·l` 32-byte random values `{S[i,k]}`, `l` 64-byte nonces `r[k]` and `l` 1-byte `mask[k]`:
 
-        msghash = Hash256("OLEG-ZKP", uint64le(n), uint64le(m), uint64le(l),
-                          F[0,0]  , ..., F[0,m-1],
-                          ...
-                          F[n-1,0], ..., F[n-1,m-1],
-                          msg)
-
-3. Calculate a sequence of: `(n-1)·l` 32-byte random values `{S[i,k]}`, `l` 64-byte nonces `r[k]` and `l` 1-byte `mask[k]`:
-
-        {S[i,k], r[k], mask[k]} = StreamHash({
+        {S[i,k], r[k], mask[k]} = StreamHash("OZKP.rand",
+                                             {
                                               uint64le(counter),
                                               msghash,
                                               x[0],..., x[l-1],
@@ -588,20 +648,22 @@ Statement ring       | A collection of `n` statement sets, where at least one mu
                                              },
                                              32·(n-1)·l + 64·l + l)
 
-4. Reduce each `r[k]` modulo `L`.
-5. Calculate the initial challenge (e-value), let `i’ = î+1 mod n`:
+3. Reduce each `r[k]` modulo `L`.
+4. Calculate the initial challenge (e-value), let `i’ = î+1 mod n`:
     1. For each `j=0..m-1`:
         1. Calculate [point](#point) `R[i’,j] = f[î,j]({r[k]})`.
     2. For each `k=0..l-1`:
         1. Define `w[î,k]` as `mask[k]` with lower 4 bits set to zero: `w[î,k] = mask[k] & 0xf0`.
     3. Calculate the challenge:
 
-            e[i’] = ScalarHash("e", 
-                               msghash, uint64le(i’),
-                               R[i’,0], ..., R[i’,m-1],
-                               w[î,0], ..., w[î,l-1])
+            e[i’] = ScalarHash("OZKP.e", 
+                               {
+                                msghash, uint64le(i’),
+                                R[i’,0], ..., R[i’,m-1],
+                                w[î,0], ..., w[î,l-1]
+                               })
 
-6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
+5. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (î + step) mod n`.
     2. For each `k=0..l-1`:
         1. Calculate the forged s-values `s[i,k] = S[step-1,k]`.
@@ -612,19 +674,21 @@ Statement ring       | A collection of `n` statement sets, where at least one mu
         1. Calculate point `R[i’,j] = f[i,j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
     5. Calculate the challenge:
 
-            e[i’] = ScalarHash("e",
-                               msghash, uint64le(i’),
-                               R[i’,0],..., R[i’,m-1],
-                               w[i,0],..., w[i,l-1])
+            e[i’] = ScalarHash("OZKP.e",
+                               {
+                                msghash, uint64le(i’),
+                                R[i’,0],..., R[i’,m-1],
+                                w[i,0],..., w[i,l-1]
+                               })
 
-7. Calculate the non-forged responses for each `k=0..l-1`:
+6. Calculate the non-forged responses for each `k=0..l-1`:
     1. Calculate a response scalar:
 
             z[î,k] = r[k] + x[k]·e[î] mod L
 
     2. If `z[î,k]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
     3. Define `s[î,k]` as `z[î,k]` with 4 high bits set to high 4 bits of the `mask[k]`.
-8. Return the proof `e[0], {s[i,k]}`, total `1+n·l` 32-byte elements.
+7. Return the proof `e[0], {s[i,k]}`, total `1+n·l` 32-byte elements.
 
 
 
@@ -632,7 +696,7 @@ Statement ring       | A collection of `n` statement sets, where at least one mu
 
 **Inputs:**
 
-1. `msg`: the string to be signed.
+1. `msghash`: the hash being signed that commits to all public parameters. See [OLEG-ZKP Message Hash](#oleg-zkp-message-hash) for an example.
 2. `{f[i,j]({x[k]})}`: `n·m` functions over `l` secrets.
 3. `{F[i,j]}`: `n·m` commitments for functions `{f[i,j]}`.
 4. `e0, {s[i,k]}`: a starting commitment and response scalars, total `1+n·l` 32-byte elements.
@@ -642,15 +706,7 @@ Statement ring       | A collection of `n` statement sets, where at least one mu
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data:
-
-        msghash = Hash256("OLEG-ZKP", uint64le(n), uint64le(m), uint64le(l),
-                          F[0,0],..., F[0,m-1],
-                          ...
-                          F[n-1,0],..., F[n-1,m-1],
-                          msg)
-
-2. For each `i=0..n-1`:
+1. For each `i=0..n-1`:
     1. Let `i’ = i+1 mod n`.
     2. For each `k=0..l-1`:
         1. Define `z[i,k]` as `s[i,k]` with the most significant 4 bits set to zero (see note below).
@@ -659,12 +715,14 @@ Statement ring       | A collection of `n` statement sets, where at least one mu
         1. Calculate point `R[i’,j] = f[i,j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
     4. Calculate the challenge:
 
-            e[i+1] = ScalarHash("e",
-                                msghash, uint64le(i’),
-                                R[i’,0],..., R[i’,m-1],
-                                w[i,0],..., w[i,l-1])
+            e[i+1] = ScalarHash("OZKP.e",
+                                {
+                                    msghash, uint64le(i’),
+                                    R[i’,0],..., R[i’,m-1],
+                                    w[i,0],..., w[i,l-1]
+                                })
 
-3. Return true if `e[0]` equals `e[n]`, otherwise return false.
+2. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
 Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
 
