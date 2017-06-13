@@ -23,6 +23,16 @@ func TestTupleHashNISTSample1(t *testing.T) {
 	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
 		t.Errorf("TestTupleHashNISTSample1: got %s, want %s", got, expected)
 	}
+
+	h := NewTupleHash128(outputLength, S)
+	for _, item := range tuples {
+		h.Write(item)
+	}
+	copy(output, zero[:])
+	h.Sum(output[:0])
+	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
+		t.Errorf("TestTupleHashNISTSample1: got %s, want %s", got, expected)
+	}
 }
 
 func TestTupleHashNISTSample2(t *testing.T) {
@@ -35,6 +45,16 @@ func TestTupleHashNISTSample2(t *testing.T) {
 	output := make([]byte, outputLength)
 	TupleHash128(tuples, S, output)
 	expected := strings.Replace("75 CD B2 0F F4 DB 11 54 E8 41 D7 58 E2 41 60 C5 4B AE 86 EB 8C 13 E7 F5 F4 0E B3 55 88 E9 6D FB", " ", "", -1)
+	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
+		t.Errorf("TestTupleHashNISTSample2: got %s, want %s", got, expected)
+	}
+
+	h := NewTupleHash128(outputLength, S)
+	for _, item := range tuples {
+		h.Write(item)
+	}
+	copy(output, zero[:])
+	h.Sum(output[:0])
 	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
 		t.Errorf("TestTupleHashNISTSample2: got %s, want %s", got, expected)
 	}
@@ -54,6 +74,16 @@ func TestTupleHashNISTSample3(t *testing.T) {
 	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
 		t.Errorf("TestTupleHashNISTSample3: got %s, want %s", got, expected)
 	}
+
+	h := NewTupleHash128(outputLength, S)
+	for _, item := range tuples {
+		h.Write(item)
+	}
+	copy(output, zero[:])
+	h.Sum(output[:0])
+	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
+		t.Errorf("TestTupleHashNISTSample3: got %s, want %s", got, expected)
+	}
 }
 
 func TestTupleHashNISTSample4(t *testing.T) {
@@ -69,6 +99,16 @@ func TestTupleHashNISTSample4(t *testing.T) {
 	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
 		t.Errorf("TestTupleHashNISTSample4: got %s, want %s", got, expected)
 	}
+
+	h := NewTupleHash256(outputLength, S)
+	for _, item := range tuples {
+		h.Write(item)
+	}
+	copy(output, zero[:])
+	h.Sum(output[:0])
+	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
+		t.Errorf("TestTupleHashNISTSample4: got %s, want %s", got, expected)
+	}
 }
 
 func TestTupleHashNISTSample5(t *testing.T) {
@@ -81,6 +121,16 @@ func TestTupleHashNISTSample5(t *testing.T) {
 	output := make([]byte, outputLength)
 	TupleHash256(tuples, S, output)
 	expected := strings.Replace("14 7C 21 91 D5 ED 7E FD 98 DB D9 6D 7A B5 A1 16 92 57 6F 5F E2 A5 06 5F 3E 33 DE 6B BA 9F 3A A1 C4 E9 A0 68 A2 89 C6 1C 95 AA B3 0A EE 1E 41 0B 0B 60 7D E3 62 0E 24 A4 E3 BF 98 52 A1 D4 36 7E", " ", "", -1)
+	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
+		t.Errorf("TestTupleHashNISTSample5: got %s, want %s", got, expected)
+	}
+
+	h := NewTupleHash256(outputLength, S)
+	for _, item := range tuples {
+		h.Write(item)
+	}
+	copy(output, zero[:])
+	h.Sum(output[:0])
 	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
 		t.Errorf("TestTupleHashNISTSample5: got %s, want %s", got, expected)
 	}
@@ -100,6 +150,16 @@ func TestTupleHashNISTSample6(t *testing.T) {
 	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
 		t.Errorf("TestTupleHashNISTSample6: got %s, want %s", got, expected)
 	}
+
+	h := NewTupleHash256(outputLength, S)
+	for _, item := range tuples {
+		h.Write(item)
+	}
+	copy(output, zero[:])
+	h.Sum(output[:0])
+	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
+		t.Errorf("TestTupleHashNISTSample6: got %s, want %s", got, expected)
+	}
 }
 
 func TestTupleHashXOFNISTSample1(t *testing.T) {
@@ -109,10 +169,20 @@ func TestTupleHashXOFNISTSample1(t *testing.T) {
 		[]byte{0x10, 0x11, 0x12, 0x13, 0x14, 0x15},
 	}
 	S := []byte{}
-	h := TupleHashXOF128(tuples, S)
+	r := TupleHashXOF128(tuples, S)
 	output := make([]byte, outputLength)
-	h.Read(output)
+	r.Read(output)
 	expected := strings.Replace("2F 10 3C D7 C3 23 20 35 34 95 C6 8D E1 A8 12 92 45 C6 32 5F 6F 2A 3D 60 8D 92 17 9C 96 E6 84 88", " ", "", -1)
+	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
+		t.Errorf("TestTupleHashXOFNISTSample1: got %s, want %s", got, expected)
+	}
+
+	h := NewTupleHashXOF128(S)
+	for _, item := range tuples {
+		h.Write(item)
+	}
+	copy(output, zero[:])
+	h.Read(output)
 	if got := strings.ToUpper(hex.EncodeToString(output)); got != expected {
 		t.Errorf("TestTupleHashXOFNISTSample1: got %s, want %s", got, expected)
 	}
