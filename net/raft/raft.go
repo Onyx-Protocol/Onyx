@@ -233,7 +233,8 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 		return nil, errors.Wrap(err)
 	}
 
-	raftNode := raft.RestartNode(sv.config(id))
+	sv.id = id
+	raftNode := raft.RestartNode(sv.config())
 	err = raftNode.Campaign(ctx)
 	if err != nil {
 		log.Error(ctx, err, "election failed") // ok to continue
@@ -241,7 +242,6 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 
 	// Start the algorithm. It is okay to not lock startMu since
 	// sv hasn't escaped yet.
-	sv.id = id
 	sv.raftNode = raftNode
 	sv.startLocked()
 
@@ -264,9 +264,9 @@ func (sv *Service) initialized() bool {
 	return sv.raftNode != nil
 }
 
-func (sv *Service) config(id uint64) *raft.Config {
+func (sv *Service) config() *raft.Config {
 	return &raft.Config{
-		ID:              id,
+		ID:              sv.id,
 		ElectionTick:    electionTick,
 		HeartbeatTick:   heartbeatTick,
 		Storage:         sv.raftStorage,
@@ -303,10 +303,10 @@ func (sv *Service) Init() error {
 		return errors.Wrap(err)
 	}
 
-	peers := []raft.Peer{{ID: firstNodeID, Context: []byte(sv.laddr)}}
-	raftNode := raft.StartNode(sv.config(firstNodeID), peers)
-
 	sv.id = firstNodeID
+	peers := []raft.Peer{{ID: sv.id, Context: []byte(sv.laddr)}}
+	raftNode := raft.StartNode(sv.config(), peers)
+
 	sv.raftNode = raftNode
 
 	// StartNode appends to the initial log a ConfChangeAddNode entry for
@@ -339,13 +339,11 @@ func (sv *Service) Join(bootURL string) error {
 		return ErrExistingCluster
 	}
 
-	id, walobj, err := sv.join(sv.laddr, bootURL) // sets state
+	err := sv.join(sv.laddr, bootURL) // sets state, id, wal
 	if err != nil {
 		return err
 	}
-	sv.id = id
-	sv.wal = walobj
-	sv.raftNode = raft.RestartNode(sv.config(id))
+	sv.raftNode = raft.RestartNode(sv.config())
 	sv.startLocked()
 	return nil
 }
@@ -363,17 +361,6 @@ func (sv *Service) Err() error {
 func (sv *Service) runUpdatesReady(rd raft.Ready, wal *wal.WAL, writers map[string]chan bool) {
 	wal.Save(rd.HardState, rd.Entries)
 	if !raft.IsEmptySnap(rd.Snapshot) {
-		sv.redo(func() error {
-			// Note: wal.SaveSnapshot saves the snapshot *position* only,
-			// not the actual full snapshot data. The data is saved below
-			// in sv.saveSnapshot. The position must be saved to the WAL
-			// before we try to load the WAL at the snapshot position.
-			// Writing the snapshot position first guarantees that.
-			return wal.SaveSnapshot(walpb.Snapshot{
-				Index: rd.Snapshot.Metadata.Index,
-				Term:  rd.Snapshot.Metadata.Term,
-			})
-		})
 		sv.redo(func() error {
 			return sv.saveSnapshot(&rd.Snapshot)
 		})
@@ -698,12 +685,12 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 // It requests an existing member to propose a configuration change
 // adding the local process as a new member, then retrieves its new ID
 // and a snapshot of the cluster state and applies it to sv.
-func (sv *Service) join(addr, baseURL string) (id uint64, walobj *wal.WAL, err error) {
+func (sv *Service) join(addr, baseURL string) error {
 	reqURL := strings.TrimRight(baseURL, "/") + "/raft/join"
 	b, _ := json.Marshal(struct{ Addr string }{addr})
 	resp, err := sv.client.Post(reqURL, contentType, bytes.NewReader(b))
 	if err != nil {
-		return 0, nil, errors.Wrap(err)
+		return errors.Wrap(err)
 	}
 	defer resp.Body.Close()
 
@@ -718,63 +705,56 @@ func (sv *Service) join(addr, baseURL string) (id uint64, walobj *wal.WAL, err e
 				err = errors.WithDetail(ErrPeerUninitialized, detail)
 			}
 		}
-		return 0, nil, errors.Wrap(err, "joining cluster")
+		return errors.Wrap(err, "joining cluster")
 	}
 
 	var x nodeJoin
 	err = json.NewDecoder(resp.Body).Decode(&x)
 	if err != nil {
-		return 0, nil, errors.Wrap(err)
+		return errors.Wrap(err)
 	}
-	id = x.ID
+	sv.id = x.ID
 	var raftSnap raftpb.Snapshot
 	err = decodeSnapshot(x.Snap, &raftSnap)
 	if err != nil {
-		return 0, nil, errors.Wrap(err)
+		return errors.Wrap(err)
 	}
 
 	ctx := context.Background()
 	err = sv.raftStorage.ApplySnapshot(raftSnap)
 	if err != nil {
-		return 0, nil, errors.Wrap(err)
+		return errors.Wrap(err)
 	}
 
-	log.Printkv(ctx, "raftid", id)
-	err = writeID(sv.dir, id)
+	log.Printkv(ctx, "raftid", sv.id)
+	err = writeID(sv.dir, sv.id)
 	if err != nil {
-		return 0, nil, err
+		return errors.Wrap(err)
 	}
 
 	err = os.Remove(sv.walDir())
 	if err != nil {
-		return 0, nil, errors.Wrap(err)
+		return errors.Wrap(err)
 	}
-	walobj, err = wal.Create(sv.walDir(), nil)
+	sv.wal, err = wal.Create(sv.walDir(), nil)
 	if err != nil {
-		return 0, nil, errors.Wrap(err)
+		return errors.Wrap(err)
 	}
 
 	if !raft.IsEmptySnap(raftSnap) {
-		err = walobj.SaveSnapshot(walpb.Snapshot{
-			Index: raftSnap.Metadata.Index,
-			Term:  raftSnap.Metadata.Term,
-		})
-		if err != nil {
-			return 0, nil, errors.Wrap(err)
-		}
 		err := sv.saveSnapshot(&raftSnap)
 		if err != nil {
-			return 0, nil, errors.Wrap(err)
+			return errors.Wrap(err)
 		}
 		err = sv.state.RestoreSnapshot(raftSnap.Data, raftSnap.Metadata.Index)
 		if err != nil {
-			return 0, nil, errors.Wrap(err)
+			return errors.Wrap(err)
 		}
 		sv.confState = raftSnap.Metadata.ConfState
 		sv.snapIndex = raftSnap.Metadata.Index
 	}
 	log.Printkv(ctx, "at", "joined", "appliedindex", raftSnap.Metadata.Index)
-	return id, walobj, nil
+	return nil
 }
 
 func encodeSnapshot(snapshot *raftpb.Snapshot) ([]byte, error) {
@@ -950,19 +930,7 @@ func (sv *Service) getSnapshot() *raftpb.Snapshot {
 func (sv *Service) triggerSnapshot() error {
 	snap := sv.getSnapshot()
 
-	// First, write the index of the snapshot to the WAL. This
-	// ensures we never try to open the WAL at an index that was
-	// not saved to the WAL.
-	// https://github.com/coreos/etcd/issues/8082
-	err := sv.wal.SaveSnapshot(walpb.Snapshot{
-		Index: snap.Metadata.Index,
-		Term:  snap.Metadata.Term,
-	})
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	err = sv.saveSnapshot(snap)
+	err := sv.saveSnapshot(snap)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -984,6 +952,20 @@ func (sv *Service) saveSnapshot(snapshot *raftpb.Snapshot) error {
 	if err != nil {
 		panic(err)
 	}
+
+	// First, write the index of the snapshot to the WAL. This
+	// ensures we never try to open the WAL at an index that was
+	// not saved to the WAL.
+	// https://github.com/coreos/etcd/issues/8082
+	err = sv.wal.SaveSnapshot(walpb.Snapshot{
+		Index: snapshot.Metadata.Index,
+		Term:  snapshot.Metadata.Term,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Then atomically replace the on-disk snapshot.
 	return writeFile(sv.snapFile(), d, 0666)
 }
 
