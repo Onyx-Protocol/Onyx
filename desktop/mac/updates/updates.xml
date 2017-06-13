@@ -6,18 +6,18 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
       <item>
-        <title>Chain Core Developer Edition 1.2.0</title>
+        <title>Chain Core Developer Edition 1.2.1</title>
         <description>
           <![CDATA[
             <ul>
-              <li>Update the Chain Core server package to version 1.2.0</li>
+              <li>Update the Chain Core server package to version 1.2.1</li>
             </ul>
           ]]>
         </description>
         <pubDate>Fri, 12 May 2017 16:06:18 -0700</pubDate>
         <enclosure
-        	url="https://download.chain.com/mac/Chain_Core_1.2.0.zip"
-        	sparkle:version="1.2.0"
+        	url="https://download.chain.com/mac/Chain_Core_1.2.1.zip"
+        	sparkle:version="1.2.1"
         	length="31350237"
         	type="application/octet-stream"
         	sparkle:dsaSignature=""
