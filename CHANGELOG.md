@@ -10,6 +10,11 @@ For updates to subpackages, see below:
 - [Node.js SDK](./sdk/node/CHANGELOG.md)
 - [Ruby SDK](./sdk/ruby/CHANGELOG.md)
 
+<a name="1.1.5"></a>
+## 1.1.5 (June 13, 2017)
+
+TLS version 1.2 is now required for all HTTPS connections ([#1315](https://github.com/chain/chain/pull/1315)).
+
 <a name="1.1.4"></a>
 ## 1.1.4 (March 27, 2017)
 
