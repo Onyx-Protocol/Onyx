@@ -5,6 +5,32 @@ import (
 	"io"
 )
 
+// TupleHash defines the interface to hash functions that
+// support tuple input.
+type TupleHash interface {
+	hash.Hash
+
+	// WriteItem writes length-prefixed item to the hash state.
+	WriteItem(item []byte) (written int, err error)
+
+	// WriteItemPrefix writes length prefix to the hash state
+	// and must be followed by normal Write calls.
+	WriteItemPrefix(length int) (written int, err error)
+}
+
+// TupleHashXOF defines the interface to hash functions that
+// support tuple input with extensible output.
+type TupleHashXOF interface {
+	ShakeHash
+
+	// WriteItem writes length-prefixed item to the hash state.
+	WriteItem(item []byte) (written int, err error)
+
+	// WriteItemPrefix writes length prefix to the hash state
+	// and must be followed by normal Write calls.
+	WriteItemPrefix(length int) (written int, err error)
+}
+
 type thash struct { // implements hash.Hash and ShakeHash
 	d             *state
 	lengthEmitted bool
@@ -42,23 +68,23 @@ func TupleHashXOF256(tuple [][]byte, s []byte) io.Reader {
 
 // NewTupleHash128 creates an instance of Hash with a given key,
 // output length in bytes and a customization string s.
-func NewTupleHash128(length int, s []byte) hash.Hash {
+func NewTupleHash128(length int, s []byte) TupleHash {
 	return newTupleHasher(128, length, s)
 }
 
 // NewTupleHash256 creates an instance of Hash with a given key,
 // output length in bytes and a customization string s.
-func NewTupleHash256(length int, s []byte) hash.Hash {
+func NewTupleHash256(length int, s []byte) TupleHash {
 	return newTupleHasher(256, length, s)
 }
 
 // NewTupleHashXOF128 provides an arbitrary-length output.
-func NewTupleHashXOF128(s []byte) ShakeHash {
+func NewTupleHashXOF128(s []byte) TupleHashXOF {
 	return newTupleHasher(128, 0, s)
 }
 
 // NewTupleHashXOF256 provides an arbitrary-length output.
-func NewTupleHashXOF256(s []byte) ShakeHash {
+func NewTupleHashXOF256(s []byte) TupleHashXOF {
 	return newTupleHasher(256, 0, s)
 }
 
@@ -77,11 +103,22 @@ func (t *thash) Clone() ShakeHash {
 	return t.clone()
 }
 
-// Write writes a tuple item with necessary length prefix.
-// If you need to write several chunks of one item, buffer them first
-// in a single slice and then pass it to the Write method.
 func (t *thash) Write(p []byte) (written int, err error) {
+	return t.d.Write(p)
+}
+
+// WriteItem writes a tuple item with a necessary length prefix.
+// If you need to write several chunks of one item, either buffer them first
+// in a single slice, or use WriteItemPrefix followed by multiple Write calls.
+func (t *thash) WriteItem(p []byte) (written int, err error) {
 	written = encodeString(t.d, p)
+	return
+}
+
+// WriteItemPrefix writes length prefix to the hash state
+// and must be followed by normal Write calls.
+func (t *thash) WriteItemPrefix(length int) (written int, err error) {
+	written = leftEncode(t.d, uint64(length*8))
 	return
 }
 

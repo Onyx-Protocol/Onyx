@@ -26,7 +26,7 @@ func TestTupleHashNISTSample1(t *testing.T) {
 
 	h := NewTupleHash128(outputLength, S)
 	for _, item := range tuples {
-		h.Write(item)
+		h.WriteItem(item)
 	}
 	copy(output, zero[:])
 	h.Sum(output[:0])
@@ -51,7 +51,7 @@ func TestTupleHashNISTSample2(t *testing.T) {
 
 	h := NewTupleHash128(outputLength, S)
 	for _, item := range tuples {
-		h.Write(item)
+		h.WriteItem(item)
 	}
 	copy(output, zero[:])
 	h.Sum(output[:0])
@@ -77,7 +77,7 @@ func TestTupleHashNISTSample3(t *testing.T) {
 
 	h := NewTupleHash128(outputLength, S)
 	for _, item := range tuples {
-		h.Write(item)
+		h.WriteItem(item)
 	}
 	copy(output, zero[:])
 	h.Sum(output[:0])
@@ -102,7 +102,7 @@ func TestTupleHashNISTSample4(t *testing.T) {
 
 	h := NewTupleHash256(outputLength, S)
 	for _, item := range tuples {
-		h.Write(item)
+		h.WriteItem(item)
 	}
 	copy(output, zero[:])
 	h.Sum(output[:0])
@@ -127,7 +127,7 @@ func TestTupleHashNISTSample5(t *testing.T) {
 
 	h := NewTupleHash256(outputLength, S)
 	for _, item := range tuples {
-		h.Write(item)
+		h.WriteItem(item)
 	}
 	copy(output, zero[:])
 	h.Sum(output[:0])
@@ -153,7 +153,7 @@ func TestTupleHashNISTSample6(t *testing.T) {
 
 	h := NewTupleHash256(outputLength, S)
 	for _, item := range tuples {
-		h.Write(item)
+		h.WriteItem(item)
 	}
 	copy(output, zero[:])
 	h.Sum(output[:0])
@@ -179,7 +179,7 @@ func TestTupleHashXOFNISTSample1(t *testing.T) {
 
 	h := NewTupleHashXOF128(S)
 	for _, item := range tuples {
-		h.Write(item)
+		h.WriteItem(item)
 	}
 	copy(output, zero[:])
 	h.Read(output)
