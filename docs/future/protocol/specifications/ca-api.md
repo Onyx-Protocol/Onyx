@@ -1041,12 +1041,19 @@ Instructions may be partially completed: either some arguments are `type:data` i
             },
             {
                 type:     "sig",
-                hash:     <string:hex>, // raw hash of the message to be signed
-                pubkey:   <string:hex>, // EdDSA pubkey
 
-                // `xpub` and `path` are optional, in case the EdDSA pubkey is derived from the ChainKD xpub:
-                xpub:     <string:hex>, // ChainKD extended pubkey
-                path:     [<string:hex>], // sequence of selectors for non-hardened derivation
+                hash: <string:hex>, // raw hash of the message to be signed
+
+                key: {
+                  type:   ("ChainKD" | "EdDSA"),
+
+                  // type=ChainKD:
+                  xpub:   <string:hex>, // ChainKD extended pubkey
+                  path:   [<string:hex>], // sequence of selectors for non-hardened derivation
+
+                  // type=EdDSA:
+                  pubkey: <string:hex>,
+                },
 
                 signature_context: {
                   hash_type: ("txsighash" | "msghash"),
@@ -1054,22 +1061,31 @@ Instructions may be partially completed: either some arguments are `type:data` i
                   // if hash_type=msghash:
                   hash_function: ("sha3" | "sha2"),
                   message: <string:hex>,  // raw message being signed
-                }
+
+                  // if hash_type=txsighash
+                  entry_id:  <string:hex>,
+                  tx_id:     <string:hex>,
+                },
             },
             {
-                type:      "multisig",
+                type:      "multisig-eddsa",
                 hash:      <string:hex>
 
                 quorum: 1,
                 keys: [
                     {
-                        pubkey:   <string:hex>, // EdDSA pubkey
+                        type:     ("ChainKD"|"EdDSA"|"signed"),
+
+                        // type=ChainKD:
                         xpub:     <string:hex>, // ChainKD xpub
                         path:     [<string:hex>], // sequence of selectors for non-hardened derivation
-                    },
-                    {
-                        pubkey:   <string:hex>, // EdDSA pubkey
-                        sig:      <string:hex>, // already computed signature for a given pubkey
+
+                        // type=EdDSA:
+                        pubkey:   <string:hex>,
+
+                        // type=signed:
+                        pubkey:   <string:hex>, // if the original key was ChainKD, only the derived child key is kept here for identification
+                        sig:      <string:hex> // already computed signature for a given pubkey
                     }
                 ],
                 signature_context: {
@@ -1078,12 +1094,17 @@ Instructions may be partially completed: either some arguments are `type:data` i
                   // if hash_type=msghash:
                   hash_function: ("sha3" | "sha2"),
                   message: <string:hex>,  // raw message being signed
+
+                  // if hash_type=txsighash
+                  entry_id:  <string:hex>,
+                  tx_id:     <string:hex>,
                 }
             },
         ],
         program_context: {
             type:            ("tx"|"block"|"issuancechoice"),
             entry_type:      "input",            // type of entry in the "tx" context
+            entry_id:         <string:hex>,      // ID of the entry in which the validation is performed
             vm_version:       2,                 // version of the VM (affects allowed types of witness components)
             program:          <string:hex>,      // program bytecode
             position:         0,                 // position of the destination of the current entry (0 for all inputs)
