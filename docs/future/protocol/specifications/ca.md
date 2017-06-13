@@ -200,30 +200,30 @@ Generator `J` has the following 32-byte encoding:
 
 The following hash functions are based on SHA-3 Derived Functions as specified by [NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
 
-Each hash function has a domain separator string `D` that is appended to a customization string `S` (in NIST terms) to allow efficient precomputation of any specific hash function instance; this is due to customization strings being padded to 168 bytes that are fully permuted using Keccak function.
+Each hash function has a _function name_ string `F` that is appended to a customization string `S` (in NIST terms) to allow efficient precomputation of any specific hash function instance; this is due to customization strings being padded to 168 bytes that are fully permuted using Keccak function.
 
 #### Hash256
 
-`Hash256(D,X)` is a secure hash function that takes a list of input strings `X` and outputs a 256-bit hash.
+`Hash256(F,X)` is a secure hash function that takes a list of input strings `X` and outputs a 256-bit hash.
 
-    Hash256(D,X) = TupleHash128(X, L=256, S="ChainCA.Hash256." || D)
+    Hash256(F,X) = TupleHash128(X, L=256, S="ChainCA.Hash256." || F)
 
 #### StreamHash
 
-`StreamHash(X,n)` is a secure extendable-output hash function that takes a sequence of variable-length binary strings `X` as input
+`StreamHash(F,X,n)` is a secure extendable-output hash function that takes a sequence of variable-length binary strings `X` as input
 and outputs a variable-length hash string depending on a number of bytes (`n`) requested.
 
-    StreamHash(D, X, n) = TupleHashXOF128(X, L=n·8, S="ChainCA.StreamHash." || D)
+    StreamHash(F, X, n) = TupleHashXOF128(X, L=n·8, S="ChainCA.StreamHash." || F)
 
 #### ScalarHash
 
-`ScalarHash(D,X)` is a secure hash function that takes a variable-length binary strings `S` (customization string) and `X` as inputs and outputs a [scalar](#scalar). It is based on NIST recommendation to output at least extra 128 bits in order to make bias negligible ([NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf), Appendix B, p. 25).
+`ScalarHash(F,X)` is a secure hash function that takes a variable-length binary strings `F` (function name) and `X` as inputs and outputs a [scalar](#scalar). It is based on NIST recommendation to output at least extra 128 bits in order to make bias negligible ([NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf), Appendix B, p. 25).
 
 `ScalarHash` uses 512-bit output to take advantage of an existing implementation of “reduce” operation in Ed25519 libraries defined for 512-bit strings (even though a 381-bit output provides a sufficient security level).
 
 1. For the input sequence of strings `X` compute a 512-bit hash `h`:
 
-        h = TupleHash128(X, L=512, S="ChainCA.ScalarHash." || D)
+        h = TupleHash128(X, L=512, S="ChainCA.ScalarHash." || F)
 
 2. Interpret `h` as a little-endian integer and reduce modulo subgroup [order](#elliptic-curve) `L`:
 
@@ -233,7 +233,7 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 #### PointHash
 
-`PointHash(D,X)` is a secure hash function that takes a list of input strings `X` and returns a valid point in Ed25519 subgroup.
+`PointHash(F,X)` is a secure hash function that takes a list of input strings `X` and returns a valid point in Ed25519 subgroup.
 
 It is defined as follows:
 
@@ -244,7 +244,7 @@ It is defined as follows:
 
 3. Calculate hash using `TupleHash` function as defined in [NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): 
 
-        h = TupleHash128(X’, L=256, S="ChainCA.PointHash." || D)
+        h = TupleHash128(X’, L=256, S="ChainCA.PointHash." || F)
 
 4. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
 5. If the point is invalid, increment `counter` and go back to step 2. The probability of failure is 0.5.
@@ -280,8 +280,8 @@ Ring signature described below supports proving knowledge of multiple discrete l
 **Algorithm:**
 
 1. Let `counter = 0`.
-2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS", {byte(48+M), B[0],...,B[M-1], P[0],...,P[n-1], msg})`.
-3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash("RS",{uint64le(counter), msghash, p, uint64le(j)}, 32·(n-1) + 64 + 1)`, where:
+2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS.msg", {byte(48+M), B[0],...,B[M-1], P[0],...,P[n-1], msg})`.
+3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash("RS.rand", {uint64le(counter), msghash, p, uint64le(j)}, 32·(n-1) + 64 + 1)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * `p` is encoded as a 256-bit little-endian integer,
     * `j` is encoded as a 64-bit little-endian integer.
@@ -289,7 +289,7 @@ Ring signature described below supports proving knowledge of multiple discrete l
 5. Calculate the initial e-value, let `i = j+1 mod n`:
     1. For each `u` from 0 to `M-1`: calculate `R[u,i]` as the [point](#point) `k·B[u]`.
     2. Define `w[j]` as `mask` with lower 4 bits set to zero: `w[j] = mask & 0xf0`.
-    3. Calculate `e[i] = ScalarHash("e", {R[0,i], ..., R[M-1,i], msghash, uint64le(i), w[j]})` where `i` is encoded as a 64-bit little-endian integer.
+    3. Calculate `e[i] = ScalarHash("RS.e", {R[0,i], ..., R[M-1,i], msghash, uint64le(i), w[j]})` where `i` is encoded as a 64-bit little-endian integer.
 6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
     2. Calculate the forged s-value `s[i] = r[step-1]`.
@@ -298,7 +298,7 @@ Ring signature described below supports proving knowledge of multiple discrete l
     5. Let `i’ = i+1 mod n`.
     6. For each `u` from 0 to `M-1`:
         1. Calculate point `R[u,i’] = z[i]·B[u] - e[i]·P[i,u]`.
-    7. Calculate `e[i’] = ScalarHash("e", {R[0,i’], ..., R[M-1,i’], msghash, uint64le(i’), w[i]})` where `i’` is encoded as a 64-bit little-endian integer.
+    7. Calculate `e[i’] = ScalarHash("RS.e", {R[0,i’], ..., R[M-1,i’], msghash, uint64le(i’), w[i]})` where `i’` is encoded as a 64-bit little-endian integer.
 7. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
 8. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
 9. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
@@ -320,14 +320,14 @@ Ring signature described below supports proving knowledge of multiple discrete l
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS", byte(48+M), B, P[0],..., P[n-1], msg)`.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS.msg", {byte(48+M), B, P[0],..., P[n-1], msg})`.
 2. For each `i` from `0` to `n-1`:
     1. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero (see note below).
     2. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     3. Let `i’ = i+1 mod n`.
     4. For each `u` from 0 to `M-1`:
         1. Calculate point `R[u,i’] = z[i]·B[u] - e[i]·P[u,i]`.
-    5. Calculate `e[i’] = ScalarHash("e", R[0,i’], ..., R[M-1,i’], msghash, i’, w[i])` where `i’` is encoded as a 64-bit little-endian integer.
+    5. Calculate `e[i’] = ScalarHash("RS.e", {R[0,i’], ..., R[M-1,i’], msghash, i’, w[i]})` where `i’` is encoded as a 64-bit little-endian integer.
 3. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
 Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
