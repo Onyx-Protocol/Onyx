@@ -59,7 +59,7 @@ You can build Chain Core Developer Edition using the `build-ccde` script. The bu
 By default, `build-ccde` places output artifacts in `$GOPATH/bin`. It accepts an optional output directory:
 
 ```sh
-$ ./bin/build-ccde .
+$ OUTPUT_DIR=. ./bin/build-ccde
 ```
 
 This will create two binaries in the current directory:
