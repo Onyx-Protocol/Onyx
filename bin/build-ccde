@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# Builds cored and corectl with configuration appropriate to Chain Core
+# Developer Edition.
+#
+# Do not use binaries built by this script in a production environment.
+#
+# This command takes no arguments, but can be configured with the following
+# environment variables:
+#
+# GOOS:       target OS
+# GOARCH:     target CPU architecture
+# DATE:       build date; defaults to now
+# OUTPUT_DIR: defaults to $GOPATH/bin ($GOPATH defaults to $HOME/go)
+set -e
+
+OUTPUT_DIR=${OUTPUT_DIR:-${GOPATH:-$HOME/go}/bin}
+
+# Cross-compilation args for cored and corectl
+export CGO_ENABLED=0 # There are issues with cgo (e.g. https://github.com/lib/pq/issues/395), so disable it entirely.
+
+suffix=""
+if [[ "$GOOS" == "windows" ]]; then
+  suffix=".exe"
+fi
+
+echo "building cored..."
+
+commit=`git rev-parse HEAD`
+DATE=${DATE:-`date +%s`} # date can be set via envvar
+ldflags="-X main.buildTag=$releaseRef -X main.buildCommit=$commit -X main.buildDate=$DATE"
+go build\
+  -tags 'http_ok localhost_auth init_cluster'\
+  -ldflags "$ldflags"\
+  -o $OUTPUT_DIR/cored$suffix\
+  chain/cmd/cored
+
+echo "building corectl..."
+
+go build\
+  -o $OUTPUT_DIR/corectl$suffix\
+  chain/cmd/corectl
+
+echo "Done, build artifacts placed in $OUTPUT_DIR"

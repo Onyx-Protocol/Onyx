@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# Builds cored and corectl with configuration appropriate to Chain Core
+# Developer Edition at a specific gitref. Does not clobber your working tree.
+#
+# Do not use binaries built by this script in a production environment.
+set -e
+
+usage() {
+  cat <<EOS
+Usage: $0 releaseRef
+
+You can also set the following environment variables:
+- GOOS:       target OS
+- GOARCH:     target CPU architecture
+- DATE:       build date; defaults to now
+- OUTPUT_DIR: defaults to \$GOPATH/bin (\$GOPATH defaults to \$HOME/go)
+EOS
+
+  exit 1
+}
+
+trap usage ERR
+
+if [ -z "$1" ]; then
+  usage
+fi
+
+releaseRef=$1
+
+echo "Building ref $releaseRef..."
+
+# Clone repository into tempdir and check out specified release ref.
+buildGoPath=`mktemp -d`
+trap "rm -rf $buildGoPath" EXIT
+
+newChain=$buildGoPath/src/chain
+mkdir -p $newChain
+git clone $CHAIN $newChain
+cd $newChain > /dev/null
+git checkout $releaseRef
+cd - > /dev/null # preserve working directory
+
+# Set parameters for build-ccde
+export GOPATH=$buildGoPath
+export GOOS
+export GOARCH
+export DATE
+export OUTPUT_DIR
+$newChain/bin/build-ccde

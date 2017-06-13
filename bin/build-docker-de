@@ -10,6 +10,6 @@ trap cleanup EXIT
 imageVersion=${IMAGE_VERSION:-1.2.0}
 coredVersion=${CORED_VERSION:-chain-core-server-1.2.0}
 
-GOOS=linux GOARCH=amd64 bin/build-cored-release "$coredVersion" $CHAIN/docker/de/
+GOOS=linux GOARCH=amd64 bin/build-historical-ccde "$coredVersion" $CHAIN/docker/de/
 docker build --tag chaincore/developer $CHAIN/docker/de/
 docker tag chaincore/developer chaincore/developer:$imageVersion
