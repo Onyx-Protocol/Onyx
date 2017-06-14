@@ -49,11 +49,11 @@ public class TransactionRejectionTest {
     keyGold = MockHsm.Key.create(client);
     keySilver = MockHsm.Key.create(client);
     keyBronze = MockHsm.Key.create(client);
-    HsmSigner.addKey(keyAlice, TestUtils.generateSignerClient());
-    HsmSigner.addKey(keyBob, TestUtils.generateSignerClient());
-    HsmSigner.addKey(keyGold, TestUtils.generateSignerClient());
-    HsmSigner.addKey(keySilver, TestUtils.generateSignerClient());
-    HsmSigner.addKey(keyBronze, TestUtils.generateSignerClient());
+    HsmSigner.addKey(keyAlice, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(keyBob, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(keyGold, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(keySilver, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(keyBronze, MockHsm.getSignerClient(client));
 
     new Account.Builder()
         .setAlias(aliasAlice)
