@@ -20,7 +20,7 @@ object:
 
 ```
 SSLContext context = SSLContext.getInstance("TLSv1.2");
-context.init(null,null,null);
+context.init(null, null, null);
 SSLContext.setDefault(context);
 ```
 
