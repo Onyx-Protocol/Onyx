@@ -379,19 +379,24 @@ public class Client {
   }
 
   private OkHttpClient buildHttpClient(Builder builder) {
-    OkHttpClient httpClient = new OkHttpClient();
+    OkHttpClient httpClient = builder.baseHttpClient.clone();
 
     if (builder.sslSocketFactory != null) {
       httpClient.setSslSocketFactory(builder.sslSocketFactory);
     }
 
-    httpClient.setFollowRedirects(false);
-    httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
-    httpClient.setWriteTimeout(builder.writeTimeout, builder.writeTimeoutUnit);
-    httpClient.setConnectTimeout(builder.connectTimeout, builder.connectTimeoutUnit);
-
-    httpClient.setConnectionPool(builder.pool);
-
+    if (builder.readTimeoutUnit != null) {
+      httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
+    }
+    if (builder.writeTimeoutUnit != null) {
+      httpClient.setWriteTimeout(builder.writeTimeout, builder.writeTimeoutUnit);
+    }
+    if (builder.connectTimeoutUnit != null) {
+      httpClient.setConnectTimeout(builder.connectTimeout, builder.connectTimeoutUnit);
+    }
+    if (builder.pool != null) {
+      httpClient.setConnectionPool(builder.pool);
+    }
     if (builder.proxy != null) {
       httpClient.setProxy(builder.proxy);
     }
@@ -526,6 +531,7 @@ public class Client {
    * A builder class for creating client objects
    */
   public static class Builder {
+    private OkHttpClient baseHttpClient;
     private List<URL> urls;
     private String accessToken;
     private CertificatePinner cp;
@@ -542,8 +548,16 @@ public class Client {
     private LoggingInterceptor.Level logLevel = LoggingInterceptor.Level.ERRORS;
 
     public Builder() {
+      this.baseHttpClient = new OkHttpClient();
+      this.baseHttpClient.setFollowRedirects(false);
       this.urls = new ArrayList<URL>();
       this.setDefaults();
+    }
+
+    public Builder(Client client) {
+      this.baseHttpClient = client.httpClient.clone();
+      this.urls = new ArrayList<>(client.urls);
+      this.accessToken = client.accessToken;
     }
 
     private void setDefaults() {

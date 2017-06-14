@@ -28,10 +28,7 @@ public class MockHsm {
   public static Client getSignerClient(Client client) throws BadURLException {
     try {
       URL signerUrl = new URL(client.url().toString() + "/mockhsm");
-      if (client.hasAccessToken()) {
-        return new Client(signerUrl, client.accessToken());
-      }
-      return new Client(signerUrl);
+      return new Client.Builder(client).setURL(signerUrl).build();
     } catch (MalformedURLException e) {
       throw new BadURLException(e.getMessage());
     }
