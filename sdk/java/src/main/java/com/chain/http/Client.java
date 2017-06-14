@@ -413,7 +413,7 @@ public class Client {
 
     try {
       if (builder.trustManagers != null) {
-        SSLContext sslContext = SSLContext.getInstance("TLS");
+        SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
         sslContext.init(builder.keyManagers, builder.trustManagers, null);
         httpClient.setSslSocketFactory(sslContext.getSocketFactory());
       }
