@@ -62,7 +62,7 @@ requests from localhost, and the ability to reset the Chain Core.
 from the chain repository and an output directory:
 
 ```sh
-$ ./bin/build-cored-release chain-core-server-1.2.0 .
+$ ./bin/build-cored-release chain-core-server-1.2.1 .
 ```
 
 This will create two binaries in the current directory:
