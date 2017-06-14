@@ -37,7 +37,7 @@
   * [Validate Destination](#validate-destination)
   * [Validate Assets Flow](#validate-assets-flow)
 * [Encryption](#encryption)
-  * [Encrypted Payload](#encrypted-payload)
+  * [Encrypted Packet](#encrypted-packet)
   * [Encrypted Value](#encrypted-value)
   * [Encrypted Asset ID](#encrypted-asset-id)
   * [Encrypt Issuance](#encrypt-issuance)
@@ -1502,7 +1502,7 @@ In case of failure, returns `nil` instead of the range proof.
 6. Calculate the message to sign: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek", msghash, idek, f)`.
 8. Let number of digits `n = N/2`.
-9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
+9. [Encrypt the payload](#encrypt-packet) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPacket({pt[i]}, pek)`.
 10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash("VRP.b", msghash, f, 64·(n-1))`.
 11. Interpret each 64-byte `b[t]` (`t` from 0 to `n-2`) is interpreted as a little-endian integer and reduce modulo `L` to a 32-byte scalar.
 12. Calculate the last digit blinding factor: `b[n-1] = f - ∑b[t] mod L`, where `t` is from 0 to `n-2`.
@@ -1633,7 +1633,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G`.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 8. Derive payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek", idek, f, VC)`.
-9. [Decrypt payload](#decrypt-payload): compute an array of `2·N-1` 32-byte chunks: `{pt[i]} = DecryptPayload({ct[i]}, pek)`. If decryption fails, halt and return `nil`.
+9. [Decrypt payload](#decrypt-packet): compute an array of `2·N-1` 32-byte chunks: `{pt[i]} = DecryptPacket({ct[i]}, pek)`. If decryption fails, halt and return `nil`.
 10. Return `{pt[i]}`, a plaintext array of `2·N-1` 32-byte elements.
 
 
@@ -1768,49 +1768,84 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 ## Encryption
 
 
-### Encrypted Payload
+### Encrypted Packet
 
-#### Encrypt Payload
+This is a lightweight authenticated encryption scheme for fixed-length messages.
 
-**Inputs:**
+It is used to encrypt:
 
-1. `n`: number of 32-byte elements in the plaintext to be encrypted.
-2. `{pt[i]}`: list of `n` 32-byte elements of plaintext data.
-3. `ek`: the encryption/authentication key unique to this payload.
+* reference data specified in the input, output, issuance and retirement entries,
+* inline payload embedded in the [value range proof](#value-range-proof),
+* [transaction template](ca-api.md#transaction-template) payloads,
+* [disclosures](ca-api.md#disclosure)
 
-**Output:** the `{ct[i]}`: list of `n` 32-byte ciphertext elements, where the last one is a 32-byte MAC.
-
-**Algorithm:**
-
-1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash({"Payload.Key", ek}, 32·n)`.
-2. Encrypt the plaintext payload: `{ct[i]} = {pt[i] XOR keystream[i]}`.
-3. Calculate 256-bit MAC using `ek` as a key and `ct` as a message:
-
-        mac = KMAC128(K=ek, X=ct[0] ||...|| ct[n-1], L, S), L=256, S="Payload.MAC")
-
-4. Return a sequence of `n+1` 32-byte elements: `{ct[0], ..., ct[n-1], mac}`.
-
-#### Decrypt Payload
+#### Encrypt Packet
 
 **Inputs:**
 
-1. `n`: number of 32-byte elements in the ciphertext to be decrypted.
-2. `{ct[i]}`: list of `n+1` 32-byte ciphertext elements, where the last one is MAC (32 bytes).
-3. `ek`: the encryption/authentication key.
+1. `pt`: plaintext, a binary string of arbitrary byte length `n`.
+2. `ek`: the encryption/authentication key.
+3. `seed`: a unique seed per encryption (optional, empty by default) — could be a counter, timestamp, or a random string.
 
-**Output:** the `{pt[i]}` or `nil`, if authentication failed.
+**Output:** `ct`: ciphertext, a binary string of byte length `n+32`.
 
 **Algorithm:**
 
-1. Calculate 256-bit `mac’` using `ek` as a key and `ct` as a message:
+1. Calculate an 8-byte `nonce`:
 
-        mac’ = KMAC128(K=ek, X=ct[0] ||...|| ct[n-1], L, S), L=256, S="Payload.MAC")
+        nonce = StreamHash("Packet.Nonce", {seed,ek,pt}, 8 bytes)
 
-2. Extract the transmitted MAC: `mac = ct[n]`.
-3. Compare calculated  `mac’` with the received `mac`. If they are not equal, return `nil`.
-4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash({"Payload.Key", ek}, 32·n)`.
-5. Decrypt the plaintext payload: `{pt[i]} = {ct[i] XOR keystream[i]}`.
-6. Return `{pt[i]}`.
+2. Calculate a keystream, a sequence of `n` bytes:
+
+        keystream = StreamHash("Packet.Keystream", {nonce,ek}, n bytes)
+
+3. Encrypt the plaintext payload by XORing each byte of plaintext with the corresponding byte of the keystream:
+
+        ct[i] = pt[i] XOR keystream[i]
+
+4. Calculate 24-byte MAC using `ek` as a key and `ct||nonce` as a message:
+
+        mac = KMAC128(K=ek, X=ct||nonce, S="ChainCA.Packet.MAC", L=24 bytes)
+
+4. Return an encrypted packet `ep`, a sequence of `n+32` bytes:
+
+        ep = ct || nonce || mac
+
+
+#### Decrypt Packet
+
+**Inputs:**
+
+1. `ep`: encrypted, a binary string of arbitrary byte length `n+32`.
+2. `ek`: the encryption/authentication key.
+
+**Output:** the plaintext `pt` of length `n`, or `nil`, if authentication failed.
+
+1. Verify that `ep` is at least 32 bytes long, otherwise return `nil`.
+2. Split ciphertext `ep` into raw ciphertext `ct`, 8-byte `nonce` and 24-byte `mac`:
+
+        ct    = ep[0:n]
+        nonce = ep[n:n+8]
+        mac   = ep[n+8:n+32]
+
+3. Compute MAC for the ciphertext concatenated with the nonce:
+
+        mac’ = KMAC128(K=ek, X=ct||nonce, S="ChainCA.Packet.MAC", L=24 bytes)
+
+4. Compare in constant time `mac’ == mac`. If not equal, return `nil`.
+5. Calculate a keystream, a sequence of `n` bytes:
+
+        keystream = StreamHash("Packet.Keystream", {nonce,ek}, n bytes)
+
+6. Decrypt the plaintext payload by XORing each byte of ciphertext with the corresponding byte of the keystream:
+
+        pt[i] = ct[i] XOR keystream[i]
+
+7. Return plaintext `pt`.
+
+
+
+
 
 
 ### Encrypted Value

@@ -25,7 +25,6 @@
   * [Disclosure Import key](#disclosure-import-key)
   * [Reference data encryption](#reference-data-encryption)
   * [Payload encryption](#payload-encryption)
-  * [Packet Encryption](#packet-encryption)
 * [Examples](#examples)
 * [Discussion](#discussion)
 * [Swagger definitions](#swagger-definitions)
@@ -1359,7 +1358,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
 
         K = SHAKE128(S, 32)
 
-7. Encrypt `data` using [Packet Encryption](#encrypt-packet) algorithm with key `K`:
+7. Encrypt `data` using [Packet Encryption](ca.md#encrypt-packet) algorithm with key `K`:
 
         ciphertext = EncryptPacket(data, K)
 
@@ -1387,7 +1386,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
 
         K = SHAKE128(S, 32)
 
-5. Decrypt `ciphertext` using [Packet Encryption](#decrypt-packet) algorithm with key `K`:
+5. Decrypt `ciphertext` using [Packet Encryption](ca.md#decrypt-packet) algorithm with key `K`:
 
         data = DecryptPacket(ciphertext, K)
 
@@ -1398,7 +1397,7 @@ Applications are exposed to an opaque object that encapsulates a versioned impor
 
 ### Reference data encryption
 
-Reference data is encrypted/decrypted using [Packet Encryption](#packet-encryption) algorithm with one of the entry-specific keys:
+Reference data is encrypted/decrypted using [Packet Encryption](ca.md#encrypted-packet) algorithm with one of the entry-specific keys:
 
     ODEK - Data Encryption Key for an output entry
     TDEK - Data Encryption Key for an retirement entry
@@ -1407,28 +1406,10 @@ Reference data is encrypted/decrypted using [Packet Encryption](#packet-encrypti
 
 ### Payload encryption
 
-Payload is encrypted/decrypted using [Packet Encryption](#packet-encryption) algorithm with the _payload encryption key_ `PK` derived from payload ID and _access key_ `AK`:
+Payload is encrypted/decrypted using [Packet Encryption](ca.md#encrypted-packet) algorithm with the _payload encryption key_ `PK` derived from payload ID and _access key_ `AK`:
 
     PK = TupleHash128({AK, payloadID}, S="PK", 32 bytes)
 
-
-### Packet Encryption
-
-#### Encrypt Packet
-
-1. Compute keystream of the same length as cleartext: `keystream = SHAKE128(EK, len(payload))`
-2. Encrypt the payload with the keystream: `ct = payload XOR keystream`.
-3. Compute MAC on the ciphertext `ct`: `mac = SHAKE128(ct || EK, 32)`.
-4. Append MAC to the ciphertext: `ct’ = ct || mac`.
-
-#### Decrypt Packet
-
-1. Split ciphertext into raw ciphertext and MAC (last 32 bytes): `ct, mac`.
-2. Compute MAC on the ciphertext `ct`: `mac’ = SHAKE128(ct || EK, 32)`.
-3. Compare in constant time `mac’ == mac`. If not equal, return nil.
-4. Compute keystream of the same length as ciphertext: `keystream = SHAKE128(EK, len(ciphertext))`
-5. Decrypt the payload by XORing keystream with the ciphertext: `payload = ct XOR keystream`.
-6. Return `payload`.
 
 
 
