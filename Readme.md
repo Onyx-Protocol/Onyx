@@ -101,6 +101,7 @@ There are four build tags that change the behavior of the resulting binary:
   - `localhost_auth`: allows unauthenticated requests on the loopback device (localhost)
   - `no_mockhsm`: disables the MockHSM provided for development
   - `http_ok`: allows plain HTTP requests
+  - `init_cluster`: automatically creates a single process cluster
 
 The default build process creates a binary with three build tags enabled for a
 friendlier experience. To build from source with build tags, use the following
@@ -111,7 +112,7 @@ tag to build. The `main` branch is __not considered__ stable, and may
 contain in progress features or an inconsistent experience.
 
 ```sh
-$ go build -tags 'http_ok localhost_auth' chain/cmd/cored
+$ go build -tags 'http_ok localhost_auth init_cluster' chain/cmd/cored
 $ go build chain/cmd/corectl
 ```
 
