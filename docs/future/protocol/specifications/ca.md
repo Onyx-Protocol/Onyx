@@ -248,7 +248,7 @@ It is defined as follows:
 
 4. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
 5. If the point is not a valid curve point, increment `counter` and go back to step 2. The probability of failure is 0.5.
-6. Multiple `P` by cofactor to eliminate elements outside the subgroup order:
+6. Multiply `P` by cofactor to eliminate elements outside the subgroup order:
 
         P’ = 8·P
 
