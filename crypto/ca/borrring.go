@@ -66,7 +66,7 @@ func createBorromeanRingSignature(msg []byte, B []ecmath.Point, P [][][]ecmath.P
 		e    ecmath.Scalar
 		w    byte
 	)
-	e0hasher := scalarHasher()
+	e0hasher := scalarHasher("ChainCA.BRS.e0")
 	for t := uint64(0); t < n; t++ {
 		jt := j[t]
 		x := r[m*t+jt]
@@ -153,7 +153,7 @@ func (brs *BorromeanRingSignature) Validate(msg []byte, B []ecmath.Point, P [][]
 		z ecmath.Scalar
 		w byte
 	)
-	e0hasher := scalarHasher()
+	e0hasher := scalarHasher("ChainCA.BRS.e0")
 	for t := uint64(0); t < n; t++ {
 		if uint64(len(P[t])) != m {
 			panic(fmt.Errorf("number of pubkeys per ring must be %d*%d", m, M))
@@ -213,7 +213,7 @@ func (brs *BorromeanRingSignature) Payload(msg []byte, B []ecmath.Point, P [][][
 		tmp ecmath.Scalar
 		w   byte
 	)
-	e0hasher := scalarHasher()
+	e0hasher := scalarHasher("ChainCA.BRS.e0")
 	for t := uint64(0); t < n; t++ {
 		if uint64(len(P[t])) != m {
 			panic(fmt.Errorf("number of pubkeys per ring must be %d*%d", m, M))
@@ -269,33 +269,33 @@ func brsMsgHash(B []ecmath.Point, P [][][]ecmath.Point, msg []byte) [32]byte {
 	n := uint64(len(P))
 	m := uint64(len(P[0]))
 	M := len(B)
-	hasher := hasher256([]byte("BRS"), []byte{byte(48 + M)}, uint64le(n), uint64le(m))
+	hasher := hasher256("ChainCA.BRS.msg", []byte{byte(48 + M)}, uint64le(n), uint64le(m))
 	for _, Bi := range B {
-		hasher.Write(Bi.Bytes())
+		hasher.WriteItem(Bi.Bytes())
 	}
 	for _, Pi := range P {
 		for _, Pij := range Pi {
 			for _, Piju := range Pij {
-				hasher.Write(Piju.Bytes())
+				hasher.WriteItem(Piju.Bytes())
 			}
 		}
 	}
-	hasher.Write(msg)
+	hasher.WriteItem(msg)
 	var msghash [32]byte
-	hasher.Read(msghash[:])
+	hasher.Sum(msghash[:0])
 	return msghash
 }
 
 func brsEHash(cnt byte, R []ecmath.Point, msghash []byte, t, i uint64, w byte) ecmath.Scalar {
 	M := len(R)
-	hasher := scalarHasher([]byte("e"), []byte{cnt})
+	hasher := scalarHasher("ChainCA.BRS.e", []byte{cnt})
 	for u := 0; u < M; u++ {
-		hasher.Write(R[u].Bytes())
+		hasher.WriteItem(R[u].Bytes())
 	}
-	hasher.Write(msghash)
-	hasher.Write(uint64le(t))
-	hasher.Write(uint64le(i))
-	hasher.Write([]byte{w})
+	hasher.WriteItem(msghash)
+	hasher.WriteItem(uint64le(t))
+	hasher.WriteItem(uint64le(i))
+	hasher.WriteItem([]byte{w})
 
 	e := scalarHasherFinalize(hasher)
 	return e
@@ -316,12 +316,12 @@ func brsNextE(B, P []ecmath.Point, z, e ecmath.Scalar, msghash []byte, t, i uint
 
 func brsOverlay(counter uint64, msghash []byte, p []ecmath.Scalar, j []uint64, m uint64) [][32]byte {
 	n := uint64(len(p))
-	stream := streamHash([]byte("O"), uint64le(counter), msghash)
+	stream := streamHash("ChainCA.BRS.Overlay", uint64le(counter), msghash)
 	for _, pi := range p {
-		stream.Write(pi[:])
+		stream.WriteItem(pi[:])
 	}
 	for _, ji := range j {
-		stream.Write(uint64le(ji))
+		stream.WriteItem(uint64le(ji))
 	}
 	result := make([][32]byte, m*n)
 	for i := uint64(0); i < m*n; i++ {

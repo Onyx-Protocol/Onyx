@@ -38,14 +38,7 @@ func makeG() (r ecmath.Point) {
 func makeJ() (j ecmath.Point) {
 	// Decode the point from SHA3(G)
 	Gbuf := G.Encode()
-	_, ok := j.Decode(sha3_256(Gbuf[:]))
-	if !ok {
-		panic("failed to decode secondary generator")
-	}
-	// Calculate point `J = 8*J` (8 is a cofactor in edwards25519) which belongs to a subgroup of `G` with order `L`.
-	cofactor := ecmath.Scalar{8}
-	j.ScMul(&j, &cofactor)
-	return
+	return pointHash("ChainCA.J", Gbuf[:])
 }
 
 func makeGiPure(i byte) ecmath.Point {

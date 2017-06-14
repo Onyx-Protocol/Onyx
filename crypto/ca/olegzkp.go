@@ -27,11 +27,10 @@ func createOlegZKP(msghash []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]e
 		mask = make([]byte, l)
 	)
 
-	stream := streamHash(uint64le(counter), msghash)
+	stream := streamHash("ChainCA.OZKP.rand", uint64le(counter), msghash)
 	for _, xi := range x {
 		stream.Write(xi[:])
 	}
-	stream.Write(uint64le(iHat))
 	for i := uint64(0); i < n-1; i++ {
 		S[i] = make([]ecmath.Scalar, l)
 		for j := uint64(0); j < l; j++ {
@@ -86,24 +85,24 @@ func createOlegZKP(msghash []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]e
 func ozkpMsgHash(F [][]ecmath.Point, l uint64, msg []byte) [32]byte {
 	n := uint64(len(F))
 	m := uint64(len(F[0]))
-	hasher := hasher256([]byte("OLEG-ZKP"), uint64le(n), uint64le(m), uint64le(l))
+	hasher := hasher256("ChainCA.OZKP.msg", uint64le(n), uint64le(m), uint64le(l))
 	for _, Fi := range F {
 		for _, Fij := range Fi {
-			hasher.Write(Fij.Bytes())
+			hasher.WriteItem(Fij.Bytes())
 		}
 	}
-	hasher.Write(msg)
+	hasher.WriteItem(msg)
 	var result [32]byte
-	hasher.Read(result[:])
+	hasher.Sum(result[:0])
 	return result
 }
 
 func ozkpEHash(msghash []byte, i uint64, R []ecmath.Point, w []byte) ecmath.Scalar {
-	hasher := scalarHasher([]byte("e"), msghash, uint64le(i))
+	hasher := scalarHasher("ChainCA.OZKP.e", msghash, uint64le(i))
 	for _, Ri := range R {
-		hasher.Write(Ri.Bytes())
+		hasher.WriteItem(Ri.Bytes())
 	}
-	hasher.Write(w)
+	hasher.WriteItem(w)
 	return scalarHasherFinalize(hasher)
 }
 

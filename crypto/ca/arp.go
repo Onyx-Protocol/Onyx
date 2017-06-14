@@ -40,13 +40,13 @@ func (arp *AssetRangeProof) Validate(msg []byte, acPrime *AssetCommitment) bool 
 }
 
 func arpMsgHash(msg []byte, ac []*AssetCommitment, acPrime *AssetCommitment) [32]byte {
-	hasher := hasher256([]byte("ARP"), acPrime.Bytes())
+	hasher := hasher256("ChainCA.ARP.msg", acPrime.Bytes())
 	for _, aci := range ac {
-		hasher.Write(aci.Bytes())
+		hasher.WriteItem(aci.Bytes())
 	}
 	hasher.Write(msg)
 	var result [32]byte
-	hasher.Read(result[:])
+	hasher.Sum(result[:0])
 	return result
 }
 

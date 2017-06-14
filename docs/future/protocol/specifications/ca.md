@@ -206,14 +206,14 @@ Each hash function has a _function name_ string `F` that is appended to a custom
 
 `Hash256(F,X)` is a secure hash function that takes a list of input strings `X` and outputs a 256-bit hash.
 
-    Hash256(F,X) = TupleHash128(X, L=256, S="ChainCA.Hash256." || F)
+    Hash256(F,X) = TupleHash128(X, L=256, S="ChainCA." || F)
 
 #### StreamHash
 
 `StreamHash(F,X,n)` is a secure extendable-output hash function that takes a sequence of variable-length binary strings `X` as input
 and outputs a variable-length hash string depending on a number of bytes (`n`) requested.
 
-    StreamHash(F, X, n) = TupleHashXOF128(X, L=n·8, S="ChainCA.StreamHash." || F)
+    StreamHash(F, X, n) = TupleHashXOF128(X, L=n·8, S="ChainCA." || F)
 
 #### ScalarHash
 
@@ -223,7 +223,7 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 1. For the input sequence of strings `X` compute a 512-bit hash `h`:
 
-        h = TupleHash128(X, L=512, S="ChainCA.ScalarHash." || F)
+        h = TupleHash128(X, L=512, S="ChainCA." || F)
 
 2. Interpret `h` as a little-endian integer and reduce modulo subgroup [order](#elliptic-curve) `L`:
 
@@ -242,13 +242,17 @@ It is defined as follows:
 
         X’ = {uint64le(counter), X[0], ..., X[n-1]}
 
-3. Calculate hash using `TupleHash` function as defined in [NIST SP 800-185](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf): 
+3. Calculate hash using [Hash256](#hash256) function defined above:
 
-        h = TupleHash128(X’, L=256, S="ChainCA.PointHash." || F)
+        h = Hash256(F, X’)
 
 4. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
-5. If the point is invalid, increment `counter` and go back to step 2. The probability of failure is 0.5.
-6. Return `P`.
+5. If the point is not a valid curve point, increment `counter` and go back to step 2. The probability of failure is 0.5.
+6. Multiple `P` by cofactor to eliminate elements outside the subgroup order:
+
+        P’ = 8·P
+
+7. Return `P’`.
 
 
 
@@ -395,7 +399,7 @@ commits to the same inputs indirectly.
 
 **Output:**
 
-    msghash = Hash256("BRS", {byte(48+M), uint64le(n), uint64le(m), {B[u]}, {P[i,j,u]}, msg})
+    msghash = Hash256("BRS.msg", {byte(48+M), uint64le(n), uint64le(m), {B[u]}, {P[i,j,u]}, msg})
 
  Where `n` and `m` are encoded as 64-bit little-endian integers.
 
@@ -446,7 +450,7 @@ commits to the same inputs indirectly.
         6. Calculate `e[t,i’] = ScalarHash("BRS.e", {byte(cnt), R[t,i’,0], ..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i]})` where `t` and `i’` are encoded as 64-bit little-endian integers.
 6. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
-    2. Calculate `e0 = ScalarHash(E)`.
+    2. Calculate `e0 = ScalarHash("BRS.e0", E)`.
     3. If `e0` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 2. The chance of this happening is below 1 in 2<sup>124</sup>.
 7. For `t` from `0` to `n-1` (each ring):
     1. Let `j = j[t]`.
@@ -497,7 +501,7 @@ commits to the same inputs indirectly.
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`. Use `e0` instead of `e[t,0]` in each ring.
         6. Calculate `e[t,i’] = ScalarHash("BRS.e", {byte(cnt), R[t,i’,0],..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i]})` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
-5. Calculate `e’ = ScalarHash(E)`.
+5. Calculate `e’ = ScalarHash("BRS.e0", E)`.
 6. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
 
 
@@ -544,7 +548,7 @@ commits to the same inputs indirectly.
             1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
         7. Calculate `e[t,i’] = ScalarHash("BRS.e", {byte(cnt), R[t,i’,0], ..., R[t,i’,M-1], msghash, uint64le(t), uint64le(i’), w[t,i]})` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
-7. Calculate `e’ = ScalarHash(E)`.
+7. Calculate `e’ = ScalarHash("BRS.e0", E)`.
 8. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
 
 

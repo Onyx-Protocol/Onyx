@@ -245,7 +245,7 @@ func TestBorrRingSig_n_m_M(t *testing.T) {
 					privkeys[t] = make([]ecmath.Scalar, m)
 					for i := 0; i < m; i++ {
 						// Generates unique privkeys for each parameter combo
-						privkeys[t][i] = scalarHash([]byte{byte(n), byte(m), byte(M), byte(t), byte(i)}, msg)
+						privkeys[t][i] = scalarHash("testprivkey", []byte{byte(n), byte(m), byte(M), byte(t), byte(i)}, msg)
 					}
 				}
 

@@ -25,7 +25,7 @@ func TestRingSig(t *testing.T) {
 			basePoints: []ecmath.Point{G},
 			privkeyHex: []string{
 				"4f6d87e9e83dc1dc6868c13fa1ab6af977bcedec0304c5239a87c7c71419da04",
-				"59e10a1f37f2f0e4a1f289f2d6d83736b5ea5caeec9dafa11a337b0e04716631",
+				"59e10a1f37f2f0e4a1f289f2d6d83736b5ea5caeec9dafa11a337b0e04716601",
 				"483262b2722ec4a6e967af08d0ed3d51f954e2b9cab2b51b47aca3d80a58aa0f",
 			},
 		},
@@ -33,7 +33,7 @@ func TestRingSig(t *testing.T) {
 			basePoints: []ecmath.Point{G, J},
 			privkeyHex: []string{
 				"4f6d87e9e83dc1dc6868c13fa1ab6af977bcedec0304c5239a87c7c71419da04",
-				"59e10a1f37f2f0e4a1f289f2d6d83736b5ea5caeec9dafa11a337b0e04716631",
+				"59e10a1f37f2f0e4a1f289f2d6d83736b5ea5caeec9dafa11a337b0e04716601",
 				"483262b2722ec4a6e967af08d0ed3d51f954e2b9cab2b51b47aca3d80a58aa0f",
 			},
 		},

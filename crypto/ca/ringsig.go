@@ -44,7 +44,7 @@ func createRingSignature(msghash []byte, B []ecmath.Point, P [][]ecmath.Point, j
 		nonce [64]byte
 		mask  [1]byte
 	)
-	stream := streamHash(uint64le(counter), msghash, p[:], uint64le(j)) // xxx should this start with some prefix?
+	stream := streamHash("ChainCA.RS.rand", uint64le(counter), msghash, p[:], uint64le(j)) // xxx should this start with some prefix?
 	for i := uint64(0); i < n-1; i++ {
 		stream.Read(r[i][:])
 	}
@@ -121,30 +121,31 @@ func (rs *RingSignature) Validate(msg []byte, B []ecmath.Point, P [][]ecmath.Poi
 func rsMsgHash(B []ecmath.Point, P [][]ecmath.Point, msg []byte) [32]byte {
 	M := len(B)
 
-	hasher := hasher256([]byte("RS"), []byte{byte(48 + M)})
+	hasher := hasher256("ChainCA.RS.msg", []byte{byte(48 + M)})
 	for _, Bi := range B {
-		hasher.Write(Bi.Bytes())
+		hasher.WriteItem(Bi.Bytes())
 	}
 	for _, Pi := range P {
 		for _, Pij := range Pi {
-			hasher.Write(Pij.Bytes())
+			hasher.WriteItem(Pij.Bytes())
 		}
 	}
-	hasher.Write(msg)
+	hasher.WriteItem(msg)
 	var msghash [32]byte
-	hasher.Read(msghash[:])
+	hasher.Sum(msghash[:0])
 	return msghash
 }
 
 func rsEHash(R []ecmath.Point, msghash []byte, i uint64, w byte) ecmath.Scalar {
-	scHasher := scalarHasher([]byte("e"))
+	scHasher := scalarHasher("ChainCA.RS.e")
 	for u := 0; u < len(R); u++ {
-		scHasher.Write(R[u].Bytes())
+		scHasher.WriteItem(R[u].Bytes())
 	}
-	scHasher.Write(msghash)
-	scHasher.Write(uint64le(i))
-	scHasher.Write([]byte{w})
-	return scalarHasherFinalize(scHasher)
+	scHasher.WriteItem(msghash)
+	scHasher.WriteItem(uint64le(i))
+	scHasher.WriteItem([]byte{w})
+	s := scalarHasherFinalize(scHasher)
+	return s
 }
 
 // note: P is just one row of the caller's (two-dimensional) P
