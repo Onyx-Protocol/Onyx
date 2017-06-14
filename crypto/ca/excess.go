@@ -2,6 +2,9 @@ package ca
 
 import "chain/crypto/ed25519/ecmath"
 
+// xxx Maybe get rid of the BFTuple type and change the signature to
+// BalanceBlindingFactors(inAmts, outAmts []uint64, inAssetBFs, inValueBFs, outAssetBFs, outValueBFs []ecmath.Scalar)
+
 type BFTuple struct {
 	Amount           uint64
 	AssetBF, ValueBF ecmath.Scalar

@@ -29,3 +29,30 @@ func CreateValueCommitment(value uint64, ac *AssetCommitment, vek ValueKey) (*Va
 	F.Add(&F, &T)                  // F = value·C + f·J
 	return (*ValueCommitment)(&PointPair{Point1: V, Point2: F}), &f
 }
+
+// xxx make sure the signature of this function aligns with the spec
+func ValidateValueCommitmentsBalance(inputs, outputs []*ValueCommitment, excesses []*ExcessCommitment, msgs [][]byte) bool {
+	// xxx check len(msgs) == len(excesses)
+
+	for i, excess := range excesses {
+		if !excess.Validate(msgs[i]) {
+			return false
+		}
+	}
+
+	Ti := ZeroPointPair
+	for _, inp := range inputs {
+		Ti.Add(&Ti, (*PointPair)(inp))
+	}
+
+	Toq := ZeroPointPair
+	for _, out := range outputs {
+		Toq.Add(&Toq, (*PointPair)(out))
+	}
+
+	for _, excess := range excesses {
+		Toq.Add(&Toq, &excess.QC)
+	}
+
+	return Ti.ConstTimeEqual(&Toq)
+}
