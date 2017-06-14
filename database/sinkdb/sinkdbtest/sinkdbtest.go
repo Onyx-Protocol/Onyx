@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -31,6 +32,9 @@ func NewDB(t testing.TB) *sinkdb.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// set a finalizer to close the DB to reclaim file descriptors, etc.
+	runtime.SetFinalizer(sdb, (*sinkdb.DB).Close)
 	return sdb
 }
 
