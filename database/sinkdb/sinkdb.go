@@ -38,7 +38,7 @@ type DB struct {
 // Ping peforms an empty write to verify the connection to
 // the rest of the cluster.
 func (db *DB) Ping() error {
-	const timeout = 30 * time.Second
+	const timeout = 5 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

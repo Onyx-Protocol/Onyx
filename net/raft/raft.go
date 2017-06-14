@@ -588,7 +588,7 @@ func (sv *Service) wait(index uint64) {
 func (sv *Service) waitForNode(nodeID uint64) {
 	sv.stateMu.Lock()
 	defer sv.stateMu.Unlock()
-	for sv.state.GetPeerAddr(nodeID) == "" {
+	for sv.state.Peers()[nodeID] == "" {
 		sv.stateCond.Wait()
 	}
 }
