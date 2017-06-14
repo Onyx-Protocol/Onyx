@@ -80,7 +80,7 @@ public class FailureTest {
 
   public void testSignTransaction() throws Exception {
     client = TestUtils.generateClient();
-    HsmSigner.addKey(MockHsm.Key.create(client), TestUtils.generateSignerClient());
+    HsmSigner.addKey(MockHsm.Key.create(client), MockHsm.getSignerClient(client));
     try {
       HsmSigner.sign(new Transaction.Template());
     } catch (APIException e) {
