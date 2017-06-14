@@ -5,6 +5,10 @@ This changelog is for the 1.2 branch of the Java SDK. Older versions:
 - [1.1](https://github.com/chain/chain/blob/1.1-stable/sdk/java/CHANGELOG.md)
 - [1.0](https://github.com/chain/chain/blob/1.0-stable/sdk/java/CHANGELOG.md)
 
+## 1.2.1 (June 14, 2017)
+
+* TLS 1.2 is now requested by default for client connections when a trusted cert is provided.
+
 ## 1.2.0 (May 12, 2017)
 
 This is a *minor version* release that includes breaking changes and new features. Before upgrading your SDK, please review a [a full summary of what's new in Chain Core 1.2](https://chain.com/docs/1.2/core/reference/changelog#1.2.0).
@@ -50,4 +54,3 @@ Pre-release version.
 ## 1.2.0rc1
 
 Unpublished pre-release version.
-
