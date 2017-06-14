@@ -5,8 +5,9 @@ import "chain/crypto/ed25519/ecmath"
 // AssetCommitment is a point pair representing an ElGamal commitment to an AssetPoint.
 type AssetCommitment PointPair
 
-// Create an asset commitment. Nil aek means make it nonblinded (and
-// the returned scalar blinding factor is nil).
+// CreateAssetCommitment creates an asset commitment. Nil aek means
+// make it nonblinded (and the returned scalar blinding factor is
+// nil).
 func CreateAssetCommitment(assetID AssetID, aek AssetKey) (*AssetCommitment, *ecmath.Scalar) {
 	A := ecmath.Point(CreateAssetPoint(assetID))
 	if aek == nil {

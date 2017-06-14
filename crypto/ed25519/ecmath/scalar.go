@@ -2,6 +2,7 @@ package ecmath
 
 import (
 	"crypto/subtle"
+	"encoding/binary"
 
 	"chain/crypto/ed25519/internal/edwards25519"
 )
@@ -33,6 +34,11 @@ var (
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
 	}
 )
+
+func (s *Scalar) SetUint64(n uint64) {
+	*s = Zero
+	binary.LittleEndian.PutUint64(s[:8], n)
+}
 
 // Add computes x+y (mod L) and places the result in z, returning
 // that. Any or all of x, y, and z may be the same pointer.
