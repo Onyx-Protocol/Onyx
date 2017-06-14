@@ -10,6 +10,26 @@ For updates to subpackages, see below:
 - [Node.js SDK](https://github.com/chain/chain/blob/1.1-stable/sdk/node/CHANGELOG.md)
 - [Ruby SDK](https://github.com/chain/chain/blob/1.1-stable/sdk/ruby/CHANGELOG.md)
 
+<a name="1.1.5"></a>
+## 1.1.5 (June 13, 2017)
+
+TLS version 1.2 is now required for all HTTPS connections ([#1315](https://github.com/chain/chain/pull/1315)).
+
+For Java 7 applications, TLS 1.2 must be explicitly specified in the SSLContext
+object:
+
+```
+SSLContext context = SSLContext.getInstance("TLSv1.2");
+context.init(null, null, null);
+SSLContext.setDefault(context);
+```
+
+Clients using Node and Ruby will depend on the system-supplied OpenSSL,
+which must be 1.0.1c or later.
+
+NOTE: The system provided Ruby 2.0.0 on macOS Sierra and earlier does not
+support TLS 1.2.
+
 <a name="1.1.4"></a>
 ## 1.1.4 (March 27, 2017)
 

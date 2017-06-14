@@ -1,5 +1,9 @@
 # Chain Core Windows Installer changelog
 
+## 1.1.2 (June 13, 2017)
+
+* Updated to Chain Core [1.1.5](https://github.com/chain/chain/blob/1.1-stable/CHANGELOG.md#1.1.3)
+
 ## 1.1.1 (March 8, 2017)
 
 * Updated to Chain Core [1.1.3](https://github.com/chain/chain/blob/1.1-stable/CHANGELOG.md#1.1.3)
