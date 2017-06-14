@@ -1,8 +1,9 @@
 # Chain Java SDK changelog
 
-## TBD VERSION (TBD DATE)
+## 1.1.4 (June 14, 2017)
 
-- `setFilterParameters`, a method on various `QueryBuilder` classes, now accepts `List<?>` instead of `List<Object>`. This is a friendlier interface for using containers of various types.
+* TLS 1.2 is now requested by default for client connections when a trusted cert is provided.
+* `setFilterParameters`, a method on various `QueryBuilder` classes, now accepts `List<?>` instead of `List<Object>`. This is a friendlier interface for using containers of various types.
 
 ## 1.1.3 (March 8, 2017)
 

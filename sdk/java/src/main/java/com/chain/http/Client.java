@@ -654,7 +654,7 @@ public class Client {
       }
 
       // Finally, configure the socket factory.
-      SSLContext sslContext = SSLContext.getInstance("TLS");
+      SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(null, trustManagers, null);
       sslSocketFactory = sslContext.getSocketFactory();
 
