@@ -14,11 +14,16 @@ public class TestUtils {
     if (coreURL == null || coreURL.isEmpty()) {
       coreURL = "http://localhost:1999";
     }
-    return new Client.Builder()
+
+    Client.Builder builder = new Client.Builder()
             .setURL(coreURL)
-            .setAccessToken(accessToken)
-            .setTrustedCerts(certPath)
-            .build();
+            .setAccessToken(accessToken);
+
+    if (certPath != null) {
+      builder.setTrustedCerts(certPath);
+    }
+
+    return builder.build();
   }
 
   public static Client generateSignerClient() throws Exception {
@@ -29,10 +34,15 @@ public class TestUtils {
       coreURL = "http://localhost:1999";
     }
     coreURL = coreURL + "/mockhsm";
-    return new Client.Builder()
+
+    Client.Builder builder = new Client.Builder()
             .setURL(coreURL)
-            .setAccessToken(accessToken)
-            .setTrustedCerts(certPath)
-            .build();
+            .setAccessToken(accessToken);
+
+    if (certPath != null) {
+      builder.setTrustedCerts(certPath);
+    }
+
+    return builder.build();
   }
 }
