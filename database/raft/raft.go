@@ -535,6 +535,16 @@ func (sv *Service) wait(index uint64) bool {
 	return sv.state.AppliedIndex() >= index //if false killed b/c of done signal
 }
 
+// waitForNode waits until the provided nodeID is committed into
+// the cluster peer list.
+func (sv *Service) waitForNode(nodeID uint64) {
+	sv.stateMu.Lock()
+	defer sv.stateMu.Unlock()
+	for sv.state.GetPeerAddr(nodeID) == "" {
+		sv.stateCond.Wait()
+	}
+}
+
 // Stale returns an object that reads
 // directly from local memory, returning (possibly) stale data.
 // Calls to sv.Get are linearizable,
@@ -598,6 +608,13 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+
+	// Wait for the conf change to be committed. This ensures that the we don't
+	// misleadingly tell a node that they successfully joined when the change
+	// never commits. It also ensures that the provided snapshot includes the
+	// new node.
+	// https://github.com/chain/chain/issues/1330
+	sv.waitForNode(newID)
 
 	snap := sv.getSnapshot()
 	snapData, err := encodeSnapshot(snap)
