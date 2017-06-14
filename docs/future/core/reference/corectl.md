@@ -47,6 +47,8 @@ CORE_URL=https://cored.example.com:9999 corectl create-token ...
 
 ## Commands
 
+* [init](#init)
+* [join](#join)
 * [config-generator](#config-generator)
 * [config](#config)
 * [create-block-keypair](#create-block-keypair)
@@ -56,6 +58,31 @@ CORE_URL=https://cored.example.com:9999 corectl create-token ...
 * [revoke](#revoke)
 * [allow-address](#allow-address)
 * [wait](#wait)
+
+### `init`
+
+Creates a new Chain Core cluster. The cored process addressed by `CORE_URL` will
+be the first and only member of the new cluster. Additional members may be added
+using the `allow-address` and `join` commands.
+
+```
+corectl init
+```
+
+### `join`
+
+Connects the Chain Core process to an existing Chain Core cluster.
+
+`join` should only be used for multiserver Chain Cores.
+
+```
+corectl join [address]
+```
+
+Argument:
+
+* **address**: The boot address, in `host:port` format.
+
 
 ### `config-generator`
 
