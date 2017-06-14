@@ -990,7 +990,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 5. Calculate Schnorr response scalar:
 
-        s = k + q·e mod L
+        s = r + q·e mod L
 
 6. Return pair of scalars `(s,e)`.
 
