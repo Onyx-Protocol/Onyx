@@ -15,9 +15,7 @@ public class TestUtils {
       coreURL = "http://localhost:1999";
     }
 
-    Client.Builder builder = new Client.Builder()
-            .setURL(coreURL)
-            .setAccessToken(accessToken);
+    Client.Builder builder = new Client.Builder().setURL(coreURL).setAccessToken(accessToken);
 
     if (certPath != null) {
       builder.setTrustedCerts(certPath);
@@ -35,9 +33,7 @@ public class TestUtils {
     }
     coreURL = coreURL + "/mockhsm";
 
-    Client.Builder builder = new Client.Builder()
-            .setURL(coreURL)
-            .setAccessToken(accessToken);
+    Client.Builder builder = new Client.Builder().setURL(coreURL).setAccessToken(accessToken);
 
     if (certPath != null) {
       builder.setTrustedCerts(certPath);
