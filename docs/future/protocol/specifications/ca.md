@@ -950,7 +950,7 @@ It is computed by [balancing blinding factors](#balance-blinding-factors) and us
 
 ### Excess Commitment
 
-An excess commitment `QC` is an ElGamal commitment to a zero amount of an arbitrary asset (asset ID does not matter since the amount is zero). Since the amount is zero, `QC` is simply a [pair of points](#point-pair) committing to the same [excess factor](#excess-factor) using two different generators. The pair comes with a Schnorr signature `e,s` proving the equality of the factors committed to by both points:
+An excess commitment `QC` is an ElGamal commitment to a zero amount of an arbitrary asset (asset ID does not matter since the amount is zero). Since the amount is known to be zero, `QC` is simply a [pair of points](#point-pair) committing to the same [excess factor](#excess-factor) using two different generators. The pair comes with a Schnorr signature `e,s` proving the equality of the factors committed to by both points:
 
     QC = (q·G, q·J, e, s)
 
