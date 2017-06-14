@@ -1418,7 +1418,12 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
     2. Calculate point `R4 = s2·G - e2·Y[j]`.
     3. Calculate scalar `e” = ScalarHash("e2", msghash, R3, R4)`.
     4. Verify that `e”` is equal to `e2`. If validation fails, halt and return `nil`.
-5. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
+5. Multiply each `Z,Z’` by cofactor in order to cancel out parts that do not belong to Ed25519 subgroup:
+
+        Z = 8·Z
+        Z’= 8·Z’
+
+6. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
 
 
 
