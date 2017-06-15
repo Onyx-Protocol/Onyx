@@ -374,7 +374,8 @@ func (sv *Service) Stop() error {
 	sv.stopwg.Wait()
 
 	// once all the goroutines have stopped, it's safe to
-	// close the wal
+	// close the wal and stop the state machine
+	sv.raftNode.Stop()
 	return sv.wal.Close()
 }
 
