@@ -24,11 +24,14 @@ A bytestring with length between 0 and 2^31 - 1 bytes.
 
 An immutable collection of items of any type.
 
+There are several named types of tuples.
+
 #### Value
 
 0. `amount`, an int64
 1. `assetID`, a string
-2. `history`, a tuple (TBD)
+2. `unproven`, n
+3. `history`, a tuple (TBD)
 
 #### Output
 
@@ -66,6 +69,15 @@ An immutable collection of items of any type.
 3. `maxtime`, an int64
 4. `referencedata`, a string
 
+#### VM 1 Transaction Header
+
+0. `results`, a tuple of output and retirement IDs
+2. `mintime`, an int64
+3. `maxtime`, an int64
+4. `referencedata`, a string
+
+#### VM1 Input 
+
 ## Item IDs
 
 TODO: describe process
@@ -89,6 +101,8 @@ TODO: describe process
 14. Version 1 Conditions Stack
 15. Version 1 Nonces Stack
 16. Version 1 Anchors Stack
+17. Version 1 Transaction Header Stack
+18. Version 1 Results Stack
 
 ## Data stack
 
@@ -390,8 +404,27 @@ TBD
 
 TBD
 
-
 ## Legacy operations
+
+### VM1CheckPredicate
+
+Pop a string `program` from the data stack, then pops a tuple of type [VM1Input](#vm-1-input) from the data stack, then pops a tuple `arguments` from the data stack. Fails if the Version 1 Transaction Header stack is empty.
+
+Initializes an instance of VM1 with:
+
+- the program set to `program`
+- the data stack initialized with the items in `arguments`, with the first item on top of the stack
+- expansion flag set to false
+- execution context set to a special transaction context such that:
+	- the transaction header is the item on the Version 1 Transaction Header stack
+	- the outputs checked by `CHECKOUTPUT` are the items currently in the Outputs stack are 
+	- the output checked by `ASSET`
+- Th `program`
+- The items in the Outputs stack as the outputs checked by `CHECKOUTPUT`
+- The items in th
+
+
+
 
 	VM1CheckPredicate = 63 // list vm1prog => bool
 	VM1Unlock         = 64 // vm1inputid + data => vm1value + cond
@@ -399,6 +432,12 @@ TBD
 	VM1Issue          = 66 // vm1anchor => vm1value + cond
 	VM1Mux            = 67 // entire vm1value stack => vm1mux
 	VM1Withdraw       = 68 // vm1mux + amount asset => vm1mux + value
+
+### VM1Retire
+
+### VM1Finalize
+
+
 
 ## Extension opcodes
 
