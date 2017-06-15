@@ -32,7 +32,7 @@ cleanup() {
 trap "cleanup" EXIT
 
 GOOS=linux GOARCH=amd64 go build\
-  -tags 'http_ok localhost_auth'\
+  -tags 'http_ok localhost_auth init_cluster'\
   -ldflags "$ldflags"\
   -o $CHAIN/docker/centos-rpm/cored\
   chain/cmd/cored

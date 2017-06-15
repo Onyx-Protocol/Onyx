@@ -83,13 +83,6 @@ the limit will receive an HTTP 429 response.
 
     Can be stacked with **RATELIMIT_TOKEN**.
 
-* **BOOTURL**: Setting this value causes the `cored` process to join an
-existing Chain Core cluster if it's not already a member. If it is already
-a member of a cluster, this has no effect.
-
-    This should be the URL of any `cored` process already in the cluster,
-    or a load balancer that forwards requests to any node.
-
 ## Mutual TLS
 
 Chain Core 1.2 introduces support for mutual TLS authentication. This means both Chain Core and the client SDKs can authenticate each other using X.509 certificates and the TLS protocol. Previously, client authentication was facilitated through the use of access tokens and HTTP Basic Auth. While still supported, client access tokens are now deprecated.
