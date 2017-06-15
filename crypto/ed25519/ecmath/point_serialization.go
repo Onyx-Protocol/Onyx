@@ -32,6 +32,7 @@ func (p *Point) UnmarshalBinary(data []byte) error {
 	if len(data) != 32 {
 		return fmt.Errorf("invalid size of the encoded ecmath.Point: %d bytes (must be 32)", len(data))
 	}
+	copy(buf[:], data)
 	if !(*edwards25519.ExtendedGroupElement)(p).FromBytes(&buf) {
 		return fmt.Errorf("invalid ecmath.Point encoding")
 	}
