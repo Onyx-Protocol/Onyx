@@ -1807,7 +1807,7 @@ It is used to encrypt:
 
         mac = KMAC128(K=ek, X=ct||nonce, S="ChainCA.Packet.MAC", L=24 bytes)
 
-4. Return an encrypted packet `ep`, a sequence of `n+32` bytes:
+5. Return an encrypted packet `ep`, a sequence of `n+32` bytes:
 
         ep = ct || nonce || mac
 
