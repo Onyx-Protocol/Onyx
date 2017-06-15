@@ -9,15 +9,20 @@ type AssetCommitment PointPair
 // make it nonblinded (and the returned scalar blinding factor is
 // nil).
 func CreateAssetCommitment(assetID AssetID, aek AssetKey) (*AssetCommitment, *ecmath.Scalar) {
-	A := ecmath.Point(CreateAssetPoint(assetID))
 	if aek == nil {
+		A := ecmath.Point(CreateAssetPoint(assetID))
 		return &AssetCommitment{A, ecmath.ZeroPoint}, nil
 	}
 	c := scalarHash("ChainCA.AC.c", assetID[:], aek)
+	return createRawAssetCommitment(assetID, &c), &c
+}
+
+func createRawAssetCommitment(assetID AssetID, c *ecmath.Scalar) *AssetCommitment {
+	A := ecmath.Point(CreateAssetPoint(assetID))
 	var H, C ecmath.Point
-	H.ScMulAdd(&A, &ecmath.One, &c)
-	C.ScMul(&J, &c)
-	return &AssetCommitment{H, C}, &c
+	H.ScMulAdd(&A, &ecmath.One, c)
+	C.ScMul(&J, c)
+	return &AssetCommitment{H, C}
 }
 
 func (ac *AssetCommitment) Bytes() []byte {

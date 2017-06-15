@@ -26,7 +26,7 @@ func EncryptValue(vc *ValueCommitment, value uint64, f *ecmath.Scalar, vek Value
 	xorSlices(f[:], evef[8:40], evef[8:40])
 }
 
-// DecryptValue decrypts evef using key vek and verifies it using value and asset ID commitments vc and ac.
+// DecryptValue decrypts evef using key vek and verifies it using value commitment vc and asset ID commitment ac.
 func DecryptValue(evef []byte, vc *ValueCommitment, ac *AssetCommitment, vek ValueKey) (value uint64, f *ecmath.Scalar, ok bool) {
 	if len(evef) != EncryptedValueSize {
 		return 0, &ecmath.Zero, false
