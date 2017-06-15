@@ -19,7 +19,7 @@ The Java SDK is available via [Maven](https://search.maven.org/#search%7Cga%7C1%
   <dependency>
     <groupId>com.chain</groupId>
     <artifactId>chain-sdk-java</artifactId>
-    <version>1.1.3</version>
+    <version>1.1.4</version>
   </dependency>
 </dependencies>
 ```
@@ -27,10 +27,10 @@ The Java SDK is available via [Maven](https://search.maven.org/#search%7Cga%7C1%
 **Gradle** users should add the following to `build.gradle`:
 
 ```
-compile 'com.chain:chain-sdk-java:1.1.3'
+compile 'com.chain:chain-sdk-java:1.1.4'
 ```
 
-You can also [download the JAR](https://search.maven.org/remotecontent?filepath=com/chain/chain-sdk-java/1.1.3/chain-sdk-java-1.1.3.jar) as a binary.
+You can also [download the JAR](https://search.maven.org/remotecontent?filepath=com/chain/chain-sdk-java/1.1.4/chain-sdk-java-1.1.4.jar) as a binary.
 
 ## Node.js
 
