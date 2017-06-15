@@ -63,6 +63,7 @@ var commands = map[string]*command{
 	"revoke":               {revoke},
 	"join":                 {joinCluster},
 	"init":                 {initCluster},
+	"evict":                {evictNode},
 	"allow-address":        {allowRaftMember},
 	"wait":                 {wait},
 }
@@ -403,6 +404,19 @@ func joinCluster(client *rpc.Client, args []string) {
 
 	req := map[string]string{"boot_address": args[0]}
 	err := client.Call(context.Background(), "/join-cluster", req, nil)
+	dieOnRPCError(err)
+}
+
+// evictNode evicts a Chain Core cored process from the cluster.
+// It does not modify the allowed-member list.
+func evictNode(client *rpc.Client, args []string) {
+	const usage = "usage: corectl evict [node address]"
+	if len(args) != 1 {
+		fatalln(usage)
+	}
+
+	req := map[string]string{"node_address": args[0]}
+	err := client.Call(context.Background(), "/evict", req, nil)
 	dieOnRPCError(err)
 }
 

@@ -181,6 +181,7 @@ func (a *API) buildHandler() {
 	m.Handle("/add-allowed-member", jsonHandler(a.addAllowedMember))
 	m.Handle("/init-cluster", jsonHandler(a.initCluster))
 	m.Handle("/join-cluster", jsonHandler(a.joinCluster))
+	m.Handle("/evict", jsonHandler(a.evict))
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
 
