@@ -79,3 +79,31 @@ func TestLongPacket(t *testing.T) {
 		t.Errorf("Got %x, want %x", got, want)
 	}
 }
+
+func TestInlineEncryption(t *testing.T) {
+	ek := []byte("encryption key")
+
+	pt := []byte{0x01, 0x02, 0x03}
+	n := len(pt)
+
+	ep := make([]byte, n+32)
+	copy(ep[0:n], pt)
+
+	EncryptPacket(ek, []byte{}, ep[0:n], ep)
+
+	want := fromHex("150ad0885ca29510a6f73b3f51fd7b6dd1ea98b76c2d1bc55c37f449b519d5a6b1b3ff")
+	got := ep
+	if !bytes.Equal(got, want) {
+		t.Errorf("Got %x, want %x", got, want)
+	}
+
+	ok := DecryptPacket(ek, ep, ep[0:n])
+	if !ok {
+		t.Fatal("Failed to authenticate ciphertext")
+	}
+	want = pt
+	got = ep[0:n]
+	if !bytes.Equal(got, want) {
+		t.Errorf("Got %x, want %x", got, want)
+	}
+}

@@ -1850,7 +1850,7 @@ It is used to encrypt:
 
 ### Encrypted Value
 
-Encrypted value is a 40-byte string representing a simple encryption of the numeric amount and its blinding factor as used in a [value commitment](#value-commitment). The encrypted value is authenticated by the corresponding _value commitment_.
+Encrypted value is a 40-byte string representing a simple encryption of a numeric amount and its blinding factor as used in a [value commitment](#value-commitment). The encrypted value is authenticated by the corresponding _value commitment_.
 
 #### Encrypt Value
 
@@ -1865,7 +1865,7 @@ Encrypted value is a 40-byte string representing a simple encryption of the nume
 
 **Algorithm:**
 
-1. Expand the encryption key: `ek = StreamHash({"EV", vek, VC}, 40)`.
+1. Expand the encryption key: `ek = StreamHash("EV", {vek, VC}, 40)`.
 2. Encrypt the value using the first 8 bytes: `ev = value XOR ek[0,8]`.
 3. Encrypt the value blinding factor using the last 32 bytes: `ef = f XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
 4. Return `(ev||ef)`.
@@ -1885,7 +1885,7 @@ Value and asset ID commitments must be [proven to be valid](#validate-assets-flo
 
 **Algorithm:**
 
-1. Expand the encryption key: `ek = StreamHash({"EV", vek, VC}, 40)`.
+1. Expand the encryption key: `ek = StreamHash("EV", {vek, VC}, 40)`.
 2. Decrypt the value using the first 8 bytes: `value = ev XOR ek[0,8]`.
 3. Decrypt the value blinding factor using the last 32 bytes: `f = ef XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
 4. [Create blinded value commitment](#create-blinded-value-commitment) `VC’` using `AC`, `value` and the raw blinding factor `f` (instead of `vek`).

@@ -10,10 +10,10 @@ type ValueCommitment PointPair
 // make it nonblinded (and the returned scalar blinding factor is
 // nil).
 func CreateValueCommitment(value uint64, ac *AssetCommitment, vek ValueKey) (*ValueCommitment, *ecmath.Scalar) {
-	var v ecmath.Scalar
-	v.SetUint64(value)
-
 	if vek == nil {
+		var v ecmath.Scalar
+		v.SetUint64(value)
+
 		// Non-blinded value commitment
 		var vc PointPair
 		vc.ScMul((*PointPair)(ac), &v)
@@ -22,12 +22,19 @@ func CreateValueCommitment(value uint64, ac *AssetCommitment, vek ValueKey) (*Va
 	}
 	// Blinded value commitment
 	f := scalarHash("ChainCA.VC.f", uint64le(value), vek)
+	return createRawValueCommitment(value, ac, &f), &f
+}
+
+func createRawValueCommitment(value uint64, ac *AssetCommitment, f *ecmath.Scalar) *ValueCommitment {
+	var v ecmath.Scalar
+	v.SetUint64(value)
+
 	var V, F, T ecmath.Point
-	V.ScMulAdd(&ac.Point1, &v, &f) // V = value·H + f·G
-	F.ScMul(&ac.Point2, &v)        // F = value·C
-	T.ScMul(&J, &f)                // T = f·J
-	F.Add(&F, &T)                  // F = value·C + f·J
-	return (*ValueCommitment)(&PointPair{Point1: V, Point2: F}), &f
+	V.ScMulAdd(&ac.Point1, &v, f) // V = value·H + f·G
+	F.ScMul(&ac.Point2, &v)       // F = value·C
+	T.ScMul(&J, f)                // T = f·J
+	F.Add(&F, &T)                 // F = value·C + f·J
+	return (*ValueCommitment)(&PointPair{Point1: V, Point2: F})
 }
 
 // xxx make sure the signature of this function aligns with the spec

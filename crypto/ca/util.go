@@ -15,6 +15,8 @@ func uint64le(value uint64) (result []byte) {
 	return result
 }
 
+// xorSlices puts a XOR b into out.
+// Buffer out can be the same as a or b.
 func xorSlices(a []byte, b []byte, out []byte) {
 	n := len(out)
 	for i := 0; i < n; i++ {
