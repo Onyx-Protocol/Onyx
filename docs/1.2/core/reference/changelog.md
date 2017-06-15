@@ -37,7 +37,7 @@ Other fixes:
 * Performance improvements when submitting transactions containing large
 numbers of assets and issuances ([#1221](https://github.com/chain/chain/pull/1221)).
 * Improved checks for invalidating expired transactions ([1226](https://github.com/chain/chain/pull/1226))
-* Resolved multiple unexpected crashes ([#1283](https://github.com/chain/chain/pull/1283), [#1310](https://github.com/chain/chain/pull/1310))
+* Resolved multiple unexpected crashes ([#1283](https://github.com/chain/chain/pull/1283), [#1310](https://github.com/chain/chain/pull/1310), [#1335](https://github.com/chain/chain/pull/1335))
 
 <a name="1.2.0"></a>
 ## 1.2.0 (May 12, 2017)
