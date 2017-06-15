@@ -47,12 +47,14 @@ func (p *Point) WriteTo(w io.Writer) (n int64, err error) {
 
 // ReadFrom attempts to read 32 bytes and decode a point.
 func (p *Point) ReadFrom(r io.Reader) (n int64, err error) {
-	var b [32]byte
-	m, err := io.ReadFull(r, b[:])
+	var buf [32]byte
+	m, err := io.ReadFull(r, buf[:])
 	if err != nil {
 		return
 	}
-	err = p.UnmarshalBinary(b[:])
+	if !(*edwards25519.ExtendedGroupElement)(p).FromBytes(&buf) {
+		err = fmt.Errorf("invalid ecmath.Point encoding")
+	}
 	return int64(m), err
 }
 
@@ -74,5 +76,8 @@ func (p *Point) UnmarshalText(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return p.UnmarshalBinary(buf[:])
+	if !(*edwards25519.ExtendedGroupElement)(p).FromBytes(&buf) {
+		return fmt.Errorf("invalid ecmath.Point encoding")
+	}
+	return nil
 }
