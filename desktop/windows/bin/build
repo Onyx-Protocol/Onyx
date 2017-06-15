@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -e
+
+buildDir=$CHAIN/desktop/windows/build
+rm -rf $buildDir
+mkdir -p $buildDir
+
+$CHAIN/bin/build-cored-release chain-core-server-1.2.0 $buildDir
+mv $buildDir/cored $buildDir/cored.exe
+rm $buildDir/corectl
+
+echo "Building ChaingMgr..."
+mkdir $buildDir/ChainMgr
+go build -o $buildDir/ChainMgr/ChainMgr.exe chain/desktop/windows/ChainMgr
+
+cp -R $CHAIN/desktop/windows/ChainBundle $buildDir/ChainBundle
+cp -R $CHAIN/desktop/windows/ChainPackage $buildDir/ChainPackage
+
+echo "Downloading install-time dependencies..."
+mkdir $buildDir/Postgres
+curl https://s3.amazonaws.com/chain-engineering-internal/windows-build-deps/build-deps/postgresql-9.5.5-1-windows-x64.exe \
+	-s -o $buildDir/Postgres/postgresql-9.5.5-1-windows-x64.exe
+curl https://s3.amazonaws.com/chain-engineering-internal/windows-build-deps/build-deps/vcredist_x64.exe \
+	-s -o $buildDir/Postgres/vcredist_x64.exe
+
+certPath=$1
+certPass=$2
+version=${3:-"Latest"}
+
+cd $buildDir
+
+echo "Signing executables..."
+signtool sign -v -f $certPath -p $certPass cored.exe
+signtool sign -v -f $certPath -p $certPass ChainMgr/ChainMgr.exe
+
+cd ChainPackage
+
+echo "Building and signing ChainPackage..."
+candle -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wxs
+light -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wixobj
+signtool sign -v -f $certPath -p $certPass cab1.cab
+
+cd ../ChainBundle
+
+echo "Building and signing installer executable..."
+candle Bundle.wxs -arch x64 -ext WixBalExtension \
+	-dChainPackage.TargetPath="$buildDir\ChainPackage\ChainCoreInstaller.msi" \
+	-dPostgresPackage.TargetPath="$buildDir\Postgres\postgresql-9.5.5-1-windows-x64.exe" \
+	-dVCRPackage.TargetPath="$buildDir\Postgres\vcredist_x64.exe"
+light Bundle.wixobj -ext WixBalExtension
+insignia -ib Bundle.exe -o engine.exe
+signtool sign -v -f $certPath -p $certPass engine.exe
+insignia -ab engine.exe Bundle.exe -o Chain_Core_$version.exe -v
+signtool sign -v -f $certPath -p $certPass Chain_Core_$version.exe
