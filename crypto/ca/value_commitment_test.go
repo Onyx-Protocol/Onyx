@@ -26,55 +26,75 @@ func TestValueCommitments(t *testing.T) {
 		{AssetID{2}, 25},
 	}
 
-	var (
-		inpAmts             []uint64
-		inpAssetBFs         []ecmath.Scalar
-		inpValueCommitments []*ValueCommitment
-		inpValueBFs         []ecmath.Scalar
-		outAmts             []uint64
-		outAssetBFs         []ecmath.Scalar
-		outValueCommitments []*ValueCommitment
-		outValueBFs         []ecmath.Scalar
-	)
+	f := func(balanced bool) func(*testing.T) {
+		return func(t *testing.T) {
+			var (
+				inpAmts             []uint64
+				inpAssetBFs         []ecmath.Scalar
+				inpValueCommitments []*ValueCommitment
+				inpValueBFs         []ecmath.Scalar
+				outAmts             []uint64
+				outAssetBFs         []ecmath.Scalar
+				outValueCommitments []*ValueCommitment
+				outValueBFs         []ecmath.Scalar
+			)
 
-	for i, inp := range inputs {
-		inpAmts = append(inpAmts, inp.amount)
+			for i, inp := range inputs {
+				amt := inp.amount
+				if i == 0 && !balanced {
+					amt++
+				}
 
-		aek := []byte{byte(i)}
-		ac, abf := CreateAssetCommitment(inp.assetID, aek)
-		inpAssetBFs = append(inpAssetBFs, *abf)
+				inpAmts = append(inpAmts, amt)
 
-		vek := []byte{byte(i), byte(i)}
-		vc, vbf := CreateValueCommitment(inp.amount, ac, vek)
-		inpValueCommitments = append(inpValueCommitments, vc)
-		inpValueBFs = append(inpValueBFs, *vbf)
+				aek := []byte{byte(i)}
+				ac, abf := CreateAssetCommitment(inp.assetID, aek)
+				inpAssetBFs = append(inpAssetBFs, *abf)
+
+				vek := []byte{byte(i), byte(i)}
+				vc, vbf := CreateValueCommitment(amt, ac, vek)
+				inpValueCommitments = append(inpValueCommitments, vc)
+				inpValueBFs = append(inpValueBFs, *vbf)
+			}
+			for i, out := range outputs {
+				outAmts = append(outAmts, out.amount)
+
+				aek := []byte{byte(10 + i)}
+				ac, abf := CreateAssetCommitment(out.assetID, aek)
+				outAssetBFs = append(outAssetBFs, *abf)
+
+				vek := []byte{byte(10 + i), byte(10 + i)}
+				vc, vbf := CreateValueCommitment(out.amount, ac, vek)
+				outValueCommitments = append(outValueCommitments, vc)
+				outValueBFs = append(outValueBFs, *vbf)
+			}
+
+			q := BalanceBlindingFactors(inpAmts, outAmts, inpAssetBFs, inpValueBFs, outAssetBFs, outValueBFs)
+			qc := CreateExcessCommitment(q, msg)
+
+			res := ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg})
+
+			if balanced {
+				if !res {
+					t.Error("failed to validate value commitments balance")
+				}
+			} else {
+				if res {
+					t.Error("validated unbalanced value commitments")
+				}
+			}
+			if ValidateValueCommitmentsBalance(inpValueCommitments[1:], outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg}) {
+				t.Error("validated balance of invalid collection of commitments")
+			}
+			if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments[1:], []*ExcessCommitment{qc}, [][]byte{msg}) {
+				t.Error("validated balance of invalid collection of commitments")
+			}
+			if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg[1:]}) {
+				t.Error("validated balance of invalid collection of commitments")
+			}
+		}
 	}
-	for i, out := range outputs {
-		outAmts = append(outAmts, out.amount)
 
-		aek := []byte{byte(10 + i)}
-		ac, abf := CreateAssetCommitment(out.assetID, aek)
-		outAssetBFs = append(outAssetBFs, *abf)
-
-		vek := []byte{byte(10 + i), byte(10 + i)}
-		vc, vbf := CreateValueCommitment(out.amount, ac, vek)
-		outValueCommitments = append(outValueCommitments, vc)
-		outValueBFs = append(outValueBFs, *vbf)
-	}
-
-	q := BalanceBlindingFactors(inpAmts, outAmts, inpAssetBFs, inpValueBFs, outAssetBFs, outValueBFs)
-	qc := CreateExcessCommitment(q, msg)
-
-	if !ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg}) {
-		t.Error("failed to validate value commitments balance")
-	}
-	if ValidateValueCommitmentsBalance(inpValueCommitments[1:], outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg}) {
-		t.Error("validated balance of invalid collection of commitments")
-	}
-	if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments[1:], []*ExcessCommitment{qc}, [][]byte{msg}) {
-		t.Error("validated balance of invalid collection of commitments")
-	}
-	if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg[1:]}) {
-		t.Error("validated balance of invalid collection of commitments")
-	}
+	t.Run("balanced", f(true))
+	t.Run("unbalanced", f(false))
 }
