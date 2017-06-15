@@ -952,7 +952,9 @@ It is computed by [balancing blinding factors](#balance-blinding-factors) and us
 
 An excess commitment `QC` is an ElGamal commitment to a zero amount of an arbitrary asset (asset ID does not matter since the amount is zero). Since the amount is known to be zero, `QC` is simply a [pair of points](#point-pair) committing to the same [excess factor](#excess-factor) using two different generators. The pair comes with a Schnorr signature `e,s` proving the equality of the factors committed to by both points:
 
-    QC = (q·G, q·J, e, s)
+    QC = q·G || q·J || e || s || msg
+
+Points `q·G` and `q·J` are encoded as 32-byte strings per [RFC8032](https://tools.ietf.org/html/rfc8032). Scalars `e` and `s` are encoded as 32-byte little-endian integers. Remaining bytes `msg` represent an arbitrary message (which can be empty).
 
 Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#validate-value-commitments-balance) while the associated signature proves that the points do not contain a factor affecting the amount of any asset.
 
@@ -961,12 +963,13 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 **Inputs:**
 
 1. `q`: the [excess blinding factor](#excess-factor)
-2. `message`: a variable-length string.
+2. `msg`: a variable-length string to be signed.
 
-**Output:**
+**Output:** `EC`, a binary string `QG || QJ || e || s || msg` where:
 
 1. `(QG,QJ)`: the [point pair](#point-pair) representing an ElGamal commitment to `q` using [generators](#generators) `G` and `J`.
 2. `(e,s)`: the Schnorr signature proving that `(QG,QJ)` does not affect asset amounts.
+3. `msg` is an optional message string being included in the signature (can be empty).
 
 **Algorithm:**
 
@@ -977,7 +980,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 2. Calculate the nonce:
 
-        r = ScalarHash("r", QG, QJ, q, message)
+        r = ScalarHash("r", QG, QJ, q, msg)
 
 3. Calculate points:
 
@@ -986,37 +989,49 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 4. Calculate Schnorr challenge scalar:
 
-        e = ScalarHash("EC", QG, QJ, R1, R2, message)
+        e = ScalarHash("EC", QG, QJ, R1, R2, msg)
 
 5. Calculate Schnorr response scalar:
 
         s = r + q·e mod L
 
-6. Return pair of scalars `(s,e)`.
+6. Return excess commitment `QG || QJ || e || s || msg`.
 
 
 #### Validate Excess Commitment
 
-**Inputs:**
-
-1. `(QG,QJ)`: the [point pair](#point-pair) representing an ElGamal commitment to secret blinding factor `q` using [generators](#generators) `G` and `J`.
-2. `(e,s)`: the Schnorr signature proving that `(QG,QJ)` does not affect asset amounts.
-3. `message`: a variable-length string.
+**Input:** `EC`, a binary string representing excess commitment.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Calculate points:
+1. Verify that `EC` is at least 128 bytes long, otherwise return `false`.
+2. Decode points `QG` and `QJ`. If points are not valid points on Ed25519 curve, return `false`.
+
+        QG = Decode(EC[0:32])
+        QJ = Decode(EC[32:64])
+
+3. Extract signature scalars `e` and `s`:
+
+        e = EC[64:96]
+        s = EC[96:128]
+
+4. Extract message `msg` from the remaining bytes:
+
+        msg = EC[128:]
+
+5. Calculate points:
 
         R1 = s·G - e·QG
         R2 = s·J - e·QJ
 
-2. Calculate Schnorr challenge:
+6. Calculate Schnorr challenge:
 
-        e’ = ScalarHash("EC", QG, QJ, R1, R2, message)
+        e’ = ScalarHash("EC", QG, QJ, R1, R2, msg)
 
-4. Return `true` if `e’ == e`, otherwise return `false`.
+7. Return `true` if `e’ == e`, otherwise return `false`.
+
 
 
 ### Validate Value Commitments Balance
@@ -1025,7 +1040,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 1. The list of `n` input value commitments `{VC[i]}`.
 2. The list of `m` output value commitments `{VC’[i]}`.
-3. The list of `k` [excess commitments](#excess-commitment) `{(QC[i], s[i], e[i])}`.
+3. The list of `k` [excess commitments](#excess-commitment) `{EC[i]}`.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
@@ -1042,7 +1057,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 4. Calculate the sum of excess commitments:
 
-        Tq = ∑[(QG[i], QJ[i]), i from 0 to k-1]
+        Tq = ∑[(EC[i].QG, EC[i].QJ), i from 0 to k-1]
 
 5. Return `true` if `Ti == To + Tq`, otherwise return `false`.
 
