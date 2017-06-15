@@ -5,7 +5,7 @@ buildDir=$CHAIN/desktop/windows/build
 rm -rf $buildDir
 mkdir -p $buildDir
 
-$CHAIN/bin/build-cored-release chain-core-server-1.2.0 $buildDir
+$CHAIN/bin/build-cored-release chain-core-server-1.2.1 $buildDir
 mv $buildDir/cored $buildDir/cored.exe
 rm $buildDir/corectl
 
