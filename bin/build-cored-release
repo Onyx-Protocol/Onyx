@@ -37,6 +37,7 @@ mkdir -p $newChain
 git clone $CHAIN $newChain
 cd $newChain
 git checkout $releaseRef
+commit=`git rev-parse HEAD`
 cd - # on some platforms (e.g. Windows), the cleanup trap cannot proceed unless we navigate away from the tempdir
 
 # Cross-compilation args for cored and corectl
@@ -47,7 +48,6 @@ export GOARCH
 
 echo "building cored..."
 
-commit=`git rev-parse HEAD`
 DATE=${DATE:-`date +%s`} # date can be set via envvar
 ldflags="-X main.buildTag=$releaseRef -X main.buildCommit=$commit -X main.buildDate=$DATE"
 
