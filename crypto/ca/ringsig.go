@@ -44,7 +44,7 @@ func createRingSignature(msghash []byte, B []ecmath.Point, P [][]ecmath.Point, j
 		nonce [64]byte
 		mask  [1]byte
 	)
-	stream := streamHash("ChainCA.RS.rand", uint64le(counter), msghash, p[:], uint64le(j)) // xxx should this start with some prefix?
+	stream := streamHash("ChainCA.RS.rand", uint64le(counter), msghash, p[:], uint64le(j))
 	for i := uint64(0); i < n-1; i++ {
 		stream.Read(r[i][:])
 	}

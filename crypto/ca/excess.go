@@ -2,28 +2,43 @@ package ca
 
 import "chain/crypto/ed25519/ecmath"
 
-// xxx Maybe get rid of the BFTuple type and change the signature to
-// BalanceBlindingFactors(inAmts, outAmts []uint64, inAssetBFs, inValueBFs, outAssetBFs, outValueBFs []ecmath.Scalar)
+func BalanceBlindingFactors(inAmts, outAmts []uint64, inAssetBFs, inValueBFs, outAssetBFs, outValueBFs []ecmath.Scalar) ecmath.Scalar {
+	n := len(inAmts)
+	if len(inAssetBFs) != n {
+		panic("calling error")
+	}
+	if len(inValueBFs) != n {
+		panic("calling error")
+	}
+	m := len(outAmts)
+	if len(outAssetBFs) != m {
+		panic("calling error")
+	}
+	if len(outValueBFs) != m {
+		panic("calling error")
+	}
 
-type BFTuple struct {
-	Amount           uint64
-	AssetBF, ValueBF ecmath.Scalar
-}
-
-func BalanceBlindingFactors(inputs, outputs []BFTuple) ecmath.Scalar {
 	fInput := ecmath.Zero
-	for _, inp := range inputs {
-		var v ecmath.Scalar
-		v.SetUint64(inp.Amount)
-		v.MulAdd(&v, &inp.AssetBF, &inp.ValueBF)
+	for i, amt := range inAmts {
+		var (
+			assetBF = inAssetBFs[i]
+			valueBF = inValueBFs[i]
+			v       ecmath.Scalar
+		)
+		v.SetUint64(amt)
+		v.MulAdd(&v, &assetBF, &valueBF)
 		fInput.Add(&fInput, &v)
 	}
 
 	fOutput := ecmath.Zero
-	for _, out := range outputs {
-		var v ecmath.Scalar
-		v.SetUint64(out.Amount)
-		v.MulAdd(&v, &out.AssetBF, &out.ValueBF)
+	for i, amt := range outAmts {
+		var (
+			assetBF = outAssetBFs[i]
+			valueBF = outValueBFs[i]
+			v       ecmath.Scalar
+		)
+		v.SetUint64(amt)
+		v.MulAdd(&v, &assetBF, &valueBF)
 		fOutput.Add(&fOutput, &v)
 	}
 

@@ -27,52 +27,42 @@ func TestValueCommitments(t *testing.T) {
 	}
 
 	var (
-		inpAssetKeys        []AssetKey
-		inpAssetCommitments []*AssetCommitment
+		inpAmts             []uint64
 		inpAssetBFs         []ecmath.Scalar
-		inpValueKeys        []ValueKey
 		inpValueCommitments []*ValueCommitment
 		inpValueBFs         []ecmath.Scalar
-		inpBFTuples         []BFTuple
-		outAssetKeys        []AssetKey
-		outAssetCommitments []*AssetCommitment
+		outAmts             []uint64
 		outAssetBFs         []ecmath.Scalar
-		outValueKeys        []ValueKey
 		outValueCommitments []*ValueCommitment
 		outValueBFs         []ecmath.Scalar
-		outBFTuples         []BFTuple
 	)
 
 	for i, inp := range inputs {
+		inpAmts = append(inpAmts, inp.amount)
+
 		aek := []byte{byte(i)}
-		inpAssetKeys = append(inpAssetKeys, aek)
 		ac, abf := CreateAssetCommitment(inp.assetID, aek)
-		inpAssetCommitments = append(inpAssetCommitments, ac)
 		inpAssetBFs = append(inpAssetBFs, *abf)
 
 		vek := []byte{byte(i), byte(i)}
-		inpValueKeys = append(inpValueKeys, vek)
 		vc, vbf := CreateValueCommitment(inp.amount, ac, vek)
 		inpValueCommitments = append(inpValueCommitments, vc)
 		inpValueBFs = append(inpValueBFs, *vbf)
-		inpBFTuples = append(inpBFTuples, BFTuple{inp.amount, *abf, *vbf})
 	}
 	for i, out := range outputs {
+		outAmts = append(outAmts, out.amount)
+
 		aek := []byte{byte(10 + i)}
-		outAssetKeys = append(outAssetKeys, aek)
 		ac, abf := CreateAssetCommitment(out.assetID, aek)
-		outAssetCommitments = append(outAssetCommitments, ac)
 		outAssetBFs = append(outAssetBFs, *abf)
 
 		vek := []byte{byte(10 + i), byte(10 + i)}
-		outValueKeys = append(outValueKeys, vek)
 		vc, vbf := CreateValueCommitment(out.amount, ac, vek)
 		outValueCommitments = append(outValueCommitments, vc)
 		outValueBFs = append(outValueBFs, *vbf)
-		outBFTuples = append(outBFTuples, BFTuple{out.amount, *abf, *vbf})
 	}
 
-	q := BalanceBlindingFactors(inpBFTuples, outBFTuples)
+	q := BalanceBlindingFactors(inpAmts, outAmts, inpAssetBFs, inpValueBFs, outAssetBFs, outValueBFs)
 	qc := CreateExcessCommitment(q, msg)
 
 	if !ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg}) {
@@ -82,9 +72,6 @@ func TestValueCommitments(t *testing.T) {
 		t.Error("validated balance of invalid collection of commitments")
 	}
 	if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments[1:], []*ExcessCommitment{qc}, [][]byte{msg}) {
-		t.Error("validated balance of invalid collection of commitments")
-	}
-	if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, nil, [][]byte{msg}) {
 		t.Error("validated balance of invalid collection of commitments")
 	}
 	if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg[1:]}) {
