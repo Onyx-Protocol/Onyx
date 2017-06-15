@@ -37,6 +37,7 @@ mkdir -p $newChain
 git clone $CHAIN $newChain
 cd $newChain
 git checkout $releaseRef
+cd - # on some platforms (e.g. Windows), the cleanup trap cannot proceed unless we navigate away from the tempdir
 
 # Cross-compilation args for cored and corectl
 export CGO_ENABLED=0 # There are issues with cgo (e.g. https://github.com/lib/pq/issues/395), so disable it entirely.

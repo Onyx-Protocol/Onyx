@@ -5,9 +5,88 @@
 To install Chain Core Developer Edition for Windows, please visit [our downloads page](https://chain.com/docs/core/get-started/install).
 
 ## Building the Windows installer
-The following instructions describe how to build the Windows installer from source:
 
-### Dependencies
+There are two workflows for building the Windows installer:
+
+- [Automated workflow](#automated-workflow): 99% of the time, this is what you want.
+- [Manual workflow](#manual-workflow): when you want to understand what's going on.
+
+### Automated workflow
+
+### Setup
+
+#### System commands
+
+You should prepare your build machine with the following system tools. Most or all are available via [scoop](http://scoop.sh/):
+
+- Go 1.8: `scoop install go`
+- Git: `scoop install git`
+- msys: `scoop install msys`
+- curl: `scoop install curl`
+
+#### Installers
+
+Download and run the following installers:
+
+- [Wix Toolset](https://s3.amazonaws.com/chain-engineering-internal/windows-build-deps/tools/wix311.exe)
+- [Windows 10 SDK](https://developer.microsoft.com/windows/downloads/windows-10-sdk) (this provides `signtool`)
+
+#### Programming environment
+
+Set the following environment variables:
+
+- `GOPATH`
+- `CHAIN` (should be `$GOPATH/src/chain`)
+
+Clone the source repository to `$CHAIN`:
+
+```
+git clone https://github.com/chain/chain.git %CHAIN%
+```
+
+#### Code-signing key
+
+Ensure that your build machine has access to `csev.pfx`, the code-signing key. We recommend having this file available via USB.
+
+### Build process
+
+First, open a bash prompt via MSYS:
+
+```
+c:\MinGW\msys\msys.bat
+```
+
+It's useful to have a shortcut to this file on the desktop.
+
+Navigate to `$CHAIN`:
+
+```
+cd $CHAIN
+```
+
+Check out the gitref you'd like to build:
+
+```
+git checkout chain-core-windows-1.2.1
+```
+
+Run the build script:
+
+```
+./desktop/windows/bin/build /path/to/csev.pfx signingKeyPassword
+```
+
+This will generate a new installer binary at `$CHAIN/desktop/windows/build/ChainBundle/Chain_Core_Latest.exe`.
+
+You can change the filename from `Chain_Core_Latest.exe` to `Chain_Core_<version>.exe` by adding a third parameter:
+
+```
+./desktop/windows/bin/build /path/to/csev.pfx signingKeyPassword 1.2.1
+```
+
+### Manual workflow
+
+#### Dependencies
 
 These instructions assume that your PATH includes the wix tools binary. My wix tools binary is located at `C:\Program Files (x86)\WiX Toolset v3.10\bin`.
 
@@ -47,27 +126,7 @@ The VC++ Redistributable can be downloaded from https://www.microsoft.com/en-us/
 
 Make sure you have the 64-bit versions. Chain Core Windows does not support 32-bit. Do not actually run these installers, just provide them.
 
-### Using the build script
-
-Run `buildChainExe.bat` to compile a signed Chain Core Windows installer. The
-batch file takes three required positional arguments, and an optional
-third argument:
-
-1. The path to your `.pfx` certificate.
-2. The password for the above certificate.
-3. The version label of the Chain Core executable (optional, defaults to "Latest").
-
-`buildChainExe.bat` must be run from inside the `desktop/windows` directory.
-
-Example usage:
-
-```
-buildChainExe.bat Z:\path\to\cert my-strong-password 1.1.0
-```
-
-The resulting binary will be available at `ChainBundle/Chain_Core_[your-version].exe`.
-
-### Manual
+#### Build process
 
 🚧 Hang on. Only go down here if you know what you're doing. The above script
 runs exactly these instructions. 🚧
