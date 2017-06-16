@@ -33,7 +33,7 @@ func (arp *AssetRangeProof) Validate(msg []byte, acPrime *AssetCommitment) bool 
 		if !acPrime[1].ConstTimeEqual(&ecmath.ZeroPoint) {
 			return false
 		}
-		assetPoint := CreateAssetPoint(*arp.id)
+		assetPoint := CreateAssetPoint(arp.id)
 		return acPrime[0].ConstTimeEqual((*ecmath.Point)(&assetPoint))
 	}
 	return true

@@ -6,6 +6,6 @@ import "chain/crypto/ed25519/ecmath"
 type AssetPoint ecmath.Point
 
 // CreateAssetPoint converts an asset ID to a valid orthogonal generator on EC.
-func CreateAssetPoint(assetID AssetID) AssetPoint {
+func CreateAssetPoint(assetID *AssetID) AssetPoint {
 	return AssetPoint(pointHash("ChainCA.AssetID", assetID[:]))
 }

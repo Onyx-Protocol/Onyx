@@ -32,7 +32,7 @@ func CreateNonconfidentialIARP(assetID AssetID) *NonconfidentialIARP {
 }
 
 func (iarp *NonconfidentialIARP) Validate(ac *AssetCommitment) bool {
-	ac2 := PointPair{ecmath.Point(CreateAssetPoint(iarp.AssetID)), ecmath.ZeroPoint}
+	ac2 := PointPair{ecmath.Point(CreateAssetPoint(&iarp.AssetID)), ecmath.ZeroPoint}
 	return (*PointPair)(ac).ConstTimeEqual(&ac2)
 }
 
@@ -47,7 +47,6 @@ func CreateConfidentialIARP(
 ) *ConfidentialIARP {
 
 	n := uint64(len(issuanceKeyTuples))
-	m := 3
 
 	// 1. Calculate the base hash:
 	//         basehash = Hash256("IARP.base",
@@ -85,7 +84,23 @@ func CreateConfidentialIARP(
 
 	F := make([][]ecmath.Point, n)
 	for i := uint64(0); i < n; i++ {
-		F[i] = make([]ecmath.Point, m)
+		// F[i,0] = H - A[i] + h·Y[i]
+		// F[i,1] = AC.C
+		// F[i,2] = T
+		F[i] = make([]ecmath.Point, 3)
+
+		y := issuanceKeyTuples[i].IssuanceKey()
+		F[i][0] = ecmath.ZeroPoint
+		if F[i][0].UnmarshalBinary(y) != nil {
+			panic("Failed to decode an issuance key")
+		}
+		a := CreateAssetPoint(issuanceKeyTuples[i].AssetID())
+		F[i][0].ScMul(&F[i][0], &h)
+		F[i][0].Sub(&F[i][0], (*ecmath.Point)(&a))
+		F[i][0].Add(&F[i][0], ac.H())
+
+		F[i][1] = *ac.C()
+		F[i][2] = T
 	}
 
 	// 7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
@@ -93,10 +108,10 @@ func CreateConfidentialIARP(
 	//     * `l = 2`, number of secrets.
 	//     * `m = 3`, number of statements.
 	//     * `{x[k]} = {c,y}`, secret scalars — blinding factor and an issuance key.
-	//     * Statement sets (`i=0..n-1`):
-	//             f[i,0](c,y) = (c + h·y)·G
-	//             f[i,1](c,y) = c·J
-	//             f[i,2](c,y) = y·M
+	//     * Statement functions:
+	//             f[0](c,y) = (c + h·y)·G
+	//             f[1](c,y) = c·J
+	//             f[2](c,y) = y·M
 	//     * Commitments (`i=0..n-1`):
 	//             F[i,0] = H - A[i] + h·Y[i]
 	//             F[i,1] = AC.C
@@ -106,7 +121,7 @@ func CreateConfidentialIARP(
 		msghash[:],
 		[]ecmath.Scalar{c, y},
 		iarpFunctions(M, h),
-		[][]ecmath.Point{},
+		F,
 		secretIndex,
 	)
 

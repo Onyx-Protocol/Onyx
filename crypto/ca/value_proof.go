@@ -61,7 +61,7 @@ func ValidateValueProof(
 		message)
 
 	// 3. Compute [asset ID point](#asset-id-point): `A = PointHash("AssetID", assetID)`.
-	a := CreateAssetPoint(assetID)
+	a := CreateAssetPoint(&assetID)
 
 	// 4. Subtract `A` from the first point of `AC` and leave second point unmodified:
 	//         Q1 = AC - (A,O)

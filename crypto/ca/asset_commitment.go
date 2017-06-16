@@ -10,7 +10,7 @@ type AssetCommitment PointPair
 // nil).
 func CreateAssetCommitment(assetID AssetID, aek AssetKey) (*AssetCommitment, *ecmath.Scalar) {
 	if aek == nil {
-		A := ecmath.Point(CreateAssetPoint(assetID))
+		A := ecmath.Point(CreateAssetPoint(&assetID))
 		return &AssetCommitment{A, ecmath.ZeroPoint}, nil
 	}
 	c := scalarHash("ChainCA.AC.c", assetID[:], aek)
@@ -18,7 +18,7 @@ func CreateAssetCommitment(assetID AssetID, aek AssetKey) (*AssetCommitment, *ec
 }
 
 func createRawAssetCommitment(assetID AssetID, c *ecmath.Scalar) *AssetCommitment {
-	A := ecmath.Point(CreateAssetPoint(assetID))
+	A := ecmath.Point(CreateAssetPoint(&assetID))
 	var H, C ecmath.Point
 	H.ScMulAdd(&A, &ecmath.One, c)
 	C.ScMul(&J, c)
