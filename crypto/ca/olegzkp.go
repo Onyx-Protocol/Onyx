@@ -11,13 +11,13 @@ type OlegZKP struct {
 
 type OlegZKPFunc func([]ecmath.Scalar) ecmath.Point
 
-func CreateOlegZKP(msg []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]ecmath.Point, iHat uint64) *OlegZKP {
+func CreateOlegZKP(msg []byte, x []ecmath.Scalar, f []OlegZKPFunc, F [][]ecmath.Point, iHat uint64) *OlegZKP {
 	l := uint64(len(x))
 	msghash := ozkpMsgHash(F, l, msg)
 	return createOlegZKP(msghash[:], x, f, F, iHat, 0)
 }
 
-func createOlegZKP(msghash []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]ecmath.Point, iHat, counter uint64) *OlegZKP {
+func createOlegZKP(msghash []byte, x []ecmath.Scalar, f []OlegZKPFunc, F [][]ecmath.Point, iHat, counter uint64) *OlegZKP {
 	n := uint64(len(F))
 	l := uint64(len(x))
 
@@ -51,7 +51,7 @@ func createOlegZKP(msghash []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]e
 	for k := uint64(0); k < l; k++ {
 		w[k] = mask[k] & 0xf0
 	}
-	e[iPrime] = ozkpNextE(msghash, iPrime, f[iHat], r, w, nil, nil)
+	e[iPrime] = ozkpNextE(msghash, iPrime, f, r, w, nil, nil)
 
 	s := make([][]ecmath.Scalar, n)
 	z := make([]ecmath.Scalar, l)
@@ -65,7 +65,7 @@ func createOlegZKP(msghash []byte, x []ecmath.Scalar, f [][]OlegZKPFunc, F [][]e
 			w[k] = s[i][k][31] & 0xf0
 		}
 		iPrime := (i + 1) % n
-		e[iPrime] = ozkpNextE(msghash, iPrime, f[i], z, w, &e[i], F[i])
+		e[iPrime] = ozkpNextE(msghash, iPrime, f, z, w, &e[i], F[i])
 	}
 
 	s[iHat] = make([]ecmath.Scalar, l)
@@ -122,7 +122,7 @@ func ozkpNextE(msghash []byte, i uint64, f []OlegZKPFunc, r []ecmath.Scalar, w [
 	return ozkpEHash(msghash, i, R, w)
 }
 
-func (ozkp *OlegZKP) Validate(msg []byte, f [][]OlegZKPFunc, F [][]ecmath.Point) bool {
+func (ozkp *OlegZKP) Validate(msg []byte, f []OlegZKPFunc, F [][]ecmath.Point) bool {
 	n := uint64(len(F))
 	l := uint64(len(ozkp.s[0]))
 	msghash := ozkpMsgHash(F, l, msg)
@@ -137,7 +137,7 @@ func (ozkp *OlegZKP) Validate(msg []byte, f [][]OlegZKPFunc, F [][]ecmath.Point)
 			z[k][31] &= 0x0f
 			w[k] = ozkp.s[i][k][31] & 0xf0
 		}
-		e[i+1] = ozkpNextE(msghash[:], iPrime, f[i], z, w, &e[i], F[i])
+		e[i+1] = ozkpNextE(msghash[:], iPrime, f, z, w, &e[i], F[i])
 	}
 	return e[0] == e[n]
 }

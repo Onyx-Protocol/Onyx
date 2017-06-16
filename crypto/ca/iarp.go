@@ -104,7 +104,7 @@ func CreateConfidentialIARP(
 	ozkp := CreateOlegZKP(
 		msghash[:],
 		[]ecmath.Scalar{c, y},
-		[][]OlegZKPFunc{},
+		[]OlegZKPFunc{},
 		[][]ecmath.Point{},
 		secretIndex)
 

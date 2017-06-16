@@ -44,7 +44,7 @@ func TestOlegZKP(t *testing.T) {
 
 		x     = make([]ecmath.Scalar, l)
 		A     = make([]ecmath.Point, l)
-		f     = make([][]OlegZKPFunc, n)
+		f     = make([]OlegZKPFunc, m)
 		F     = make([][]ecmath.Point, n)
 		coeff = make([][]ecmath.Scalar, n)
 	)
@@ -59,22 +59,23 @@ func TestOlegZKP(t *testing.T) {
 			A[i].Add(&A[i-1], &G) // A[n] == (n+1)*G
 		}
 	}
+	for j := 0; j < m; j++ {
+		f[j] = func(y []ecmath.Scalar) ecmath.Point {
+			var result ecmath.Point
+			result.ScMul(&A[0], &y[0])
+			for k := 1; k < l; k++ {
+				var P ecmath.Point
+				P.ScMul(&A[k], &y[k])
+				result.Add(&result, &P)
+			}
+			return result
+		}
+	}
 	for i := 0; i < n; i++ {
-		f[i] = make([]OlegZKPFunc, m)
 		F[i] = make([]ecmath.Point, m)
 		coeff[i] = make([]ecmath.Scalar, m)
 		for j := 0; j < m; j++ {
-			f[i][j] = func(y []ecmath.Scalar) ecmath.Point {
-				var result ecmath.Point
-				result.ScMul(&A[0], &y[0])
-				for k := 1; k < l; k++ {
-					var P ecmath.Point
-					P.ScMul(&A[k], &y[k])
-					result.Add(&result, &P)
-				}
-				return result
-			}
-			F[i][j] = f[i][j](x)
+			F[i][j] = f[j](x)
 			if i > 0 {
 				hex.Decode(coeff[i][j][:], []byte(coeffBytes[i][j]))
 				F[i][j].ScMul(&F[i][j], &coeff[i][j])
