@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 )
 
@@ -167,17 +166,14 @@ func must(t *testing.T, err error) {
 }
 
 type testNode struct {
-	dir    string
-	addr   string
-	server *httptest.Server
-	state  *state
-
-	wg      sync.WaitGroup
+	dir     string
+	addr    string
+	server  *httptest.Server
+	state   *state
 	service *Service
 }
 
 func (n *testNode) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	n.wg.Wait()
 	n.service.ServeHTTP(rw, req)
 }
 
@@ -196,7 +192,6 @@ func (n *testNode) cleanup() {
 // and remove its data directory.
 func newTestNode(t *testing.T) *testNode {
 	node := new(testNode)
-	node.wg.Add(1)
 
 	var err error
 	node.dir, err = ioutil.TempDir("", "raft_test.go")
@@ -206,6 +201,8 @@ func newTestNode(t *testing.T) *testNode {
 
 	// Create a tls server first so that we can retrieve the address
 	// and tls certificates to pass in to raft.Start.
+	// Note that node.server should not accept incoming requests until
+	// node.service is populated, otherwise node.ServeHTTP will panic.
 	node.server = httptest.NewTLSServer(node)
 	node.addr = node.server.Listener.Addr().String()
 	node.state = newTestState()
@@ -232,7 +229,5 @@ func newTestNode(t *testing.T) *testNode {
 		node.cleanup()
 		t.Fatal(err)
 	}
-
-	node.wg.Done()
 	return node
 }
