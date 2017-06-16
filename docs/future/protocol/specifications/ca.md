@@ -1330,7 +1330,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
         * Commitments (`i=0..n-1`):
 
-                F[i,0] = H - A[i] + h·Y[i]
+                F[i,0] = AC.H - A[i] + h·Y[i]
                 F[i,1] = AC.C
                 F[i,2] = T
 
