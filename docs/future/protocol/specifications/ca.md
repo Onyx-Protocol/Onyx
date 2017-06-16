@@ -1225,19 +1225,20 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 1. Calculate the base hash:
 
-        basehash = Hash256("IARP", AC, uint64le(n),
+        basehash = Hash256("IARP.base", 
+                          {AC, uint64le(n),
                            a[0], ..., a[n-1],
                            Y[0], ..., Y[n-1],
-                           nonce, message)
+                           nonce, message})
 
 2. Calculate marker point `M`:
 
-        M = PointHash("IARP.M", basehash)
+        M = PointHash("IARP.M", {basehash})
 
 3. Calculate the tracing point: `T = y·M`.
 4. Calculate a 32-byte message hash to sign:
 
-        msghash = Hash256("msg", basehash, M, T)
+        msghash = Hash256("IARP.msg", {basehash, M, T})
 
 5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
 
@@ -1245,10 +1246,10 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 6. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
-        h = ScalarHash("h", msghash)
+        h = ScalarHash("IARP.h", {msghash})
 
 7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
-    * `msg = msghash`, the string to be signed.
+    * `msghash`, the message hash to be signed.
     * `l = 2`, number of secrets.
     * `m = 3`, number of statements.
     * `{x[k]} = {c,y}`, secret scalars — blinding factor and an issuance key.
@@ -1299,23 +1300,24 @@ When creating a confidential issuance, the first step is to construct the rest o
 2. If the range proof is confidential:
     1. Calculate the base hash:
 
-            basehash = Hash256("IARP", AC, uint64le(n),
+            basehash = Hash256("IARP.base", 
+                          {AC, uint64le(n),
                            a[0], ..., a[n-1],
                            Y[0], ..., Y[n-1],
-                           nonce, message)
+                           nonce, message})
 
     2. Calculate marker point `M`:
     
-            M = PointHash("IARP.M", basehash)
+            M = PointHash("IARP.M", {basehash})
 
     3. Calculate a 32-byte message hash to sign:
 
-            msghash = Hash256("msg", basehash, M, T, Bm)
+            msghash = Hash256("IARP.msg", {basehash, M, T})
 
     4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = PointHash("AssetID", a[i])`.
     5. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
-            h = ScalarHash("h", msghash)
+            h = ScalarHash("IARP.h", {msghash})
 
     6. Verify [OLEG-ZKP](#oleg-zkp) `(e0, {s[i,k]})` with the following parameters:
         * `msg = msghash`, the string to be signed.
