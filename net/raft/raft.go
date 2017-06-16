@@ -105,7 +105,8 @@ type Service struct {
 	raftNode raft.Node
 	id       uint64
 
-	// stopping logic
+	// long-running goroutines should be started from startLocked,
+	// update sv.stopwg and stop when sv.stop is closed.
 	stopwg sync.WaitGroup // done when service exited
 	stop   chan struct{}  // stop requested when closed
 
