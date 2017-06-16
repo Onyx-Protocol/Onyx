@@ -49,6 +49,12 @@ func (z *Scalar) Add(x, y *Scalar) *Scalar {
 	return z.MulAdd(x, &One, y)
 }
 
+// Mul computes x*y (mod L) and places the result in z, returning
+// that. Any or all of x, y, and z may be the same pointer.
+func (z *Scalar) Mul(x, y *Scalar) *Scalar {
+	return z.MulAdd(x, y, &Zero)
+}
+
 // Sub computes x-y (mod L) and places the result in z, returning
 // that. Any or all of x, y, and z may be the same pointer.
 func (z *Scalar) Sub(x, y *Scalar) *Scalar {

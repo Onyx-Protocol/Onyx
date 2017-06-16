@@ -3,13 +3,16 @@ package ca
 import "golang.org/x/crypto/sha3"
 
 // EncryptPacket encrypts plaintext binary string pt into buffer `ep` that must have size 32 bytes larger than the plaintext.
+//
 // Inputs:
 // 1. `pt`: plaintext, a binary string of arbitrary byte length `n`.
 // 2. `ek`: the encryption/authentication key.
 // 3. `seed`: a unique seed per encryption (optional, empty by default) — could be a counter, timestamp, or a random string.
 //
 // Output: `ct`: ciphertext, a binary string of byte length `n+32`.
-// `ep` must be of size len(pt)+32.
+//
+// `ep` must be of size len(pt)+32. ep and pt may point to the same
+// memory, but must coincide at position 0, not merely overlap.
 func EncryptPacket(
 	ek []byte,
 	seed []byte,
