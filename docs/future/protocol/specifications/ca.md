@@ -1249,11 +1249,11 @@ When creating a confidential issuance, the first step is to construct the rest o
     * `l = 2`, number of secrets.
     * `m = 3`, number of statements.
     * `{x[k]} = {c,y}`, secret scalars — blinding factor and an issuance key.
-    * Statement sets (`i=0..n-1`):
+    * Statement functions:
 
-            f[i,0](c,y) = (c + h·y)·G
-            f[i,1](c,y) = c·J
-            f[i,2](c,y) = y·M
+            f[0](c,y) = (c + h·y)·G
+            f[1](c,y) = c·J
+            f[2](c,y) = y·M
 
     * Commitments (`i=0..n-1`):
 
@@ -1318,11 +1318,11 @@ When creating a confidential issuance, the first step is to construct the rest o
         * `msg = msghash`, the string to be signed.
         * `l = 2`, number of secrets.
         * `m = 3`, number of statements.
-        * Statement sets (`i=0..n-1`):
+        * Statement functions:
 
-                f[i,0](c,y) = (c + h·y)·G
-                f[i,1](c,y) = c·J
-                f[i,2](c,y) = y·M
+                f[0](c,y) = (c + h·y)·G
+                f[1](c,y) = c·J
+                f[2](c,y) = y·M
 
         * Commitments (`i=0..n-1`):
 

@@ -47,6 +47,7 @@ func CreateConfidentialIARP(
 ) *ConfidentialIARP {
 
 	n := uint64(len(issuanceKeyTuples))
+	m := 3
 
 	// 1. Calculate the base hash:
 	//         basehash = Hash256("IARP.base",
@@ -80,11 +81,11 @@ func CreateConfidentialIARP(
 
 	// 5. Calculate Fiat-Shamir challenge `h` for the issuance key:
 	//         h = ScalarHash("IARP.h", {msghash})
-	//h := scalarHash("ChainCA.IARP.h", msghash[:])
+	h := scalarHash("ChainCA.IARP.h", msghash[:])
 
-	//f := make([][]OlegZKPFunc, )
+	F := make([][]ecmath.Point, n)
 	for i := uint64(0); i < n; i++ {
-
+		F[i] = make([]ecmath.Point, m)
 	}
 
 	// 7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
@@ -104,9 +105,36 @@ func CreateConfidentialIARP(
 	ozkp := CreateOlegZKP(
 		msghash[:],
 		[]ecmath.Scalar{c, y},
-		[]OlegZKPFunc{},
+		iarpFunctions(M, h),
 		[][]ecmath.Point{},
-		secretIndex)
+		secretIndex,
+	)
 
 	return &ConfidentialIARP{TracingPoint: T, IssuanceProof: ozkp}
+}
+
+func iarpFunctions(M ecmath.Point, h ecmath.Scalar) []OlegZKPFunc {
+	// f[0](c,y) = (c + h·y)·G
+	// f[1](c,y) = c·J
+	// f[2](c,y) = y·M
+	return []OlegZKPFunc{
+		func(scalars []ecmath.Scalar) (P ecmath.Point) {
+			// scalars = (c,y)
+			var t ecmath.Scalar
+			t.Mul(&scalars[1], &h) // y*h
+			t.Add(&t, &scalars[0]) // +c
+			P.ScMul(&G, &t)        // *G
+			return P
+		},
+		func(scalars []ecmath.Scalar) (P ecmath.Point) {
+			// scalars = (c,y)
+			P.ScMul(&J, &scalars[0]) // c*J
+			return P
+		},
+		func(scalars []ecmath.Scalar) (P ecmath.Point) {
+			// scalars = (c,y)
+			P.ScMul(&M, &scalars[1]) // y*M
+			return P
+		},
+	}
 }
