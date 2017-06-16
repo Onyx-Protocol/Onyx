@@ -746,10 +746,10 @@ Arguments                  | List<String>                                       
     3. Validate the `Anchor` entry.
 2. [Validate](#value-destination-2) `Destination`.
 3. Verify that the length of `AssetIssuanceChoices` and `IssuanceAssetRangeProof.IssuanceKeys` are the same.
-4. For each `AssetIssuanceChoice` in `AssetIssuanceChoices`, [validate](#asset-issuance-choice-validation) that asset issuance choice, and verify that `AssetIssuanceChoice.IssuanceKey` matches the `IssuanceKey` at the same index in `IssuanceAssetRangeProof.IssuanceKeys`.
-5. Define `AssetIDChoices` as the list composed by calculating the `AssetID` from the `AssetDefinition` in each of the `AssetIssuanceChoices`.
+4. For each `AssetIssuanceChoice` in `AssetIssuanceChoices`, [validate](#asset-issuance-choice-validation) that asset issuance choice.
+5. Define `AssetIssuanceKeyTuples` as the list of tuples (asset ID, issuance key), where `AssetID` is calculated from the `AssetDefinition` structure in each of the `AssetIssuanceChoices`.
 6. [Validate](ca.md#validate-issuance-asset-range-proof) the issuance asset range proof using:
-    * `AssetIDChoices` as the asset ID choices,
+    * `AssetIssuanceKeyTuples` as the (asset ID, issuance key) pairs,
     * `IssuanceDelegateProgram` as `message`,
     * `Anchor` reference as `nonce`.
 7. [Validate](#program-validation) `IssuanceDelegateProgram` with `Arguments` as the arguments.

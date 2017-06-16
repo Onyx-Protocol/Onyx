@@ -1209,15 +1209,14 @@ When creating a confidential issuance, the first step is to construct the rest o
 1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `AC` such that: `AC.H == A[j] + c·G`, `AC.C == c·J`.
 3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](blockchain.md#asset-id).
-4. `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
-5. `message`: a variable-length string,
-6. `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
+4. `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs.
+5. `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique.
+6. `message`: a variable-length string.
 7. `î`: the index of the asset being issued (such that `AC.H == A[î] + c·G`).
 8. `y`: the private key for the issuance key corresponding to the asset being issued: `Y[î] = y·G`.
 
 **Output:** an [issuance asset range proof](#issuance-asset-range-proof) consisting of:
 
-* `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 * `T`: tracing [point](#point),
 * `{e[0], {s[i,k]}`: the [OLEG-ZKP](#oleg-zkp).
 
@@ -1281,13 +1280,13 @@ When creating a confidential issuance, the first step is to construct the rest o
 2. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
     1. If the `IARP` is non-confidential: only `assetid`.
     2. If the `IARP` is confidential:
-        * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
         * `T`: tracing [point](#point),
         * `oleg-zkp = (e0, {s[i,k]})`: ring proof of issuance,
         * And provided separately from the range proof:
             * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
-            * `message`: a variable-length string,
-            * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique.
+            * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
+            * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
+            * `message`: a variable-length string.
 
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
