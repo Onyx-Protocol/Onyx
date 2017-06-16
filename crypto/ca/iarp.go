@@ -15,7 +15,12 @@ type AssetIssuanceKeyTuple interface {
 
 type IssuanceAssetRangeProof interface {
 	// TODO: add Reader/Writer interfaces
-	Validate(ac *AssetCommitment) bool
+	Validate(
+		ac *AssetCommitment,
+		issuanceKeyTuples []AssetIssuanceKeyTuple,
+		nonce []byte,
+		message []byte,
+	) bool
 }
 
 type NonconfidentialIARP struct {
@@ -31,7 +36,12 @@ func CreateNonconfidentialIARP(assetID AssetID) *NonconfidentialIARP {
 	return &NonconfidentialIARP{AssetID: assetID}
 }
 
-func (iarp *NonconfidentialIARP) Validate(ac *AssetCommitment) bool {
+func (iarp *NonconfidentialIARP) Validate(
+	ac *AssetCommitment,
+	issuanceKeyTuples []AssetIssuanceKeyTuple,
+	nonce []byte,
+	message []byte,
+) bool {
 	ac2 := PointPair{ecmath.Point(CreateAssetPoint(&iarp.AssetID)), ecmath.ZeroPoint}
 	return (*PointPair)(ac).ConstTimeEqual(&ac2)
 }
@@ -103,20 +113,6 @@ func CreateConfidentialIARP(
 		F[i][2] = T
 	}
 
-	// 7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
-	//     * `msghash`, the message hash to be signed.
-	//     * `l = 2`, number of secrets.
-	//     * `m = 3`, number of statements.
-	//     * `{x[k]} = {c,y}`, secret scalars — blinding factor and an issuance key.
-	//     * Statement functions:
-	//             f[0](c,y) = (c + h·y)·G
-	//             f[1](c,y) = c·J
-	//             f[2](c,y) = y·M
-	//     * Commitments (`i=0..n-1`):
-	//             F[i,0] = H - A[i] + h·Y[i]
-	//             F[i,1] = AC.C
-	//             F[i,2] = T
-	//     * `î`: the index of the non-forged item in a ring.
 	ozkp := CreateOlegZKP(
 		msghash[:],
 		[]ecmath.Scalar{c, y},
@@ -126,6 +122,52 @@ func CreateConfidentialIARP(
 	)
 
 	return &ConfidentialIARP{TracingPoint: T, IssuanceProof: ozkp}
+}
+
+func (iarp *ConfidentialIARP) Validate(
+	ac *AssetCommitment,
+	issuanceKeyTuples []AssetIssuanceKeyTuple,
+	nonce []byte,
+	message []byte,
+) bool {
+
+	// 1. Calculate the base hash:
+
+	//         basehash = Hash256("IARP.base",
+	//                     {AC, nonce, message,
+	//                     uint64le(n),
+	//                     a[0],Y[0], ..., a[n-1],Y[n-1]})
+
+	// 2. Calculate marker point `M`:
+
+	//         M = PointHash("IARP.M", {basehash})
+
+	// 3. Calculate a 32-byte message hash to sign:
+
+	//         msghash = Hash256("IARP.msg", {basehash, M, T})
+
+	// 4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = PointHash("AssetID", a[i])`.
+	// 5. Calculate Fiat-Shamir challenge `h` for the issuance key:
+
+	//         h = ScalarHash("IARP.h", {msghash})
+
+	// 6. Verify [OLEG-ZKP](#oleg-zkp) `(e0, {s[i,k]})` with the following parameters:
+	//     * `msg = msghash`, the string to be signed.
+	//     * `l = 2`, number of secrets.
+	//     * `m = 3`, number of statements.
+	//     * Statement functions:
+
+	//             f[0](c,y) = (c + h·y)·G
+	//             f[1](c,y) = c·J
+	//             f[2](c,y) = y·M
+
+	//     * Commitments (`i=0..n-1`):
+
+	//             F[i,0] = AC.H - A[i] + h·Y[i]
+	//             F[i,1] = AC.C
+	//             F[i,2] = T
+
+	return true
 }
 
 func iarpFunctions(M ecmath.Point, h ecmath.Scalar) []OlegZKPFunc {
