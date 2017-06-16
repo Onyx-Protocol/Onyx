@@ -90,7 +90,7 @@ func main() {
 	}
 
 	// run postgres
-	pgCmd := exec.Command(pg+"Postgres.exe", "-D", pgDataDir)
+	pgCmd := exec.Command(pg+"pg_ctl.exe", "-D", pgDataDir, "start")
 	pgCmd.Stdout = f
 	pgCmd.Stderr = f
 
@@ -98,13 +98,7 @@ func main() {
 	if err != nil {
 		pglog.Println("could not start Postgres: " + err.Error())
 		cclog.Fatal("Postgres could not be started. Please check postgres.log for more info.")
-
 	}
-
-	pgStatus := make(chan error, 1)
-	go func() {
-		pgStatus <- pgCmd.Wait()
-	}()
 
 	// block until postgres is ready--if we try to create users or db before it's running, it will fail
 	blockUntilReady(pglog)
@@ -154,20 +148,21 @@ func main() {
 		cclog.Printf("could not open localhost:1999: %s", err)
 	}
 
-	var msg = "exit status 0"
 	select {
-	case pgErr := <-pgStatus:
-		if pgErr != nil {
-			msg = pgErr.Error()
-		}
-		cclog.Printf("Postgres died with %s; killing Chain Core", msg)
-		ccCmd.Process.Kill()
 	case ccErr := <-ccStatus:
+		msg := "exit status 0"
 		if ccErr != nil {
 			msg = ccErr.Error()
 		}
-		pglog.Printf("Chain Core died with %s; kill Postgres", msg)
-		pgCmd.Process.Kill()
+		pglog.Printf("Chain Core died with %s; stopping Postgres", msg)
+
+		c := exec.Command(pg+"pg_ctl.exe", "-D", pgDataDir, "stop")
+		c.Stdout = f
+		c.Stderr = f
+		err := c.Run()
+		if err != nil {
+			pglog.Println("Error stopping Postgres:", err)
+		}
 	}
 }
 
