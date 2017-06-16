@@ -193,7 +193,7 @@ Generator `G` has the following 32-byte encoding:
 
 Generator `J` has the following 32-byte encoding:
 
-    J = 0x0TBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBDTBD
+    J = 0xcd871d55fb37f1283ddd18c7937b418ae5b561e30656e371f539564bbe15d5d1
 
 
 ### Hash functions
@@ -237,23 +237,20 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 It is defined as follows:
 
-1. Let `counter = 0`.
-2. Append counter to a list of input strings `X`,  where `counter` is encoded as a 64-bit unsigned integer using little-endian convention:
+1. Instantiate hash function `H = StreamHash(F,X)`.
+2. Read 32 bytes from `H`:
 
-        X’ = {uint64le(counter), X[0], ..., X[n-1]}
+        buf = read(H, 32 bytes)
 
-3. Calculate hash using [Hash256](#hash256) function defined above:
-
-        h = Hash256(F, X’)
-
-4. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
-5. If the point is not a valid curve point, increment `counter` and go back to step 2. The probability of failure is 0.5.
-6. Multiply `P` by cofactor to eliminate elements outside the subgroup order:
+3. Decode `buf` as a [point](#point) `P` on the elliptic curve.
+4. If the point is not a valid curve point, go back to step 2 to read next 32 bytes. The probability of failure is 0.5.
+5. When `P` becomes a valid point, multiply it by cofactor to eliminate elements outside the subgroup order:
 
         P’ = 8·P
 
-7. Return `P’`.
+6. Return `P’`.
 
+Note: since the rate of the underlying Keccak instance is 168 bytes, 97% of points can be hashed without incurring additional permutation.
 
 
 ### Ring Signature

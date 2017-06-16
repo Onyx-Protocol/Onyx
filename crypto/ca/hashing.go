@@ -70,21 +70,15 @@ func scalarHash(s string, tuple ...[]byte) ecmath.Scalar {
 
 func pointHash(s string, tuple ...[]byte) ecmath.Point {
 	var result ecmath.Point
-	counter := byte(0)
+	var buf [32]byte
+	cofactor := ecmath.Scalar{8}
+	h := streamHash(s, tuple...)
 	for {
-		h := hasher256(s)
-		h.WriteItem([]byte{counter})
-		for _, item := range tuple {
-			h.WriteItem(item)
-		}
-		var hout [32]byte
-		h.Sum(hout[:0])
-		_, ok := result.Decode(hout)
+		h.Read(buf[:])
+		_, ok := result.Decode(buf)
 		if ok {
-			cofactor := ecmath.Scalar{8}
 			result.ScMul(&result, &cofactor)
 			return result
 		}
-		counter++
 	}
 }

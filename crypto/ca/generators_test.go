@@ -27,7 +27,7 @@ func TestGeneratorG(t *testing.T) {
 }
 
 func TestGeneratorJ(t *testing.T) {
-	want := fromHex("9f1d34c01f38c17aaebe0b9e919ba0157ec4cea83d9bf95455783c204a297636")
+	want := fromHex("cd871d55fb37f1283ddd18c7937b418ae5b561e30656e371f539564bbe15d5d1")
 	got := J.Encode()
 
 	if !constTimeEqual(want, got[:]) {
