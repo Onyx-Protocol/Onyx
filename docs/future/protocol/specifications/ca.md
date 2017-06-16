@@ -1223,10 +1223,9 @@ When creating a confidential issuance, the first step is to construct the rest o
 1. Calculate the base hash:
 
         basehash = Hash256("IARP.base", 
-                          {AC, uint64le(n),
-                           a[0], ..., a[n-1],
-                           Y[0], ..., Y[n-1],
-                           nonce, message})
+                        {AC, nonce, message,
+                        uint64le(n),
+                        a[0],Y[0], ..., a[n-1],Y[n-1]})
 
 2. Calculate marker point `M`:
 
@@ -1237,13 +1236,13 @@ When creating a confidential issuance, the first step is to construct the rest o
 
         msghash = Hash256("IARP.msg", {basehash, M, T})
 
-5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
-
-        A[i] = PointHash("AssetID", a[i])
-
-6. Calculate Fiat-Shamir challenge `h` for the issuance key:
+5. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
         h = ScalarHash("IARP.h", {msghash})
+
+6. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
+
+        A[i] = PointHash("AssetID", a[i])
 
 7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
     * `msghash`, the message hash to be signed.
@@ -1298,10 +1297,9 @@ When creating a confidential issuance, the first step is to construct the rest o
     1. Calculate the base hash:
 
             basehash = Hash256("IARP.base", 
-                          {AC, uint64le(n),
-                           a[0], ..., a[n-1],
-                           Y[0], ..., Y[n-1],
-                           nonce, message})
+                        {AC, nonce, message,
+                        uint64le(n),
+                        a[0],Y[0], ..., a[n-1],Y[n-1]})
 
     2. Calculate marker point `M`:
     

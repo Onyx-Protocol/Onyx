@@ -38,30 +38,55 @@ func (iarp *NonconfidentialIARP) Validate(ac *AssetCommitment) bool {
 
 func CreateConfidentialIARP(
 	ac *AssetCommitment,
-	c *ecmath.Scalar,
+	c ecmath.Scalar,
 	issuanceKeyTuples []AssetIssuanceKeyTuple,
 	nonce []byte,
 	message []byte,
-	i int,
+	secretIndex uint64,
 	y ecmath.Scalar,
 ) *ConfidentialIARP {
 
+	n := uint64(len(issuanceKeyTuples))
+
 	// 1. Calculate the base hash:
-	//         basehash = Hash256("IARP", AC, uint64le(n),
-	//                            a[0], ..., a[n-1],
-	//                            Y[0], ..., Y[n-1],
-	//                            nonce, message)
+	//         basehash = Hash256("IARP.base",
+	//                         {AC, nonce, message,
+	//                         uint64le(n),
+	//                         a[0],Y[0], ..., a[n-1],Y[n-1]})
+	basehasher := hasher256("ChainCA.IARP.base",
+		ac.Bytes(),
+		nonce,
+		message,
+		uint64le(n))
+
+	for _, tuple := range issuanceKeyTuples {
+		basehasher.WriteItem(tuple.AssetID()[:])
+		basehasher.WriteItem(tuple.IssuanceKey())
+	}
+	var basehash [32]byte
+	basehasher.Sum(basehash[:0])
 
 	// 2. Calculate marker point `M`:
-	//         M = PointHash("IARP.M", basehash)
+	//         M = PointHash("IARP.M", {basehash})
+	M := pointHash("ChainCA.IARP.M", basehash[:])
 
 	// 3. Calculate the tracing point: `T = y·M`.
+	var T ecmath.Point
+	T.ScMul(&M, &y)
+
 	// 4. Calculate a 32-byte message hash to sign:
-	//         msghash = Hash256("msg", basehash, M, T)
-	// 5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
-	//         A[i] = PointHash("AssetID", a[i])
-	// 6. Calculate Fiat-Shamir challenge `h` for the issuance key:
-	//         h = ScalarHash("h", msghash)
+	//         msghash = Hash256("IARP.msg", {basehash, M, T})
+	msghash := hash256("ChainCA.IARP.msg", basehash[:], M.Bytes(), T.Bytes())
+
+	// 5. Calculate Fiat-Shamir challenge `h` for the issuance key:
+	//         h = ScalarHash("IARP.h", {msghash})
+	//h := scalarHash("ChainCA.IARP.h", msghash[:])
+
+	//f := make([][]OlegZKPFunc, )
+	for i := uint64(0); i < n; i++ {
+
+	}
+
 	// 7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
 	//     * `msghash`, the message hash to be signed.
 	//     * `l = 2`, number of secrets.
@@ -76,10 +101,12 @@ func CreateConfidentialIARP(
 	//             F[i,1] = AC.C
 	//             F[i,2] = T
 	//     * `î`: the index of the non-forged item in a ring.
-	// 12. Return [issuance asset range proof](#issuance-asset-range-proof) consisting of:
-	//     * issuance keys `{Y[i]}`,
-	//     * tracing point `T`,
-	//     * OLEG-ZKP `e0,{s[i,k]}`.
+	ozkp := CreateOlegZKP(
+		msghash[:],
+		[]ecmath.Scalar{c, y},
+		[][]OlegZKPFunc{},
+		[][]ecmath.Point{},
+		secretIndex)
 
-	return &ConfidentialIARP{}
+	return &ConfidentialIARP{TracingPoint: T, IssuanceProof: ozkp}
 }
