@@ -30,11 +30,11 @@ func (arp *AssetRangeProof) Validate(msg []byte, acPrime *AssetCommitment) bool 
 		return false
 	}
 	if arp.id != nil {
-		if !acPrime.Point2.ConstTimeEqual(&ecmath.ZeroPoint) {
+		if !acPrime[1].ConstTimeEqual(&ecmath.ZeroPoint) {
 			return false
 		}
 		assetPoint := CreateAssetPoint(*arp.id)
-		return acPrime.Point1.ConstTimeEqual((*ecmath.Point)(&assetPoint))
+		return acPrime[0].ConstTimeEqual((*ecmath.Point)(&assetPoint))
 	}
 	return true
 }
@@ -55,8 +55,8 @@ func arpPubkeys(ac []*AssetCommitment, acPrime *AssetCommitment) [][]ecmath.Poin
 	result := make([][]ecmath.Point, n)
 	for i := 0; i < n; i++ {
 		result[i] = make([]ecmath.Point, 2)
-		result[i][0].Sub(&acPrime.Point1, &ac[i].Point1)
-		result[i][1].Sub(&acPrime.Point2, &ac[i].Point2)
+		result[i][0].Sub(&acPrime[0], &ac[i][0])
+		result[i][1].Sub(&acPrime[1], &ac[i][1])
 	}
 	return result
 }

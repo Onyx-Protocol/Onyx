@@ -10,8 +10,8 @@ func TestZeroPair(t *testing.T) {
 	z1 := ZeroPointPair
 	z2 := ZeroPointPair
 
-	if !z1.Point1.ConstTimeEqual(&ecmath.ZeroPoint) ||
-		!z1.Point2.ConstTimeEqual(&ecmath.ZeroPoint) {
+	if !z1[0].ConstTimeEqual(&ecmath.ZeroPoint) ||
+		!z1[1].ConstTimeEqual(&ecmath.ZeroPoint) {
 		t.Errorf("zero point pair must be composed of two zero points")
 	}
 

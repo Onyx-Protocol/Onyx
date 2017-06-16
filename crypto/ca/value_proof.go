@@ -24,10 +24,10 @@ func (vp *ValueProof) Validate(VC *ValueCommitment, assetID AssetID, value uint6
 	)
 	v.SetUint64(value)
 	vPrime.ScMul((*ecmath.Point)(&aPrime), &v)
-	vPrime.Add(&vPrime, &vp.QC.Point1)
+	vPrime.Add(&vPrime, &vp.QC[0])
 	// TODO(bobg): always make both calls to ConstTimeEqual, to keep this function constant-time?
-	if !vPrime.ConstTimeEqual(&VC.Point1) { // QG+V’ == VC.H?
+	if !vPrime.ConstTimeEqual(&VC[0]) { // QG+V’ == VC.H?
 		return false
 	}
-	return vp.QC.Point2.ConstTimeEqual(&VC.Point2) // QJ == VC.C?
+	return vp.QC[1].ConstTimeEqual(&VC[1]) // QJ == VC.C?
 }

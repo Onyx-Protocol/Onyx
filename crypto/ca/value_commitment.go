@@ -30,11 +30,11 @@ func createRawValueCommitment(value uint64, ac *AssetCommitment, f *ecmath.Scala
 	v.SetUint64(value)
 
 	var V, F, T ecmath.Point
-	V.ScMulAdd(&ac.Point1, &v, f) // V = value·H + f·G
-	F.ScMul(&ac.Point2, &v)       // F = value·C
-	T.ScMul(&J, f)                // T = f·J
-	F.Add(&F, &T)                 // F = value·C + f·J
-	return (*ValueCommitment)(&PointPair{Point1: V, Point2: F})
+	V.ScMulAdd(&ac[0], &v, f) // V = value·H + f·G
+	F.ScMul(&ac[1], &v)       // F = value·C
+	T.ScMul(&J, f)            // T = f·J
+	F.Add(&F, &T)             // F = value·C + f·J
+	return (*ValueCommitment)(&PointPair{V, F})
 }
 
 // xxx make sure the signature of this function aligns with the spec

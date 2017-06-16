@@ -56,15 +56,15 @@ type ExcessCommitment struct {
 func CreateExcessCommitment(q ecmath.Scalar, msg []byte) *ExcessCommitment {
 	result := new(ExcessCommitment)
 
-	result.QC.Point1.ScMul(&G, &q)
-	result.QC.Point2.ScMul(&J, &q)
+	result.QC[0].ScMul(&G, &q)
+	result.QC[1].ScMul(&J, &q)
 
 	var R1, R2 ecmath.Point
-	r := scalarHash("ChainCA.r", result.QC.Point1.Bytes(), result.QC.Point2.Bytes(), q[:], msg)
+	r := scalarHash("ChainCA.r", result.QC[0].Bytes(), result.QC[1].Bytes(), q[:], msg)
 	R1.ScMul(&G, &r)
 	R2.ScMul(&J, &r)
 
-	result.e = scalarHash("ChainCA.EC", result.QC.Point1.Bytes(), result.QC.Point2.Bytes(), R1.Bytes(), R2.Bytes(), msg)
+	result.e = scalarHash("ChainCA.EC", result.QC[0].Bytes(), result.QC[1].Bytes(), R1.Bytes(), R2.Bytes(), msg)
 	result.s.MulAdd(&q, &result.e, &r)
 
 	return result
@@ -72,14 +72,14 @@ func CreateExcessCommitment(q ecmath.Scalar, msg []byte) *ExcessCommitment {
 
 func (qc *ExcessCommitment) Validate(msg []byte) bool {
 	var R1, R2, T ecmath.Point
-	R1.ScMulBase(&qc.s)           // R1 = s·G
-	T.ScMul(&qc.QC.Point1, &qc.e) // T = e·QG
-	R1.Sub(&R1, &T)               // R1 = s·G - e·QG
-	R2.ScMul(&J, &qc.s)           // R2 = s·J
-	T.ScMul(&qc.QC.Point2, &qc.e) // T = e·QJ
-	R2.Sub(&R2, &T)               // R2 = s·J - e·QJ
+	R1.ScMulBase(&qc.s)       // R1 = s·G
+	T.ScMul(&qc.QC[0], &qc.e) // T = e·QG
+	R1.Sub(&R1, &T)           // R1 = s·G - e·QG
+	R2.ScMul(&J, &qc.s)       // R2 = s·J
+	T.ScMul(&qc.QC[1], &qc.e) // T = e·QJ
+	R2.Sub(&R2, &T)           // R2 = s·J - e·QJ
 
-	ePrime := scalarHash("ChainCA.EC", qc.QC.Point1.Bytes(), qc.QC.Point2.Bytes(), R1.Bytes(), R2.Bytes(), msg)
+	ePrime := scalarHash("ChainCA.EC", qc.QC[0].Bytes(), qc.QC[1].Bytes(), R1.Bytes(), R2.Bytes(), msg)
 
 	return qc.e == ePrime
 }

@@ -49,7 +49,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, va
 	b[n-1].Sub(&f, &bsum)
 
 	var (
-		digits = make([]PointPair, n)        // digits[t].Point1 is what the spec calls D[t], digits[t].Point2 is B[t]
+		digits = make([]PointPair, n)        // digits[t][0] is what the spec calls D[t], digits[t][1] is B[t]
 		P      = make([][][]ecmath.Point, n) // P[t][i][0] is what the spec calls P[t,i], P[t][i][1] is Q[t,i]
 		j      = make([]uint64, n)
 	)
@@ -60,27 +60,27 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, va
 		var digitScalar ecmath.Scalar
 		digitScalar.SetUint64(digit)
 
-		digits[t].Point1.ScMulAdd(&VC.Point1, &digitScalar, &b[t]) // D[t] = digit[t]·H + b[t]·G
+		digits[t][0].ScMulAdd(&VC[0], &digitScalar, &b[t]) // D[t] = digit[t]·H + b[t]·G
 
-		digits[t].Point2.ScMul(&VC.Point2, &digitScalar) // B[t] = digit[t]·C
+		digits[t][1].ScMul(&VC[1], &digitScalar) // B[t] = digit[t]·C
 		var T ecmath.Point
 		T.ScMul(&J, &b[t])
-		digits[t].Point2.Add(&digits[t].Point2, &T) // B[t] = digit[t]·C + b[t]·J
+		digits[t][1].Add(&digits[t][1], &T) // B[t] = digit[t]·C + b[t]·J
 
 		j[t] = digit >> (2 * t)
 
 		P[t] = make([][]ecmath.Point, base)
 
 		for i := uint64(0); i < base; i++ {
-			P[t][i] = []ecmath.Point{digits[t].Point1, digits[t].Point2}
+			P[t][i] = digits[t][:]
 			if i > 0 {
 				iBaseToTheT := i * baseToTheT
 				var iScalar ecmath.Scalar
 				iScalar.SetUint64(iBaseToTheT)
 				var T ecmath.Point
-				T.ScMul(&VC.Point1, &iScalar)   // T = i·(base^t)·H
+				T.ScMul(&VC[0], &iScalar)       // T = i·(base^t)·H
 				P[t][i][0].Sub(&P[t][i][0], &T) // P[t,i] = D[t] - i·(base^t)·H
-				T.ScMul(&VC.Point2, &iScalar)   // T = i·(base^t)·C
+				T.ScMul(&VC[1], &iScalar)       // T = i·(base^t)·C
 				P[t][i][1].Sub(&P[t][i][1], &T) // Q[t,i] = B[t] - i·(base^t)·C
 			}
 		}
