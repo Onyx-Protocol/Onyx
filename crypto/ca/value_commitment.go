@@ -38,13 +38,9 @@ func createRawValueCommitment(value uint64, ac *AssetCommitment, f *ecmath.Scala
 }
 
 // xxx make sure the signature of this function aligns with the spec
-func ValidateValueCommitmentsBalance(inputs, outputs []*ValueCommitment, excesses []*ExcessCommitment, msgs [][]byte) bool {
-	if len(msgs) != len(excesses) {
-		panic("calling error")
-	}
-
-	for i, excess := range excesses {
-		if !excess.Validate(msgs[i]) {
+func ValidateValueCommitmentsBalance(inputs, outputs []*ValueCommitment, excesses []*ExcessCommitment) bool {
+	for _, excess := range excesses {
+		if !excess.Validate() {
 			return false
 		}
 	}

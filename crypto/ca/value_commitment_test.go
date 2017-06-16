@@ -72,7 +72,7 @@ func TestValueCommitments(t *testing.T) {
 			q := BalanceBlindingFactors(inpAmts, outAmts, inpAssetBFs, inpValueBFs, outAssetBFs, outValueBFs)
 			qc := CreateExcessCommitment(q, msg)
 
-			res := ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg})
+			res := ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc})
 
 			if balanced {
 				if !res {
@@ -83,13 +83,14 @@ func TestValueCommitments(t *testing.T) {
 					t.Error("validated unbalanced value commitments")
 				}
 			}
-			if ValidateValueCommitmentsBalance(inpValueCommitments[1:], outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg}) {
+			if ValidateValueCommitmentsBalance(inpValueCommitments[1:], outValueCommitments, []*ExcessCommitment{qc}) {
 				t.Error("validated balance of invalid collection of commitments")
 			}
-			if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments[1:], []*ExcessCommitment{qc}, [][]byte{msg}) {
+			if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments[1:], []*ExcessCommitment{qc}) {
 				t.Error("validated balance of invalid collection of commitments")
 			}
-			if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}, [][]byte{msg[1:]}) {
+			qc.msg = qc.msg[1:]
+			if ValidateValueCommitmentsBalance(inpValueCommitments, outValueCommitments, []*ExcessCommitment{qc}) {
 				t.Error("validated balance of invalid collection of commitments")
 			}
 		}

@@ -10,10 +10,11 @@ func TestExcessCommitment(t *testing.T) {
 	q := ecmath.Scalar{17}
 	msg := []byte("message")
 	qc := CreateExcessCommitment(q, msg)
-	if !qc.Validate(msg) {
+	if !qc.Validate() {
 		t.Error("failed to validate excess commitment")
 	}
-	if qc.Validate(msg[1:]) {
+	qc.msg = msg[1:]
+	if qc.Validate() {
 		t.Error("validated invalid excess commitment")
 	}
 }

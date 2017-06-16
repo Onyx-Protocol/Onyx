@@ -980,7 +980,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 2. Calculate the nonce:
 
-        r = ScalarHash("r", QG, QJ, q, msg)
+        r = ScalarHash("EC.r", {QG, QJ, q, msg})
 
 3. Calculate points:
 
@@ -989,7 +989,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 4. Calculate Schnorr challenge scalar:
 
-        e = ScalarHash("EC", QG, QJ, R1, R2, msg)
+        e = ScalarHash("EC", {QG, QJ, R1, R2, msg})
 
 5. Calculate Schnorr response scalar:
 
@@ -1028,7 +1028,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 6. Calculate Schnorr challenge:
 
-        e’ = ScalarHash("EC", QG, QJ, R1, R2, msg)
+        e’ = ScalarHash("EC", {QG, QJ, R1, R2, msg})
 
 7. Return `true` if `e’ == e`, otherwise return `false`.
 
@@ -1665,19 +1665,25 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 
 **Inputs:**
 
-1. `assetid`: the [asset ID](blockchain.md#asset-id) to be proven in a given asset commitment.
-2. `value`: the amount to be proven.
-3. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) used in a given asset commitment.
-6. `f`: the [value blinding factor](#value-blinding-factor).
+1. `AC`: the [asset ID commitment](#asset-id-commitment) being proven.
+2. `VC`: the [value commitment](#value-commitment) being proven.
+3. `assetid`: the [asset ID](blockchain.md#asset-id) to be proven in a given asset commitment.
+4. `value`: the amount to be proven.
+5. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) used in a given asset commitment.
+6. `f`: the [value blinding factor](#value-blinding-factor) used in a given asset commitment.
 7. `message`: a variable-length string.
 
 **Output:** `vp`: value proof, a 128-byte string containing two schnorr signatures.
 
 **Algorithm:**
 
-1. [Create excess commitment](#create-excess-commitment) `E1` using scalar `c` and `message`.
-2. [Create excess commitment](#create-excess-commitment) `E2` using scalar `f` and `message`.
-3. Return concatenation of Schnorr signatures (last 64 bytes in each excess commitment):
+1. Compute a message hash to be signed:
+
+        h = Hash256("ValueProof", {assetid, uint64le(value), AC, VC, message})
+
+2. [Create excess commitment](#create-excess-commitment) `E1` using scalar `c` and message `h`.
+3. [Create excess commitment](#create-excess-commitment) `E2` using scalar `f` and message `h`.
+4. Return concatenation of Schnorr signatures extracted from excess commitments (last 64 bytes from the each excess commitment):
 
         vp = E1[64:128] || E2[64:128]
 
@@ -1698,17 +1704,21 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 **Algorithm:**
 
 1. If `vp` is not a 128-byte string, return `false`.
-2. Compute [asset ID point](#asset-id-point): `A = PointHash("AssetID", assetID)`.
-3. Subtract `A` from the first point of `AC` and leave second point unmodified:
+2. Compute a message hash to be signed:
+
+        h = Hash256("ValueProof", {assetid, uint64le(value), AC, VC, message})
+
+3. Compute [asset ID point](#asset-id-point): `A = PointHash("AssetID", assetID)`.
+4. Subtract `A` from the first point of `AC` and leave second point unmodified:
 
         Q1 = AC - (A,O)
 
-4. Scalar-multiply `AC` by `value` and subtract the resulting pair from `VC`:
+5. Scalar-multiply `AC` by `value` and subtract the resulting pair from `VC`:
 
         Q2 = VC - value·AC
 
-5. [Validate excess commitment](#validate-excess-commitment) `Q1 || vp[0:64] || message`.
-6. [Validate excess commitment](#validate-excess-commitment) `Q2 || vp[64:128] || message`.
+6. [Validate excess commitment](#validate-excess-commitment) `Q1 || vp[0:64] || h`.
+7. [Validate excess commitment](#validate-excess-commitment) `Q2 || vp[64:128] || h`.
 
 
 
