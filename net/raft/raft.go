@@ -105,6 +105,11 @@ type Service struct {
 	raftNode raft.Node
 	id       uint64
 
+	// long-running goroutines should be started from startLocked,
+	// update sv.stopwg and stop when sv.stop is closed.
+	stopwg sync.WaitGroup // done when service exited
+	stop   chan struct{}  // stop requested when closed
+
 	errMu sync.Mutex
 	err   error
 
@@ -212,6 +217,7 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 		rctxReq:     make(chan rctxReq),
 		wctxReq:     make(chan wctxReq),
 		client:      httpClient,
+		stop:        make(chan struct{}),
 	}
 	sv.stateCond.L = &sv.stateMu
 
@@ -254,8 +260,9 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 // startLocked begins the raft algorithm. It requires sv.startMu
 // to already be locked.
 func (sv *Service) startLocked() {
+	sv.stopwg.Add(2)
 	go sv.runUpdates()
-	go runTicks(sv.raftNode)
+	go sv.runTicks()
 }
 
 // initialized returns whether the service's raft cluster is
@@ -351,6 +358,28 @@ func (sv *Service) Join(bootURL string) error {
 	return nil
 }
 
+// Stop stops the Raft algorithm, stopping log replication. Once a
+// Service has been stopped, it's unusable. Stop must be called at
+// most once.
+func (sv *Service) Stop() error {
+	// signal the intention to stop
+	close(sv.stop)
+
+	// if the Service was never initialized, there are no
+	// goroutines to wait for and no open wal
+	if !sv.initialized() {
+		return nil
+	}
+
+	// wait for the service's goroutines to stop
+	sv.stopwg.Wait()
+
+	// once all the goroutines have stopped, it's safe to
+	// close the wal and stop the state machine
+	sv.raftNode.Stop()
+	return sv.wal.Close()
+}
+
 // Err returns a serious error preventing this process from
 // operating normally or making progress, if any.
 // Note that it is possible for a Service to recover automatically
@@ -419,6 +448,10 @@ func (sv *Service) runUpdates() {
 	writers := make(map[string]chan bool)
 	for {
 		select {
+		case <-sv.stop:
+			// stop requested
+			sv.stopwg.Done()
+			return
 		case rd := <-sv.raftNode.Ready():
 			replyReadIndex(rdIndices, rd.ReadStates)
 			sv.runUpdatesReady(rd, sv.wal, writers)
@@ -438,9 +471,17 @@ func (sv *Service) runUpdates() {
 	}
 }
 
-func runTicks(rn raft.Node) {
-	for range time.Tick(tickDur) {
-		rn.Tick()
+func (sv *Service) runTicks() {
+	ticks := time.Tick(tickDur)
+	for {
+		select {
+		case <-sv.stop:
+			// stop requested
+			sv.stopwg.Done()
+			return
+		case <-ticks:
+			sv.raftNode.Tick()
+		}
 	}
 }
 
