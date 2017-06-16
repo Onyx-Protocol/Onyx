@@ -33,24 +33,62 @@ func CreateValueProof(
 
 	// 4. Return concatenation of Schnorr signatures extracted from excess commitments (last 64 bytes from the each excess commitment):
 	//         vp = E1[64:128] || E2[64:128]
-	return append(e1.SignatureBytes(), e2.SignatureBytes()...)
+	return append(e1.signatureBytes(), e2.signatureBytes()...)
 }
 
-// func (vp *ValueProof) Validate(VC *ValueCommitment, assetID AssetID, value uint64, msg []byte) bool {
-// 	if !(*ExcessCommitment)(vp).Validate() {
-// 		return false
-// 	}
-// 	aPrime := CreateAssetPoint(assetID)
-// 	var (
-// 		v      ecmath.Scalar
-// 		vPrime ecmath.Point
-// 	)
-// 	v.SetUint64(value)
-// 	vPrime.ScMul((*ecmath.Point)(&aPrime), &v)
-// 	vPrime.Add(&vPrime, &vp.QC.Point1)
-// 	// TODO(bobg): always make both calls to ConstTimeEqual, to keep this function constant-time?
-// 	if !vPrime.ConstTimeEqual(&VC.Point1) { // QG+V’ == VC.H?
-// 		return false
-// 	}
-// 	return vp.QC.Point2.ConstTimeEqual(&VC.Point2) // QJ == VC.C?
-// }
+// ValidateValueProof checks if a given proof vp actually proves that commitments
+// ac and vc commit to a given assetID and value.
+func ValidateValueProof(
+	vp []byte,
+	assetID AssetID,
+	value uint64,
+	ac *AssetCommitment,
+	vc *ValueCommitment,
+	message []byte,
+) bool {
+	// 1. If `vp` is not a 128-byte string, return `false`.
+	if len(vp) != ValueProofSize {
+		return false
+	}
+
+	// 2. Compute a message hash to be signed:
+	//         h = Hash256("ValueProof", {assetid, uint64le(value), AC, VC, message})
+	h := hash256("ChainCA.ValueProof",
+		assetID[:],
+		uint64le(value),
+		(*PointPair)(ac).Bytes(),
+		(*PointPair)(vc).Bytes(),
+		message)
+
+	// 3. Compute [asset ID point](#asset-id-point): `A = PointHash("AssetID", assetID)`.
+	a := CreateAssetPoint(assetID)
+
+	// 4. Subtract `A` from the first point of `AC` and leave second point unmodified:
+	//         Q1 = AC - (A,O)
+	Q1 := *ac
+	Q1[0].Sub(&Q1[0], (*ecmath.Point)(&a))
+
+	// 5. Scalar-multiply `AC` by `value` and subtract the resulting pair from `VC`:
+	//         Q2 = VC - value·AC
+	var v ecmath.Scalar
+	v.SetUint64(value)
+
+	Q2 := *(*PointPair)(vc)
+	tmp := *(*PointPair)(ac)
+	tmp.ScMul(&tmp, &v)
+	Q2.Sub(&Q2, &tmp)
+
+	// 6. [Validate excess commitment](#validate-excess-commitment) `Q1 || vp[0:64] || h`.
+	// 7. [Validate excess commitment](#validate-excess-commitment) `Q2 || vp[64:128] || h`.
+	var e1, e2 ExcessCommitment
+
+	e1.QC = PointPair(Q1)
+	e1.setSignatureBytes(vp[0:64])
+	e1.msg = h[:]
+
+	e2.QC = PointPair(Q2)
+	e2.setSignatureBytes(vp[64:128])
+	e2.msg = h[:]
+
+	return e1.Validate() && e2.Validate()
+}

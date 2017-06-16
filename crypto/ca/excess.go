@@ -88,11 +88,20 @@ func (ec *ExcessCommitment) Bytes() []byte {
 
 // SignatureBytes returns a binary encoding
 // of the Schnorr signature part {e,s} (64 bytes).
-func (ec *ExcessCommitment) SignatureBytes() []byte {
+func (ec *ExcessCommitment) signatureBytes() []byte {
 	result := make([]byte, 64)
 	copy(result[0:32], ec.e[:])
 	copy(result[32:64], ec.s[:])
 	return result
+}
+
+// SetSignatureBytes requires a 64-byte slice
+func (ec *ExcessCommitment) setSignatureBytes(es []byte) {
+	if len(es) != 64 {
+		panic("Invalid slice size passed to ExcessCommitment.SetSignatureBytes")
+	}
+	copy(ec.e[:], es[0:32])
+	copy(ec.s[:], es[32:64])
 }
 
 // CreateExcessCommitment returns a valid excess commitment
