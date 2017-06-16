@@ -1584,8 +1584,8 @@ In case of failure, returns `nil` instead of the range proof.
 5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
     1. For `i` from `0` to `base-1` (each digit’s value):
-        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform iterative point addition of `-(base^t)·H` instead of scalar multiplication.
-        2. Calculate point `Q[t,i] = F[t] - i·(base^t)·C`. For efficiency perform iterative point addition of `-(base^t)·C` instead of scalar multiplication.
+        1. Calculate point `P[t,i] = D[t] - i·(base^t)·AC.H`. For efficiency perform iterative point addition of `-(base^t)·H` instead of scalar multiplication.
+        2. Calculate point `Q[t,i] = B[t] - i·(base^t)·AC.C`. For efficiency perform iterative point addition of `-(base^t)·C` instead of scalar multiplication.
 7. [Validate Borromean Ring Signature](#validate-borromean-ring-signature) with the following inputs:
     * `msghash`: the 32-byte string being verified.
     * `n`: number of rings.
