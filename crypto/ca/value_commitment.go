@@ -11,12 +11,11 @@ type ValueCommitment PointPair
 // nil).
 func CreateValueCommitment(value uint64, ac *AssetCommitment, vek ValueKey) (*ValueCommitment, *ecmath.Scalar) {
 	if vek == nil {
-		var v ecmath.Scalar
-		v.SetUint64(value)
+		v := (&ecmath.Scalar{}).SetUint64(value)
 
 		// Non-blinded value commitment
 		var vc PointPair
-		vc.ScMul((*PointPair)(ac), &v)
+		vc.ScMul((*PointPair)(ac), v)
 
 		return (*ValueCommitment)(&vc), nil
 	}
@@ -26,14 +25,13 @@ func CreateValueCommitment(value uint64, ac *AssetCommitment, vek ValueKey) (*Va
 }
 
 func createRawValueCommitment(value uint64, ac *AssetCommitment, f *ecmath.Scalar) *ValueCommitment {
-	var v ecmath.Scalar
-	v.SetUint64(value)
+	v := (&ecmath.Scalar{}).SetUint64(value)
 
 	var V, F, T ecmath.Point
-	V.ScMulAdd(&ac[0], &v, f) // V = value·H + f·G
-	F.ScMul(&ac[1], &v)       // F = value·C
-	T.ScMul(&J, f)            // T = f·J
-	F.Add(&F, &T)             // F = value·C + f·J
+	V.ScMulAdd(&ac[0], v, f) // V = value·H + f·G
+	F.ScMul(&ac[1], v)       // F = value·C
+	T.ScMul(&J, f)           // T = f·J
+	F.Add(&F, &T)            // F = value·C + f·J
 	return (*ValueCommitment)(&PointPair{V, F})
 }
 

@@ -23,11 +23,10 @@ func BalanceBlindingFactors(inAmts, outAmts []uint64, inAssetBFs, inValueBFs, ou
 		var (
 			assetBF = inAssetBFs[i]
 			valueBF = inValueBFs[i]
-			v       ecmath.Scalar
 		)
-		v.SetUint64(amt)
-		v.MulAdd(&v, &assetBF, &valueBF)
-		fInput.Add(&fInput, &v)
+		v := (&ecmath.Scalar{}).SetUint64(amt)
+		v.MulAdd(v, &assetBF, &valueBF)
+		fInput.Add(&fInput, v)
 	}
 
 	fOutput := ecmath.Zero
@@ -35,11 +34,10 @@ func BalanceBlindingFactors(inAmts, outAmts []uint64, inAssetBFs, inValueBFs, ou
 		var (
 			assetBF = outAssetBFs[i]
 			valueBF = outValueBFs[i]
-			v       ecmath.Scalar
 		)
-		v.SetUint64(amt)
-		v.MulAdd(&v, &assetBF, &valueBF)
-		fOutput.Add(&fOutput, &v)
+		v := (&ecmath.Scalar{}).SetUint64(amt)
+		v.MulAdd(v, &assetBF, &valueBF)
+		fOutput.Add(&fOutput, v)
 	}
 
 	var q ecmath.Scalar

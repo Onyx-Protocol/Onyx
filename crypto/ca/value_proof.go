@@ -70,12 +70,11 @@ func ValidateValueProof(
 
 	// 5. Scalar-multiply `AC` by `value` and subtract the resulting pair from `VC`:
 	//         Q2 = VC - value·AC
-	var v ecmath.Scalar
-	v.SetUint64(value)
+	v := (&ecmath.Scalar{}).SetUint64(value)
 
 	Q2 := *(*PointPair)(vc)
 	tmp := *(*PointPair)(ac)
-	tmp.ScMul(&tmp, &v)
+	tmp.ScMul(&tmp, v)
 	Q2.Sub(&Q2, &tmp)
 
 	// 6. [Validate excess commitment](#validate-excess-commitment) `Q1 || vp[0:64] || h`.

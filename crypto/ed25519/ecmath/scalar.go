@@ -35,9 +35,12 @@ var (
 	}
 )
 
-func (s *Scalar) SetUint64(n uint64) {
+// SetUint64 sets the scalar to a given integer value.
+// One-liner: s := (&ecmath.Scalar{}).SetUint64(n)
+func (s *Scalar) SetUint64(n uint64) *Scalar {
 	*s = Zero
 	binary.LittleEndian.PutUint64(s[:8], n)
+	return s
 }
 
 // Add computes x+y (mod L) and places the result in z, returning

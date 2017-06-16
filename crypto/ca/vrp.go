@@ -57,12 +57,11 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, va
 	baseToTheT := uint64(1)
 	for t := uint(0); t < uint(n); t++ {
 		digit := value & (0x03 << (1 << t))
-		var digitScalar ecmath.Scalar
-		digitScalar.SetUint64(digit)
+		d := (&ecmath.Scalar{}).SetUint64(digit)
 
-		digits[t][0].ScMulAdd(&VC[0], &digitScalar, &b[t]) // D[t] = digit[t]·H + b[t]·G
+		digits[t][0].ScMulAdd(&VC[0], d, &b[t]) // D[t] = digit[t]·H + b[t]·G
 
-		digits[t][1].ScMul(&VC[1], &digitScalar) // B[t] = digit[t]·C
+		digits[t][1].ScMul(&VC[1], d) // B[t] = digit[t]·C
 		var T ecmath.Point
 		T.ScMul(&J, &b[t])
 		digits[t][1].Add(&digits[t][1], &T) // B[t] = digit[t]·C + b[t]·J
