@@ -1,6 +1,10 @@
 package ca
 
-import "golang.org/x/crypto/sha3"
+import (
+	"fmt"
+
+	"golang.org/x/crypto/sha3"
+)
 
 // EncryptPacket encrypts plaintext binary string pt into buffer `ep` that must have size 32 bytes larger than the plaintext.
 //
@@ -22,7 +26,7 @@ func EncryptPacket(
 	n := len(pt)
 
 	if len(ep) != (n + 32) {
-		panic("Buffer for encrypted packet must have size len(pt)+32.")
+		panic(fmt.Errorf("pt has len %d, ep must have len %d (but has len %d)", n, n+32, len(ep)))
 	}
 
 	// 1. Calculate an 8-byte `nonce`:

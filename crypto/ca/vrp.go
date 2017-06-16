@@ -4,17 +4,16 @@ import "chain/crypto/ed25519/ecmath"
 
 // ValueRangeProof is a confidential value range proof.
 type ValueRangeProof struct {
-	nbits, exp uint8
-	vmin       uint64
-	digits     []PointPair
-	brs        *BorromeanRingSignature
+	nbits, exp, vmin uint64
+	digits           []PointPair
+	brs              *BorromeanRingSignature
 }
 
 const base = 4
 
 // CreateValueRangeProof creates a confidential value range proof.
-func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, value uint64, pt [][32]byte, f ecmath.Scalar, idek DataKey, vek ValueKey, msg []byte) *ValueRangeProof {
-	if len(pt) != int(2*N-1) {
+func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value uint64, pt [][32]byte, f ecmath.Scalar, idek DataKey, vek ValueKey, msg []byte) *ValueRangeProof {
+	if uint64(len(pt)) != 2*N-1 {
 		panic("calling error")
 	}
 	switch N {
@@ -27,18 +26,18 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, va
 		return nil // xxx or panic?
 	}
 	vmin := uint64(0)
-	exp := uint8(0)
+	exp := uint64(0)
 	msghash := vrpMsgHash(AC, VC, N, 0, 0, msg)
 	pek := hash256("ChainCA.pek", msghash[:], idek, f[:])
 	n := N / 2
 
-	buf := make([]byte, 0, 32*2*N)
-	for _, pti := range pt {
-		buf = append(buf, pti[:]...)
+	buf := make([]byte, 32*2*N)
+	for i := range pt {
+		copy(buf[32*i:32*(i+1)], pt[i][:])
 	}
 	EncryptPacket(pek[:], nil, buf[:32*(2*N-1)], buf[:])
 	ct := make([][32]byte, 2*N)
-	for i := uint8(0); i < 2*N; i++ {
+	for i := uint64(0); i < 2*N; i++ {
 		copy(ct[i][:], buf[32*i:32*(i+1)])
 	}
 
@@ -58,7 +57,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, va
 		j      = make([]uint64, n)
 	)
 
-	P := vrpCalcP(AC, n, func(t uint8) PointPair {
+	P := vrpCalcP(AC, n, func(t uint64) PointPair {
 		digitVal := value & (0x03 << (2 * t))
 		var d ecmath.Scalar
 		d.SetUint64(digitVal)
@@ -75,7 +74,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, va
 	})
 
 	var fn []ecmath.Scalar
-	for i := uint8(0); i < n; i++ {
+	for i := uint64(0); i < n; i++ {
 		fn = append(fn, f)
 	}
 
@@ -103,7 +102,7 @@ func (vrp *ValueRangeProof) Validate(ac *AssetCommitment, vc *ValueCommitment, m
 		return false
 	}
 	p10 := uint64(1)
-	for i := uint8(0); i < vrp.exp; i++ {
+	for i := uint64(0); i < vrp.exp; i++ {
 		p10 *= 10
 	}
 	if vrp.vmin+p10*((1<<vrp.nbits)-1) >= 1<<63 {
@@ -124,7 +123,7 @@ func (vrp *ValueRangeProof) Validate(ac *AssetCommitment, vc *ValueCommitment, m
 		dsum.Add(&dsum, &vrp.digits[i][0])
 	}
 	lastDigit.Sub(&lastDigit, &dsum) // lastDigit = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])
-	P := vrpCalcP(ac, n, func(t uint8) PointPair {
+	P := vrpCalcP(ac, n, func(t uint64) PointPair {
 		result := vrp.digits[t]
 		if t == n-1 {
 			result[0] = lastDigit
@@ -138,14 +137,14 @@ func (vrp *ValueRangeProof) Payload(ac *AssetCommitment, vc *ValueCommitment, va
 	return nil // xxx
 }
 
-func vrpMsgHash(ac *AssetCommitment, vc *ValueCommitment, N uint8, exp uint8, vmin uint64, msg []byte) [32]byte {
+func vrpMsgHash(ac *AssetCommitment, vc *ValueCommitment, N, exp, vmin uint64, msg []byte) [32]byte {
 	return hash256("ChainCA.VRP", ac.Bytes(), vc.Bytes(), uint64le(uint64(N)), uint64le(uint64(exp)), uint64le(vmin), msg)
 }
 
-func vrpCalcP(ac *AssetCommitment, n uint8, getDigit func(uint8) PointPair) [][][]ecmath.Point {
+func vrpCalcP(ac *AssetCommitment, n uint64, getDigit func(uint64) PointPair) [][][]ecmath.Point {
 	P := make([][][]ecmath.Point, n)
 	baseToTheT := uint64(1)
-	for t := uint8(0); t < n; t++ {
+	for t := uint64(0); t < n; t++ {
 		P[t] = make([][]ecmath.Point, base)
 
 		var baseToTheTScalar ecmath.Scalar
