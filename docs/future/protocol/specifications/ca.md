@@ -591,8 +591,8 @@ Statement ring       | A collection of `n` statement sets, where at least one mu
 `i`                  | Index `0..n-1` of a statement set (ring item).
 `î`                  | Index `0..n-1` of a statement set that is true (non-forged ring item).
 `x[k]`               | Secret scalar at index `k`.
-`f[i,j]({x[k]})`     | Linear function over `l` secrets at index `j` within set `i`.
-`F[i,j]`             | Commitment for a function value `f[i,j]` at index `j` within set `i`.
+`f[j]({x[k]})`       | Linear function over `l` secrets for the statements at index `j` within each set.
+`F[i,j]`             | Commitment for a statement `j` in set `i`: a value of function `f[j]` with secrets from set `i`.
 
 
 #### OLEG-ZKP Message Hash
@@ -629,9 +629,9 @@ commits to the same inputs indirectly.
 
 1. `msghash`: the hash being signed that commits to all public parameters. See [OLEG-ZKP Message Hash](#oleg-zkp-message-hash) for an example.
 2. `{x[k]}`: the `l` secret [scalars](#scalar).
-3. `{f[i,j]({x[k]})}`: `n·m` functions over `l` secrets.
-4. `{F[i,j]}`: `n·m` commitments for functions `{f[i,j]}`.
-5. `î`: the index of the position in a ring, so that `F[î,j] == f[î,j]({x[k]})` for all `j` from 0 to `m-1`.
+3. `{f[j]({x[k]})}`: `m` functions over `l` secrets.
+4. `{F[i,j]}`: `n·m` commitments for functions `{f[j]}` for each statement set `i=0..n-1`.
+5. `î`: the index of the position in a ring, so that `F[î,j] == f[j]({x[k]})` for all `j` from 0 to `m-1`.
 
 **Output:** `e0, {s[i,k]}`: a starting commitment and response scalars, total `1+n·l` 32-byte elements.
 
@@ -652,7 +652,7 @@ commits to the same inputs indirectly.
 3. Reduce each `r[k]` modulo `L`.
 4. Calculate the initial challenge (e-value), let `i’ = î+1 mod n`:
     1. For each `j=0..m-1`:
-        1. Calculate [point](#point) `R[i’,j] = f[î,j]({r[k]})`.
+        1. Calculate [point](#point) `R[i’,j] = f[j]({r[k]})`.
     2. For each `k=0..l-1`:
         1. Define `w[î,k]` as `mask[k]` with lower 4 bits set to zero: `w[î,k] = mask[k] & 0xf0`.
     3. Calculate the challenge:
@@ -698,8 +698,8 @@ commits to the same inputs indirectly.
 **Inputs:**
 
 1. `msghash`: the hash being signed that commits to all public parameters. See [OLEG-ZKP Message Hash](#oleg-zkp-message-hash) for an example.
-2. `{f[i,j]({x[k]})}`: `n·m` functions over `l` secrets.
-3. `{F[i,j]}`: `n·m` commitments for functions `{f[i,j]}`.
+2. `{f[j]({x[k]})}`: `m` functions over `l` secrets.
+3. `{F[i,j]}`: `n·m` commitments for functions `{f[j]}` for each statement set `i=0..n-1`.
 4. `e0, {s[i,k]}`: a starting commitment and response scalars, total `1+n·l` 32-byte elements.
 
 
@@ -713,7 +713,7 @@ commits to the same inputs indirectly.
         1. Define `z[i,k]` as `s[i,k]` with the most significant 4 bits set to zero (see note below).
         2. Define `w[i,k]` as a most significant byte of `s[i,k]` with lower 4 bits set to zero: `w[i,k] = s[i,k][31] & 0xf0`.
     3. For each `j=0..m-1`:
-        1. Calculate point `R[i’,j] = f[i,j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
+        1. Calculate point `R[i’,j] = f[j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
     4. Calculate the challenge:
 
             e[i+1] = ScalarHash("OZKP.e",
