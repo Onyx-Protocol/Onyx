@@ -25,6 +25,9 @@ func createRawAssetCommitment(assetID AssetID, c *ecmath.Scalar) *AssetCommitmen
 	return &AssetCommitment{H, C}
 }
 
+func (ac *AssetCommitment) H() *ecmath.Point { return &ac[0] }
+func (ac *AssetCommitment) C() *ecmath.Point { return &ac[1] }
+
 func (ac *AssetCommitment) Bytes() []byte {
 	return (*PointPair)(ac).Bytes()
 }

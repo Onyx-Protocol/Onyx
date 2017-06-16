@@ -60,6 +60,9 @@ func ValidateValueCommitmentsBalance(inputs, outputs []*ValueCommitment, excesse
 	return Ti.ConstTimeEqual(&Toq)
 }
 
+func (vc *ValueCommitment) V() *ecmath.Point { return &vc[0] }
+func (vc *ValueCommitment) F() *ecmath.Point { return &vc[1] }
+
 func (vc *ValueCommitment) Bytes() []byte {
 	return (*PointPair)(vc).Bytes()
 }
