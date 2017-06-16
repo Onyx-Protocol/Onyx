@@ -49,11 +49,9 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, va
 	b[n-1].Sub(&f, &bsum)
 
 	var (
-		D = make([]ecmath.Point, n)
-		B = make([]ecmath.Point, n)
-		P = make([][]ecmath.Point, n)
-		Q = make([][]ecmath.Point, n)
-		j = make([]uint64, n)
+		digits = make([]PointPair, n)        // digits[t].Point1 is what the spec calls D[t], digits[t].Point2 is B[t]
+		P      = make([][][]ecmath.Point, n) // P[t][i][0] is what the spec calls P[t,i], P[t][i][1] is Q[t,i]
+		j      = make([]uint64, n)
 	)
 
 	baseToTheT := uint64(1)
@@ -62,41 +60,41 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N uint8, va
 		var digitScalar ecmath.Scalar
 		digitScalar.SetUint64(digit)
 
-		D[t].ScMulAdd(&VC.Point1, &digitScalar, &b[t]) // D[t] = digit[t]·H + b[t]·G
+		digits[t].Point1.ScMulAdd(&VC.Point1, &digitScalar, &b[t]) // D[t] = digit[t]·H + b[t]·G
 
-		B[t].ScMul(&VC.Point2, &digitScalar) // B[t] = digit[t]·C
+		digits[t].Point2.ScMul(&VC.Point2, &digitScalar) // B[t] = digit[t]·C
 		var T ecmath.Point
 		T.ScMul(&J, &b[t])
-		B[t].Add(&B[t], &T) // B[t] = digit[t]·C + b[t]·J
+		digits[t].Point2.Add(&digits[t].Point2, &T) // B[t] = digit[t]·C + b[t]·J
 
 		j[t] = digit >> (2 * t)
 
-		P[t] = make([]ecmath.Point, base)
-		Q[t] = make([]ecmath.Point, base)
+		P[t] = make([][]ecmath.Point, base)
 
 		for i := uint64(0); i < base; i++ {
-			P[t][i] = D[t]
-			Q[t][i] = B[t]
+			P[t][i] = []ecmath.Point{digits[t].Point1, digits[t].Point2}
 			if i > 0 {
 				iBaseToTheT := i * baseToTheT
 				var iScalar ecmath.Scalar
 				iScalar.SetUint64(iBaseToTheT)
 				var T ecmath.Point
-				T.ScMul(&VC.Point1, &iScalar) // T = i·(base^t)·H
-				P[t][i].Sub(&P[t][i], &T)     // P[t,i] = D[t] - i·(base^t)·H
-				T.ScMul(&VC.Point2, &iScalar) // T = i·(base^t)·C
-				Q[t][i].Sub(&Q[t][i], &T)     // Q[t,i] = B[t] - i·(base^t)·C
+				T.ScMul(&VC.Point1, &iScalar)   // T = i·(base^t)·H
+				P[t][i][0].Sub(&P[t][i][0], &T) // P[t,i] = D[t] - i·(base^t)·H
+				T.ScMul(&VC.Point2, &iScalar)   // T = i·(base^t)·C
+				P[t][i][1].Sub(&P[t][i][1], &T) // Q[t,i] = B[t] - i·(base^t)·C
 			}
 		}
 		baseToTheT *= base
 	}
 
-	var P3 [][][]ecmath.Point // xxx P3[i][j][0] is P[i][j]; P3[i][j][1] is Q[i][j]
-	var fn []ecmath.Scalar    // xxx fn is f repeated n times
-	var r [][32]byte          // xxx r is ct reinterpreted
-	var digits []PointPair    // xxx Build from D,B pairs
+	var fn []ecmath.Scalar
+	for i := uint8(0); i < n; i++ {
+		fn = append(fn, f)
+	}
 
-	brs := CreateBorromeanRingSignature(msghash[:], []ecmath.Point{G, J}, P3, fn, j, r)
+	var r [][32]byte // xxx r is ct reinterpreted
+
+	brs := CreateBorromeanRingSignature(msghash[:], []ecmath.Point{G, J}, P, fn, j, r)
 	return &ValueRangeProof{
 		nbits:  N,
 		exp:    exp,
