@@ -130,42 +130,63 @@ func (iarp *ConfidentialIARP) Validate(
 	nonce []byte,
 	message []byte,
 ) bool {
+	n := uint64(len(issuanceKeyTuples))
 
 	// 1. Calculate the base hash:
-
 	//         basehash = Hash256("IARP.base",
 	//                     {AC, nonce, message,
 	//                     uint64le(n),
 	//                     a[0],Y[0], ..., a[n-1],Y[n-1]})
+	basehasher := hasher256("ChainCA.IARP.base",
+		ac.Bytes(),
+		nonce,
+		message,
+		uint64le(n))
+
+	for _, tuple := range issuanceKeyTuples {
+		basehasher.WriteItem(tuple.AssetID()[:])
+		basehasher.WriteItem(tuple.IssuanceKey())
+	}
+	var basehash [32]byte
+	basehasher.Sum(basehash[:0])
 
 	// 2. Calculate marker point `M`:
-
 	//         M = PointHash("IARP.M", {basehash})
+	M := pointHash("ChainCA.IARP.M", basehash[:])
 
 	// 3. Calculate a 32-byte message hash to sign:
-
 	//         msghash = Hash256("IARP.msg", {basehash, M, T})
+	msghash := hash256("ChainCA.IARP.msg", basehash[:], M.Bytes(), iarp.TracingPoint.Bytes())
 
-	// 4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = PointHash("AssetID", a[i])`.
 	// 5. Calculate Fiat-Shamir challenge `h` for the issuance key:
-
 	//         h = ScalarHash("IARP.h", {msghash})
+	h := scalarHash("ChainCA.IARP.h", msghash[:])
 
-	// 6. Verify [OLEG-ZKP](#oleg-zkp) `(e0, {s[i,k]})` with the following parameters:
-	//     * `msg = msghash`, the string to be signed.
-	//     * `l = 2`, number of secrets.
-	//     * `m = 3`, number of statements.
-	//     * Statement functions:
+	F := make([][]ecmath.Point, n)
+	for i := uint64(0); i < n; i++ {
+		// F[i,0] = H - A[i] + h·Y[i]
+		// F[i,1] = AC.C
+		// F[i,2] = T
+		F[i] = make([]ecmath.Point, 3)
 
-	//             f[0](c,y) = (c + h·y)·G
-	//             f[1](c,y) = c·J
-	//             f[2](c,y) = y·M
+		y := issuanceKeyTuples[i].IssuanceKey()
+		F[i][0] = ecmath.ZeroPoint
+		if F[i][0].UnmarshalBinary(y) != nil {
+			return false
+		}
+		a := CreateAssetPoint(issuanceKeyTuples[i].AssetID())
+		F[i][0].ScMul(&F[i][0], &h)
+		F[i][0].Sub(&F[i][0], (*ecmath.Point)(&a))
+		F[i][0].Add(&F[i][0], ac.H())
 
-	//     * Commitments (`i=0..n-1`):
+		F[i][1] = *ac.C()
+		F[i][2] = iarp.TracingPoint
+	}
 
-	//             F[i,0] = AC.H - A[i] + h·Y[i]
-	//             F[i,1] = AC.C
-	//             F[i,2] = T
+	return iarp.IssuanceProof.Validate(
+		msghash[:],
+		iarpFunctions(M, h),
+		F)
 
 	return true
 }
