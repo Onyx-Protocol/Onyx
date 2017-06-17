@@ -86,8 +86,8 @@ class Index extends React.Component {
       />)
     }
 
-    return (<div className='container'>
-      <form onSubmit={handleSubmit(this.submitWithValidation)}>
+    return (<div className={`container ${styles.container}`}>
+      <form className={styles.form} onSubmit={handleSubmit(this.submitWithValidation)}>
         <h2 className={styles.title}>Configure Chain Core</h2>
 
         <div className={styles.choices}>
