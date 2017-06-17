@@ -1,6 +1,8 @@
 package ca
 
-import "chain/crypto/ed25519/ecmath"
+import (
+	"chain/crypto/ed25519/ecmath"
+)
 
 // ValueRangeProof is a confidential value range proof.
 type ValueRangeProof struct {
@@ -20,13 +22,12 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 	case 8, 16, 32, 48, 64:
 		// do nothing
 	default:
-		return nil // xxx or panic?
+		panic("calling error")
 	}
 	if value >= 1<<N {
-		return nil // xxx or panic?
+		panic("calling error")
 	}
-	vmin := uint64(0)
-	exp := uint64(0)
+
 	msghash := vrpMsgHash(AC, VC, N, 0, 0, msg)
 	pek := hash256("ChainCA.pek", msghash[:], idek, f[:])
 	n := N / 2
@@ -44,7 +45,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 	b := make([]ecmath.Scalar, n)
 	bsum := ecmath.Zero
 	hasher := streamHash("ChainCA.VRP.b", msghash[:], f[:])
-	for t := 0; t < int(n-1); t++ {
+	for t := uint64(0); t < n-1; t++ {
 		var bt [64]byte
 		hasher.Read(bt[:])
 		b[t].Reduce(&bt)
@@ -52,25 +53,23 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 	}
 	b[n-1].Sub(&f, &bsum)
 
-	var (
-		digits = make([]PointPair, n) // digits[t][0] is what the spec calls D[t], digits[t][1] is B[t]
-		j      = make([]uint64, n)
-	)
+	DB := make([]PointPair, n) // DB[t][0] is what the spec calls D[t], DB[t][1] is B[t]
+	j := make([]uint64, n)
 
-	P := vrpCalcP(AC, n, func(t uint64) PointPair {
+	PQ := vrpCalcPQ(AC, n, func(t uint64) PointPair {
 		digitVal := value & (0x03 << (2 * t))
 		var d ecmath.Scalar
 		d.SetUint64(digitVal)
 
-		digits[t][0].ScMulAdd(AC.H(), &d, &b[t]) // D[t] = digit[t]·H + b[t]·G
-		digits[t][1].ScMul(AC.C(), &d)           // B[t] = digit[t]·C
+		DB[t][0].ScMulAdd(AC.H(), &d, &b[t]) // D[t] = digit[t]·H + b[t]·G
+		DB[t][1].ScMul(AC.C(), &d)           // B[t] = digit[t]·C
 		var T ecmath.Point
 		T.ScMul(&J, &b[t])
-		digits[t][1].Add(&digits[t][1], &T) // B[t] = digit[t]·C + b[t]·J
+		DB[t][1].Add(&DB[t][1], &T) // B[t] = digit[t]·C + b[t]·J
 
 		j[t] = digitVal >> (2 * t)
 
-		return digits[t]
+		return DB[t]
 	})
 
 	var fn []ecmath.Scalar
@@ -78,12 +77,12 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 		fn = append(fn, f)
 	}
 
-	brs := CreateBorromeanRingSignature(msghash[:], []ecmath.Point{G, J}, P, fn, j, ct)
+	brs := CreateBorromeanRingSignature(msghash[:], []ecmath.Point{G, J}, PQ, fn, j, ct)
 	return &ValueRangeProof{
 		nbits:  N,
-		exp:    exp,
-		vmin:   vmin,
-		digits: digits,
+		exp:    0,
+		vmin:   0,
+		digits: DB,
 		brs:    brs,
 	}
 }
@@ -115,22 +114,22 @@ func (vrp *ValueRangeProof) Validate(ac *AssetCommitment, vc *ValueCommitment, m
 	var lastDigit ecmath.Point
 	var vminScalar ecmath.Scalar
 	vminScalar.SetUint64(vrp.vmin)
-	lastDigit.ScMul(&ac[0], &vminScalar)               // lastDigit = vmin·AC.H
-	lastDigit.Sub(&vc[0], &lastDigit)                  // lastDigit = VC.V - vmin·AC.H
-	lastDigit.ScMul(&lastDigit, &powersOf10[-vrp.exp]) // lastDigit = (10^(-exp))·(VC.V - vmin·AC.H)
+	lastDigit.ScMul(&ac[0], &vminScalar)                  // lastDigit = vmin·AC.H
+	lastDigit.Sub(&vc[0], &lastDigit)                     // lastDigit = VC.V - vmin·AC.H
+	lastDigit.ScMul(&lastDigit, powerOf10(-int(vrp.exp))) // lastDigit = (10^(-exp))·(VC.V - vmin·AC.H)
 	dsum := ecmath.ZeroPoint
 	for i := 0; i < len(vrp.digits)-1; i++ {
 		dsum.Add(&dsum, &vrp.digits[i][0])
 	}
 	lastDigit.Sub(&lastDigit, &dsum) // lastDigit = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])
-	P := vrpCalcP(ac, n, func(t uint64) PointPair {
+	PQ := vrpCalcPQ(ac, n, func(t uint64) PointPair {
 		result := vrp.digits[t]
 		if t == n-1 {
 			result[0] = lastDigit
 		}
 		return result
 	})
-	return vrp.brs.Validate(msghash[:], []ecmath.Point{G, J}, P)
+	return vrp.brs.Validate(msghash[:], []ecmath.Point{G, J}, PQ)
 }
 
 func (vrp *ValueRangeProof) Payload(ac *AssetCommitment, vc *ValueCommitment, value uint64, f ecmath.Scalar, idek DataKey, vek ValueKey, msg []byte) [][32]byte {
@@ -141,11 +140,11 @@ func vrpMsgHash(ac *AssetCommitment, vc *ValueCommitment, N, exp, vmin uint64, m
 	return hash256("ChainCA.VRP", ac.Bytes(), vc.Bytes(), uint64le(uint64(N)), uint64le(uint64(exp)), uint64le(vmin), msg)
 }
 
-func vrpCalcP(ac *AssetCommitment, n uint64, getDigit func(uint64) PointPair) [][][]ecmath.Point {
-	P := make([][][]ecmath.Point, n)
+func vrpCalcPQ(ac *AssetCommitment, n uint64, getDigit func(uint64) PointPair) [][][]ecmath.Point {
+	PQ := make([][][]ecmath.Point, n)
 	baseToTheT := uint64(1)
 	for t := uint64(0); t < n; t++ {
-		P[t] = make([][]ecmath.Point, base)
+		PQ[t] = make([][]ecmath.Point, base)
 
 		var baseToTheTScalar ecmath.Scalar
 		baseToTheTScalar.SetUint64(baseToTheT)
@@ -160,16 +159,18 @@ func vrpCalcP(ac *AssetCommitment, n uint64, getDigit func(uint64) PointPair) []
 		digit := getDigit(t)
 
 		for i := 0; i < base; i++ {
-			P[t][i] = make([]ecmath.Point, 2)
-			copy(P[t][i][:], digit[:])
+			PQ[t][i] = make([]ecmath.Point, 2)
+			copy(PQ[t][i][:], digit[:])
 			if i > 0 {
-				P[t][i][0].Sub(&P[t][i][0], &iBaseToTheTH)
-				P[t][i][1].Sub(&P[t][i][1], &iBaseToTheTC)
+				PQ[t][i][0].Sub(&PQ[t][i][0], &iBaseToTheTH)
+				PQ[t][i][1].Sub(&PQ[t][i][1], &iBaseToTheTC)
 			}
-			iBaseToTheTH.Add(&iBaseToTheTH, &baseToTheTH)
-			iBaseToTheTC.Add(&iBaseToTheTC, &baseToTheTC)
+			if i < base-1 {
+				iBaseToTheTH.Add(&iBaseToTheTH, &baseToTheTH)
+				iBaseToTheTC.Add(&iBaseToTheTC, &baseToTheTC)
+			}
 		}
 		baseToTheT *= base
 	}
-	return P
+	return PQ
 }

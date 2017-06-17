@@ -1,6 +1,8 @@
 package ca
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestVRP(t *testing.T) {
 	assetID := AssetID{1}
@@ -20,6 +22,7 @@ func TestVRP(t *testing.T) {
 	msg := []byte("message")
 
 	vrp := CreateValueRangeProof(ac, vc, N, value, pt, *f, idek, vek, msg)
+
 	if !vrp.Validate(ac, vc, msg) {
 		t.Error("failed to validate vrp")
 	}

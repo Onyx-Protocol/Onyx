@@ -3,6 +3,7 @@ package ecmath
 import (
 	"crypto/subtle"
 	"encoding/binary"
+	"encoding/hex"
 
 	"chain/crypto/ed25519/internal/edwards25519"
 )
@@ -90,4 +91,8 @@ func (z *Scalar) Prune() {
 func (z *Scalar) Reduce(x *[64]byte) *Scalar {
 	edwards25519.ScReduce((*[32]byte)(z), x)
 	return z
+}
+
+func (s *Scalar) String() string {
+	return hex.EncodeToString(s[:])
 }
