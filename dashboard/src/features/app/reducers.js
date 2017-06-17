@@ -103,6 +103,10 @@ export const flashMessages = (state = {}, action) => {
       return newError(state, action.payload.message)
     }
 
+    case 'AUTHENTICATION_READY': {
+      return {}
+    }
+
     case 'USER_LOG_IN': {
       return {}
     }
