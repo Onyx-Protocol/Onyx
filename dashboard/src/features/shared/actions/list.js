@@ -1,9 +1,9 @@
 import { chainClient } from 'utility/environment'
 import { pageSize } from 'utility/environment'
 import { push, replace } from 'react-router-redux'
+import { isEmpty } from 'lodash'
 
 export default function(type, options = {}) {
-  const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
   const listPath  = options.listPath || `/${type}s`
   const clientApi = () => options.clientApi ? options.clientApi() : chainClient()[`${type}s`]
 
@@ -112,9 +112,9 @@ export default function(type, options = {}) {
           refresh: refresh,
         })
       }).catch(err => {
-        if (options.defaultKey && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
+        if (options.defaultKey && !isEmpty(filter) && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
           dispatch(pushList({
-            filter: `${options.defaultKey}='${query.filter}'`
+            filter: `${options.defaultKey}='${filter}'`
           }, null, {replace: true}))
         } else {
           return dispatch({type: 'ERROR', payload: err})
