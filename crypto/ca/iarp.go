@@ -92,25 +92,9 @@ func CreateConfidentialIARP(
 	//         h = ScalarHash("IARP.h", {msghash})
 	h := scalarHash("ChainCA.IARP.h", msghash[:])
 
-	F := make([][]ecmath.Point, n)
-	for i := uint64(0); i < n; i++ {
-		// F[i,0] = H - A[i] + h·Y[i]
-		// F[i,1] = AC.C
-		// F[i,2] = T
-		F[i] = make([]ecmath.Point, 3)
-
-		y := issuanceKeyTuples[i].IssuanceKey()
-		F[i][0] = ecmath.ZeroPoint
-		if F[i][0].UnmarshalBinary(y) != nil {
-			panic("Failed to decode an issuance key")
-		}
-		a := CreateAssetPoint(issuanceKeyTuples[i].AssetID())
-		F[i][0].ScMul(&F[i][0], &h)
-		F[i][0].Sub(&F[i][0], (*ecmath.Point)(&a))
-		F[i][0].Add(&F[i][0], ac.H())
-
-		F[i][1] = *ac.C()
-		F[i][2] = T
+	F, ok := iarpCommitments(ac, issuanceKeyTuples, &h, &T)
+	if !ok {
+		panic("Failed to decode an issuance key")
 	}
 
 	ozkp := CreateOlegZKP(
@@ -162,25 +146,10 @@ func (iarp *ConfidentialIARP) Validate(
 	//         h = ScalarHash("IARP.h", {msghash})
 	h := scalarHash("ChainCA.IARP.h", msghash[:])
 
-	F := make([][]ecmath.Point, n)
-	for i := uint64(0); i < n; i++ {
-		// F[i,0] = H - A[i] + h·Y[i]
-		// F[i,1] = AC.C
-		// F[i,2] = T
-		F[i] = make([]ecmath.Point, 3)
+	F, ok := iarpCommitments(ac, issuanceKeyTuples, &h, &iarp.TracingPoint)
 
-		y := issuanceKeyTuples[i].IssuanceKey()
-		F[i][0] = ecmath.ZeroPoint
-		if F[i][0].UnmarshalBinary(y) != nil {
-			return false
-		}
-		a := CreateAssetPoint(issuanceKeyTuples[i].AssetID())
-		F[i][0].ScMul(&F[i][0], &h)
-		F[i][0].Sub(&F[i][0], (*ecmath.Point)(&a))
-		F[i][0].Add(&F[i][0], ac.H())
-
-		F[i][1] = *ac.C()
-		F[i][2] = iarp.TracingPoint
+	if !ok {
+		return false
 	}
 
 	return iarp.IssuanceProof.Validate(
@@ -189,6 +158,37 @@ func (iarp *ConfidentialIARP) Validate(
 		F)
 
 	return true
+}
+
+func iarpCommitments(
+	ac *AssetCommitment,
+	issuanceKeyTuples []AssetIssuanceKeyTuple,
+	h *ecmath.Scalar,
+	T *ecmath.Point,
+) ([][]ecmath.Point, bool) {
+
+	n := len(issuanceKeyTuples)
+	F := make([][]ecmath.Point, n)
+	for i := 0; i < n; i++ {
+		// F[i,0] = AC.H - A[i] + h·Y[i]
+		// F[i,1] = AC.C
+		// F[i,2] = T
+		F[i] = make([]ecmath.Point, 3)
+
+		y := issuanceKeyTuples[i].IssuanceKey()
+		F[i][0] = ecmath.ZeroPoint
+		if F[i][0].UnmarshalBinary(y) != nil {
+			return nil, false
+		}
+		a := CreateAssetPoint(issuanceKeyTuples[i].AssetID())
+		F[i][0].ScMul(&F[i][0], h)
+		F[i][0].Sub(&F[i][0], (*ecmath.Point)(&a))
+		F[i][0].Add(&F[i][0], ac.H())
+
+		F[i][1] = *ac.C()
+		F[i][2] = *T
+	}
+	return F, true
 }
 
 func iarpFunctions(M ecmath.Point, h ecmath.Scalar) []OlegZKPFunc {
