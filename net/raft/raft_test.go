@@ -178,9 +178,9 @@ func (n *testNode) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (n *testNode) cleanup() {
-	os.RemoveAll(n.dir)
 	n.server.Close()
-	// TODO(jackson): stop the Service too
+	n.service.Stop()
+	os.RemoveAll(n.dir)
 }
 
 // newTestNode creates a new local raft Service listening on a random

@@ -8,7 +8,7 @@ import (
 func newTestState() *state {
 	return &state{
 		NodeIDCounter: 2,
-		Peers:         make(map[uint64]string),
+		PeersByID:     make(map[uint64]string),
 		Data:          make(map[string]string),
 	}
 }
@@ -21,7 +21,7 @@ func newTestState() *state {
 type state struct {
 	NodeIDCounter uint64
 	Index         uint64
-	Peers         map[uint64]string
+	PeersByID     map[uint64]string
 	Data          map[string]string
 }
 
@@ -34,15 +34,15 @@ func (s *state) SetAppliedIndex(index uint64) {
 }
 
 func (s *state) SetPeerAddr(id uint64, addr string) {
-	s.Peers[id] = addr
-}
-
-func (s *state) GetPeerAddr(id uint64) (addr string) {
-	return s.Peers[id]
+	s.PeersByID[id] = addr
 }
 
 func (s *state) RemovePeerAddr(id uint64) {
-	delete(s.Peers, id)
+	delete(s.PeersByID, id)
+}
+
+func (s *state) Peers() map[uint64]string {
+	return s.PeersByID
 }
 
 func (s *state) IsAllowedMember(addr string) bool {
