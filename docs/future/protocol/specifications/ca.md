@@ -1576,7 +1576,7 @@ In case of failure, returns `nil` instead of the range proof.
 2. Let `n = N/2`.
 3. Let `base = 4`.
 4. Calculate the message to validate: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
+5. Calculate last digit commitment: `(D[n-1],B[n-1]) = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])`, where `∑(D[t],B[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
     1. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] - i·(base^t)·AC.H`. For efficiency perform iterative point addition of `-(base^t)·H` instead of scalar multiplication.
