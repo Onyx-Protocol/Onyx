@@ -7,7 +7,7 @@ type IssuanceProof struct {
 	e1, s1, e2, s2 ecmath.Scalar
 }
 
-func CreateIssuanceProof(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetID, msg []byte, nonce [32]byte, y ecmath.Scalar, Y ecmath.Point) *IssuanceProof {
+func CreateIssuanceProof(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetID, msg []byte, nonce [32]byte, y ecmath.Scalar) *IssuanceProof {
 	// 1. [Validate issuance asset range proof](#validate-issuance-asset-range-proof) to make sure tracing and marker points are correct.
 	if !iarp.Validate(ac, a, iarp.Y, nonce, msg) {
 		return nil // xxx or panic?
@@ -66,7 +66,7 @@ func CreateIssuanceProof(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetI
 }
 
 // Validate validates ip. It returns two bools: overall validity, and whether Y[j] was used to issue the asset ID in commitment ac.
-func (ip *IssuanceProof) Validate(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetID, msg []byte, nonce [32]byte, j int) (valid, yj bool) {
+func (ip *IssuanceProof) Validate(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetID, msg []byte, nonce [32]byte, j uint64) (valid, yj bool) {
 	if !iarp.Validate(ac, a, iarp.Y, nonce, msg) {
 		return false, false
 	}
