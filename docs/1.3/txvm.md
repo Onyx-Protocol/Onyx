@@ -30,8 +30,9 @@ There are several named types of tuples.
 
 0. `amount`, an int64
 1. `assetID`, a string
-2. `unproven`, a boolean (TBD)
-3. `history`, a tuple (TBD)
+2. `history`, a tuple (TBD)
+
+### Confidential Value
 
 #### Output
 
@@ -69,29 +70,14 @@ There are several named types of tuples.
 3. `maxtime`, an int64
 4. `referencedata`, a string
 
-#### VM1 Transaction Header
+#### Legacy Output
 
-0. `results`, a tuple of output and retirement IDs
-1. `mintime`, an int64
-2. `maxtime`, an int64
-3. `referencedata`, a string
-
-#### VM1 Output
-
-0. `mux`, a 32-byte string representing a [VM1 Mux](#vm1-mux) ID
-1. `value`, a tuple of type [Value](#value)
-4. `program`, a string
-5. `data`, a string
-
-#### VM1 Spend
-
-0. `spentoutput`, a tuple of type [VM1 Output](#vm1-output).
-1. `data`, a string
-
-### VM1 Mux
-
-0. `sources`, a tuple of multiple `values`
-1. 
+0. `sourceID`, a 32-byte ID
+1. `assetID`, a 32-byte asset ID ID
+2. `amount`, an int64
+2. `index`, an int64 
+2. `program`, a string
+3. `data`, a string
 
 ## Item IDs
 
@@ -108,16 +94,9 @@ TODO: describe process
 6. Nonces stack
 7. Anchors stack
 8. Retirements stack
-9. Transaction header stack
-10. Version 1 Inputs Stack
-11. Version 1 Values Stack
-12. Muxes Stacks
-13. Version 1 Results Stack
-14. Version 1 Conditions Stack
-15. Version 1 Nonces Stack
-16. Version 1 Anchors Stack
-17. Version 1 Transaction Header Stack
-18. Version 1 Results Stack
+9. Legacy outputs stack
+10. Transaction header stack
+
 
 ## Data stack
 
@@ -421,66 +400,15 @@ TBD
 
 ## Legacy operations
 
-### VM1CheckPredicate
+### Upgrade
 
-Pops a tuple `input` of type [VM1 Input](#vm1-input) from the data stack, then pops a tuple `arguments` from the data stack. 
+Pop an ID `inputID` off the Inputs stack.
 
-Fails if the VM1 Transaction Header stack is empty, or if the top item on it is not a [VM1 Transaction Header](#VM1-Transcation-Header).
+Pop a tuple `input` of type [Legacy Output](#legacy-output) from the data stack. Verify that its ID matches `inputID`.
 
-Initializes an instance of VM1 with:
+Push `input.program` to the [Conditions](#condition) stack. 
 
-- the program being executed set to `input.program`
-- the data stack initialized with the items in `arguments`, with the first item on top of the stack
-- expansion flag set to false
-- execution context set to a special transaction context such that:
-	- the transaction header (used by `MINTIME`, `MAXTIME`, `TXSIGHASH`, and `TXDATA`) is the item on top of the Transaction Header stack
-	- the outputs checked by `CHECKOUTPUT` are the items currently on the VM1 Outputs stack, with the top output at index 0
-	- the "current entry" (used by `AMOUNT`, `ASSET`, `ENTRY`, `ENTRYID`, `ENTRYDATA`, `OUTPUTID`, `TXSIGHASH`, `INDEX`, and `PROGRAM`) is `input`
-
-### VM1Unlock
-
-Pops an input ID `inputID` from the [Inputs](#Input) stack.
-
-Pops a tuple `input` of type [VM1Input](#VM1Input) from the data stack.
-
-Verifies that the ID of `input.spend` matches the ID `inputID`.
-
-Pushes a [Value](#value) to the Values stack with amount `input.amount` and asset ID `input.assetID`.
-
-Pushes a program to the [conditions](#Condition) stack which does the following:
-  - Pushes `input` to the data stack.
-  - Executes the [VM1CheckPredicate](#VM1CheckPredicate) instruction.
-
-### VM1Lock
-
-Pops a value `value` from the [Values](#value) stack. Pops a program `program` from the data stack. Pops a string `data` from the data stack.
-
-Pushes an output to the [VM1 Outputs](#vm1-outputs) stack.
-
-### VM1Nonce
-
-### VM1Issue
-
-### VM1Mux
-
-### VM1Finalize
-
-### VM1Withdraw
-
-Pops an a
-
-	VM1CheckPredicate = 63 // list vm1prog => bool
-	VM1Unlock         = 64 // vm1inputid + data => vm1value + cond
-	VM1Nonce          = 65 // vm1nonce => vm1anchor + cond
-	VM1Issue          = 66 // vm1anchor => vm1value + cond
-	VM1Mux            = 67 // entire vm1value stack => vm1mux
-	VM1Withdraw       = 68 // vm1mux + amount asset => vm1mux + value
-
-### VM1Retire
-
-### VM1Finalize
-
-
+Push a [value](#Value) with amount `input.amount` and asset ID `input.assetID` to the stack.
 
 ## Extension opcodes
 
