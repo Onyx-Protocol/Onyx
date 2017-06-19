@@ -5,6 +5,8 @@ import "chain/crypto/ed25519/ecmath"
 // ValueProofSize is a size of the value proof in bytes
 const ValueProofSize = 128
 
+type ValueProof [ValueProofSize]byte
+
 // CreateValueProof creates a proof of a specifc asset ID and value bound to
 // the given asset ID commitment and value commitment.
 func CreateValueProof(
@@ -15,7 +17,7 @@ func CreateValueProof(
 	c ecmath.Scalar,
 	f ecmath.Scalar,
 	message []byte,
-) []byte {
+) *ValueProof {
 	// 1. Compute a message hash to be signed:
 	//         h = Hash256("ValueProof", {assetid, uint64le(value), AC, VC, message})
 	h := hash256("ChainCA.ValueProof",
@@ -33,24 +35,22 @@ func CreateValueProof(
 
 	// 4. Return concatenation of Schnorr signatures extracted from excess commitments (last 64 bytes from the each excess commitment):
 	//         vp = E1[64:128] || E2[64:128]
-	return append(e1.signatureBytes(), e2.signatureBytes()...)
+	var result [ValueProofSize]byte
+	copy(result[:64], e1.signatureBytes())
+	copy(result[64:], e2.signatureBytes())
+
+	return (*ValueProof)(&result)
 }
 
 // ValidateValueProof checks if a given proof vp actually proves that commitments
 // ac and vc commit to a given assetID and value.
-func ValidateValueProof(
-	vp []byte,
+func (vp *ValueProof) Validate(
 	assetID AssetID,
 	value uint64,
 	ac *AssetCommitment,
 	vc *ValueCommitment,
 	message []byte,
 ) bool {
-	// 1. If `vp` is not a 128-byte string, return `false`.
-	if len(vp) != ValueProofSize {
-		return false
-	}
-
 	// 2. Compute a message hash to be signed:
 	//         h = Hash256("ValueProof", {assetid, uint64le(value), AC, VC, message})
 	h := hash256("ChainCA.ValueProof",
