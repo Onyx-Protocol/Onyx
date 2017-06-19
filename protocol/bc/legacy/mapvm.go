@@ -39,7 +39,7 @@ func MapVMTx(oldTx *TxData) *txvm.Tx {
 				nonceID := bc.EntryID(bc.NewNonce(&bc.Program{VmVersion: 1, Code: prog}, &trID))
 				tx.Nonce = append(tx.Nonce, txvm.ID(nonceID.Byte32()))
 
-				proof.Int64(int64(oldTx.MinTime)).Int64(int64(oldTx.MaxTime)).Data(prog).Op(txvm.Anchor) // nonce => anchor + cond
+				proof.Int64(int64(oldTx.MinTime)).Int64(int64(oldTx.MaxTime)).Data(prog).Int64(3).Op(txvm.Tuple).Op(txvm.VM1Nonce) // vm1nonce => vm1anchor + cond
 
 				var argsProg []byte
 				argsProg = append(argsProg, txvm.Satisfy)

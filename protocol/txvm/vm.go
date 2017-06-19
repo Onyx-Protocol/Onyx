@@ -22,9 +22,13 @@ type Tx struct {
 	Runlimit         int64
 	In, Nonce        []ID
 	Out, Retire      []ID
-	Data             ID
-	ExtHash          ID
-	Proof            []byte
+
+	VM1In, VM1Nonce []ID
+	VM1Out          []ID
+
+	Data    ID
+	ExtHash ID
+	Proof   []byte
 }
 
 type vm struct {
@@ -42,20 +46,21 @@ type vm struct {
 	data stack
 	alt  stack
 
-	inputs        []VMTuple
-	values        []VMTuple
-	outputs       []VMTuple
-	conditions    []VMTuple
-	nonces        []VMTuple
-	anchors       []VMTuple
-	txheader      []VMTuple
-	vm1inputs     []VMTuple
-	vm1values     []VMTuple
-	vm1muxes      []VMTuple
-	vm1outputs    []VMTuple
-	vm1conditions []VMTuple
-	vm1nonces     []VMTuple
-	vm1anchors    []VMTuple
+	inputs        tupleStack
+	values        tupleStack
+	outputs       tupleStack
+	conditions    tupleStack
+	nonces        tupleStack
+	anchors       tupleStack
+	retirements   tupleStack
+	txheader      tupleStack
+	vm1inputs     tupleStack
+	vm1values     tupleStack
+	vm1muxes      tupleStack
+	vm1outputs    tupleStack
+	vm1conditions tupleStack
+	vm1nonces     tupleStack
+	vm1anchors    tupleStack
 }
 
 // Validate returns whether x is valid.
@@ -84,8 +89,8 @@ func Validate(x *Tx, o ...Option) bool {
 	// TODO(kr): call some tracing hook here
 	// to signal end of execution.
 
-	return len(vm.inputs) == 0 &&
-		len(vm.values) == 0
+	return vm.inputs.Len() == 0 &&
+		vm.values.Len() == 0
 }
 
 func exec(vm *vm, prog []byte) {
@@ -128,7 +133,7 @@ func idsEqual(a, b []ID) bool {
 	return true
 }
 
-func getStack(vm *vm, t int64) *[]VMTuple {
+func getStack(vm *vm, t int64) *tupleStack {
 	switch t {
 	case StackInput:
 		return &vm.inputs
@@ -142,6 +147,8 @@ func getStack(vm *vm, t int64) *[]VMTuple {
 		return &vm.nonces
 	case StackAnchor:
 		return &vm.anchors
+	case StackRetirement:
+		return &vm.retirements
 	case StackTxHeader:
 		return &vm.txheader
 	case StackVM1Input:
