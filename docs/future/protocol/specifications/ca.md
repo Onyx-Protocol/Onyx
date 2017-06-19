@@ -1515,7 +1515,7 @@ In case of failure, returns `nil` instead of the range proof.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-packet) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPacket({pt[i]}, pek)`.
 10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash("VRP.b", msghash, f, 64·(n-1))`.
-11. Interpret each 64-byte `b[t]` (`t` from 0 to `n-2`) is interpreted as a little-endian integer and reduce modulo `L` to a 32-byte scalar.
+11. Interpret each 64-byte `b[t]` (`t` from 0 to `n-2`) as a little-endian integer and reduce modulo `L` to a 32-byte scalar.
 12. Calculate the last digit blinding factor: `b[n-1] = f - ∑b[t] mod L`, where `t` is from 0 to `n-2`.
 13. For `t` from `0` to `n-1` (each digit):
     1. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
