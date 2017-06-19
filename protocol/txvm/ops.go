@@ -11,6 +11,7 @@ import (
 
 	"chain/crypto/ed25519"
 	"chain/math/checked"
+	"chain/protocol/bc"
 )
 
 // avoid initialization loop
@@ -68,6 +69,13 @@ var ops = [NumOp]func(*vm){
 	SHA3:          hashOp(sha3.New256).run,
 	CheckSig:      opCheckSig,
 	CheckMultiSig: opCheckMultiSig,
+
+	VM1CheckPredicate: opVM1CheckPredicate,
+	VM1Unlock:         opVM1Unlock,
+	VM1Nonce:          opVM1Nonce,
+	VM1Issue:          opVM1Issue,
+	VM1Mux:            opVM1Mux,
+	VM1Withdraw:       opVM1Withdraw,
 }
 
 func opPC(vm *vm) {
@@ -91,13 +99,8 @@ func opRoll(vm *vm) {
 	case StackAlt:
 		vm.alt.Roll(n)
 	default:
-		stackp := getStack(vm, t)
-		stack := *stackp
-		i := len(stack) - int(n)
-		x := stack[i]
-		stack = append(stack[:i], stack[i+1:]...)
-		stack = append(stack, x)
-		stackp = &stack
+		stack := getStack(vm, t)
+		stack.Roll(t)
 	}
 }
 
@@ -110,13 +113,7 @@ func opBury(vm *vm) {
 	case StackAlt:
 		vm.alt.Bury(n)
 	default:
-		stackp := getStack(vm, t)
-		stack := *stackp
-		x := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		i := len(stack) - int(n)
-		stack = append(append(append([]VMTuple{}, stack[:i]...), x), stack[i:]...)
-		stackp = &stack
+		getStack(vm, t).Bury(n)
 	}
 }
 
@@ -129,7 +126,7 @@ func opDepth(vm *vm) {
 	case StackAlt:
 		n = int(vm.alt.Len())
 	default:
-		n = len(*getStack(vm, t))
+		n = int(getStack(vm, t).Len())
 	}
 	vm.data.PushInt64(int64(n))
 }
@@ -333,8 +330,8 @@ func opField(vm *vm) {
 		vm.data.Push(tuple[n])
 	case StackInput:
 	default:
-		stack := *getStack(vm, t)
-		vm.data.Push(stack[len(stack)-1])
+		stack := getStack(vm, t)
+		vm.data.Push(stack.Peek()[n])
 	}
 }
 
@@ -399,4 +396,36 @@ func opCheckMultiSig(vm *vm) {
 		key = key[1:]
 	}
 	vm.data.Push(Bool(len(sig) == 0))
+}
+
+func opVM1CheckPredicate(vm *vm) {
+	panic(errors.New("todo"))
+}
+
+func opVM1Unlock(vm *vm) {
+	panic(errors.New("todo"))
+}
+
+func opVM1Nonce(vm *vm) {
+	tuple := vm.data.PopTuple()
+	trID := bc.EntryID(bc.NewTimeRange(uint64(tuple[2].(Int64)), uint64(tuple[1].(Int64))))
+	id := bc.EntryID(bc.NewNonce(&bc.Program{VmVersion: 1, Code: tuple[0].(Bytes)}, &trID))
+	stackNonce := vm.vm1nonces.Pop()
+	if !bytes.Equal(stackNonce[0].(Bytes), id.Bytes()) {
+		panic(errors.New("bad nonce id"))
+	}
+	vm.vm1anchors.Push(stackNonce)
+	vm.vm1conditions.Push([]Value{tuple[0]})
+}
+
+func opVM1Issue(vm *vm) {
+	panic(errors.New("todo"))
+}
+
+func opVM1Mux(vm *vm) {
+	panic(errors.New("todo"))
+}
+
+func opVM1Withdraw(vm *vm) {
+	panic(errors.New("todo"))
 }
