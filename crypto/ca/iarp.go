@@ -61,7 +61,7 @@ func CreateConfidentialIARP(
 
 	// 2. Calculate marker point `M`:
 	//         M = PointHash("IARP.M", {basehash})
-	M := pointHash("ChainCA.IARP.M", basehash[:])
+	M := iarpCalcM(basehash)
 
 	// 3. Calculate the tracing point: `T = y·M`.
 	var T ecmath.Point
@@ -202,4 +202,8 @@ func iarpBasehash(ac *AssetCommitment, nonce [32]byte, msg []byte, assetIDs []As
 	var result [32]byte
 	hasher.Sum(result[:0])
 	return result
+}
+
+func iarpCalcM(basehash [32]byte) ecmath.Point {
+	return pointHash("ChainCA.IARP.M", basehash[:])
 }
