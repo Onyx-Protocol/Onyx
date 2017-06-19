@@ -1532,7 +1532,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `M = 2`.
     * `{G, J}`: 2 base points.
     * `{(P[i,j], Q[i,j])}`: `2·n·m` [points](#point).
-    * `{f}`: the blinding factor `f` repeated `n` times.
+    * `{b[t]}`: the blinding factors for all digits.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G`.
     * `{r[i]} = {ct[i]}`: random string consisting of `n·m` 32-byte ciphertext elements.
 13. If failed to create borromean ring signature `brs`, return nil. The chance of this happening is below 1 in 2<sup>124</sup>. In case of failure, retry [creating blinded value commitment](#create-blinded-value-commitment) with incremented counter. This would yield a new blinding factor `f` that will produce different digit blinding keys in this algorithm.
