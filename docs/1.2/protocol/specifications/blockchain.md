@@ -390,7 +390,7 @@ Witness    | Struct               | Empty struct.
 Body Field | Type                                    | Description
 -----------|-----------------------------------------|-------------------------
 Version    | Integer                                 | Transaction version, equals 1.
-Results    | List\<Pointer\<Output 1\|Retirement 1\>\>   | A list of pointers to Outputs or Retirements. This list must contain at least one item.
+Results    | List\<Pointer\<Output 1\|Retirement 1\|Upgrade\>\>   | A list of pointers to Outputs or Retirements. This list must contain at least one item.
 Data       | String32                                | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
 Mintime    | Integer                                 | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                 | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
@@ -560,6 +560,24 @@ Arguments           | String                     | Arguments for the program con
 8. If the program VM version is 1, verify that the program’s bytecode does not begin with [FAIL](vm1.md#fail) instruction.
 
 Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
+
+### Upgrade
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "upgrade"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+Body field          | Type                 | Description
+--------------------|----------------------|----------------
+Source              | ValueSource1         | The source of the value locked by this entry.
+Program             | Program              | The program that locks the entry. Must have VM type 2.
+Data                | String               | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no data).
+
+#### Upgrade Validation
+
+1. [Validate](#value-source-1-validation) `Source`.
 
 
 ### Nonce

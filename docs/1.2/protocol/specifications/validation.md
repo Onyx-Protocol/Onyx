@@ -171,6 +171,9 @@ A new node starts here when joining a running network (with height > 1). In that
 5. For each [output version 1](blockchain.md#output-1) in the transaction header:
     1. Add that output’s [ID](blockchain.md#entry-id) to `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
-6. Return `S`.
+6. For each [upgrade](blockchain.md#upgrade) in the transaction header:
+    1. Add that upgrade's [ID](blockchain.md#upgrade) to `S`, yielding a new state `S`. 
+    2. Replace `S` with `S′`.
+7. Return `S`.
 
 
