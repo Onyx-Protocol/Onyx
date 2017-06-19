@@ -70,12 +70,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 		return DB[t]
 	})
 
-	var fn []ecmath.Scalar
-	for i := uint64(0); i < n; i++ {
-		fn = append(fn, f)
-	}
-
-	brs := CreateBorromeanRingSignature(msghash[:], []ecmath.Point{G, J}, PQ, fn, j, ct)
+	brs := CreateBorromeanRingSignature(msghash[:], []ecmath.Point{G, J}, PQ, b, j, ct)
 	return &ValueRangeProof{
 		nbits:  N,
 		exp:    0,
