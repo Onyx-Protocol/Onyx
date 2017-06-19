@@ -48,7 +48,7 @@ type nodeJoinResponse struct {
 }
 
 // ServeHTTP responds to raft consensus messages at /raft/x,
-// where x is any particular raft internode RPC.
+// where x is any raft internode RPC.
 // When sv sends outgoing messages, it acts as an HTTP client
 // and sends requests to its peers at /raft/x.
 func (sv *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
