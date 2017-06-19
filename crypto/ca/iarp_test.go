@@ -37,32 +37,22 @@ func TestConfidentialIARP(t *testing.T) {
 	Y1.ScMul(&G, &y1)
 	Y2.ScMul(&G, &y2)
 
-	nonce := []byte("nonce")
+	var nonce [32]byte
+	copy(nonce[:], []byte("nonce"))
 	msg := []byte("message")
 
 	secretIndex := uint64(1)
 	y := y1
 	ac, c := CreateAssetCommitment(a1, aek)
 
-	keyTuples := []AssetIssuanceKeyTuple{
-		&testAssetIssuanceKeyTuple{
-			assetID:     &a0,
-			issuanceKey: Y0.Bytes(),
-		},
-		&testAssetIssuanceKeyTuple{
-			assetID:     &a1,
-			issuanceKey: Y1.Bytes(),
-		},
-		&testAssetIssuanceKeyTuple{
-			assetID:     &a2,
-			issuanceKey: Y2.Bytes(),
-		},
-	}
+	assetIDs := []AssetID{a0, a1, a2}
+	Y := []ecmath.Point{Y0, Y1, Y2}
 
 	iarp := CreateConfidentialIARP(
 		ac,
 		*c,
-		keyTuples,
+		assetIDs,
+		Y,
 		nonce,
 		msg,
 		secretIndex,
@@ -71,7 +61,8 @@ func TestConfidentialIARP(t *testing.T) {
 
 	result := iarp.Validate(
 		ac,
-		keyTuples,
+		assetIDs,
+		Y,
 		nonce,
 		msg,
 	)

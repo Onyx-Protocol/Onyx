@@ -18,6 +18,8 @@ var (
 	// One is the number 1.
 	One = Scalar{1}
 
+	Cofactor = Scalar{8}
+
 	// NegOne is the number -1 mod L
 	NegOne = Scalar{
 		0xec, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,

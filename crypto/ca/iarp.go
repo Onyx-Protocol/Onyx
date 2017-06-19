@@ -4,20 +4,12 @@ import (
 	"chain/crypto/ed25519/ecmath"
 )
 
-// AssetIssuanceKeyTuple interface allows passing:
-// * issuance key specs during creation,
-// * issuance choices during validation
-// without the need to tediously reformat them to a temporary data structure.
-type AssetIssuanceKeyTuple interface {
-	AssetID() *AssetID
-	IssuanceKey() IssuanceKey
-}
-
 type IssuanceAssetRangeProof interface {
 	// TODO: add Reader/Writer interfaces
 	Validate(
 		ac *AssetCommitment,
-		issuanceKeyTuples []AssetIssuanceKeyTuple,
+		assetIDs []AssetID,
+		Y []ecmath.Point,
 		nonce []byte,
 		message []byte,
 	) bool
@@ -28,53 +20,44 @@ type NonconfidentialIARP struct {
 }
 
 type ConfidentialIARP struct {
-	TracingPoint  ecmath.Point
-	IssuanceProof *OlegZKP
+	// Y is the list of issuance keys
+	Y []ecmath.Point
+
+	// T is the tracing point
+	T           ecmath.Point
+	IssuanceZKP *OlegZKP
 }
 
 func CreateNonconfidentialIARP(assetID AssetID) *NonconfidentialIARP {
 	return &NonconfidentialIARP{AssetID: assetID}
 }
 
-func (iarp *NonconfidentialIARP) Validate(
-	ac *AssetCommitment,
-	issuanceKeyTuples []AssetIssuanceKeyTuple,
-	nonce []byte,
-	message []byte,
-) bool {
-	ac2 := PointPair{ecmath.Point(CreateAssetPoint(&iarp.AssetID)), ecmath.ZeroPoint}
-	return (*PointPair)(ac).ConstTimeEqual(&ac2)
+func (iarp *NonconfidentialIARP) Validate(ac *AssetCommitment, _ []AssetID, _ []ecmath.Point, _ []byte, _ []byte) bool {
+	return ac.Validate(iarp.AssetID, nil)
 }
 
 func CreateConfidentialIARP(
 	ac *AssetCommitment,
 	c ecmath.Scalar,
-	issuanceKeyTuples []AssetIssuanceKeyTuple,
-	nonce []byte,
-	message []byte,
+	assetIDs []AssetID,
+	Y []ecmath.Point, // issuance keys
+	nonce [32]byte,
+	msg []byte,
 	secretIndex uint64,
 	y ecmath.Scalar,
 ) *ConfidentialIARP {
 
-	n := uint64(len(issuanceKeyTuples))
+	n := len(assetIDs)
+	if len(Y) != n {
+		panic("calling error")
+	}
 
 	// 1. Calculate the base hash:
 	//         basehash = Hash256("IARP.base",
 	//                         {AC, nonce, message,
 	//                         uint64le(n),
 	//                         a[0],Y[0], ..., a[n-1],Y[n-1]})
-	basehasher := hasher256("ChainCA.IARP.base",
-		ac.Bytes(),
-		nonce,
-		message,
-		uint64le(n))
-
-	for _, tuple := range issuanceKeyTuples {
-		basehasher.WriteItem(tuple.AssetID()[:])
-		basehasher.WriteItem(tuple.IssuanceKey())
-	}
-	var basehash [32]byte
-	basehasher.Sum(basehash[:0])
+	basehash := iarpBasehash(ac, nonce, msg, assetIDs, Y)
 
 	// 2. Calculate marker point `M`:
 	//         M = PointHash("IARP.M", {basehash})
@@ -92,7 +75,7 @@ func CreateConfidentialIARP(
 	//         h = ScalarHash("IARP.h", {msghash})
 	h := scalarHash("ChainCA.IARP.h", msghash[:])
 
-	F, ok := iarpCommitments(ac, issuanceKeyTuples, &h, &T)
+	F, ok := iarpCommitments(ac, assetIDs, Y, h, T)
 	if !ok {
 		panic("Failed to decode an issuance key")
 	}
@@ -105,34 +88,22 @@ func CreateConfidentialIARP(
 		secretIndex,
 	)
 
-	return &ConfidentialIARP{TracingPoint: T, IssuanceProof: ozkp}
+	return &ConfidentialIARP{Y: Y, T: T, IssuanceZKP: ozkp}
 }
 
 func (iarp *ConfidentialIARP) Validate(
 	ac *AssetCommitment,
-	issuanceKeyTuples []AssetIssuanceKeyTuple,
-	nonce []byte,
-	message []byte,
+	assetIDs []AssetID,
+	Y []ecmath.Point,
+	nonce [32]byte,
+	msg []byte,
 ) bool {
-	n := uint64(len(issuanceKeyTuples))
-
 	// 1. Calculate the base hash:
 	//         basehash = Hash256("IARP.base",
 	//                     {AC, nonce, message,
 	//                     uint64le(n),
 	//                     a[0],Y[0], ..., a[n-1],Y[n-1]})
-	basehasher := hasher256("ChainCA.IARP.base",
-		ac.Bytes(),
-		nonce,
-		message,
-		uint64le(n))
-
-	for _, tuple := range issuanceKeyTuples {
-		basehasher.WriteItem(tuple.AssetID()[:])
-		basehasher.WriteItem(tuple.IssuanceKey())
-	}
-	var basehash [32]byte
-	basehasher.Sum(basehash[:0])
+	basehash := iarpBasehash(ac, nonce, msg, assetIDs, Y)
 
 	// 2. Calculate marker point `M`:
 	//         M = PointHash("IARP.M", {basehash})
@@ -140,19 +111,19 @@ func (iarp *ConfidentialIARP) Validate(
 
 	// 3. Calculate a 32-byte message hash to sign:
 	//         msghash = Hash256("IARP.msg", {basehash, M, T})
-	msghash := hash256("ChainCA.IARP.msg", basehash[:], M.Bytes(), iarp.TracingPoint.Bytes())
+	msghash := hash256("ChainCA.IARP.msg", basehash[:], M.Bytes(), iarp.T.Bytes())
 
 	// 5. Calculate Fiat-Shamir challenge `h` for the issuance key:
 	//         h = ScalarHash("IARP.h", {msghash})
 	h := scalarHash("ChainCA.IARP.h", msghash[:])
 
-	F, ok := iarpCommitments(ac, issuanceKeyTuples, &h, &iarp.TracingPoint)
+	F, ok := iarpCommitments(ac, assetIDs, Y, h, iarp.T)
 
 	if !ok {
 		return false
 	}
 
-	return iarp.IssuanceProof.Validate(
+	return iarp.IssuanceZKP.Validate(
 		msghash[:],
 		iarpFunctions(M, h),
 		F)
@@ -162,31 +133,32 @@ func (iarp *ConfidentialIARP) Validate(
 
 func iarpCommitments(
 	ac *AssetCommitment,
-	issuanceKeyTuples []AssetIssuanceKeyTuple,
-	h *ecmath.Scalar,
-	T *ecmath.Point,
+	assetIDs []AssetID,
+	Y []ecmath.Point,
+	h ecmath.Scalar,
+	T ecmath.Point,
 ) ([][]ecmath.Point, bool) {
 
-	n := len(issuanceKeyTuples)
+	n := len(assetIDs)
+	if len(Y) != n {
+		panic("calling error")
+	}
+
 	F := make([][]ecmath.Point, n)
-	for i := 0; i < n; i++ {
+	for i, assetID := range assetIDs {
 		// F[i,0] = AC.H - A[i] + h·Y[i]
 		// F[i,1] = AC.C
 		// F[i,2] = T
 		F[i] = make([]ecmath.Point, 3)
 
-		y := issuanceKeyTuples[i].IssuanceKey()
-		F[i][0] = ecmath.ZeroPoint
-		if F[i][0].UnmarshalBinary(y) != nil {
-			return nil, false
-		}
-		a := CreateAssetPoint(issuanceKeyTuples[i].AssetID())
-		F[i][0].ScMul(&F[i][0], h)
+		F[i][0] = Y[i]
+		a := CreateAssetPoint(&assetID)
+		F[i][0].ScMul(&F[i][0], &h)
 		F[i][0].Sub(&F[i][0], (*ecmath.Point)(&a))
 		F[i][0].Add(&F[i][0], ac.H())
 
 		F[i][1] = *ac.C()
-		F[i][2] = *T
+		F[i][2] = T
 	}
 	return F, true
 }
@@ -215,4 +187,19 @@ func iarpFunctions(M ecmath.Point, h ecmath.Scalar) []OlegZKPFunc {
 			return P
 		},
 	}
+}
+
+func iarpBasehash(ac *AssetCommitment, nonce [32]byte, msg []byte, assetIDs []AssetID, Y []ecmath.Point) [32]byte {
+	n := len(assetIDs)
+	if len(Y) != n {
+		panic("calling error")
+	}
+	hasher := hasher256("ChainCA.IARP.base", ac.Bytes(), nonce[:], msg, uint64le(uint64(n)))
+	for i, assetID := range assetIDs {
+		hasher.WriteItem(assetID[:])
+		hasher.WriteItem(Y[i].Bytes())
+	}
+	var result [32]byte
+	hasher.Sum(result[:0])
+	return result
 }

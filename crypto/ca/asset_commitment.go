@@ -31,3 +31,8 @@ func (ac *AssetCommitment) C() *ecmath.Point { return &ac[1] }
 func (ac *AssetCommitment) Bytes() []byte {
 	return (*PointPair)(ac).Bytes()
 }
+
+func (ac *AssetCommitment) Validate(assetID AssetID, aek AssetKey) bool {
+	ac2, _ := CreateAssetCommitment(assetID, aek)
+	return (*PointPair)(ac).ConstTimeEqual((*PointPair)(ac2))
+}
