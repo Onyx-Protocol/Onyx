@@ -21,11 +21,11 @@ rerun: build-dev corectl resetdb
 	cored
 
 ## run development dashboard at http://localhost:3000
-dashserver:
+dashserve:
 	npm --prefix dashboard start
 
 ## run development documentation server at http://localhost:8080
-docserver: md2html
+docserve: md2html
 	md2html serve
 
 ## builds chain core with c dependencies, for development environments
