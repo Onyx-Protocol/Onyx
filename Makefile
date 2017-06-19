@@ -6,7 +6,7 @@ null:
 
 ## builds chain core with c dependencies, for development environments
 build-dev: build-lib
-	cd $(CHAIN) && go install -tags 'localhost_auth http_ok reset' ./cmd/cored
+	cd $(CHAIN) && go install -tags 'localhost_auth http_ok init_cluster' ./cmd/cored
 
 ## builds statically-linked c dependencies
 build-lib:
