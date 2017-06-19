@@ -34,4 +34,38 @@ func TestIssuanceProof(t *testing.T) {
 	if !yj {
 		t.Error("validated issuance proof but not yj")
 	}
+
+	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], msg[1:], nonce, j); valid {
+		t.Error("validated invalid issuance proof")
+	}
+	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], msg, nonce, 0); valid {
+		t.Error("validated invalid issuance proof")
+	}
+
+	nonce2 := nonce
+	nonce2[0] ^= 1
+	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], msg, nonce2, j); valid {
+		t.Error("validated invalid issuance proof")
+	}
+
+	ip2 := *ip
+	ip2.e1[0] ^= 1
+	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], msg, nonce, j); valid {
+		t.Error("validated invalid issuance proof")
+	}
+	ip2 = *ip
+	ip2.s1[0] ^= 1
+	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], msg, nonce, j); valid {
+		t.Error("validated invalid issuance proof")
+	}
+	ip2 = *ip
+	ip2.e2[0] ^= 1
+	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], msg, nonce, j); valid {
+		t.Error("validated invalid issuance proof")
+	}
+	ip2 = *ip
+	ip2.s2[0] ^= 1
+	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], msg, nonce, j); valid {
+		t.Error("validated invalid issuance proof")
+	}
 }
