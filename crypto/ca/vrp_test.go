@@ -25,4 +25,41 @@ func TestVRP(t *testing.T) {
 	if !vrp.Validate(ac, vc, msg) {
 		t.Error("failed to validate vrp")
 	}
+
+	if vrp.Validate(ac, vc, msg[1:]) {
+		t.Error("validated invalid vrp")
+	}
+
+	ac2 := *ac
+	ac2[0].Add(&ac2[0], &G)
+	if vrp.Validate(&ac2, vc, msg) {
+		t.Error("validated invalid vrp")
+	}
+	ac2 = *ac
+	ac2[1].Add(&ac2[1], &G)
+	if vrp.Validate(&ac2, vc, msg) {
+		t.Error("validated invalid vrp")
+	}
+
+	vc2 := *vc
+	vc2[0].Add(&vc2[0], &G)
+	if vrp.Validate(ac, &vc2, msg) {
+		t.Error("validated invalid vrp")
+	}
+	vc2 = *vc
+	vc2[1].Add(&vc2[1], &G)
+	if vrp.Validate(ac, &vc2, msg) {
+		t.Error("validated invalid vrp")
+	}
+
+	vrp2 := *vrp
+	vrp2.exp++
+	if vrp2.Validate(ac, vc, msg) {
+		t.Error("validated invalid vrp")
+	}
+	vrp2 = *vrp
+	vrp2.vmin++
+	if vrp2.Validate(ac, vc, msg) {
+		t.Error("validated invalid vrp")
+	}
 }
