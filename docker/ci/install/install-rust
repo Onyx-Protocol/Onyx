@@ -3,15 +3,15 @@
 set -e
 
 # Pin to a specific nightly until we can get off nightly entirely
-RUST_VERSION="nightly-2017-04-16"
+RUST_VERSION="nightly-2017-06-15"
 
 # Pin to this version of rustfmt
-RUSTFMT_VERSION="0.8.3"
+RUSTFMT_VERSION="0.9.0"
 
 # Pin to this version of clippy
-CLIPPY_VERSION="0.0.124"
+CLIPPY_VERSION="0.0.140"
 
-# Pin to this version of cargo-audiot
+# Pin to this version of cargo-audit
 CARGO_AUDIT_VERSION="0.2.0"
 
 curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_VERSION}
