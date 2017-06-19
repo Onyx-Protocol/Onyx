@@ -1,8 +1,6 @@
 package ca
 
-import (
-	"chain/crypto/ed25519/ecmath"
-)
+import "chain/crypto/ed25519/ecmath"
 
 // ValueRangeProof is a confidential value range proof.
 type ValueRangeProof struct {
@@ -82,7 +80,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 		nbits:  N,
 		exp:    0,
 		vmin:   0,
-		digits: DB,
+		digits: DB[:n-1],
 		brs:    brs,
 	}
 }
@@ -110,24 +108,26 @@ func (vrp *ValueRangeProof) Validate(ac *AssetCommitment, vc *ValueCommitment, m
 	n := vrp.nbits / 2
 	msghash := vrpMsgHash(ac, vc, vrp.nbits, vrp.exp, vrp.vmin, msg)
 
-	// 5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
-	var lastDigit ecmath.Point
-	var vminScalar ecmath.Scalar
+	// 5. Calculate last digit commitment (D[n-1],B[n-1]) = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])
+	var (
+		vminScalar ecmath.Scalar
+		lastDB     PointPair
+	)
 	vminScalar.SetUint64(vrp.vmin)
-	lastDigit.ScMul(&ac[0], &vminScalar)                  // lastDigit = vmin·AC.H
-	lastDigit.Sub(&vc[0], &lastDigit)                     // lastDigit = VC.V - vmin·AC.H
-	lastDigit.ScMul(&lastDigit, powerOf10(-int(vrp.exp))) // lastDigit = (10^(-exp))·(VC.V - vmin·AC.H)
-	dsum := ecmath.ZeroPoint
-	for i := 0; i < len(vrp.digits)-1; i++ {
-		dsum.Add(&dsum, &vrp.digits[i][0])
+	lastDB.ScMul((*PointPair)(ac), &vminScalar)     // lastDB = vmin·AC
+	lastDB.Sub((*PointPair)(vc), &lastDB)           // lastDB = VC - vmin·AC
+	lastDB.ScMul(&lastDB, powerOf10(-int(vrp.exp))) // lastDB = (10^(-exp))·(VC - vmin·AC)
+	dbSum := ZeroPointPair
+	for _, digit := range vrp.digits {
+		dbSum.Add(&dbSum, &digit)
 	}
-	lastDigit.Sub(&lastDigit, &dsum) // lastDigit = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])
+	lastDB.Sub(&lastDB, &dbSum) // lastDB = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])
+
 	PQ := vrpCalcPQ(ac, n, func(t uint64) PointPair {
-		result := vrp.digits[t]
 		if t == n-1 {
-			result[0] = lastDigit
+			return lastDB
 		}
-		return result
+		return vrp.digits[t]
 	})
 	return vrp.brs.Validate(msghash[:], []ecmath.Point{G, J}, PQ)
 }

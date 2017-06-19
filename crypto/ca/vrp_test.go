@@ -22,7 +22,6 @@ func TestVRP(t *testing.T) {
 	msg := []byte("message")
 
 	vrp := CreateValueRangeProof(ac, vc, N, value, pt, *f, idek, vek, msg)
-
 	if !vrp.Validate(ac, vc, msg) {
 		t.Error("failed to validate vrp")
 	}
