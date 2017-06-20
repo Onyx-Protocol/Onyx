@@ -3,9 +3,11 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
+	"io/ioutil"
 	"math"
 	"sync"
 
@@ -16,50 +18,12 @@ var bufPool = sync.Pool{New: func() interface{} { return new([9]byte) }}
 
 var ErrRange = errors.New("value out of range")
 
-// Reader wraps a buffer and provides utilities for decoding
-// data primitives in blockchain structures. Its various read
-// calls may return a slice of the underlying buffer.
-type Reader struct {
-	buf []byte
+type Reader interface {
+	io.Reader
+	io.ByteReader
 }
 
-// NewReader constructs a new reader with the provided bytes. It
-// does not create a copy of the bytes, so the caller is responsible
-// for copying the bytes if necessary.
-func NewReader(b []byte) *Reader {
-	return &Reader{buf: b}
-}
-
-// Len returns the number of unread bytes.
-func (r *Reader) Len() int {
-	return len(r.buf)
-}
-
-// ReadByte reads and returns the next byte from the input.
-//
-// It implements the io.ByteReader interface.
-func (r *Reader) ReadByte() (byte, error) {
-	if len(r.buf) == 0 {
-		return 0, io.EOF
-	}
-
-	b := r.buf[0]
-	r.buf = r.buf[1:]
-	return b, nil
-}
-
-// Read reads up to len(p) bytes into p. It implements
-// the io.Reader interface.
-func (r *Reader) Read(p []byte) (n int, err error) {
-	n = copy(p, r.buf)
-	r.buf = r.buf[n:]
-	if len(r.buf) == 0 {
-		err = io.EOF
-	}
-	return
-}
-
-func ReadVarint31(r *Reader) (uint32, error) {
+func ReadVarint31(r io.ByteReader) (uint32, error) {
 	val, err := binary.ReadUvarint(r)
 	if err != nil {
 		return 0, err
@@ -70,7 +34,7 @@ func ReadVarint31(r *Reader) (uint32, error) {
 	return uint32(val), nil
 }
 
-func ReadVarint63(r *Reader) (uint64, error) {
+func ReadVarint63(r io.ByteReader) (uint64, error) {
 	val, err := binary.ReadUvarint(r)
 	if err != nil {
 		return 0, err
@@ -81,7 +45,7 @@ func ReadVarint63(r *Reader) (uint64, error) {
 	return val, nil
 }
 
-func ReadVarstr31(r *Reader) ([]byte, error) {
+func ReadVarstr31(r Reader) ([]byte, error) {
 	l, err := ReadVarint31(r)
 	if err != nil {
 		return nil, err
@@ -89,17 +53,14 @@ func ReadVarstr31(r *Reader) ([]byte, error) {
 	if l == 0 {
 		return nil, nil
 	}
-	if int(l) > len(r.buf) {
-		return nil, io.ErrUnexpectedEOF
-	}
-	str := r.buf[:l]
-	r.buf = r.buf[l:]
-	return str, nil
+	str := make([]byte, l)
+	_, err = io.ReadFull(r, str)
+	return str, err
 }
 
 // ReadVarstrList reads a varint31 length prefix followed by
 // that many varstrs.
-func ReadVarstrList(r *Reader) (result [][]byte, err error) {
+func ReadVarstrList(r Reader) (result [][]byte, err error) {
 	nelts, err := ReadVarint31(r)
 	if err != nil {
 		return nil, err
@@ -122,18 +83,17 @@ func ReadVarstrList(r *Reader) (result [][]byte, err error) {
 // ReadExtensibleString reads a varint31 length prefix and that many
 // bytes from r. It then calls the given function to consume those
 // bytes, returning any unconsumed suffix.
-func ReadExtensibleString(r *Reader, f func(*Reader) error) (suffix []byte, err error) {
+func ReadExtensibleString(r Reader, f func(Reader) error) (suffix []byte, err error) {
 	s, err := ReadVarstr31(r)
 	if err != nil {
 		return nil, err
 	}
-
-	sr := NewReader(s)
+	sr := bytes.NewReader(s)
 	err = f(sr)
 	if err != nil {
 		return nil, err
 	}
-	return sr.buf, nil
+	return ioutil.ReadAll(sr)
 }
 
 func WriteVarint31(w io.Writer, val uint64) (int, error) {
