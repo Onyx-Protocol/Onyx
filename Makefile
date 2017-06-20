@@ -6,7 +6,7 @@ RAFT_DEV = $(HOME)/.chaincore/raft
 default: run
 
 ## run a development version of Chain Core at http://localhost:1999
-run:
+run: build-dev
 	cored
 
 ## reset the development database
