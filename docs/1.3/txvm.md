@@ -27,7 +27,7 @@ There are several named types of tuples.
 #### Value
 
 0. `type`, an int64
-1. `history`, a 32-byte string
+1. `history`, a string
 2. `referencedata`, a string
 2. `amount`, an int64
 3. `assetID`, a string
@@ -65,21 +65,21 @@ There are several named types of tuples.
 0. `type`, an int64
 1. `history`, a string
 2. `referencedata`, a string
-3. `initialblockID`, a string
-4. `issuanceprogram`, a string
+3. `issuanceprogram`, a string
 
 #### Transaction Header
 
 0. `type`, an int64
+1. `history`, a string
 1. `referencedata`, a string
-2. `outputs`, a tuple of [output IDs](#output)
-3. `retirements`, a tuple of [retirement IDs](#retirement)
+2. `inputs`, a tuple of [output IDs](#output)
+3. `outputs`, a tuple of [output IDs](#output)
 4. `mintime`, an int64
 5. `maxtime`, an int64
 
 ## Item IDs
 
-TBD
+The ID of an item on the stack is the [TupleHash](#tuplehash) of that item's tuple.
 
 ## Stack identifiers
 
@@ -106,7 +106,7 @@ Items on the alt stack have the same types as items on the data stack. The alt s
 
 ### Inputs stack
 
-Items on the inputs stack are 32-byte strings, representing IDs of [outputs](#output). The inputs stack is initialized with the IDs in the "inputs" field of the transaction header.
+Items on the inputs stack are [Inputs](#input).
 
 ### Values stack
 
@@ -118,7 +118,7 @@ Items on the outputs stack are [Outputs](#output).
 
 ### Nonces stack
 
-Items on the nonces stack are 32-byte strings, representing IDs of [nonces](#nonce).
+Items on the nonces stack are [Nonces](#nonce).
 
 ### Anchors stack
 
@@ -127,8 +127,6 @@ Items on the anchors stack are [Anchors](#anchor).
 ### Conditions stack
 
 Items on the conditions stack are strings, representing programs.
-
-At the end of VM execution, the conditions stack must be empty.
 
 # Encoding formats
 
@@ -346,7 +344,7 @@ Pops a condition from the conditions stack and executes it.
 
 ### Unlock
 
-Pops a string `inputid` from the Inputs stack. Pops a tuple of type [Output](#output) from the data stack. Verifies that the [id](#Item-ID) of the tuple matches `inputid`. Pushes its `program` as a string to the Conditions stack, and pushes each of the `values` to the Values stack.
+Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#Item-ID) of the tuple and pushes it to the Inputs stack. Pushes `input.program` as a string to the Conditions stack, pushes each of the `values` to the Values stack, and pushes an [anchor](#anchor) to the Anchors stack.
 
 ### UnlockOutput
 
@@ -362,19 +360,29 @@ Pops a [Value](#value) `value` from the Values stack. Pops an int64 `newamount` 
 
 ### Lock
 
-Pops a string `referencedata` from the data stack. Pops a number `n` from the data stack. Pops `n` [values](#value), `values`, from the Values stack. Pops a string `program` from the data stack. Pushes an [output](#output) to the Outputs stack with `referencedata` as the `referencedata`, a tuple of the `values` as the `values`, and `program` as the `program`.
+Pop a string `referencedata` from the data stack. Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Values stack. Pop a string `program` from the data stack. Push an [output](#output) to the Outputs stack with `referencedata` as the `referencedata`, a tuple of the `values` as the `values`, and `program` as the `program`.
 
 ### Retire
 
-Pops a [Value](#value) `value` from the Values stack. Pushes a retirement to the retirements stack.
+Pops a [Value](#value) `value` from the Values stack. Pushes a [Retirement](#retirement) to the retirements stack.
 
 ### Anchor
 
-Pop a [nonce](#nonce) tuple from the data stack. Pop a string `nonceID` from the nonces stack. Verify that the ID of the `nonce` is equal to `nonceID`. Push an [anchor](#anchor) to the anchors stack, and push `nonce.program` as a condition to the conditions stack.
+Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonces stack. Push an [anchor](#anchor) to the anchors stack. Push `nonce.program` as a condition to the conditions stack.
 
 ### Issue
 
-Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pops an int64, `amount`, from the data stack. Push `assetdefinition.issuanceprogram` as a condition to the conditions stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`.
+Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Push `assetdefinition.issuanceprogram` as a condition to the conditions stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`.
+
+### Finalize
+
+Fail if the [Transaction Headers stack](#transaction-headers-stack) is not empty.
+
+Pop all items from the Inputs stack and create a tuple of their IDs, `inputs` (with the top item in the 0th position). pop all items from the Outputs stack and create a tuple of their IDs, `outputs`. Pop all items from the Nonces stack and create a tuple of their IDs, `nonces`. Pop all items from the Retirements stack.
+
+Pop a string `referencedata` from the data stack, an int64 `mintime` from the data stack, and an int64 `maxtime` from the data stack. Fail if either `maxtime` or `mintime` is negative, or if `maxtime` is not greater than or equal to `mintime`.
+
+Create a [transaction header](#transaction-header) `header` with `referencedata` set to `referencedata`, `inputs` set to `inputs`, `outputs` set to `outputs`, `mintime` set to `mintime`, and `maxtime` set to `maxtime`. Push `header` to the Transaction Headers stack.
 
 ### IssueCA
 
