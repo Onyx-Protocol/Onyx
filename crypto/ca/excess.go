@@ -57,6 +57,7 @@ type ExcessCommitment struct {
 // Decode attempts to decode excess commitment.
 // Returns false if buffer is smaller than ExcessCommitmentMinSize or
 // first 64 bytes are not a valid pair of Ed25519 points.
+// TODO(bobg): rename this UnmarshalBinary and have it return an error instead of a bool
 func (ec *ExcessCommitment) Decode(buf []byte) bool {
 	if len(buf) < ExcessCommitmentMinSize {
 		return false

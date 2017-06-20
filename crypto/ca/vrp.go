@@ -30,15 +30,17 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 	pek := hash256("ChainCA.pek", msghash[:], idek, f[:])
 	n := N / 2
 
-	buf := make([]byte, 32*2*N)
+	buf := make([]byte, 32*(2*N-1))
 	for i := range pt {
 		copy(buf[32*i:32*(i+1)], pt[i][:])
 	}
-	EncryptPacket(pek[:], nil, buf[:32*(2*N-1)], buf[:])
+	ep := EncryptPacket(pek[:], nil, buf[:32*(2*N-1)])
 	ct := make([][32]byte, 2*N)
-	for i := uint64(0); i < 2*N; i++ {
-		copy(ct[i][:], buf[32*i:32*(i+1)])
+	for i := uint64(0); i < 2*N-1; i++ {
+		copy(ct[i][:], ep.ct[32*i:32*(i+1)])
 	}
+	copy(ct[2*N-1][:8], ep.nonce[:])
+	copy(ct[2*N-1][8:], ep.mac[:])
 
 	b := make([]ecmath.Scalar, n)
 	bsum := ecmath.Zero

@@ -1,10 +1,12 @@
 package ca
 
-import (
-	"fmt"
+import "golang.org/x/crypto/sha3"
 
-	"golang.org/x/crypto/sha3"
-)
+type EncryptedPacket struct {
+	ct    []byte
+	nonce [8]byte
+	mac   [24]byte
+}
 
 // EncryptPacket encrypts plaintext binary string pt into buffer `ep` that must have size 32 bytes larger than the plaintext.
 //
@@ -12,49 +14,38 @@ import (
 // 1. `pt`: plaintext, a binary string of arbitrary byte length `n`.
 // 2. `ek`: the encryption/authentication key.
 // 3. `seed`: a unique seed per encryption (optional, empty by default) — could be a counter, timestamp, or a random string.
-//
-// Output: `ct`: ciphertext, a binary string of byte length `n+32`.
-//
-// `ep` must be of size len(pt)+32. ep and pt may point to the same
-// memory, but must coincide at position 0, not merely overlap.
-func EncryptPacket(
-	ek []byte,
-	seed []byte,
-	pt []byte,
-	ep []byte,
-) []byte {
-	n := len(pt)
+func EncryptPacket(ek, seed, pt []byte) *EncryptedPacket {
+	result := new(EncryptedPacket)
 
-	if len(ep) != (n + 32) {
-		panic(fmt.Errorf("pt has len %d, ep must have len %d (but has len %d)", n, n+32, len(ep)))
-	}
+	n := len(pt)
 
 	// 1. Calculate an 8-byte `nonce`:
 	//         nonce = StreamHash("Packet.Nonce", {seed,ek,pt}, 8 bytes)
 	nonceHash := streamHash("ChainCA.Packet.Nonce", seed, ek, pt)
-	nonce := ep[n : n+8]
-	nonceHash.Read(nonce[:])
+	nonceHash.Read(result.nonce[:])
 
 	// 2. Calculate a keystream, a sequence of `n` bytes:
 	//         keystream = StreamHash("Packet.Keystream", {nonce,ek}, n bytes)
-	keystream := streamHash("ChainCA.Packet.Keystream", nonce[:], ek)
+	keystream := streamHash("ChainCA.Packet.Keystream", result.nonce[:], ek)
 	// 3. Encrypt the plaintext payload by XORing each byte of plaintext with the corresponding byte of the keystream:
 	//         ct[i] = pt[i] XOR keystream[i]
 	// 4. Calculate 24-byte MAC using `ek` as a key and `ct||nonce` as a message:
 	//         mac = KMAC128(K=ek, X=ct||nonce, S="ChainCA.Packet.MAC", L=24 bytes)
 	kmac := sha3.NewKMAC128(ek, 24, []byte("ChainCA.Packet.MAC"))
+	result.ct = make([]byte, n)
 	var ks [1]byte
 	for i := 0; i < n; i++ {
 		keystream.Read(ks[:])
-		ep[i] = pt[i] ^ ks[0]
-		kmac.Write(ep[i : i+1])
+		c := pt[i] ^ ks[0]
+		result.ct[i] = c
+		kmac.Write([]byte{c})
 	}
-	kmac.Write(nonce)
-	kmac.Sum(ep[n+8 : n+8])
+	kmac.Write(result.nonce[:])
+	kmac.Sum(result.mac[:0])
 
 	// 5. Return an encrypted packet `ep`, a sequence of `n+32` bytes:
 	//         ep = ct || nonce || mac
-	return ep
+	return result
 }
 
 // DecryptPacket decrypts packet into buffer `pt` that must have size 32 bytes shorter than the packet.
@@ -63,47 +54,31 @@ func EncryptPacket(
 // 2. `ek`: the encryption/authentication key.
 //
 // Output: the plaintext `pt` of length `n`, or `nil`, if authentication failed.
-func DecryptPacket(
-	ek []byte,
-	ep []byte,
-	pt []byte,
-) bool {
-
-	// 1. Verify that `ep` is at least 32 bytes long, otherwise return `nil`.
-	m := len(ep)
-	if m < 32 {
-		return false
-	}
-	n := m - 32
-	if len(pt) != n {
-		panic("Buffer for decrypted packet must have size len(ep)-32.")
-	}
-
-	// 2. Split ciphertext `ep` into raw ciphertext `ct`, 8-byte `nonce` and 24-byte `mac`:
-	nonce := ep[n : n+8]
-	mac1 := ep[n+8 : n+32]
-
+func (ep *EncryptedPacket) Decrypt(ek []byte) ([]byte, bool) {
 	// 3. Compute MAC for the ciphertext concatenated with the nonce:
 	//         mac’ = KMAC128(K=ek, X=ct||nonce, S="ChainCA.Packet.MAC", L=24 bytes)
 	kmac := sha3.NewKMAC128(ek, 24, []byte("ChainCA.Packet.MAC"))
-	kmac.Write(ep[0 : n+8])
+	kmac.Write(ep.ct)
+	kmac.Write(ep.nonce[:])
 	var mac2 [24]byte
 	kmac.Sum(mac2[:0])
 
 	// 4. Compare in constant time `mac’ == mac`. If not equal, return `nil`.
-	if !constTimeEqual(mac1[:], mac2[:]) {
-		return false
+	if !constTimeEqual(ep.mac[:], mac2[:]) {
+		return nil, false
 	}
 
 	// 5. Calculate a keystream, a sequence of `n` bytes:
 	//         keystream = StreamHash("Packet.Keystream", {nonce,ek}, n bytes)
 	// 6. Decrypt the plaintext payload by XORing each byte of ciphertext with the corresponding byte of the keystream:
 	//         pt[i] = ct[i] XOR keystream[i]
-	keystream := streamHash("ChainCA.Packet.Keystream", nonce[:], ek)
+	n := len(ep.ct)
+	pt := make([]byte, n)
+	keystream := streamHash("ChainCA.Packet.Keystream", ep.nonce[:], ek)
 	var ks [1]byte
 	for i := 0; i < n; i++ {
 		keystream.Read(ks[:])
-		pt[i] = ep[i] ^ ks[0]
+		pt[i] = ep.ct[i] ^ ks[0]
 	}
-	return true
+	return pt, true
 }

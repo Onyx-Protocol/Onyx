@@ -12,10 +12,9 @@ func TestEncryptAssetID(t *testing.T) {
 
 	ac, c := CreateAssetCommitment(assetID, aek)
 
-	eaec := make([]byte, EncryptedAssetIDSize)
-	EncryptAssetID(ac, assetID, c, aek, eaec)
+	eaec := EncryptAssetID(ac, assetID, *c, aek)
 
-	assetID2, c2, ok := DecryptAssetID(eaec, ac, aek)
+	assetID2, c2, ok := eaec.Decrypt(ac, aek)
 
 	if !ok {
 		t.Error("decryption failed")
@@ -23,16 +22,16 @@ func TestEncryptAssetID(t *testing.T) {
 		if assetID2 != assetID {
 			t.Errorf("got asset ID %x, want %x", assetID2, assetID)
 		}
-		if !c.Equal(c2) {
+		if !c.Equal(&c2) {
 			t.Errorf("got blinding factor %x, want %x", c2[:], c[:])
 		}
 	}
 
-	for i := 0; i < len(eaec); i++ {
+	for i := 0; i < len(eaec.ea); i++ {
 		for j := uint(0); j < 8; j++ {
-			eaec[i] ^= 1 << j
+			eaec.ea[i] ^= 1 << j
 
-			assetID2, c2, ok := DecryptAssetID(eaec, ac, aek)
+			assetID2, c2, ok := eaec.Decrypt(ac, aek)
 
 			if ok {
 				t.Error("unexpected decryption success with bad encrypted value amount")
@@ -46,7 +45,29 @@ func TestEncryptAssetID(t *testing.T) {
 				t.Error("unexpected value from failed decryption")
 			}
 
-			eaec[i] ^= 1 << j
+			eaec.ea[i] ^= 1 << j
+		}
+	}
+
+	for i := 0; i < len(eaec.ec); i++ {
+		for j := uint(0); j < 8; j++ {
+			eaec.ec[i] ^= 1 << j
+
+			assetID2, c2, ok := eaec.Decrypt(ac, aek)
+
+			if ok {
+				t.Error("unexpected decryption success with bad encrypted value amount")
+			}
+
+			if bytes.Equal(assetID[:], assetID2[:]) {
+				t.Error("unexpected value from failed decryption")
+			}
+
+			if !c2.Equal(&ecmath.Zero) {
+				t.Error("unexpected value from failed decryption")
+			}
+
+			eaec.ec[i] ^= 1 << j
 		}
 	}
 }
