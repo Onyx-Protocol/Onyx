@@ -99,13 +99,14 @@ func scan(src string) (typ int, lit string, n int) {
 	}
 	lit = src[n : n+r]
 	n += r
+	n += skipWS(src[n:])
 	return
 }
 
 func skipWS(s string) (i int) {
 	for ; i < len(s); i++ {
 		c := s[i]
-		if c == ' ' || c == '\n' {
+		if c == ' ' || c == '\n' || c == '\t' {
 			continue
 		}
 		break
@@ -145,12 +146,12 @@ func scanWord(s string) int {
 
 func scanProg(s string) (i int) {
 	for i < len(s) {
-		c := s[i]
 		i++
+		c := s[i]
 		if c == '[' {
 			i += scanProg(s[i:])
 		} else if c == ']' {
-			return
+			return i + 1
 		}
 	}
 	return i
@@ -158,7 +159,7 @@ func scanProg(s string) (i int) {
 
 func scanFunc(s string, f func(rune) bool) (n int) {
 	for n < len(s) {
-		c, r := utf8.DecodeRuneInString(s)
+		c, r := utf8.DecodeRuneInString(s[n:])
 		if !f(c) {
 			break
 		}

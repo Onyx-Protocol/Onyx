@@ -57,10 +57,11 @@ type vm struct {
 	vm1inputs     tupleStack
 	vm1values     tupleStack
 	vm1muxes      tupleStack
-	vm1outputs    tupleStack
+	vm1results    tupleStack
 	vm1conditions tupleStack
 	vm1nonces     tupleStack
 	vm1anchors    tupleStack
+	vm1txheader   tupleStack
 }
 
 // Validate returns whether x is valid.
@@ -75,6 +76,10 @@ func Validate(x *Tx, o ...Option) bool {
 	}
 	for _, o := range o {
 		o(vm)
+	}
+	for _, nonce := range x.Nonce {
+		n := nonce
+		vm.nonces.Push(VMTuple{Bytes(n[:])})
 	}
 
 	defer func() {
@@ -157,14 +162,16 @@ func getStack(vm *vm, t int64) *tupleStack {
 		return &vm.vm1values
 	case StackVM1Mux:
 		return &vm.vm1muxes
-	case StackVM1Output:
-		return &vm.vm1outputs
+	case StackVM1Result:
+		return &vm.vm1results
 	case StackVM1Cond:
 		return &vm.vm1conditions
 	case StackVM1Nonce:
 		return &vm.vm1nonces
 	case StackVM1Anchor:
 		return &vm.vm1anchors
+	case StackVM1TxHeader:
+		return &vm.vm1txheader
 	default:
 		panic(errors.New("bad stack identifier"))
 	}

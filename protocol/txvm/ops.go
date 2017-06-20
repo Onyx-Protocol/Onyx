@@ -11,7 +11,6 @@ import (
 
 	"chain/crypto/ed25519"
 	"chain/math/checked"
-	"chain/protocol/bc"
 )
 
 // avoid initialization loop
@@ -70,12 +69,10 @@ var ops = [NumOp]func(*vm){
 	CheckSig:      opCheckSig,
 	CheckMultiSig: opCheckMultiSig,
 
-	VM1CheckPredicate: opVM1CheckPredicate,
-	VM1Unlock:         opVM1Unlock,
-	VM1Nonce:          opVM1Nonce,
-	VM1Issue:          opVM1Issue,
-	VM1Mux:            opVM1Mux,
-	VM1Withdraw:       opVM1Withdraw,
+	Anchor:  opAnchor,
+	Issue:   opIssue,
+	Lock:    opLock,
+	Satisfy: opSatisfy,
 }
 
 func opPC(vm *vm) {
@@ -398,34 +395,33 @@ func opCheckMultiSig(vm *vm) {
 	vm.data.Push(Bool(len(sig) == 0))
 }
 
-func opVM1CheckPredicate(vm *vm) {
-	panic(errors.New("todo"))
-}
-
-func opVM1Unlock(vm *vm) {
-	panic(errors.New("todo"))
-}
-
-func opVM1Nonce(vm *vm) {
+func opAnchor(vm *vm) {
 	tuple := vm.data.PopTuple()
-	trID := bc.EntryID(bc.NewTimeRange(uint64(tuple[2].(Int64)), uint64(tuple[1].(Int64))))
-	id := bc.EntryID(bc.NewNonce(&bc.Program{VmVersion: 1, Code: tuple[0].(Bytes)}, &trID))
-	stackNonce := vm.vm1nonces.Pop()
-	if !bytes.Equal(stackNonce[0].(Bytes), id.Bytes()) {
+	stackNonce := vm.nonces.Pop()
+	id := tupleID(tuple)
+	if !bytes.Equal(stackNonce[0].(Bytes), id[:]) {
 		panic(errors.New("bad nonce id"))
 	}
-	vm.vm1anchors.Push(stackNonce)
-	vm.vm1conditions.Push([]Value{tuple[0]})
+	vm.anchors.Push(VMTuple{Bytes(id[:])})
+	vm.conditions.Push(VMTuple{tuple[0]})
 }
 
-func opVM1Issue(vm *vm) {
-	panic(errors.New("todo"))
+func opIssue(vm *vm) {
+	assetDef := vm.data.PopTuple()
+	amount := vm.data.PopInt64()
+	vm.conditions.Push(VMTuple{assetDef[1]})
+	assetID := tupleID(assetDef)
+	vm.values.Push(VMTuple{Int64(amount), Bytes(assetID[:]), Bool(true), VMTuple{}})
 }
 
-func opVM1Mux(vm *vm) {
-	panic(errors.New("todo"))
+func opLock(vm *vm) {
+
 }
 
-func opVM1Withdraw(vm *vm) {
-	panic(errors.New("todo"))
+func opSatisfy(vm *vm) {
+
+}
+
+func tupleID(t VMTuple) ID {
+	return ID{}
 }
