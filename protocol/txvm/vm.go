@@ -163,22 +163,6 @@ func getStack(vm *vm, t int64) *tupleStack {
 		return &vm.retirements
 	case StackTxHeader:
 		return &vm.txheader
-	case StackVM1Input:
-		return &vm.vm1inputs
-	case StackVM1Value:
-		return &vm.vm1values
-	case StackVM1Mux:
-		return &vm.vm1muxes
-	case StackVM1Result:
-		return &vm.vm1results
-	case StackVM1Cond:
-		return &vm.vm1conditions
-	case StackVM1Nonce:
-		return &vm.vm1nonces
-	case StackVM1Anchor:
-		return &vm.vm1anchors
-	case StackVM1TxHeader:
-		return &vm.vm1txheader
 	default:
 		panic(errors.New("bad stack identifier"))
 	}

@@ -14,15 +14,6 @@ const (
 	StackAnchor     = 7
 	StackRetirement = 8
 	StackTxHeader   = 9
-
-	StackVM1Input    = 10
-	StackVM1Value    = 11
-	StackVM1Mux      = 12
-	StackVM1Result   = 13
-	StackVM1Cond     = 14
-	StackVM1Nonce    = 15
-	StackVM1Anchor   = 16
-	StackVM1TxHeader = 17
 )
 
 type stack struct {
