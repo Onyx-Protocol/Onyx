@@ -29,8 +29,8 @@ There are several named types of tuples.
 0. `type`, an int64
 1. `history`, a string
 2. `referencedata`, a string
-2. `amount`, an int64
-3. `assetID`, a string
+3. `amount`, an int64
+4. `assetID`, a string
 
 #### Output
 
@@ -342,11 +342,11 @@ Pops a condition from the Condition stack and executes it.
 
 ### Unlock
 
-Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#Item-ID) of the tuple and pushes it to the Input stack. Pushes `input.program` as a string to the Condition stack, pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchors stack.
+Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#Item-ID) of the tuple and pushes it to the Input stack. Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchors stack. Executes `input.program`.
 
 ### UnlockOutput
 
-Pops an output `output` from the Output stack. Pushes its `program` as a string to the Condition stack, and pushes each of the `values` to the Value stack.
+Pops an output `output` from the Output stack. Pushes each of the `values` to the Value stack. Executes `output.program`.
 
 ### Merge
 
@@ -366,11 +366,11 @@ Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#reti
 
 ### Anchor
 
-Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the anchors stack. Push `nonce.program` as a condition to the Condition stack.
+Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the anchors stack. Execute `nonce.program`.
 
 ### Issue
 
-Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Push `assetdefinition.issuanceprogram` as a condition to the Condition stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`.
+Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`.
 
 ### Finalize
 
