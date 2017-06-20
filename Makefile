@@ -1,7 +1,7 @@
 SNAPPY = $(CHAIN)/vendor/github.com/google/snappy
 ROCKSDB = $(CHAIN)/vendor/github.com/facebook/rocksdb
 DB_DEV = core
-RAFT_DEV = $(HOME)/.chaincore/raft
+RAFT_DEV = $(or $(CHAIN_CORE_HOME), $(HOME)/.chaincore)/raft
 
 default: run
 
