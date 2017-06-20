@@ -62,9 +62,8 @@ There are several named types of tuples.
 #### Asset Definition
 
 0. `type`, an int64
-1. `history`, a string
-2. `referencedata`, a string
-3. `issuanceprogram`, a string
+1. `referencedata`, a string
+2. `issuanceprogram`, a string
 
 #### Transaction Header
 
@@ -79,6 +78,16 @@ There are several named types of tuples.
 ## Item IDs
 
 The ID of an item on the stack is the [TupleHash](#tuplehash) of that item's tuple.
+
+## History
+
+When an [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Header][#Transaction Header]) is created by a VM instruction, its `history` field is computed based on the instruction that generated it.
+
+The `history` field is the [TupleHash](#TupleHash) of:
+
+0. `opcode`, an int64 (reflecting the opcode that generated the item)
+1. `arguments`, a tuple (reflecting the arguments consumed by that instruction, in order)
+2. `outputindex`, an int64 (reflecting which output of that instruction this item is)
 
 ## Stack identifiers
 
@@ -217,6 +226,10 @@ Pops a tuple `tuple` from the data stack. Pushes each of the fields in `tuple` t
 Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops another integer `i` from the top of the data stack. Looks at the tuple on top of the stack identified by `stackid`, and pushes the item in its `i`th field to the top of the data stack.
 
 Fails if the stack identified by `stackid` is empty or does not have a tuple of at least length `i + 1` on top of it, or if `i` is negative.
+
+### TupleHash
+
+TBD: explanation of recursive TupleHash, how cost accounting works for it, how strings and int64s are encoded, etc.
 
 ## Boolean operations
 
