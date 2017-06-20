@@ -12,7 +12,7 @@ func TestAssetCommitment(t *testing.T) {
 	hex.Decode(assetID[:], []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 
 	ac1, c := CreateAssetCommitment(assetID, nil)
-	if !ac1[1].ConstTimeEqual(&ecmath.ZeroPoint) {
+	if !ac1.C().ConstTimeEqual(&ecmath.ZeroPoint) {
 		t.Error("expected zero point")
 	}
 	if c != nil {
@@ -23,10 +23,10 @@ func TestAssetCommitment(t *testing.T) {
 	hex.Decode(aekBuf[:], []byte("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
 
 	ac2, c := CreateAssetCommitment(assetID, aekBuf[:])
-	if ac2[1].ConstTimeEqual(&ecmath.ZeroPoint) {
+	if ac2.C().ConstTimeEqual(&ecmath.ZeroPoint) {
 		t.Error("expected nonzero point")
 	}
-	if ac1[0].ConstTimeEqual(&ac2[0]) {
+	if ac1.H().ConstTimeEqual(ac2.H()) {
 		t.Error("expected different H value")
 	}
 	if c == nil {
