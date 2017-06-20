@@ -58,7 +58,6 @@ There are several named types of tuples.
 
 0. `type`, an int64
 1. `history`, a string
-2. `referencedata`, a string
 
 #### Asset Definition
 
@@ -85,15 +84,14 @@ The ID of an item on the stack is the [TupleHash](#tuplehash) of that item's tup
 
 0. Data stack
 1. Alt stack
-2. Inputs stack
-3. Values stack
-4. Outputs stack
-5. Conditions stack
-6. Nonces stack
-7. Anchors stack
-8. Retirements stack
-9. Legacy outputs stack
-10. Transaction header stack
+2. Input stack
+3. Value stack
+4. Output stack
+5. Condition stack
+6. Nonce stack
+7. Anchor stack
+8. Retirement stack
+9. Transaction header stack
 
 
 ## Data stack
@@ -104,29 +102,29 @@ Items on the data stack can be int64s, strings, or tuples.
 
 Items on the alt stack have the same types as items on the data stack. The alt stack starts out empty. Items can be moved from the data stack to the alt stack with the [toaltstack](#toaltstack) instruction, and from the alt stack to the data stack with the [fromaltstack](#fromaltstack).
 
-### Inputs stack
+### Input stack
 
-Items on the inputs stack are [Inputs](#input).
+Items on the Input stack are [Inputs](#input).
 
-### Values stack
+### Value stack
 
-Items on the values stack are [Values](#value).
+Items on the Value stack are [Values](#value).
 
-### Outputs stack
+### Output stack
 
-Items on the outputs stack are [Outputs](#output).
+Items on the Output stack are [Outputs](#output).
 
-### Nonces stack
+### Nonce stack
 
-Items on the nonces stack are [Nonces](#nonce).
+Items on the Nonce stack are [Nonces](#nonce).
 
 ### Anchors stack
 
 Items on the anchors stack are [Anchors](#anchor).
 
-### Conditions stack
+### Condition stack
 
-Items on the conditions stack are strings, representing programs.
+Items on the Condition stack are strings, representing programs.
 
 # Encoding formats
 
@@ -336,49 +334,49 @@ TODO: add descriptions.
 
 ### Defer
 
-Pops a string from the data stack and pushes it as an condition to the conditions stack.
+Pops a string from the data stack and pushes it as an condition to the Condition stack.
 
 ### Satisfy
 
-Pops a condition from the conditions stack and executes it.
+Pops a condition from the Condition stack and executes it.
 
 ### Unlock
 
-Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#Item-ID) of the tuple and pushes it to the Inputs stack. Pushes `input.program` as a string to the Conditions stack, pushes each of the `values` to the Values stack, and pushes an [anchor](#anchor) to the Anchors stack.
+Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#Item-ID) of the tuple and pushes it to the Input stack. Pushes `input.program` as a string to the Condition stack, pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchors stack.
 
 ### UnlockOutput
 
-Pops an output `output` from the Outputs stack. Pushes its `program` as a string to the Conditions stack, and pushes each of the `values` to the Values stack.
+Pops an output `output` from the Output stack. Pushes its `program` as a string to the Condition stack, and pushes each of the `values` to the Value stack.
 
 ### Merge
 
-Pops two [Values](#value) from the Values stack. If their asset IDs are different, execution fails. Pushes a new [Value](#value) to the Values stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
+Pops two [Values](#value) from the Value stack. If their asset IDs are different, execution fails. Pushes a new [Value](#value) to the Value stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
 
 ### Split
 
-Pops a [Value](#value) `value` from the Values stack. Pops an int64 `newamount` from the data stack. If `newamount` is greater than or equal to `value.amount`, fail execution. Pushes a new Value with amount `newamount` and assetID `value.assetID`, then pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`.
+Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` from the data stack. If `newamount` is greater than or equal to `value.amount`, fail execution. Pushes a new Value with amount `newamount` and assetID `value.assetID`, then pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`.
 
 ### Lock
 
-Pop a string `referencedata` from the data stack. Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Values stack. Pop a string `program` from the data stack. Push an [output](#output) to the Outputs stack with `referencedata` as the `referencedata`, a tuple of the `values` as the `values`, and `program` as the `program`.
+Pop a string `referencedata` from the data stack. Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Value stack. Pop a string `program` from the data stack. Push an [output](#output) to the Output stack with `referencedata` as the `referencedata`, a tuple of the `values` as the `values`, and `program` as the `program`.
 
 ### Retire
 
-Pops a [Value](#value) `value` from the Values stack. Pushes a [Retirement](#retirement) to the retirements stack.
+Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack.
 
 ### Anchor
 
-Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonces stack. Push an [anchor](#anchor) to the anchors stack. Push `nonce.program` as a condition to the conditions stack.
+Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the anchors stack. Push `nonce.program` as a condition to the Condition stack.
 
 ### Issue
 
-Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Push `assetdefinition.issuanceprogram` as a condition to the conditions stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`.
+Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Push `assetdefinition.issuanceprogram` as a condition to the Condition stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`.
 
 ### Finalize
 
 Fail if the [Transaction Headers stack](#transaction-headers-stack) is not empty.
 
-Pop all items from the Inputs stack and create a tuple of their IDs, `inputs` (with the top item in the 0th position). pop all items from the Outputs stack and create a tuple of their IDs, `outputs`. Pop all items from the Nonces stack and create a tuple of their IDs, `nonces`. Pop all items from the Retirements stack.
+Pop all items from the Input stack and create a tuple of their IDs, `inputs` (with the top item in the 0th position). pop all items from the Output stack and create a tuple of their IDs, `outputs`. Pop all items from the nonce and create a tuple of their IDs, `nonces`. Pop all items from the Retirements stack.
 
 Pop a string `referencedata` from the data stack, an int64 `mintime` from the data stack, and an int64 `maxtime` from the data stack. Fail if either `maxtime` or `mintime` is negative, or if `maxtime` is not greater than or equal to `mintime`.
 
