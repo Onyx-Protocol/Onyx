@@ -28,56 +28,53 @@ There are several named types of tuples.
 
 #### Value
 
-0. `amount`, an int64
-1. `assetID`, a string
-2. `history`, a tuple (TBD)
-
-### Confidential Value
+0. `type`, an int64
+1. `history`, a 32-byte string
+2. `amount`, an int64
+3. `assetID`, a string
 
 #### Output
 
-0. `program`, a string
-1. `values`, a tuple of `Value`s
-2. `history`, a tuple (TBD)
-3. `referencedata`, a string
+0. `type`, an int64
+1. `history`, a 32-byte string
+2. `values`, a tuple of `Value`s
+3. `history`, a tuple (TBD)
+4. `referencedata`, a string
 
 #### Nonce
 
-0. `program`, a string
-1. `mintime`, an int64
-2. `maxtime`, an int64
-3. `referencedata`, a string
+0. `type`, an int64
+1. `program`, a string
+2. `mintime`, an int64
+3. `maxtime`, an int64
+4. `referencedata`, a string
 
 #### Retirement
 
-0. `history`, a tuple (TBD)
+0. `type`, an int64
+1. `history`, a string
 
 #### Anchor
 
-0. `history`, a tuple (TBD)
+0. `type`, an int64
+1. `history`, a string
 
 #### Asset Definition
 
-0. `initialblockID`, a string
-1. `issuanceprogram`, a string
-2. `referencedata`, a string
+0. `type`, an int64
+1. `history`, a string
+2. `initialblockID`, a string
+3. `issuanceprogram`, a string
+4. `referencedata`, a string
 
 #### Transaction Header
 
+0. `type`, an int64
 0. `outputs`, a tuple of [output IDs](#output)
 1. `retirements`, a tuple of [retirement](#retirement)
 2. `mintime`, an int64
 3. `maxtime`, an int64
 4. `referencedata`, a string
-
-#### Legacy Output
-
-0. `sourceID`, a 32-byte ID
-1. `assetID`, a 32-byte asset ID ID
-2. `amount`, an int64
-2. `index`, an int64 
-2. `program`, a string
-3. `data`, a string
 
 ## Item IDs
 
