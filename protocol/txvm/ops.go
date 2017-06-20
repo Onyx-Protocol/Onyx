@@ -409,17 +409,27 @@ func opAnchor(vm *vm) {
 func opIssue(vm *vm) {
 	assetDef := vm.data.PopTuple()
 	amount := vm.data.PopInt64()
+	anchor := vm.anchors.Pop()
+	_ = anchor
 	vm.conditions.Push(VMTuple{assetDef[1]})
 	assetID := tupleID(assetDef)
 	vm.values.Push(VMTuple{Int64(amount), Bytes(assetID[:]), Bool(true), VMTuple{}})
 }
 
 func opLock(vm *vm) {
-
+	refData := vm.data.PopBytes()
+	n := vm.data.PopInt64()
+	var values VMTuple
+	for i := int64(0); i < n; i++ {
+		values = append(values, vm.values.Pop())
+	}
+	prog := vm.data.PopBytes()
+	vm.outputs.Push(VMTuple{Bytes(prog), values, VMTuple{}, Bytes(refData)})
 }
 
 func opSatisfy(vm *vm) {
-
+	tuple := vm.conditions.Pop()
+	exec(vm, tuple[0].(Bytes))
 }
 
 func tupleID(t VMTuple) ID {

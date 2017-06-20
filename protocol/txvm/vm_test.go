@@ -16,7 +16,7 @@ func opTracer(t testing.TB) func(stack, byte, []byte, []byte) {
 	}
 }
 
-func TestTx(t *testing.T) {
+func TestIssue(t *testing.T) {
 	proof, err := Assemble(`
 		""x 10000 0 [1] 4 tuple anchor
 		10 ""x [1] ""x 3 tuple issue

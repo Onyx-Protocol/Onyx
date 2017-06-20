@@ -95,7 +95,10 @@ func Validate(x *Tx, o ...Option) bool {
 	// to signal end of execution.
 
 	return vm.inputs.Len() == 0 &&
-		vm.values.Len() == 0
+		vm.values.Len() == 0 &&
+		vm.conditions.Len() == 0 &&
+		vm.anchors.Len() == 0 &&
+		vm.nonces.Len() == 0
 }
 
 func exec(vm *vm, prog []byte) {
@@ -103,18 +106,22 @@ func exec(vm *vm, prog []byte) {
 	vm.pc = 0
 	vm.prog = prog // for errors
 	for vm.pc < len(prog) {
-		opcode, data, n := decodeInst(prog[vm.pc:])
-		vm.traceOp(vm.data, opcode, data, prog[vm.pc:])
-		vm.pc += n
-		if opcode == BaseData {
-			vm.data.PushBytes(data)
-		} else if opcode >= MinInt {
-			vm.data.PushInt64(int64(opcode) - BaseInt)
-		} else {
-			optab[opcode](vm)
-		}
+		step(vm)
 	}
 	vm.pc, vm.prog = ret, rp
+}
+
+func step(vm *vm) {
+	opcode, data, n := decodeInst(vm.prog[vm.pc:])
+	vm.traceOp(vm.data, opcode, data, vm.prog[vm.pc:])
+	vm.pc += n
+	if opcode == BaseData {
+		vm.data.PushBytes(data)
+	} else if opcode >= MinInt {
+		vm.data.PushInt64(int64(opcode) - BaseInt)
+	} else {
+		optab[opcode](vm)
+	}
 }
 
 func decodeInst(buf []byte) (opcode byte, imm []byte, n int) {
