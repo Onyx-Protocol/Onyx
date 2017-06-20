@@ -1,5 +1,3 @@
-
-
 # Stacks
 
 ## Types
@@ -30,6 +28,7 @@ There are several named types of tuples.
 
 0. `type`, an int64
 1. `history`, a 32-byte string
+2. `referencedata`, a string
 2. `amount`, an int64
 3. `assetID`, a string
 
@@ -37,48 +36,50 @@ There are several named types of tuples.
 
 0. `type`, an int64
 1. `history`, a 32-byte string
-2. `values`, a tuple of `Value`s
-3. `history`, a tuple (TBD)
-4. `referencedata`, a string
+2. `referencedata`, a string
+3. `values`, a tuple of `Value`s
+4. `history`, a tuple (TBD)
 
 #### Nonce
 
 0. `type`, an int64
-1. `program`, a string
-2. `mintime`, an int64
-3. `maxtime`, an int64
-4. `referencedata`, a string
+1. `referencedata`, a string
+2. `program`, a string
+3. `mintime`, an int64
+4. `maxtime`, an int64
 
 #### Retirement
 
 0. `type`, an int64
 1. `history`, a string
+2. `referencedata`, a string
 
 #### Anchor
 
 0. `type`, an int64
 1. `history`, a string
+2. `referencedata`, a string
 
 #### Asset Definition
 
 0. `type`, an int64
 1. `history`, a string
-2. `initialblockID`, a string
-3. `issuanceprogram`, a string
-4. `referencedata`, a string
+2. `referencedata`, a string
+3. `initialblockID`, a string
+4. `issuanceprogram`, a string
 
 #### Transaction Header
 
 0. `type`, an int64
-0. `outputs`, a tuple of [output IDs](#output)
-1. `retirements`, a tuple of [retirement](#retirement)
-2. `mintime`, an int64
-3. `maxtime`, an int64
-4. `referencedata`, a string
+1. `referencedata`, a string
+2. `outputs`, a tuple of [output IDs](#output)
+3. `retirements`, a tuple of [retirement IDs](#retirement)
+4. `mintime`, an int64
+5. `maxtime`, an int64
 
 ## Item IDs
 
-TODO: describe process
+TBD
 
 ## Stack identifiers
 
@@ -394,18 +395,6 @@ TBD
 ### Blind
 
 TBD
-
-## Legacy operations
-
-### Upgrade
-
-Pop an ID `inputID` off the Inputs stack.
-
-Pop a tuple `input` of type [Legacy Output](#legacy-output) from the data stack. Verify that its ID matches `inputID`.
-
-Push `input.program` to the [Conditions](#condition) stack. 
-
-Push a [value](#Value) with amount `input.amount` and asset ID `input.assetID` to the stack.
 
 ## Extension opcodes
 
