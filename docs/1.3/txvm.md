@@ -2,13 +2,13 @@
 
 ## Types
 
-There are three types of items on the VM stacks, with the following identifiers.
+There are three types of items on the VM stacks, with the following numeric identifiers.
 
-0. Int64
-1. String
-2. Tuple
+Int64 (33)
+String String (34)
+Tuple (35)
 
-"Boolean" is not a separate type, but rather the two Int64 values `0` (for false) and `1` (for true). Operations that expect booleans fail if the value on top of the stack is not `0` or `1`.
+"Boolean" is not a separate type. Operations that produce booleans produce the two int64 values `0` (for false) and `1` (for true). Operations that consume booleans treat `0` as false, and all other values (including all strings and tuples) as `true`.
 
 ### Int64
 
@@ -26,7 +26,7 @@ There are several named types of tuples.
 
 #### Value
 
-0. `type`, an int64
+0. `type`, a string, "value"
 2. `referencedata`, a tuple of strings (initially empty)
 1. `history`, a string
 3. `amount`, an int64
@@ -34,7 +34,7 @@ There are several named types of tuples.
 
 #### Output
 
-0. `type`, an int64
+0. `type`, a string, "output"
 1. `referencedata`, a tuple of strings (initially empty)
 2. `history`, a 32-byte string
 3. `values`, a tuple of `Value`s
@@ -42,7 +42,7 @@ There are several named types of tuples.
 
 #### Nonce
 
-0. `type`, an int64
+0. `type`, a string, "nonce"
 1. `referencedata`, a tuple of strings (initially empty)
 2. `program`, a string
 3. `mintime`, an int64
@@ -50,18 +50,18 @@ There are several named types of tuples.
 
 #### Retirement
 
-0. `type`, an int64
+0. `type`, a string, "retirement"
 1. `referencedata`, a tuple of strings (initially empty)
 
 #### Anchor
 
-0. `type`, an int64
+0. `type`, a string, "anchor"
 1. `referencedata`, a tuple of strings (initially empty)
 1. `history`, a string
 
 #### Asset Definition
 
-0. `type`, an int64
+0. `type`, a string, "assetdefinition"
 1. `referencedata`, a tuple of strings
 2. `issuanceprogram`, a string
 
@@ -158,6 +158,30 @@ TODO: Describe rules for encoding and decoding unsigned varints.
 TODO: Describe rules for Ed25519 curve point encoding (including checks that should be done when decoding.)
 
 # Operations
+
+## Push operations
+
+### Small integers
+
+Opcodes 0 through 32 are instructions that push 0 through 32, respectively, to the data stack as int64s.
+
+### PushInt
+
+`pushint` pushes an int64 to the stack.
+
+Followed by a varint `x`. Pushes `x` as an int64 to the stack. Fails if `x` is less than -2^63 or greater than 2^63-1.
+
+### PushString
+
+`pushstring` pushes a string to the stack. 
+
+Followed by a varint `len`, then `len` bytes. Pushes those bytes to the data stack as a [string](#string).
+
+### PushTuple
+
+`pushtuple` pushes a tuple to the data stack. 
+
+`pushtuple` must be followed by a varint `len`, then followed by `len` encoded [push operations](#push-operations). `pushtuple` pushes a tuple of those items, in the same order, to the data stack.
 
 ## Control flow operations
 
@@ -445,28 +469,3 @@ Pops an item from the data stack. [Serializes](#serialization) it and pushes the
 
 Pops a string `serialized` from the data stack. If it is not a valid [push operation](#push-operations), fails execution. If it is, executes that push operation to push the encoded value onto the data stack.
 
-## Push operations
-
-### PushString
-
-`pushstring` pushes a string to the stack. 
-
-Followed by a varint `len`, then `len` bytes. Pushes those bytes to the data stack as a [string](#string).
-
-### PushInt
-
-`pushint` pushes an int64 to the stack.
-
-Followed by a varint `x`. Pushes `x` as an int64 to the stack. Fails if `x` is less than -2^63 or greater than 2^63-1.
-
-### PushTuple
-
-`pushtuple` pushes a tuple to the data stack. 
-
-`pushtuple` must be followed by a varint `len`, then followed by `len` encoded [push operations](#push-operations). `pushtuple` pushes a tuple of those items, in the same order, to the data stack.
-
-### Small integers
-
-[Descriptions of opcodes that push the numbers 0-32 to the stack.]
-
-### Pushdata
