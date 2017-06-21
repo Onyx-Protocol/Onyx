@@ -1511,7 +1511,7 @@ In case of failure, returns `nil` instead of the range proof.
 4. Define `exp = 0`.
 5. Define `base = 4`.
 6. Calculate the message to sign: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek", msghash, idek, f)`.
+7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek", msghash, idek, f)`.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-packet) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPacket({pt[i]}, pek)`.
 10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash("VRP.b", msghash, f, 64·(n-1))`.
@@ -1626,11 +1626,11 @@ In case of failure, returns `nil` instead of the range proof.
 2. Let `n = N/2`.
 3. Let `base = 4`.
 4. Calculate the message to validate: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
+5. Calculate last digit commitment: `(D[n-1],B[n-1]) = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])`, where `∑(D[t],B[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
     1. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
-    32 Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
-    43 For `i` from `0` to `base-1` (each digit’s value):
+    2. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
+    3. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform iterative point addition of `-(base^t)·H` instead of scalar multiplication.
         2. Calculate point `Q[t,i] = F[t] - i·(base^t)·C`. For efficiency perform iterative point addition of `-(base^t)·C` instead of scalar multiplication.
 7. [Recover Payload From Borromean Ring Signature](#recover-payload-from-borromean-ring-signature): compute an array of `2·N` 32-byte chunks `{ct[i]}` using the following inputs (halt and return `nil` if decryption fails):
