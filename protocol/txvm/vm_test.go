@@ -28,7 +28,7 @@ func TestIssue(t *testing.T) {
 	}
 	tx := &Tx{
 		Proof: proof,
-		Nonce: []ID{
+		Nonce: [][32]byte{
 			{},
 		},
 	}

@@ -20,14 +20,14 @@ type Tx struct {
 	Version          int64
 	MinTime, MaxTime uint64
 	Runlimit         int64
-	In, Nonce        []ID
-	Out, Retire      []ID
+	In, Nonce        [][32]byte
+	Out, Retire      [][32]byte
 
-	VM1In, VM1Nonce []ID
-	VM1Out          []ID
+	VM1In, VM1Nonce [][32]byte
+	VM1Out          [][32]byte
 
-	Data    ID
-	ExtHash ID
+	Data    [32]byte
+	ExtHash [32]byte
 	Proof   []byte
 }
 
@@ -133,7 +133,7 @@ func decodeInst(buf []byte) (opcode byte, imm []byte, n int) {
 	return BaseData, append([]byte{}, buf[n:r]...), int(r)
 }
 
-func idsEqual(a, b []ID) bool {
+func idsEqual(a, b [32]byte) bool {
 	if len(a) != len(b) {
 		return false
 	}

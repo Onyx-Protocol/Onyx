@@ -4,7 +4,7 @@ type Option func(*vm)
 
 type Contract struct {
 	Prog   []byte
-	Asset  ID
+	Asset  [32]byte
 	Amount uint64
 }
 
