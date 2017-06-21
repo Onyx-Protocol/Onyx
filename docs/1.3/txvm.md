@@ -37,9 +37,8 @@ There are several named types of tuples.
 0. `type`, an int64
 1. `referencedata`, a tuple of strings (initially empty)
 2. `history`, a 32-byte string
-3. `referencedata`, a string
-4. `values`, a tuple of `Value`s
-5. `history`, a tuple (TBD)
+3. `values`, a tuple of `Value`s
+4. `history`, a tuple (TBD)
 
 #### Nonce
 
@@ -348,7 +347,7 @@ TODO: add descriptions.
 
 ### Annotate
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops a string, `referencedatastring`. If `stackid` refers to the data stack, or if the stack identified by `stackid` is empty, fails. Pops the item on top of the stack identified by `stackid`, replaces the `referencedata` tuple with a new tuple with one additional field containing the string `referencedatastring`, and puts the item back on top of the same stack.
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops a string, `referencedatastring`. If `stackid` is not a valid stack identifier, or if it identifies the data stack, or if the stack identified by `stackid` is empty, fails. Pops the item on top of the stack identified by `stackid`, replaces the `referencedata` tuple with a new tuple with one additional field containing the string `referencedatastring`, and puts the item back on top of the same stack.
 
 ### Defer
 
