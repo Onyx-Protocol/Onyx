@@ -1,3 +1,14 @@
+.container {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.form {
+  min-height: 720px; // height of longest open form element
+}
+
 .title {
   font-size: $font-size-h2;
   font-weight: normal;
