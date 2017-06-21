@@ -10,7 +10,7 @@ type IssuanceAssetRangeProof interface {
 		ac *AssetCommitment,
 		assetIDs []AssetID,
 		Y []ecmath.Point,
-		nonce []byte,
+		nonce [32]byte,
 		message []byte,
 	) bool
 }
@@ -43,7 +43,7 @@ func CreateConfidentialIARP(
 	Y []ecmath.Point, // issuance keys
 	nonce [32]byte,
 	msg []byte,
-	secretIndex uint64,
+	j uint64, // secret index
 	y ecmath.Scalar,
 ) *ConfidentialIARP {
 
@@ -80,13 +80,7 @@ func CreateConfidentialIARP(
 		panic("Failed to decode an issuance key")
 	}
 
-	ozkp := CreateOlegZKP(
-		msghash[:],
-		[]ecmath.Scalar{c, y},
-		iarpFunctions(M, h),
-		F,
-		secretIndex,
-	)
+	ozkp := CreateOlegZKP(msghash[:], []ecmath.Scalar{c, y}, iarpFunctions(M, h), F, j)
 
 	return &ConfidentialIARP{Y: Y, T: T, IssuanceZKP: ozkp}
 }
@@ -119,16 +113,7 @@ func (iarp *ConfidentialIARP) Validate(
 
 	F, ok := iarpCommitments(ac, assetIDs, Y, h, iarp.T)
 
-	if !ok {
-		return false
-	}
-
-	return iarp.IssuanceZKP.Validate(
-		msghash[:],
-		iarpFunctions(M, h),
-		F)
-
-	return true
+	return ok && iarp.IssuanceZKP.Validate(msghash[:], iarpFunctions(M, h), F)
 }
 
 func iarpCommitments(

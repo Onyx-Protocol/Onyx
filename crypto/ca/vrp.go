@@ -17,8 +17,9 @@ type ValueRangeProof struct {
 const base = 4
 
 // CreateValueRangeProof creates a confidential value range proof.
+// For convenience, pt may be nil to mean an all-zeroes payload.
 func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value uint64, pt [][32]byte, f ecmath.Scalar, idek DataKey, vek ValueKey, msg []byte) *ValueRangeProof {
-	if uint64(len(pt)) != 2*N-1 {
+	if pt != nil && uint64(len(pt)) != 2*N-1 {
 		panic("calling error")
 	}
 	switch N {
@@ -36,8 +37,10 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 	n := N / 2
 
 	buf := make([]byte, 32*(2*N-1))
-	for i := range pt {
-		copy(buf[32*i:32*(i+1)], pt[i][:])
+	if pt != nil {
+		for i := range pt {
+			copy(buf[32*i:32*(i+1)], pt[i][:])
+		}
 	}
 	ep := EncryptPacket(pek[:], nil, buf[:32*(2*N-1)])
 	ct := make([][32]byte, 2*N)
