@@ -1,0 +1,33 @@
+#!/bin/sh -e
+
+if test $# -ne 1
+then exec echo >&2 'Usage: selfcert [url]'
+fi
+
+domain=$1
+: ${CHAIN_CORE_HOME:=$HOME/.chaincore}
+
+if test -f "$CHAIN_CORE_HOME/tls.key"
+then echo >&2 Error: file exists: "tls.key"; exit 1
+fi
+
+if test -f "$CHAIN_CORE_HOME/tls.crt"
+then echo >&2 Error: file exists: "tls.crt"; exit 1
+fi
+
+exec openssl req\
+	-new\
+	-x509\
+	-days 365\
+	-batch\
+	-config /dev/stdin\
+	-out $CHAIN_CORE_HOME/tls.crt\
+	<<end
+prompt = no
+default_bits = 2048
+default_keyfile = $CHAIN_CORE_HOME/tls.key
+encrypt_key = no
+distinguished_name = DN
+[DN]
+CN=$domain
+end
