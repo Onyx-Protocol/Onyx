@@ -6,7 +6,7 @@ build:
 	go install -tags localhost_auth chain/cmd/cored
 	go install chain/cmd/corectl
 	dropdb --if-exists core0
-	rm -rf $(HOME)/.chaincore?*
+	rm -rf $(HOME)/.chaincore?*/raft
 	createdb core0
 
 run0:
