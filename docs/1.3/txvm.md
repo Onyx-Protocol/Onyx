@@ -27,23 +27,24 @@ There are several named types of tuples.
 #### Value
 
 0. `type`, an int64
+2. `referencedata`, a tuple of strings (initially empty)
 1. `history`, a string
-2. `referencedata`, a string
 3. `amount`, an int64
 4. `assetID`, a string
 
 #### Output
 
 0. `type`, an int64
-1. `history`, a 32-byte string
-2. `referencedata`, a string
-3. `values`, a tuple of `Value`s
-4. `history`, a tuple (TBD)
+1. `referencedata`, a tuple of strings (initially empty)
+2. `history`, a 32-byte string
+3. `referencedata`, a string
+4. `values`, a tuple of `Value`s
+5. `history`, a tuple (TBD)
 
 #### Nonce
 
 0. `type`, an int64
-1. `referencedata`, a string
+1. `referencedata`, a tuple of strings (initially empty)
 2. `program`, a string
 3. `mintime`, an int64
 4. `maxtime`, an int64
@@ -51,29 +52,29 @@ There are several named types of tuples.
 #### Retirement
 
 0. `type`, an int64
-1. `history`, a string
-2. `referencedata`, a string
+1. `referencedata`, a tuple of strings (initially empty)
 
 #### Anchor
 
 0. `type`, an int64
+1. `referencedata`, a tuple of strings (initially empty)
 1. `history`, a string
 
 #### Asset Definition
 
 0. `type`, an int64
-1. `referencedata`, a string
+1. `referencedata`, a tuple of strings
 2. `issuanceprogram`, a string
 
 #### Transaction Header
 
 0. `type`, an int64
-1. `history`, a string
-1. `referencedata`, a string
-2. `inputs`, a tuple of [output IDs](#output)
-3. `outputs`, a tuple of [output IDs](#output)
-4. `mintime`, an int64
-5. `maxtime`, an int64
+1. `referencedata`, a tuple of strings (initially empty)
+2. `history`, a string
+3. `inputs`, a tuple of [outputs](#output)
+4. `outputs`, a tuple of [outputs](#output)
+5. `mintime`, an int64
+6. `maxtime`, an int64
 
 ## Item IDs
 
@@ -81,7 +82,7 @@ The ID of an item on the stack is the [TupleHash](#tuplehash) of that item's tup
 
 ## History
 
-When an [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Header](#transaction-header)) is created by a VM instruction, its `history` field is computed based on the instruction that generated it.
+When a new [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Header](#transaction-header)) is created by a VM instruction (including `annotate`), its `history` field is computed based on the instruction that generated it.
 
 The `history` field is the [TupleHash](#TupleHash) of:
 
@@ -113,7 +114,7 @@ Items on the alt stack have the same types as items on the data stack. The alt s
 
 ### Input stack
 
-Items on the Input stack are [Inputs](#input).
+Items on the Input stack are [Outputs](#output).
 
 ### Value stack
 
@@ -345,6 +346,10 @@ Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed2
 
 TODO: add descriptions.
 
+### Annotate
+
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops a string, `referencedatastring`. If `stackid` refers to the data stack, or if the stack identified by `stackid` is empty, fails. Pops the item on top of the stack identified by `stackid`, replaces the `referencedata` tuple with a new tuple with one additional field containing the string `referencedatastring`, and puts the item back on top of the same stack.
+
 ### Defer
 
 Pops a string from the data stack and pushes it as an condition to the Condition stack.
@@ -385,15 +390,17 @@ Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Non
 
 Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`.
 
-### Finalize
+### Header
 
 Fail if the [Transaction Headers stack](#transaction-headers-stack) is not empty.
 
-Pop all items from the Input stack and create a tuple of their IDs, `inputs` (with the top item in the 0th position). pop all items from the Output stack and create a tuple of their IDs, `outputs`. Pop all items from the Nonce stack and create a tuple of their IDs, `nonces`. Pop all items from the Retirement stack.
+Pop all items from the Input stack and create a tuple of their IDs, `inputs` (with the top item in the 0th position). Pop all items from the Output stack and create a tuple of their IDs, `outputs`. Pop all items from the Nonce stack and create a tuple of their IDs, `nonces`. Pop all items from the Retirement stack.
 
 Pop a string `referencedata` from the data stack, an int64 `mintime` from the data stack, and an int64 `maxtime` from the data stack. Fail if either `maxtime` or `mintime` is negative, or if `maxtime` is not greater than or equal to `mintime`.
 
-Create a [transaction header](#transaction-header) `header` with `referencedata` set to `referencedata`, `inputs` set to `inputs`, `outputs` set to `outputs`, `mintime` set to `mintime`, and `maxtime` set to `maxtime`. Push `header` to the Transaction Headers stack.
+Create a [transaction header](#transaction-header) `header` with `referencedata` set to `referencedata`, `inputs` set to `inputs`, `outputs` set to `outputs`, `mintime` set to `mintime`, and `maxtime` set to `maxtime`. Push `header` to the Transaction Header stack.
+
+[TO BE DONE: Figure out how `annotate` would work in the context of transaction headers without allowing people to add additional annotations after the transaction has been signed.]
 
 ### IssueCA
 
