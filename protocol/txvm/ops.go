@@ -277,13 +277,23 @@ func (o bitBinOp) run(vm *vm) {
 
 func opEncode(vm *vm) {
 	v := vm.data.Pop()
-	switch v.typ() {
-	case TypeString:
-		vm.data.PushBytes(pushData(v.(Bytes)))
-	case TypeInt64:
-		vm.data.PushBytes(pushInt64(int64(v.(Int64))))
-	case TypeTuple:
-		panic(errors.New("can't encode tuple"))
+	vm.data.PushBytes(encode(v))
+}
+
+func encode(v Value) []byte {
+	switch v := v.(type) {
+	case Bytes:
+		return pushData(v)
+	case Int64:
+		return pushInt64(int64(v))
+	case VMTuple:
+		var b []byte
+		for i := len(v); i >= 0; i-- {
+			b = append(b, encode(v[i])...)
+		}
+		b = append(b, pushInt64(int64(len(v)))...)
+		b = append(b, Tuple)
+		return b
 	default:
 		panic(errors.New("invalid type"))
 	}
