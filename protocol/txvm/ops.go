@@ -434,7 +434,8 @@ func opSatisfy(vm *vm) {
 
 func tupleHash(tuple VMTuple) []byte {
 	flattened := flatten(tuple)
-	hash := tupleHash256(flattened)
+	hash := [32]byte{}
+	sha3.TupleHash256(flattened, nil, hash[:])
 	return hash[:]
 }
 
