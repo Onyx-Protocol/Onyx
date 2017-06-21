@@ -17,9 +17,11 @@ Chain Core Developer Edition can run locally on Mac, Windows, or Linux to create
 
 Talk to us on [Twitter](https://twitter.com/chain), [Linkedin](https://www.linkedin.com/company/chain-inc-), [GitHub](https://github.com/chain), and [Slack](https://slack.chain.com).
 
-## Support
+##  Support
 
-Get answers to your technical questions via [Slack](https://slack.chain.com) or [email](mailto:support@chain-support.zendesk.com).
+### Developer forum
+
+The [developer forum](https://support.chain.com) is a great place to ask, answer, and browse community questions.
 
 ### Dedicated support
 

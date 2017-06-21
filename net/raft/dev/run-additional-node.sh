@@ -5,7 +5,7 @@ then exec echo >&2 'Usage: run-additional-node.sh port'
 fi
 
 # Enables job control to allow backgrounding & foregrounding cored process
-set -m
+set -meo pipefail
 
 port=$1
 leader_address=localhost:1999

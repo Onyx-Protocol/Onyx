@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Enables job control to allow backgrounding & foregrounding cored process
-set -m
+set -meo pipefail
 
 # Move TLS certs to chaincore0
 mkdir $HOME/.chaincore0
