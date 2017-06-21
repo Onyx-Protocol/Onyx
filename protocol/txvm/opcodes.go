@@ -13,98 +13,91 @@ const (
 	Roll  = 3 // any stack
 	Bury  = 4 // any stack
 	Depth = 5 // any stack
+	ID    = 6
 
 	// Data Stack
-	Len     = 6
-	Drop    = 7
-	Dup     = 8
-	ToAlt   = 9
-	FromAlt = 10
+	Len     = 7
+	Drop    = 8
+	Dup     = 9
+	ToAlt   = 10
+	FromAlt = 11
 
 	// boolean
-	Equal = 11
-	Not   = 12
-	And   = 13
-	Or    = 14
+	Equal = 12
+	Not   = 13
+	And   = 14
+	Or    = 15
 
 	// math
-	Add    = 15
-	Mul    = 16
-	Div    = 17
-	Mod    = 18
-	Lshift = 19
-	Rshift = 20
-	Negate = 21
-	GT     = 22
-	GE     = 23
+	Add    = 16
+	Mul    = 17
+	Div    = 18
+	Mod    = 19
+	Lshift = 20
+	Rshift = 21
+	Negate = 22
+	GT     = 23
+	GE     = 24
 
 	// string
-	Cat   = 24
-	Slice = 25
+	Cat   = 25
+	Slice = 26
 
 	// bitwise (int64 or string)
-	BitNot = 26
-	BitAnd = 27
-	BitOr  = 28
-	BitXor = 29
+	BitNot = 27
+	BitAnd = 28
+	BitOr  = 29
+	BitXor = 30
 
 	// crypto
-	SHA256        = 30
-	SHA3          = 31
-	CheckSig      = 32
-	CheckMultiSig = 33
-	PointAdd      = 34 // TODO(kr): review for CA
-	PointSub      = 35 // TODO(kr): review for CA
-	PointMul      = 36 // TODO(kr): review for CA
+	SHA256        = 31
+	SHA3          = 32
+	CheckSig      = 33
+	CheckMultiSig = 34
+	PointAdd      = 35 // TODO(kr): review for CA
+	PointSub      = 36 // TODO(kr): review for CA
+	PointMul      = 37 // TODO(kr): review for CA
 
 	// constructors
-	Encode = 37
-	Varint = 38
+	Encode = 38
+	Varint = 39
 
 	// Tuple
-	Tuple   = 39
-	Untuple = 40
-	Field   = 41
+	Tuple   = 40
+	Untuple = 41
+	Field   = 42
 
 	// introspection
-	Type = 42
+	Type = 43
 
 	// entries
-	Cond         = 43 // prog => cond
-	Unlock       = 44 // inputid + data => value + cond
-	UnlockOutput = 45 // outputid + data => value + cond
-	Merge        = 46 // value value => value
-	Split        = 47 // value + amount => value value
-	ProveRange   = 48 // TODO(kr): review for CA
-	ProveValue   = 49 // TODO(kr): review for CA
-	ProveAsset   = 50 // TODO(kr): review for CA
-	Blind        = 51 // TODO(kr): review for CA
-	Lock         = 52 // value + prog => outputid
-	Satisfy      = 53 // cond => {}
-	Anchor       = 54 // nonce + data => anchor + cond
-	Issue        = 55 // anchor + data => value + cond
-	IssueCA      = 56 // TODO(kr): review for CA
-	Retire       = 57 // value + refdata => {}
-
-	// compatibility
-	VM1CheckPredicate = 58 // list vm1prog => bool
-	VM1Unlock         = 59 // vm1inputid + data => vm1value + cond
-	VM1Nonce          = 60 // vm1nonce => vm1anchor + cond
-	VM1Issue          = 61 // vm1anchor => vm1value + cond
-	VM1Mux            = 62 // entire vm1value stack => vm1mux
-	VM1Withdraw       = 63 // vm1mux + amount asset => vm1mux + value
+	Cond         = 44 // prog => cond
+	Unlock       = 45 // inputid + data => value + cond
+	UnlockOutput = 46 // outputid + data => value + cond
+	Merge        = 47 // value value => value
+	Split        = 48 // value + amount => value value
+	ProveRange   = 49 // TODO(kr): review for CA
+	ProveValue   = 50 // TODO(kr): review for CA
+	ProveAsset   = 51 // TODO(kr): review for CA
+	Blind        = 52 // TODO(kr): review for CA
+	Lock         = 53 // value + prog => outputid
+	Satisfy      = 54 // cond => {}
+	Anchor       = 55 // nonce + data => anchor + cond
+	Issue        = 56 // anchor + data => value + cond
+	IssueCA      = 57 // TODO(kr): review for CA
+	Retire       = 58 // value + refdata => {}
 
 	// extensions
-	Nop0    = 64
-	Nop1    = 65
-	Nop2    = 66
-	Nop3    = 67
-	Nop4    = 68
-	Nop5    = 69
-	Nop6    = 70
-	Nop7    = 71
-	Nop8    = 72
-	Private = 73
+	Nop0    = 59
+	Nop1    = 60
+	Nop2    = 61
+	Nop3    = 62
+	Nop4    = 63
+	Nop5    = 64
+	Nop6    = 65
+	Nop7    = 66
+	Nop8    = 67
+	Private = 68
 
 	NumOp = 80
 
