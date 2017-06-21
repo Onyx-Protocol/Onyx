@@ -81,7 +81,7 @@ The ID of an item on the stack is the [TupleHash](#tuplehash) of that item's tup
 
 ## History
 
-When an [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Header][#Transaction Header]) is created by a VM instruction, its `history` field is computed based on the instruction that generated it.
+When an [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Header](#transaction-header)) is created by a VM instruction, its `history` field is computed based on the instruction that generated it.
 
 The `history` field is the [TupleHash](#TupleHash) of:
 
@@ -383,13 +383,13 @@ Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Non
 
 ### Issue
 
-Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`.
+Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`.
 
 ### Finalize
 
 Fail if the [Transaction Headers stack](#transaction-headers-stack) is not empty.
 
-Pop all items from the Input stack and create a tuple of their IDs, `inputs` (with the top item in the 0th position). pop all items from the Output stack and create a tuple of their IDs, `outputs`. Pop all items from the nonce and create a tuple of their IDs, `nonces`. Pop all items from the Retirements stack.
+Pop all items from the Input stack and create a tuple of their IDs, `inputs` (with the top item in the 0th position). pop all items from the Output stack and create a tuple of their IDs, `outputs`. Pop all items from the Nonce stack and create a tuple of their IDs, `nonces`. Pop all items from the Retirement stack.
 
 Pop a string `referencedata` from the data stack, an int64 `mintime` from the data stack, and an int64 `maxtime` from the data stack. Fail if either `maxtime` or `mintime` is negative, or if `maxtime` is not greater than or equal to `mintime`.
 
