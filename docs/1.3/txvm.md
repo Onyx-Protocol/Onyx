@@ -77,7 +77,7 @@ There are several named types of tuples.
 
 ## Item IDs
 
-The ID of an item on the stack is the SHA3 hash of the [serialization](#serialization) of that item.
+The ID of an item is the SHA3 hash of `"txvm encode(item)`, where `encode` is the [encode](#encode) operation.
 
 ## History
 
@@ -94,12 +94,6 @@ The `history` field is the [TupleHash](#TupleHash) of:
 ### Varint encoding
 
 Integers are encoded in [signed LEB128](#https://en.wikipedia.org/wiki/LEB128) format. [TBD: clarify].
-
-### Items
-
-Stack items are serialized as a [push operation](#push-operation) that would push that item to the data stack.
-
-Integers greater than or equal to 0 and less than or equal to 32 are encoded as the appropriate [small integer](#small-integer) opcode. Other integers are encoded using [PushInt](#PushInt) instructions. Strings are serialized using [PushString](#PushString) instructions, and tuples are serialized using [PushTuple](#PushTuple) instructions.
 
 ## Stack identifiers
 
@@ -158,30 +152,6 @@ TODO: Describe rules for encoding and decoding unsigned varints.
 TODO: Describe rules for Ed25519 curve point encoding (including checks that should be done when decoding.)
 
 # Operations
-
-## Push operations
-
-### Small integers
-
-Opcodes 0 through 32 are instructions that push 0 through 32, respectively, to the data stack as int64s.
-
-### PushInt
-
-`pushint` pushes an int64 to the stack.
-
-Followed by a varint `x`. Pushes `x` as an int64 to the stack. Fails if `x` is less than -2^63 or greater than 2^63-1.
-
-### PushString
-
-`pushstring` pushes a string to the stack. 
-
-Followed by a varint `len`, then `len` bytes. Pushes those bytes to the data stack as a [string](#string).
-
-### PushTuple
-
-`pushtuple` pushes a tuple to the data stack. 
-
-`pushtuple` must be followed by a varint `len`, then followed by `len` encoded [push operations](#push-operations). `pushtuple` pushes a tuple of those items, in the same order, to the data stack.
 
 ## Control flow operations
 
@@ -245,7 +215,7 @@ Pops an item from the alt stack and pushes it to the data stack.
 
 ## Tuple operations 
 
-### Tuple
+### MakeTuple
 
 Pops an integer `len` from the data stack. Pops `len` items from the data stack and creates a tuple of length `len` on the data stack.
 
@@ -459,13 +429,22 @@ Have no effect when executed.
 
 Causes the VM to halt and fail.
 
-## Encoding operations
+## Encoding opcodes
 
 ### Encode
 
-Pops an item from the data stack. [Serializes](#serialization) it and pushes the result as a string to the data stack.
+Pops an item from the data stack. Pushes a string to the data stack which, if executed, would push that item to the data stack.
 
-### Decode
+Strings are encoded as a [Pushdata](#Pushdata) instruction which would push that string to the data stack. Integers greater than or equal to 0 and less than or equal to 32 are encoded as the appropriate [small integer](#small-integer) opcode. Other integers are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint-encoding), followed by an [int64](#int64) instruction. Tuples are encoded as a sequence of [Pushdata](#Pushdata) instructions that would push each of the items in the tuple in reverse order, followed by the instruction given by `encode(len)` where `len` is the length of the tuple, followed by the [tuple](#tuple).
 
-Pops a string `serialized` from the data stack. If it is not a valid [push operation](#push-operations), fails execution. If it is, executes that push operation to push the encoded value onto the data stack.
+### Int64
 
+Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and pushes the result to the data stack as an Int64. Fails execution if `a` is not a valid varint encoding of an integer, or if the decoded `a` is greater than or equal to `2^63`.
+
+### Small integers
+
+[Descriptions of opcodes that push the numbers 0-32 to the stack.]
+
+### Pushdata
+
+[TBD: use Keith's method for this]
