@@ -1,12 +1,16 @@
 package ca
 
-import "chain/crypto/ed25519/ecmath"
+import (
+	"errors"
+
+	"chain/crypto/ed25519/ecmath"
+)
 
 // ValueRangeProof is a confidential value range proof.
 type ValueRangeProof struct {
-	nbits, exp, vmin uint64
-	digits           []PointPair
-	brs              *BorromeanRingSignature
+	N, exp, vmin uint64
+	digits       []PointPair
+	brs          *BorromeanRingSignature
 }
 
 const base = 4
@@ -74,7 +78,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 
 	brs := CreateBorromeanRingSignature(msghash[:], []ecmath.Point{G, J}, PQ, b, j, ct)
 	return &ValueRangeProof{
-		nbits:  N,
+		N:      N,
 		exp:    0,
 		vmin:   0,
 		digits: DB[:n-1],
@@ -83,27 +87,11 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 }
 
 func (vrp *ValueRangeProof) Validate(ac *AssetCommitment, vc *ValueCommitment, msg []byte) bool {
-	if vrp.exp > 10 {
+	if err := vrp.check(); err != nil {
 		return false
 	}
-	if vrp.vmin >= 1<<63 {
-		return false
-	}
-	if vrp.nbits%1 != 0 {
-		return false
-	}
-	if vrp.nbits+vrp.exp*4 > 64 {
-		return false
-	}
-	p10 := uint64(1)
-	for i := uint64(0); i < vrp.exp; i++ {
-		p10 *= 10
-	}
-	if vrp.vmin+p10*((1<<vrp.nbits)-1) >= 1<<63 {
-		return false
-	}
-	n := vrp.nbits / 2
-	msghash := vrpMsgHash(ac, vc, vrp.nbits, vrp.exp, vrp.vmin, msg)
+	n := vrp.N / 2
+	msghash := vrpMsgHash(ac, vc, vrp.N, vrp.exp, vrp.vmin, msg)
 
 	// 5. Calculate last digit commitment (D[n-1],B[n-1]) = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])
 	var (
@@ -130,6 +118,9 @@ func (vrp *ValueRangeProof) Validate(ac *AssetCommitment, vc *ValueCommitment, m
 }
 
 func (vrp *ValueRangeProof) Payload(ac *AssetCommitment, vc *ValueCommitment, value uint64, f ecmath.Scalar, idek DataKey, vek ValueKey, msg []byte) [][32]byte {
+	if err := vrp.check(); err != nil {
+		// xxx error
+	}
 	return nil // xxx
 }
 
@@ -170,4 +161,31 @@ func vrpCalcPQ(ac *AssetCommitment, n uint64, getDigit func(uint64) PointPair) [
 		baseToTheT *= base
 	}
 	return PQ
+}
+
+var vrpErr = errors.New("value range proof error")
+
+func (vrp *ValueRangeProof) check() error {
+	if vrp.exp > 10 {
+		return vrpErr
+	}
+	if vrp.vmin >= 1<<63 {
+		return vrpErr
+	}
+	if vrp.N%1 != 0 {
+		return vrpErr
+	}
+	if vrp.N+vrp.exp*4 > 64 {
+		return vrpErr
+	}
+
+	p10 := uint64(1)
+	for i := uint64(0); i < vrp.exp; i++ {
+		p10 *= 10
+	}
+	if vrp.vmin+p10*((1<<vrp.N)-1) >= 1<<63 {
+		return vrpErr
+	}
+
+	return nil
 }
