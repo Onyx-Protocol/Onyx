@@ -398,8 +398,8 @@ func opCheckMultiSig(vm *vm) {
 func opAnchor(vm *vm) {
 	tuple := vm.data.PopTuple()
 	stackNonce := vm.nonces.Pop()
-	id := tupleID(tuple)
-	if !bytes.Equal(stackNonce[0].(Bytes), id[:]) {
+	id := tupleHash(tuple)
+	if !bytes.Equal(stackNonce[0].(Bytes), id) {
 		panic(errors.New("bad nonce id"))
 	}
 	vm.anchors.Push(VMTuple{Bytes(id[:])})
@@ -412,7 +412,7 @@ func opIssue(vm *vm) {
 	anchor := vm.anchors.Pop()
 	_ = anchor
 	vm.conditions.Push(VMTuple{assetDef[1]})
-	assetID := tupleID(assetDef)
+	assetID := tupleHash(assetDef)
 	vm.values.Push(VMTuple{Int64(amount), Bytes(assetID[:]), Bool(true), VMTuple{}})
 }
 
@@ -432,6 +432,25 @@ func opSatisfy(vm *vm) {
 	exec(vm, tuple[0].(Bytes))
 }
 
-func tupleID(t VMTuple) ID {
-	return ID{}
+func tupleHash(tuple VMTuple) []byte {
+	flattened := flatten(tuple)
+	hash := tupleHash256(flattened)
+	return hash[:]
+}
+
+func flatten(tuple VMTuple) [][]byte {
+	var byteTuple [][]byte
+	for _, v := range tuple {
+		switch v := v.(type) {
+		case Int64:
+			buf := make([]byte, 10)
+			str := append([]byte{TypeInt64}, buf[:binary.PutUvarint(buf, uint64(v))]...)
+			byteTuple = append(byteTuple, str)
+		case Bytes:
+			byteTuple = append(byteTuple, append([]byte{TypeString}, v...))
+		case VMTuple:
+			byteTuple = append(byteTuple, append([]byte{TypeTuple}, tupleHash(v)...))
+		}
+	}
+	return byteTuple
 }
