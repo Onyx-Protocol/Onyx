@@ -199,10 +199,6 @@ Pops two items `val1` and `val2` from the data stack. If they have different typ
 
 Looks at the top item on the data stack. Pushes a number to the stack corresponding to that item's [type](#type).
 
-### Encode
-
-Pops a string or integer `val` from the data stack. Pushes a string to the data stack that, when executed on the VM, would push `val` to the data stack. Fails if `val` is a tuple.
-
 ### Len
 
 Pops a string or tuple `val` from the data stack. If `val` is a tuple, pushes the number of fields in that tuple to the data stack. If `val` is a string, pushes the length of that string to the data stack. Fails if `val` is a number.
@@ -438,6 +434,16 @@ Have no effect when executed.
 ### Reserved
 
 Causes the VM to halt and fail.
+
+## Encoding operations
+
+### Encode
+
+Pops an item from the data stack. [Serializes](#serialization) it and pushes the result as a string to the data stack.
+
+### Decode
+
+Pops a string `serialized` from the data stack. If it is not a valid [push operation](#push-operations), fails execution. If it is, executes that push operation to push the encoded value onto the data stack.
 
 ## Push operations
 
