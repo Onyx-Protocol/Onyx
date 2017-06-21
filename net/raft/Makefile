@@ -3,7 +3,7 @@
 
 
 build:
-	go install  -tags 'localhost_auth http_ok' chain/cmd/cored
+	go install -tags localhost_auth chain/cmd/cored
 	go install chain/cmd/corectl
 	dropdb --if-exists core0
 	rm -rf $(HOME)/.chaincore{0,1,2}

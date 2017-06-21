@@ -3,12 +3,16 @@
 # Enables job control to allow backgrounding & foregrounding cored process
 set -m
 
+# Move TLS certs to chaincore1
+mkdir $HOME/.chaincore2
+cp $CHAIN_CORE_HOME/tls.* $HOME/.chaincore2/
+
 export CHAIN_CORE_HOME=$HOME/.chaincore2
 
-LISTEN=127.0.0.1:1997 \
+LISTEN=localhost:1997 \
 DATABASE_URL=postgres:///core0?sslmode=disable \
 cored &
 
-CORE_URL=http://localhost:1998 \ 
-corectl join 127.0.0.1:1999
+CORE_URL=https://localhost:1997 \
+corectl join localhost:1999
 fg
