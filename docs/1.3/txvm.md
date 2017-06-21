@@ -77,7 +77,7 @@ There are several named types of tuples.
 
 ## Item IDs
 
-The ID of an item on the stack is the [TupleHash](#tuplehash) of that item's tuple.
+The ID of an item on the stack is the SHA3 hash of the [serialization](#serialization) of that item.
 
 ## History
 
@@ -88,6 +88,18 @@ The `history` field is the [TupleHash](#TupleHash) of:
 0. `opcode`, an int64 (reflecting the opcode that generated the item)
 1. `arguments`, a tuple (reflecting the arguments consumed by that instruction, in order)
 2. `outputindex`, an int64 (reflecting which output of that instruction this item is)
+
+## Serialization
+
+### Varint encoding
+
+Integers are encoded in [signed LEB128](#https://en.wikipedia.org/wiki/LEB128) format. [TBD: clarify].
+
+### Items
+
+Stack items are serialized as a [push operation](#push-operation) that would push that item to the data stack.
+
+Integers greater than or equal to 0 and less than or equal to 32 are encoded as the appropriate [small integer](#small-integer) opcode. Other integers are encoded using [PushInt](#PushInt) instructions. Strings are serialized using [PushString](#PushString) instructions, and tuples are serialized using [PushTuple](#PushTuple) instructions.
 
 ## Stack identifiers
 
@@ -226,10 +238,6 @@ Pops a tuple `tuple` from the data stack. Pushes each of the fields in `tuple` t
 Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops another integer `i` from the top of the data stack. Looks at the tuple on top of the stack identified by `stackid`, and pushes the item in its `i`th field to the top of the data stack.
 
 Fails if the stack identified by `stackid` is empty or does not have a tuple of at least length `i + 1` on top of it, or if `i` is negative.
-
-### TupleHash
-
-TBD: explanation of recursive TupleHash, how cost accounting works for it, how strings and int64s are encoded, etc.
 
 ## Boolean operations
 
@@ -431,20 +439,28 @@ Have no effect when executed.
 
 Causes the VM to halt and fail.
 
-## Encoding opcodes
+## Push operations
 
-### Int64
+### PushString
 
-Pops a string `a` from the stack, decodes it as a [varint](#varint), and pushes the result to the data stack as an Int64. Fails execution if `a` is not a valid varint encoding of an integer, or if the decoded `a` is greater than or equal to `2^63`.
+`pushstring` pushes a string to the stack. 
 
-### Negate
+Followed by a varint `len`, then `len` bytes. Pushes those bytes to the data stack as a [string](#string).
 
-Pops an integer `x` from the data stack, negates it, and pushes the result `-x` to the data stack.
+### PushInt
+
+`pushint` pushes an int64 to the stack.
+
+Followed by a varint `x`. Pushes `x` as an int64 to the stack. Fails if `x` is less than -2^63 or greater than 2^63-1.
+
+### PushTuple
+
+`pushtuple` pushes a tuple to the data stack. 
+
+`pushtuple` must be followed by a varint `len`, then followed by `len` encoded [push operations](#push-operations). `pushtuple` pushes a tuple of those items, in the same order, to the data stack.
 
 ### Small integers
 
 [Descriptions of opcodes that push the numbers 0-32 to the stack.]
 
 ### Pushdata
-
-Followed by an integer `n` encoded as a varint, then `n` bytes of data. Fails if `n` is greater than 2^31.
