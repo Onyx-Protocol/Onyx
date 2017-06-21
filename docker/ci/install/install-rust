@@ -14,8 +14,13 @@ CLIPPY_VERSION="0.0.140"
 # Pin to this version of cargo-audit
 CARGO_AUDIT_VERSION="0.2.0"
 
+# Install rustup and the given Rust version
 curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_VERSION}
 
+# Install the PowerPC cross-compiler (for Thales CodeSafe SEE)
+~/.cargo/bin/rustup target add powerpc-unknown-linux-gnu
+
+# Use cargo to install build-time tools
 ~/.cargo/bin/cargo install rustfmt --vers ${RUSTFMT_VERSION}
 ~/.cargo/bin/cargo install clippy --vers ${CLIPPY_VERSION}
 ~/.cargo/bin/cargo install cargo-audit --vers ${CARGO_AUDIT_VERSION}
