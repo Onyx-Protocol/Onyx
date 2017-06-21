@@ -2,6 +2,7 @@
 package raft
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,6 +27,7 @@ import (
 
 	"chain/errors"
 	"chain/log"
+	"chain/net/http/httperror"
 )
 
 // TODO(kr): do we need a "client" mode?
@@ -44,6 +47,8 @@ const (
 	// nSnapCatchupEntries must be <= snapCount because on restart
 	// the WAL will only load entries after the latest snapshot.
 	nSnapCatchupEntries uint64 = 10000
+
+	contentType = "application/octet-stream"
 )
 
 var (
@@ -65,6 +70,19 @@ var (
 
 	// ErrUnknownPeer is returned when the specified peer doesn't exist.
 	ErrUnknownPeer = errors.New("unknown peer")
+)
+
+var (
+	errBadRequest  = errors.New("bad request")
+	errorFormatter = httperror.Formatter{
+		Default:     httperror.Info{500, "CH000", "Chain API Error"},
+		IsTemporary: func(info httperror.Info, _ error) bool { return info.ChainCode == "CH000" },
+		Errors: map[error]httperror.Info{
+			errBadRequest:        {400, "CH003", "Invalid request body"},
+			ErrAddressNotAllowed: {400, "CH162", "Address is not allowed"},
+			ErrUninitialized:     {400, "CH163", "No cluster configured"},
+		},
+	}
 )
 
 var crcTable = crc32.MakeTable(crc32.Castagnoli)
@@ -144,6 +162,12 @@ type wctxReq struct {
 type proposal struct {
 	Wctx        []byte
 	Instruction []byte
+}
+
+// nodeJoin is the data used when a new node joins a cluster
+type nodeJoin struct {
+	ID   uint64
+	Snap []byte
 }
 
 // Start starts the raft algorithm.
@@ -610,6 +634,97 @@ func (sv *Service) waitForNode(nodeID uint64) {
 	}
 }
 
+// ServeHTTP responds to raft consensus messages at /raft/x,
+// where x is any particular raft internode RPC.
+// When sv sends outgoing messages, it acts as an HTTP client
+// and sends requests to its peers at /raft/x.
+func (sv *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	sv.mux.ServeHTTP(w, req)
+}
+
+func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
+	if !sv.initialized() {
+		errorFormatter.Write(req.Context(), w, ErrUninitialized)
+		return
+	}
+
+	b, err := ioutil.ReadAll(http.MaxBytesReader(w, req.Body, maxRaftReqSize))
+	if err != nil {
+		err = errors.Sub(errBadRequest, err)
+		errorFormatter.Write(req.Context(), w, err)
+		return
+	}
+	var m raftpb.Message
+	err = m.Unmarshal(b)
+	if err != nil {
+		err = errors.Sub(errBadRequest, err)
+		errorFormatter.Write(req.Context(), w, err)
+		return
+	}
+	sv.raftNode.Step(req.Context(), m)
+}
+
+func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
+	if !sv.initialized() {
+		errorFormatter.Write(req.Context(), w, ErrUninitialized)
+		return
+	}
+
+	var x struct{ Addr string }
+	err := json.NewDecoder(req.Body).Decode(&x)
+	if err != nil {
+		err = errors.Sub(errBadRequest, err)
+		errorFormatter.Write(req.Context(), w, err)
+		return
+	}
+
+	newID, err := sv.allocNodeID(req.Context())
+	if err != nil {
+		errorFormatter.Write(req.Context(), w, err)
+		return
+	}
+
+	// wait before reading so we can perform a linearizable read of
+	// the membership list.
+	err = sv.WaitRead(req.Context())
+	if err != nil {
+		errorFormatter.Write(req.Context(), w, err)
+		return
+	}
+	if !sv.state.IsAllowedMember(x.Addr) {
+		const detail = "Add this address to the allowed member list before attempting to join the cluster."
+		err = errors.WithDetail(ErrAddressNotAllowed, detail)
+		errorFormatter.Write(req.Context(), w, err)
+		return
+	}
+
+	err = sv.raftNode.ProposeConfChange(req.Context(), raftpb.ConfChange{
+		ID:      atomic.AddUint64(&sv.confChangeID, 1),
+		Type:    raftpb.ConfChangeAddNode,
+		NodeID:  newID,
+		Context: []byte(x.Addr),
+	})
+	if err != nil {
+		errorFormatter.Write(req.Context(), w, err)
+		return
+	}
+
+	// Wait for the conf change to be committed. This ensures that the we don't
+	// misleadingly tell a node that they successfully joined when the change
+	// never commits. It also ensures that the provided snapshot includes the
+	// new node.
+	// https://github.com/chain/chain/issues/1330
+	sv.waitForNode(newID)
+
+	snap := sv.getSnapshot()
+	snapData, err := encodeSnapshot(snap)
+	if err != nil {
+		errorFormatter.Write(req.Context(), w, err)
+		return
+	}
+	json.NewEncoder(w).Encode(nodeJoin{newID, snapData})
+}
+
 // Evict removes the node with the provided address from the raft cluster.
 // It does not modify the allowed member list.
 func (sv *Service) Evict(ctx context.Context, nodeAddr string) error {
@@ -644,14 +759,36 @@ func (sv *Service) Evict(ctx context.Context, nodeAddr string) error {
 // adding the local process as a new member, then retrieves its new ID
 // and a snapshot of the cluster state and applies it to sv.
 func (sv *Service) join(addr, baseURL string) error {
-	joinResponse, err := requestJoin(addr, baseURL, sv.client)
+	reqURL := strings.TrimRight(baseURL, "/") + "/raft/join"
+	b, _ := json.Marshal(struct{ Addr string }{addr})
+	resp, err := sv.client.Post(reqURL, contentType, bytes.NewReader(b))
 	if err != nil {
-		return err
+		return errors.Wrap(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("boot server responded with status %d", resp.StatusCode)
+		if errResponse, ok := httperror.Parse(resp.Body); ok {
+			switch errResponse.ChainCode {
+			case "CH162":
+				err = errors.WithDetail(ErrAddressNotAllowed, errResponse.Detail)
+			case "CH163":
+				const detail = "Initialize the boot node before attempting to join its cluster."
+				err = errors.WithDetail(ErrPeerUninitialized, detail)
+			}
+		}
+		return errors.Wrap(err, "joining cluster")
 	}
 
-	sv.id = joinResponse.ID
+	var x nodeJoin
+	err = json.NewDecoder(resp.Body).Decode(&x)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	sv.id = x.ID
 	var raftSnap raftpb.Snapshot
-	err = decodeSnapshot(joinResponse.Snap, &raftSnap)
+	err = decodeSnapshot(x.Snap, &raftSnap)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -783,6 +920,19 @@ func (sv *Service) send(msgs []raftpb.Message) {
 		}
 		sendmsg(addr, data, sv.client)
 	}
+}
+
+// best effort. if it fails, oh well -- that's why we're using raft.
+func sendmsg(addr string, data []byte, client *http.Client) {
+	// TODO(jackson): Parse the error response and try to detect
+	// eviction.
+	url := "https://" + addr + "/raft/msg"
+	resp, err := client.Post(url, contentType, bytes.NewReader(data))
+	if err != nil {
+		log.Printkv(context.Background(), "warning", err)
+		return
+	}
+	defer resp.Body.Close()
 }
 
 // recover loads state from the last full snapshot,

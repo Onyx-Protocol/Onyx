@@ -2,19 +2,11 @@
 
 set -e
 
-: ${GOPATH:?must be set}
-
-# Install protobuf
 curl -LO https://s3.amazonaws.com/chain-qa/protobuf-3.1.0.tar.gz
 tar xvzf protobuf-3.1.0.tar.gz
 chmod +x protobuf-3.1.0/protoc
 cp protobuf-3.1.0/protoc /usr/local/bin
 cp -a protobuf-3.1.0/libproto* /usr/local/lib
 rm -rf protobuf-3.1.0 protobuf-3.1.0.tar.gz
-
-# Install protoc-gen-go
-git clone https://github.com/golang/protobuf $(go env GOPATH)/src/github.com/golang/protobuf/
-cd $(go env GOPATH)/src/github.com/golang/protobuf/
-git reset --hard 18c9bb3261723cd5401db4d0c9fbc5c3b6c70fe8 # pin to this golang/protobuf commit hash
-go install github.com/golang/protobuf/proto
-go install github.com/golang/protobuf/protoc-gen-go
+go get -u github.com/golang/protobuf/proto
+go get -u github.com/golang/protobuf/protoc-gen-go
