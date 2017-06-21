@@ -52,7 +52,7 @@ func (b *Block) UnmarshalText(text []byte) error {
 		return err
 	}
 
-	r := blockchain.NewReader(decoded)
+	r := bytes.NewReader(decoded)
 	err = b.readFrom(r)
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func (b *Block) Scan(val interface{}) error {
 	}
 	buf := make([]byte, len(driverBuf))
 	copy(buf[:], driverBuf)
-	r := blockchain.NewReader(buf)
+	r := bytes.NewReader(buf)
 	err := b.readFrom(r)
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func (b *Block) Value() (driver.Value, error) {
 	return buf.Bytes(), nil
 }
 
-func (b *Block) readFrom(r *blockchain.Reader) error {
+func (b *Block) readFrom(r blockchain.Reader) error {
 	serflags, err := b.BlockHeader.readFrom(r)
 	if err != nil {
 		return err

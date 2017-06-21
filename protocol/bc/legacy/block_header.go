@@ -51,7 +51,7 @@ func (bh *BlockHeader) Scan(val interface{}) error {
 	}
 	buf := make([]byte, len(driverBuf))
 	copy(buf[:], driverBuf)
-	_, err := bh.readFrom(blockchain.NewReader(buf))
+	_, err := bh.readFrom(bytes.NewReader(buf))
 	return err
 }
 
@@ -93,11 +93,11 @@ func (bh *BlockHeader) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-	_, err = bh.readFrom(blockchain.NewReader(decoded))
+	_, err = bh.readFrom(bytes.NewReader(decoded))
 	return err
 }
 
-func (bh *BlockHeader) readFrom(r *blockchain.Reader) (uint8, error) {
+func (bh *BlockHeader) readFrom(r blockchain.Reader) (uint8, error) {
 	var serflags [1]byte
 	io.ReadFull(r, serflags[:])
 	switch serflags[0] {
@@ -134,7 +134,7 @@ func (bh *BlockHeader) readFrom(r *blockchain.Reader) (uint8, error) {
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
-		bh.WitnessSuffix, err = blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) (err error) {
+		bh.WitnessSuffix, err = blockchain.ReadExtensibleString(r, func(r blockchain.Reader) (err error) {
 			bh.Witness, err = blockchain.ReadVarstrList(r)
 			return err
 		})

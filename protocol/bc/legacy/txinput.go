@@ -89,7 +89,7 @@ func (t *TxInput) SetArguments(args [][]byte) {
 	}
 }
 
-func (t *TxInput) readFrom(r *blockchain.Reader) (err error) {
+func (t *TxInput) readFrom(r blockchain.Reader) (err error) {
 	t.AssetVersion, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (t *TxInput) readFrom(r *blockchain.Reader) (err error) {
 		assetID bc.AssetID
 	)
 
-	t.CommitmentSuffix, err = blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
+	t.CommitmentSuffix, err = blockchain.ReadExtensibleString(r, func(r blockchain.Reader) error {
 		if t.AssetVersion != 1 {
 			return nil
 		}
@@ -148,7 +148,7 @@ func (t *TxInput) readFrom(r *blockchain.Reader) (err error) {
 		return err
 	}
 
-	t.WitnessSuffix, err = blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
+	t.WitnessSuffix, err = blockchain.ReadExtensibleString(r, func(r blockchain.Reader) error {
 		// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
 		if t.AssetVersion != 1 {
 			return nil

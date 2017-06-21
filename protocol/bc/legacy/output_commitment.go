@@ -49,8 +49,8 @@ func (oc *OutputCommitment) writeContents(w io.Writer, suffix []byte, assetVersi
 	return nil
 }
 
-func (oc *OutputCommitment) readFrom(r *blockchain.Reader, assetVersion uint64) (suffix []byte, err error) {
-	return blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
+func (oc *OutputCommitment) readFrom(r blockchain.Reader, assetVersion uint64) (suffix []byte, err error) {
+	return blockchain.ReadExtensibleString(r, func(r blockchain.Reader) error {
 		if assetVersion == 1 {
 			err := oc.AssetAmount.ReadFrom(r)
 			if err != nil {
