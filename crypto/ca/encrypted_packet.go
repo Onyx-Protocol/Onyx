@@ -1,6 +1,10 @@
 package ca
 
-import "golang.org/x/crypto/sha3"
+import (
+	"bytes"
+
+	"golang.org/x/crypto/sha3"
+)
 
 type EncryptedPacket struct {
 	ct    []byte
@@ -81,4 +85,14 @@ func (ep *EncryptedPacket) Decrypt(ek []byte) ([]byte, bool) {
 		pt[i] = ep.ct[i] ^ ks[0]
 	}
 	return pt, true
+}
+
+func (ep *EncryptedPacket) fill(p [][32]byte) {
+	b := new(bytes.Buffer)
+	for i := 0; i < len(p)-1; i++ {
+		b.Write(p[i][:])
+	}
+	ep.ct = b.Bytes()
+	copy(ep.nonce[:], p[len(p)-1][:8])
+	copy(ep.mac[:], p[len(p)-1][8:])
 }

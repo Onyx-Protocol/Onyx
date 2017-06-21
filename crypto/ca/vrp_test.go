@@ -1,6 +1,7 @@
 package ca
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -16,6 +17,7 @@ func TestVRP(t *testing.T) {
 	N := uint64(8)
 
 	pt := make([][32]byte, 2*N-1)
+	pt[10][9] = 'x'
 
 	idek := DataKey{5}
 
@@ -61,5 +63,10 @@ func TestVRP(t *testing.T) {
 	vrp2.vmin++
 	if vrp2.Validate(ac, vc, msg) {
 		t.Error("validated invalid vrp")
+	}
+
+	pt2 := vrp.Payload(ac, vc, value, *f, idek, vek, msg)
+	if !reflect.DeepEqual(pt, pt2) {
+		t.Errorf("got %v, want %v", pt2, pt)
 	}
 }

@@ -1,6 +1,7 @@
 package ca
 
 import (
+	"bytes"
 	"errors"
 
 	"chain/crypto/ed25519/ecmath"
@@ -31,7 +32,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 	}
 
 	msghash := vrpMsgHash(AC, VC, N, 0, 0, msg)
-	pek := hash256("ChainCA.pek", msghash[:], idek, f[:])
+	pek := hash256("ChainCA.VRP.pek", msghash[:], idek, f[:], VC.Bytes())
 	n := N / 2
 
 	buf := make([]byte, 32*(2*N-1))
@@ -46,16 +47,7 @@ func CreateValueRangeProof(AC *AssetCommitment, VC *ValueCommitment, N, value ui
 	copy(ct[2*N-1][:8], ep.nonce[:])
 	copy(ct[2*N-1][8:], ep.mac[:])
 
-	b := make([]ecmath.Scalar, n)
-	bsum := ecmath.Zero
-	hasher := streamHash("ChainCA.VRP.b", msghash[:], f[:])
-	for t := uint64(0); t < n-1; t++ {
-		var bt [64]byte
-		hasher.Read(bt[:])
-		b[t].Reduce(&bt)
-		bsum.Add(&bsum, &b[t])
-	}
-	b[n-1].Sub(&f, &bsum)
+	b := vrpCalcb(n, msghash, f)
 
 	DB := make([]PointPair, n) // DB[t][0] is what the spec calls D[t], DB[t][1] is B[t]
 	j := make([]uint64, n)
@@ -94,19 +86,7 @@ func (vrp *ValueRangeProof) Validate(ac *AssetCommitment, vc *ValueCommitment, m
 	msghash := vrpMsgHash(ac, vc, vrp.N, vrp.exp, vrp.vmin, msg)
 
 	// 5. Calculate last digit commitment (D[n-1],B[n-1]) = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])
-	var (
-		vminScalar ecmath.Scalar
-		lastDB     PointPair
-	)
-	vminScalar.SetUint64(vrp.vmin)
-	lastDB.ScMul((*PointPair)(ac), &vminScalar)     // lastDB = vmin·AC
-	lastDB.Sub((*PointPair)(vc), &lastDB)           // lastDB = VC - vmin·AC
-	lastDB.ScMul(&lastDB, powerOf10(-int(vrp.exp))) // lastDB = (10^(-exp))·(VC - vmin·AC)
-	dbSum := ZeroPointPair
-	for _, digit := range vrp.digits {
-		dbSum.Add(&dbSum, &digit)
-	}
-	lastDB.Sub(&lastDB, &dbSum) // lastDB = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])
+	lastDB := vrp.calcLastDB(ac, vc)
 
 	PQ := vrpCalcPQ(ac, n, func(t uint64) PointPair {
 		if t == n-1 {
@@ -121,11 +101,61 @@ func (vrp *ValueRangeProof) Payload(ac *AssetCommitment, vc *ValueCommitment, va
 	if err := vrp.check(); err != nil {
 		// xxx error
 	}
-	return nil // xxx
+	n := vrp.N / 2
+	msghash := vrpMsgHash(ac, vc, vrp.N, vrp.exp, vrp.vmin, msg)
+	lastDB := vrp.calcLastDB(ac, vc)
+	j := make([]uint64, n)
+	PQ := vrpCalcPQ(ac, n, func(t uint64) PointPair {
+		digitVal := value & (0x03 << (2 * t))
+		j[t] = digitVal >> (2 * t)
+		if t == n-1 {
+			return lastDB
+		}
+		return vrp.digits[t]
+	})
+	b := vrpCalcb(n, msghash, f)
+	pre := vrp.brs.Payload(msghash[:], []ecmath.Point{G, J}, PQ, b, j)
+	pek := hash256("ChainCA.VRP.pek", msghash[:], idek, f[:], vc.Bytes())
+
+	buf := new(bytes.Buffer)
+	for i := 0; i < len(pre)-1; i++ {
+		buf.Write(pre[i][:])
+	}
+	ep := EncryptedPacket{
+		ct: buf.Bytes(),
+	}
+	copy(ep.nonce[:], pre[len(pre)-1][:8])
+	copy(ep.mac[:], pre[len(pre)-1][8:])
+	post, ok := ep.Decrypt(pek[:])
+	if !ok {
+		// xxx error
+	}
+	pt := make([][32]byte, 2*vrp.N-1)
+	for i := uint64(0); i < 2*vrp.N-1; i++ {
+		copy(pt[i][:], post[32*i:32*(i+1)])
+	}
+	return pt
 }
 
 func vrpMsgHash(ac *AssetCommitment, vc *ValueCommitment, N, exp, vmin uint64, msg []byte) [32]byte {
 	return hash256("ChainCA.VRP", ac.Bytes(), vc.Bytes(), uint64le(uint64(N)), uint64le(uint64(exp)), uint64le(vmin), msg)
+}
+
+func (vrp *ValueRangeProof) calcLastDB(ac *AssetCommitment, vc *ValueCommitment) PointPair {
+	var (
+		vminScalar ecmath.Scalar
+		lastDB     PointPair
+	)
+	vminScalar.SetUint64(vrp.vmin)
+	lastDB.ScMul((*PointPair)(ac), &vminScalar)     // lastDB = vmin·AC
+	lastDB.Sub((*PointPair)(vc), &lastDB)           // lastDB = VC - vmin·AC
+	lastDB.ScMul(&lastDB, powerOf10(-int(vrp.exp))) // lastDB = (10^(-exp))·(VC - vmin·AC)
+	dbSum := ZeroPointPair
+	for _, digit := range vrp.digits {
+		dbSum.Add(&dbSum, &digit)
+	}
+	lastDB.Sub(&lastDB, &dbSum) // lastDB = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])
+	return lastDB
 }
 
 func vrpCalcPQ(ac *AssetCommitment, n uint64, getDigit func(uint64) PointPair) [][][]ecmath.Point {
@@ -161,6 +191,20 @@ func vrpCalcPQ(ac *AssetCommitment, n uint64, getDigit func(uint64) PointPair) [
 		baseToTheT *= base
 	}
 	return PQ
+}
+
+func vrpCalcb(n uint64, msghash [32]byte, f ecmath.Scalar) []ecmath.Scalar {
+	b := make([]ecmath.Scalar, n)
+	bsum := ecmath.Zero
+	hasher := streamHash("ChainCA.VRP.b", msghash[:], f[:])
+	for t := uint64(0); t < n-1; t++ {
+		var bt [64]byte
+		hasher.Read(bt[:])
+		b[t].Reduce(&bt)
+		bsum.Add(&bsum, &b[t])
+	}
+	b[n-1].Sub(&f, &bsum)
+	return b
 }
 
 var vrpErr = errors.New("value range proof error")
