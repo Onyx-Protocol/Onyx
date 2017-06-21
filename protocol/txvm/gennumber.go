@@ -23,7 +23,6 @@ func main() {
 	}
 
 	fixed := map[string]bool{
-		"MinInt":   true,
 		"BaseInt":  true,
 		"NumOp":    true,
 		"BaseData": true,

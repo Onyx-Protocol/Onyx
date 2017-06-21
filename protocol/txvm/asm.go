@@ -230,7 +230,7 @@ func Disassemble(prog []byte) string {
 			} else {
 				parts = append(parts, fmt.Sprintf(`"%x"x`, inst.data))
 			}
-		} else if inst.opcode >= MinInt {
+		} else if inst.opcode >= BaseInt {
 			if len(instructions) > i+1 &&
 				instructions[i+1].opcode == Negate {
 				parts = append(parts, fmt.Sprintf("%d", -(int(inst.opcode)-int(BaseInt))))

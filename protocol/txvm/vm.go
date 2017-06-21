@@ -117,7 +117,7 @@ func step(vm *vm) {
 	vm.pc += n
 	if opcode == BaseData {
 		vm.data.PushBytes(data)
-	} else if opcode >= MinInt {
+	} else if opcode >= BaseInt {
 		vm.data.PushInt64(int64(opcode) - BaseInt)
 	} else {
 		optab[opcode](vm)

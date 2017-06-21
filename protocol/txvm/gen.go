@@ -37,7 +37,6 @@ func getOpcodes() []string {
 	var opcodes []string
 	exclude := map[string]bool{
 		"NumOp":    true,
-		"MinInt":   true,
 		"BaseInt":  true,
 		"BaseData": true,
 	}

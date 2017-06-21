@@ -8,8 +8,8 @@ func opTracer(t testing.TB) func(stack, byte, []byte, []byte) {
 	return func(s stack, op byte, data, p []byte) {
 		if op >= BaseData {
 			t.Logf("[%x]\t\t#stack len: %d", data, s.Len())
-		} else if op >= MinInt {
-			t.Logf("%d\t\t#stack len: %d", op-MinInt, s.Len())
+		} else if op >= BaseInt {
+			t.Logf("%d\t\t#stack len: %d", op-BaseInt, s.Len())
 		} else {
 			t.Logf("%s\t\t#stack len: %d", OpNames[op], s.Len())
 		}

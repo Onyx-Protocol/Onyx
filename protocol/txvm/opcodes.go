@@ -109,10 +109,8 @@ const (
 	NumOp = 80
 
 	// Small ints.
-	// For MinInt <= BaseInt+n < BaseData
-	// (so 0 <= n < 15),
+	// For 0 <= n < 15,
 	// opcode BaseInt+n pushes n.
-	MinInt  = 80
 	BaseInt = 80
 
 	BaseData = 95 // data len in [0, 32] has 1-byte len prefix
