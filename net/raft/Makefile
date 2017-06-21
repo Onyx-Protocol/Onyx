@@ -6,14 +6,14 @@ build:
 	go install -tags localhost_auth chain/cmd/cored
 	go install chain/cmd/corectl
 	dropdb --if-exists core0
-	rm -rf $(HOME)/.chaincore{0,1,2}
+	rm -rf $(HOME)/.chaincore?*
 	createdb core0
 
 run0:
-	dev/run0.sh
+	dev/run-bootstrapped-node.sh
 
 run1:
-	dev/run1.sh
+	dev/run-additional-node.sh 1998
 
 run2:
-	dev/run2.sh
+	dev/run-additional-node.sh 1997
