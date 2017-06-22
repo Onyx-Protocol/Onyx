@@ -25,6 +25,7 @@ var ops = [NumOp]func(*vm){
 	Roll:  opRoll,
 	Bury:  opBury,
 	Depth: opDepth,
+	ID:    opID,
 
 	Len:     opLen,
 	Drop:    opDrop,
@@ -126,6 +127,11 @@ func opDepth(vm *vm) {
 		n = int(getStack(vm, t).Len())
 	}
 	vm.data.PushInt64(int64(n))
+}
+
+func opID(vm *vm) {
+	t := vm.data.PopInt64()
+	vm.data.PushBytes(getStack(vm, t).ID())
 }
 
 func opDrop(vm *vm) {
@@ -288,7 +294,7 @@ func encode(v Value) []byte {
 		return pushInt64(int64(v))
 	case VMTuple:
 		var b []byte
-		for i := len(v); i >= 0; i-- {
+		for i := len(v) - 1; i >= 0; i-- {
 			b = append(b, encode(v[i])...)
 		}
 		b = append(b, pushInt64(int64(len(v)))...)

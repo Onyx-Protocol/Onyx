@@ -1,5 +1,7 @@
 package txvm
 
+import "golang.org/x/crypto/sha3"
+
 // These codes identify stacks.
 // For example, ROLL reads a stack code
 // to select which stack to modify.
@@ -59,8 +61,13 @@ func (s *stack) Bury(n int64) {
 	s.a = append(append(append([]Value{}, s.a[:i]...), x), s.a[i:]...)
 }
 
+type tupleID struct {
+	tuple VMTuple
+	id    []byte
+}
+
 type tupleStack struct {
-	a []VMTuple
+	a []tupleID
 }
 
 func (s *tupleStack) Len() int64 {
@@ -70,26 +77,41 @@ func (s *tupleStack) Len() int64 {
 func (s *tupleStack) Pop() VMTuple {
 	v := s.a[len(s.a)-1]
 	s.a = s.a[:len(s.a)-1]
-	return v
+	return v.tuple
 }
 
 func (s *tupleStack) Push(v VMTuple) {
-	s.a = append(s.a, v)
+	s.a = append(s.a, tupleID{
+		tuple: v,
+		id:    calcID(v),
+	})
 }
 
 func (s *tupleStack) Peek() VMTuple {
-	return s.a[len(s.a)-1]
+	return s.a[len(s.a)-1].tuple
 }
 
 func (s *tupleStack) Roll(n int64) {
 	i := len(s.a) - int(n)
 	x := s.a[i]
 	s.a = append(s.a[:i], s.a[i+1:]...)
-	s.Push(x)
+	s.a = append(s.a, x)
 }
 
 func (s *tupleStack) Bury(n int64) {
-	x := s.Pop()
+	x := s.a[len(s.a)-1]
+	s.a = s.a[:len(s.a)-1]
 	i := len(s.a) - int(n)
-	s.a = append(append(append([]VMTuple{}, s.a[:i]...), x), s.a[i:]...)
+	s.a = append(append(append([]tupleID{}, s.a[:i]...), x), s.a[i:]...)
+}
+
+func (s *tupleStack) ID() []byte {
+	return s.a[len(s.a)-1].id
+}
+
+func calcID(v VMTuple) []byte {
+	h := sha3.New256()
+	h.Write([]byte("txvm"))
+	h.Write(encode(v))
+	return h.Sum(nil)
 }
