@@ -3,6 +3,8 @@ package txvm
 import (
 	"encoding/binary"
 	"errors"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 // Tx contains the full transaction data.
@@ -79,10 +81,31 @@ func Validate(x *Tx, o ...Option) bool {
 	// TODO(kr): call some tracing hook here
 	// to signal end of execution.
 
-	// check ids are equal
+	if vm.txheader.Len() != 1 {
+		panic(errors.New("missing tx header"))
+	}
+
+	headerTuple := vm.txheader.Peek()
+	inputs := headerTuple[3].(VMTuple)
+	outputs := headerTuple[4].(VMTuple)
+	nonces := headerTuple[5].(VMTuple)
+
+	if !idSetEqual(x.In, inputs) {
+		panic(errors.New("different inputs"))
+	}
+
+	if !idSetEqual(x.Out, outputs) {
+		panic(errors.New("different outputs"))
+	}
+
+	if !idSetEqual(x.Nonce, nonces) {
+		spew.Dump(nonces)
+		panic(errors.New("different nonces"))
+	}
 
 	return vm.conditions.Len() == 0 &&
-		vm.anchors.Len() == 0
+		vm.anchors.Len() == 0 &&
+		vm.values.Len() == 0
 }
 
 func exec(vm *vm, prog []byte) {
@@ -117,7 +140,19 @@ func decodeInst(buf []byte) (opcode byte, imm []byte, n int) {
 	return BaseData, append([]byte{}, buf[n:r]...), int(r)
 }
 
-func idsEqual(a, b [32]byte) bool {
+func idSetEqual(a [][32]byte, b []Value) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !idsEqual(a[i], b[i].(Bytes)) {
+			return false
+		}
+	}
+	return true
+}
+
+func idsEqual(a [32]byte, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}

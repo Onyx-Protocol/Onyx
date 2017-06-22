@@ -453,7 +453,49 @@ func opIssue(vm *vm) {
 }
 
 func opHeader(vm *vm) {
+	if vm.txheader.Len() > 0 {
+		panic(errors.New("txheader already created"))
+	}
+	var (
+		inputs      VMTuple
+		outputs     VMTuple
+		nonces      VMTuple
+		historyArgs []Value
+	)
+	for vm.inputs.Len() > 0 {
+		inputs = append(inputs, Bytes(vm.inputs.ID()))
+		historyArgs = append(historyArgs, vm.inputs.Pop())
+	}
+	for vm.outputs.Len() > 0 {
+		outputs = append(outputs, Bytes(vm.outputs.ID()))
+		historyArgs = append(historyArgs, vm.outputs.Pop())
+	}
+	for vm.nonces.Len() > 0 {
+		nonces = append(nonces, Bytes(vm.nonces.ID()))
+		historyArgs = append(historyArgs, vm.nonces.Pop())
+	}
+	for vm.retirements.Len() > 0 {
+		historyArgs = append(historyArgs, vm.retirements.Pop())
+	}
+	refData := vm.data.PopBytes()
+	minTime := vm.data.PopInt64()
+	maxTime := vm.data.PopInt64()
 
+	if minTime < 0 || maxTime < minTime {
+		panic(errors.New("invalid time range"))
+	}
+
+	historyArgs = append(historyArgs, Bytes(refData), Int64(minTime), Int64(maxTime))
+	vm.txheader.Push(VMTuple{
+		Bytes(TxHeaderTuple),
+		VMTuple{Bytes(refData)},
+		historyID(Header, 0, historyArgs...),
+		inputs,
+		outputs,
+		nonces,
+		Int64(minTime),
+		Int64(maxTime),
+	})
 }
 
 func historyID(op byte, idx int, vals ...Value) Bytes {
