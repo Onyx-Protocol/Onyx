@@ -91,6 +91,7 @@ func Validate(x *Tx, o ...Option) bool {
 	nonces := headerTuple[5].(VMTuple)
 
 	if !idSetEqual(x.In, inputs) {
+		spew.Dump(inputs)
 		panic(errors.New("different inputs"))
 	}
 
@@ -104,7 +105,6 @@ func Validate(x *Tx, o ...Option) bool {
 	}
 
 	return vm.conditions.Len() == 0 &&
-		vm.anchors.Len() == 0 &&
 		vm.values.Len() == 0
 }
 

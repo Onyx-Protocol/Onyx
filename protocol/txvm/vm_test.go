@@ -46,3 +46,35 @@ func TestIssue(t *testing.T) {
 		t.Fatal("expected ok")
 	}
 }
+
+func TestSpend(t *testing.T) {
+	proof, err := Assemble(`
+			[1 verify]
+				"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100"x
+				100
+				"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x
+				0 maketuple
+			"76616c7565"x 5 maketuple 1 maketuple
+			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x
+			0 maketuple
+		"6f7574707574"x 5 maketuple unlock
+		retire
+		10000 0 ""x header
+	`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx := &Tx{
+		Proof: proof,
+		In: [][32]byte{
+			{
+				0x28, 0x3a, 0x23, 0x84, 0x0e, 0xb5, 0x78, 0x09, 0x0d, 0xce, 0xa9, 0x80, 0xf0, 0x82, 0xc3, 0x6a,
+				0x2e, 0x4e, 0xcf, 0x4f, 0xc7, 0x1d, 0x2e, 0x00, 0x12, 0x6b, 0x6e, 0x23, 0xc9, 0x29, 0x20, 0xdc,
+			},
+		},
+	}
+	ok := Validate(tx, TraceOp(opTracer(t)), TraceError(func(err error) { t.Error(err) }))
+	if !ok {
+		t.Fatal("expected ok")
+	}
+}

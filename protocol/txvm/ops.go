@@ -69,7 +69,9 @@ var ops = [NumOp]func(*vm){
 	CheckMultiSig: opCheckMultiSig,
 
 	Satisfy: opSatisfy,
+	Unlock:  opUnlock,
 	Lock:    opLock,
+	Retire:  opRetire,
 	Anchor:  opAnchor,
 	Issue:   opIssue,
 	Header:  opHeader,
@@ -400,6 +402,28 @@ func opSatisfy(vm *vm) {
 	exec(vm, tuple[0].(Bytes))
 }
 
+func opUnlock(vm *vm) {
+	input := vm.data.PopTuple()
+	if !checkTuple(input, OutputTuple) {
+		panic(errors.New("expected output tuple"))
+	}
+	vm.inputs.Push(input)
+	vals := input[3].(VMTuple)
+	for _, v := range vals {
+		value := v.(VMTuple)
+		if !checkTuple(value, ValueTuple) {
+			panic(errors.New("expected value tuple"))
+		}
+		vm.values.Push(value)
+	}
+	vm.anchors.Push(VMTuple{
+		Bytes(AnchorTuple),
+		VMTuple{},
+		historyID(Unlock, 0, input),
+	})
+	exec(vm, input[4].(Bytes))
+}
+
 func opLock(vm *vm) {
 	refData := vm.data.PopBytes()
 	n := vm.data.PopInt64()
@@ -417,6 +441,15 @@ func opLock(vm *vm) {
 		historyID(Lock, 0, historyArgs...),
 		values,
 		Bytes(prog),
+	})
+}
+
+func opRetire(vm *vm) {
+	val := vm.values.Pop()
+	vm.retirements.Push(VMTuple{
+		Bytes(RetirementTuple),
+		VMTuple{},
+		historyID(Retire, 0, val),
 	})
 }
 
