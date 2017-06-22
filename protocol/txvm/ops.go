@@ -68,10 +68,11 @@ var ops = [NumOp]func(*vm){
 	CheckSig:      opCheckSig,
 	CheckMultiSig: opCheckMultiSig,
 
+	Satisfy: opSatisfy,
+	Lock:    opLock,
 	Anchor:  opAnchor,
 	Issue:   opIssue,
-	Lock:    opLock,
-	Satisfy: opSatisfy,
+	Header:  opHeader,
 }
 
 func opPC(vm *vm) {
@@ -394,6 +395,31 @@ func opCheckMultiSig(vm *vm) {
 	vm.data.Push(Bool(len(sig) == 0))
 }
 
+func opSatisfy(vm *vm) {
+	tuple := vm.conditions.Pop()
+	exec(vm, tuple[0].(Bytes))
+}
+
+func opLock(vm *vm) {
+	refData := vm.data.PopBytes()
+	n := vm.data.PopInt64()
+	var values VMTuple
+	for i := int64(0); i < n; i++ {
+		values = append(values, vm.values.Pop())
+	}
+	prog := vm.data.PopBytes()
+
+	historyArgs := append(append([]Value{Bytes(refData), Int64(n)}, values...), Bytes(prog))
+
+	vm.outputs.Push(VMTuple{
+		Bytes(OutputTuple),
+		VMTuple{Bytes(refData)},
+		historyID(Lock, 0, historyArgs...),
+		values,
+		Bytes(prog),
+	})
+}
+
 func opAnchor(vm *vm) {
 	tuple := vm.data.PopTuple()
 	if !checkTuple(tuple, NonceTuple) {
@@ -426,29 +452,8 @@ func opIssue(vm *vm) {
 	exec(vm, assetDef[2].(Bytes))
 }
 
-func opLock(vm *vm) {
-	refData := vm.data.PopBytes()
-	n := vm.data.PopInt64()
-	var values VMTuple
-	for i := int64(0); i < n; i++ {
-		values = append(values, vm.values.Pop())
-	}
-	prog := vm.data.PopBytes()
+func opHeader(vm *vm) {
 
-	historyArgs := append(append([]Value{Bytes(refData), Int64(n)}, values...), Bytes(prog))
-
-	vm.outputs.Push(VMTuple{
-		Bytes(OutputTuple),
-		VMTuple{Bytes(refData)},
-		historyID(Lock, 0, historyArgs...),
-		values,
-		Bytes(prog),
-	})
-}
-
-func opSatisfy(vm *vm) {
-	tuple := vm.conditions.Pop()
-	exec(vm, tuple[0].(Bytes))
 }
 
 func historyID(op byte, idx int, vals ...Value) Bytes {
