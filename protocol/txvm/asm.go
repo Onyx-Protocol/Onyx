@@ -171,12 +171,8 @@ func scanFunc(s string, f func(rune) bool) (n int) {
 func pushInt64(n int64) []byte {
 	if 0 <= n && n <= 0xf {
 		return []byte{BaseInt + byte(n)}
-	} else if n == -1 {
-		return []byte{BaseInt + 1, Negate}
-	} else if -0x10 < n && n < 0 {
-		return []byte{BaseInt + byte(-n), Negate}
 	} else if n <= -0x10 && n != -n {
-		return append(pushData(encVarint(-n)), Varint, Negate)
+		return append(pushData(encVarint(n)), Varint)
 	} else {
 		return append(pushData(encVarint(n)), Varint)
 	}
@@ -216,13 +212,7 @@ func Disassemble(prog []byte) string {
 	for i := 0; i < len(instructions); i++ {
 		inst := instructions[i]
 		if inst.opcode >= BaseData {
-			if len(instructions) > i+2 &&
-				instructions[i+1].opcode == Varint &&
-				instructions[i+2].opcode == Negate {
-				v, _ := binary.Uvarint(inst.data)
-				parts = append(parts, fmt.Sprintf("%d", -int64(v)))
-				i += 2
-			} else if len(instructions) > i+1 &&
+			if len(instructions) > i+1 &&
 				instructions[i+1].opcode == Varint {
 				v, _ := binary.Uvarint(inst.data)
 				parts = append(parts, fmt.Sprintf("%d", int64(v)))
@@ -231,13 +221,7 @@ func Disassemble(prog []byte) string {
 				parts = append(parts, fmt.Sprintf(`"%x"x`, inst.data))
 			}
 		} else if inst.opcode >= BaseInt {
-			if len(instructions) > i+1 &&
-				instructions[i+1].opcode == Negate {
-				parts = append(parts, fmt.Sprintf("%d", -(int(inst.opcode)-int(BaseInt))))
-				i += 1
-			} else {
-				parts = append(parts, fmt.Sprintf("%d", int(inst.opcode)-int(BaseInt)))
-			}
+			parts = append(parts, fmt.Sprintf("%d", int(inst.opcode)-int(BaseInt)))
 		} else {
 			parts = append(parts, OpNames[inst.opcode])
 		}

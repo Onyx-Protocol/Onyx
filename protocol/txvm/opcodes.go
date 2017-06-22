@@ -30,74 +30,75 @@ const (
 
 	// math
 	Add    = 16
-	Mul    = 17
-	Div    = 18
-	Mod    = 19
-	Lshift = 20
-	Rshift = 21
-	Negate = 22
+	Sub    = 17
+	Mul    = 18
+	Div    = 19
+	Mod    = 20
+	Lshift = 21
+	Rshift = 22
 	GT     = 23
-	GE     = 24
 
 	// string
-	Cat   = 25
-	Slice = 26
+	Cat   = 24
+	Slice = 25
 
 	// bitwise (int64 or string)
-	BitNot = 27
-	BitAnd = 28
-	BitOr  = 29
-	BitXor = 30
+	BitNot = 26
+	BitAnd = 27
+	BitOr  = 28
+	BitXor = 29
 
 	// crypto
-	SHA256        = 31
-	SHA3          = 32
-	CheckSig      = 33
-	CheckMultiSig = 34
-	PointAdd      = 35 // TODO(kr): review for CA
-	PointSub      = 36 // TODO(kr): review for CA
-	PointMul      = 37 // TODO(kr): review for CA
+	SHA256        = 30
+	SHA3          = 31
+	CheckSig      = 32
+	CheckMultiSig = 33
+	PointAdd      = 34 // TODO(kr): review for CA
+	PointSub      = 35 // TODO(kr): review for CA
+	PointMul      = 36 // TODO(kr): review for CA
 
 	// constructors
-	Encode = 38
-	Varint = 39
+	Encode = 37
+	Varint = 38
 
 	// Tuple
-	Tuple   = 40
-	Untuple = 41
-	Field   = 42
+	MakeTuple = 39
+	Untuple   = 40
+	Field     = 41
 
 	// introspection
-	Type = 43
+	Type = 42
 
 	// entries
-	Cond         = 44 // prog => cond
-	Unlock       = 45 // inputid + data => value + cond
-	UnlockOutput = 46 // outputid + data => value + cond
-	Merge        = 47 // value value => value
-	Split        = 48 // value + amount => value value
-	ProveRange   = 49 // TODO(kr): review for CA
-	ProveValue   = 50 // TODO(kr): review for CA
-	ProveAsset   = 51 // TODO(kr): review for CA
-	Blind        = 52 // TODO(kr): review for CA
-	Lock         = 53 // value + prog => outputid
-	Satisfy      = 54 // cond => {}
-	Anchor       = 55 // nonce + data => anchor + cond
-	Issue        = 56 // anchor + data => value + cond
-	IssueCA      = 57 // TODO(kr): review for CA
-	Retire       = 58 // value + refdata => {}
+	Annotate     = 43
+	Defer        = 44 // prog => cond
+	Satisfy      = 45 // cond => {}
+	Unlock       = 46 // inputid + data => value + cond
+	UnlockOutput = 47 // outputid + data => value + cond
+	Merge        = 48 // value value => value
+	Split        = 49 // value + amount => value value
+	Lock         = 50 // value + prog => outputid
+	Retire       = 51 // value + refdata => {}
+	Anchor       = 52 // nonce + data => anchor + cond
+	Issue        = 53 // anchor + data => value + cond
+	IssueCA      = 54 // TODO(kr): review for CA
+	Header       = 55
+	ProveRange   = 56 // TODO(kr): review for CA
+	ProveValue   = 57 // TODO(kr): review for CA
+	ProveAsset   = 58 // TODO(kr): review for CA
+	Blind        = 59 // TODO(kr): review for CA
 
 	// extensions
-	Nop0    = 59
-	Nop1    = 60
-	Nop2    = 61
-	Nop3    = 62
-	Nop4    = 63
-	Nop5    = 64
-	Nop6    = 65
-	Nop7    = 66
-	Nop8    = 67
-	Private = 68
+	Nop0    = 60
+	Nop1    = 61
+	Nop2    = 62
+	Nop3    = 63
+	Nop4    = 64
+	Nop5    = 65
+	Nop6    = 66
+	Nop7    = 67
+	Nop8    = 68
+	Private = 69
 
 	NumOp = 80
 

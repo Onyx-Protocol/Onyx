@@ -18,8 +18,8 @@ func opTracer(t testing.TB) func(stack, byte, []byte, []byte) {
 
 func TestIssue(t *testing.T) {
 	proof, err := Assemble(`
-		10000 0 [1] 0 tuple "6e6f6e6365"x 5 tuple anchor
-		[1] 0 tuple "6173736574646566696e6974696f6e"x 3 tuple issue
+		10000 0 [1] 0 maketuple "6e6f6e6365"x 5 maketuple anchor
+		[1] 0 maketuple "6173736574646566696e6974696f6e"x 3 maketuple issue
 		[1] 1 ""x lock
 	`)
 	if err != nil {

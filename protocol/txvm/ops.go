@@ -45,8 +45,6 @@ var ops = [NumOp]func(*vm){
 	Lshift: intBinOp(checked.LshiftInt64).run,
 	Rshift: intBinOp(rshift).run,
 	GT:     opGT,
-	GE:     opGE,
-	Negate: opNegate,
 
 	Cat:   opCat,
 	Slice: opSlice,
@@ -59,9 +57,9 @@ var ops = [NumOp]func(*vm){
 	Encode: opEncode,
 	Varint: opVarint,
 
-	Tuple:   opTuple,
-	Untuple: opUntuple,
-	Field:   opField,
+	MakeTuple: opMakeTuple,
+	Untuple:   opUntuple,
+	Field:     opField,
 
 	Type: opType,
 
@@ -177,21 +175,6 @@ func opGT(vm *vm) {
 	vm.data.Push(Bool(x > y))
 }
 
-func opGE(vm *vm) {
-	y := vm.data.PopInt64()
-	x := vm.data.PopInt64()
-	vm.data.Push(Bool(x >= y))
-}
-
-func opNegate(vm *vm) {
-	x := vm.data.PopInt64()
-	y, ok := checked.NegateInt64(x)
-	if !ok {
-		panic(errors.New("range"))
-	}
-	vm.data.PushInt64(y)
-}
-
 func opNot(vm *vm) {
 	x := toBool(vm.data.Pop())
 	vm.data.Push(Bool(!x))
@@ -298,7 +281,7 @@ func encode(v Value) []byte {
 			b = append(b, encode(v[i])...)
 		}
 		b = append(b, pushInt64(int64(len(v)))...)
-		b = append(b, Tuple)
+		b = append(b, MakeTuple)
 		return b
 	default:
 		panic(errors.New("invalid type"))
@@ -314,7 +297,7 @@ func opVarint(vm *vm) {
 	vm.data.PushInt64(int64(x))
 }
 
-func opTuple(vm *vm) {
+func opMakeTuple(vm *vm) {
 	len := int(vm.data.PopInt64())
 	var vals []Value
 	for i := 0; i < len; i++ {
