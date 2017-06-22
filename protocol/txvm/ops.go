@@ -427,6 +427,9 @@ func opAnchor(vm *vm) {
 
 func opIssue(vm *vm) {
 	assetDef := vm.data.PopTuple()
+	if !checkTuple(assetDef, AssetDefinitionTuple) {
+		panic("expected asset definition tuple")
+	}
 	amount := vm.data.PopInt64()
 	anchor := vm.anchors.Pop()
 	assetID := calcID(assetDef)
