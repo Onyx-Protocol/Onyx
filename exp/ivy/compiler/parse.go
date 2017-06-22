@@ -20,8 +20,8 @@ import (
 //   parseX    takes *parser, returns AST node, updates parser position
 
 type parser struct {
-	buf []byte
-	pos int
+	tokens []byte
+	pos    int
 }
 
 func (p *parser) errorf(format string, args ...interface{}) {
@@ -30,6 +30,11 @@ func (p *parser) errorf(format string, args ...interface{}) {
 
 // parse is the main entry point to the parser
 func parse(buf []byte) (contracts []*Contract, err error) {
+	tokens, err := scan(buf)
+	if err != nil {
+		return nil, err
+	}
+
 	defer func() {
 		if val := recover(); val != nil {
 			if e, ok := val.(parserErr); ok {
@@ -39,7 +44,8 @@ func parse(buf []byte) (contracts []*Contract, err error) {
 			}
 		}
 	}()
-	p := &parser{buf: buf}
+
+	p := &parser{tokens: tokens}
 	contracts = parseContracts(p)
 	return
 }
@@ -49,62 +55,70 @@ func parse(buf []byte) (contracts []*Contract, err error) {
 func parseContracts(p *parser) []*Contract {
 	var result []*Contract
 	for peekKeyword(p) == "contract" {
-		contract := parseContract(p)
+		contract, _ := parseContract(p)
 		result = append(result, contract)
 	}
 	return result
 }
 
 // contract name(p1, p2: t1, p3: t2) locks value { ... }
-func parseContract(p *parser) *Contract {
-	consumeKeyword(p, "contract")
-	name := consumeIdentifier(p)
-	params := parseParams(p)
-	consumeKeyword(p, "locks")
-	value := consumeIdentifier(p)
-	consumeTok(p, "{")
-	clauses := parseClauses(p)
-	consumeTok(p, "}")
-	return &Contract{Name: name, Params: params, Clauses: clauses, Value: value}
+func parseContract(p *parser) (*Contract, []token) {
+	tok1 := consumeKeyword(p, "contract")
+	name, tok2 := consumeIdentifier(p)
+	params, tok3 := parseParams(p)
+	tok4 := consumeKeyword(p, "locks")
+	value, tok5 := consumeIdentifier(p)
+	tok6 := consumeTok(p, "{")
+	clauses, tok7 := parseClauses(p)
+	tok8 := consumeTok(p, "}")
+	tokens := tokConcat(tok1, tok2, tok3, tok4, tok5, tok6, tok7, tok8)
+	return &Contract{Name: name, Params: params, Clauses: clauses, Value: value, tokens: tokens}, tokens
 }
 
 // (p1, p2: t1, p3: t2)
-func parseParams(p *parser) []*Param {
+func parseParams(p *parser) ([]*Param, []token) {
 	var params []*Param
-	consumeTok(p, "(")
+	tokens := consumeTok(p, "(")
 	first := true
 	for !peekTok(p, ")") {
 		if first {
 			first = false
 		} else {
-			consumeTok(p, ",")
+			tok2 := consumeTok(p, ",")
+			tokens = append(tokens, tok2)
 		}
-		pt := parseParamsType(p)
+		pt, tok2 := parseParamsType(p)
 		params = append(params, pt...)
+		tokens = append(tokens, tok2...)
 	}
-	consumeTok(p, ")")
-	return params
+	tok2 := consumeTok(p, ")")
+	return params, tokConcat(tokens, tok2)
 }
 
-func parseClauses(p *parser) []*Clause {
-	var clauses []*Clause
+func parseClauses(p *parser) ([]*Clause, []token) {
+	var (
+		clauses []*Clause
+		tokens  []token
+	)
 	for !peekTok(p, "}") {
-		c := parseClause(p)
+		c, tok2 := parseClause(p)
+		tokens = append(tokens, tok2...)
 		clauses = append(clauses, c)
 	}
-	return clauses
+	return clauses, tokens
 }
 
-func parseParamsType(p *parser) []*Param {
-	firstName := consumeIdentifier(p)
-	params := []*Param{&Param{Name: firstName}}
+func parseParamsType(p *parser) ([]*Param, []token) {
+	firstName, tokens := consumeIdentifier(p)
+	params := []*Param{&Param{Name: firstName, tokens: tokens}}
 	for peekTok(p, ",") {
-		consumeTok(p, ",")
-		name := consumeIdentifier(p)
-		params = append(params, &Param{Name: name})
+		tok2 := consumeTok(p, ",")
+		name, tok3 := consumeIdentifier(p)
+		params = append(params, &Param{Name: name, tokens: tok3})
+		tokens = append(tokens, tokConcat(tok2, tok3)...)
 	}
-	consumeTok(p, ":")
-	typ := consumeIdentifier(p)
+	tok4 := consumeTok(p, ":")
+	typ, tok5 := consumeIdentifier(p)
 	for _, parm := range params {
 		if tdesc, ok := types[typ]; ok {
 			parm.Type = tdesc
@@ -112,56 +126,71 @@ func parseParamsType(p *parser) []*Param {
 			p.errorf("unknown type %s", typ)
 		}
 	}
-	return params
+	return params, tokConcat(tokens, tok4, tok5)
 }
 
-func parseClause(p *parser) *Clause {
-	var c Clause
-	consumeKeyword(p, "clause")
-	c.Name = consumeIdentifier(p)
-	c.Params = parseParams(p)
+func parseClause(p *parser) (*Clause, []token) {
+	var (
+		c                                              Clause
+		tok1, tok2, tok3, tok4, tok5, tok6, tok7, tok8 []token
+	)
+	tok1 = consumeKeyword(p, "clause")
+	c.Name, tok2 = consumeIdentifier(p)
+	c.Params, tok3 = parseParams(p)
 	if peekKeyword(p) == "requires" {
-		consumeKeyword(p, "requires")
-		c.Reqs = parseClauseRequirements(p)
+		tok4 = consumeKeyword(p, "requires")
+		c.Reqs, tok5 = parseClauseRequirements(p)
 	}
-	consumeTok(p, "{")
-	c.statements = parseStatements(p)
-	consumeTok(p, "}")
-	return &c
+	tok6 = consumeTok(p, "{")
+	c.statements, tok7 = parseStatements(p)
+	tok8 = consumeTok(p, "}")
+	c.tokens = tokConcat(tok1, tok2, tok3, tok4, tok5, tok6, tok7, tok8)
+	return &c, c.tokens
 }
 
-func parseClauseRequirements(p *parser) []*ClauseReq {
+func parseClauseRequirements(p *parser) ([]*ClauseReq, []token) {
 	var result []*ClauseReq
 	first := true
+	var tokens []token
 	for {
 		switch {
 		case first:
 			first = false
 		case peekTok(p, ","):
-			consumeTok(p, ",")
+			tok1 := consumeTok(p, ",")
+			tokens = append(tokens, tok1...)
 		default:
-			return result
+			return result, tokens
 		}
-		var req ClauseReq
-		req.Name = consumeIdentifier(p)
-		consumeTok(p, ":")
-		req.amountExpr = parseExpr(p)
-		consumeKeyword(p, "of")
-		req.assetExpr = parseExpr(p)
+		var (
+			req                          ClauseReq
+			tok2, tok3, tok4, tok5, tok6 []token
+		)
+		req.Name, tok2 = consumeIdentifier(p)
+		tok3 = consumeTok(p, ":")
+		req.amountExpr, tok4 = parseExpr(p)
+		tok5 = consumeKeyword(p, "of")
+		req.assetExpr, tok6 = parseExpr(p)
+		req.tokens = tokConcat(tok2, tok3, tok4, tok5, tok6)
+		tokens = append(tokens, req.tokens...)
 		result = append(result, &req)
 	}
 }
 
-func parseStatements(p *parser) []statement {
-	var statements []statement
+func parseStatements(p *parser) ([]statement, []token) {
+	var (
+		statements []statement
+		tokens     []token
+	)
 	for !peekTok(p, "}") {
-		s := parseStatement(p)
+		s, tok := parseStatement(p)
 		statements = append(statements, s)
+		tokens = append(tokens, tok...)
 	}
-	return statements
+	return statements, tokens
 }
 
-func parseStatement(p *parser) statement {
+func parseStatement(p *parser) (statement, []token) {
 	switch peekKeyword(p) {
 	case "verify":
 		return parseVerifyStmt(p)
@@ -173,24 +202,27 @@ func parseStatement(p *parser) statement {
 	panic(parseErr(p.buf, p.pos, "unknown keyword \"%s\"", peekKeyword(p)))
 }
 
-func parseVerifyStmt(p *parser) *verifyStatement {
-	consumeKeyword(p, "verify")
-	expr := parseExpr(p)
-	return &verifyStatement{expr: expr}
+func parseVerifyStmt(p *parser) (*verifyStatement, []token) {
+	tok1 := consumeKeyword(p, "verify")
+	expr, tok2 := parseExpr(p)
+	tokens := tokConcat(tok1, tok2)
+	return &verifyStatement{expr: expr, tokens: tokens}, tokens
 }
 
-func parseLockStmt(p *parser) *lockStatement {
-	consumeKeyword(p, "lock")
-	locked := parseExpr(p)
-	consumeKeyword(p, "with")
-	program := parseExpr(p)
-	return &lockStatement{locked: locked, program: program}
+func parseLockStmt(p *parser) (*lockStatement, []token) {
+	tok1 := consumeKeyword(p, "lock")
+	locked, tok2 := parseExpr(p)
+	tok3 := consumeKeyword(p, "with")
+	program, tok4 := parseExpr(p)
+	tokens := tokConcat(tok1, tok2, tok3, tok4)
+	return &lockStatement{locked: locked, program: program, tokens: tokens}, tokens
 }
 
-func parseUnlockStmt(p *parser) *unlockStatement {
-	consumeKeyword(p, "unlock")
-	expr := parseExpr(p)
-	return &unlockStatement{expr}
+func parseUnlockStmt(p *parser) (*unlockStatement, []token) {
+	tok1 := consumeKeyword(p, "unlock")
+	expr, tok2 := parseExpr(p)
+	tokens := tokConcat(tok1, tok2)
+	return &unlockStatement{expr, tokens: tokens}, tokens
 }
 
 func parseExpr(p *parser) expression {
@@ -315,11 +347,6 @@ func peekTok(p *parser, token string) bool {
 
 // consume functions
 
-var keywords = []string{
-	"contract", "clause", "verify", "output", "return",
-	"locks", "requires", "of", "lock", "with", "unlock",
-}
-
 func consumeKeyword(p *parser, keyword string) {
 	pos := scanKeyword(p.buf, p.pos, keyword)
 	if pos < 0 {
@@ -362,7 +389,7 @@ func scanUnaryOp(buf []byte, offset int) (*unaryOp, int) {
 }
 
 func scanBinaryOp(buf []byte, offset int) (*binaryOp, int) {
-	offset = skipWsAndComments(buf, offset)
+	offset, skipped = skipWsAndComments(buf, offset)
 	var (
 		found     *binaryOp
 		newOffset = -1
@@ -376,7 +403,7 @@ func scanBinaryOp(buf []byte, offset int) (*binaryOp, int) {
 			}
 		}
 	}
-	return found, newOffset
+	return found, newOffset, skipped
 }
 
 // TODO(bobg): boolean literals?
@@ -494,8 +521,9 @@ func scanBytesLiteral(buf []byte, offset int) (bytesLiteral, int) {
 	return bytesLiteral(decoded), i
 }
 
-func skipWsAndComments(buf []byte, offset int) int {
+func skipWsAndComments(buf []byte, offset int) (int, []byte) {
 	var inComment bool
+	startOffset := offset
 	for ; offset < len(buf); offset++ {
 		c := buf[offset]
 		if inComment {
@@ -511,27 +539,7 @@ func skipWsAndComments(buf []byte, offset int) int {
 			}
 		}
 	}
-	return offset
-}
-
-func isHexDigit(b byte) bool {
-	return (b >= '0' && b <= '9') || (b >= 'a' && b <= 'f') || (b >= 'A' && b <= 'F')
-}
-
-func isIDChar(c byte, initial bool) bool {
-	if c >= 'a' && c <= 'z' {
-		return true
-	}
-	if c >= 'A' && c <= 'Z' {
-		return true
-	}
-	if c == '_' {
-		return true
-	}
-	if initial {
-		return false
-	}
-	return unicode.IsDigit(rune(c))
+	return offset, buf[startOffset:offset]
 }
 
 type parserErr struct {
