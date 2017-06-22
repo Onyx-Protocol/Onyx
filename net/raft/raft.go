@@ -613,7 +613,7 @@ func (sv *Service) waitForNode(nodeID uint64) {
 // Evict removes the node with the provided address from the raft cluster.
 // It does not modify the allowed member list.
 func (sv *Service) Evict(ctx context.Context, nodeAddr string) error {
-	if !sv.initialized() {
+	if !sv.initialized() 
 		return ErrUninitialized
 	}
 

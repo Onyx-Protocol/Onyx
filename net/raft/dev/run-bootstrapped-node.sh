@@ -4,7 +4,7 @@
 set -meo pipefail
 
 # Move TLS certs to chaincore0
-mkdir $HOME/.chaincore0
+mkdir -p $HOME/.chaincore0
 cp $CHAIN_CORE_HOME/tls.* $HOME/.chaincore0/
 
 # Start initial node

@@ -12,7 +12,7 @@ leader_address=localhost:1999
 address=localhost:$port
 db_url=postgres:///core0?sslmode=disable
 
-mkdir $HOME/.chaincore$port/
+mkdir -p $HOME/.chaincore$port/
 cp $CHAIN_CORE_HOME/tls.* $HOME/.chaincore$port/
 
 export CHAIN_CORE_HOME=$HOME/.chaincore$port
