@@ -160,6 +160,19 @@ func deleteFromPG(ctx context.Context, db pg.DB) error {
 	return errors.Wrap(err, "deleting config stored in postgres")
 }
 
+// Loads config status from sinkdb to see if other raft nodes have configured
+// so that uncofigured nodes can update.
+func UpdateConfigStatus(ctx context.Context, sdb *sinkdb.DB) (*Config, error) {
+	c := new(Config)
+	ver, err := sdb.Get(ctx, "/core/config", c)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	} else if ver.Exists() {
+		return c, nil
+	}
+	return nil, nil
+}
+
 // Configure configures the core by writing to the database.
 // If running in a cored process,
 // the caller must ensure that the new configuration is properly reloaded,

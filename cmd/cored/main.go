@@ -290,6 +290,20 @@ func main() {
 		opts = append(opts, enableMockHSM(db)...)
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
 		h = core.RunUnconfigured(ctx, db, sdb, *listenAddr, opts...)
+
+		go func() {
+			ticker := time.Tick(5 * time.Second)
+			for {
+				select {
+				case <-ticker:
+					log.Println("Tick!")
+					if conf != nil {
+						return
+					}
+					core.CheckConfigMaybeExec(ctx, sdb, *listenAddr)
+				}
+			}
+		}()
 	}
 	coreHandler.Set(h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
