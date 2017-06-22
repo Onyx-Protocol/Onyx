@@ -293,21 +293,26 @@ func (sv *Service) Init() error {
 	peers := []raft.Peer{{ID: sv.id, Context: []byte(sv.laddr)}}
 	raftNode := raft.StartNode(sv.config(), peers)
 
+	advanceTicksUntilElection(raftNode, electionTick)
 	sv.raftNode = raftNode
-
-	// StartNode appends to the initial log a ConfChangeAddNode entry for
-	// each peer (in our case, just this node). We can't campaign until
-	// this entry is applied, so synchronously apply them before continuing.
-	rd := <-raftNode.Ready()
-	sv.runUpdatesReady(rd, sv.wal, map[string]chan bool{})
-
 	sv.startLocked()
 
-	// campaign immediately to avoid waiting electionTick ticks in tests
-	err = raftNode.Campaign(ctx)
-	if err != nil {
-		log.Error(ctx, err, "election failed") // ok to continue
-	}
+	/*
+		// StartNode appends to the initial log a ConfChangeAddNode entry for
+		// each peer (in our case, just this node). We can't campaign until
+		// this entry is applied, so synchronously apply them before continuing.
+		rd := <-raftNode.Ready()
+		sv.runUpdatesReady(rd, sv.wal, map[string]chan bool{})
+
+		sv.startLocked()
+
+		// campaign immediately to avoid waiting electionTick ticks in tests
+		err = raftNode.Campaign(ctx)
+		if err != nil {
+			log.Error(ctx, err, "election failed") // ok to continue
+		}
+	*/
+
 	return nil
 }
 
@@ -458,6 +463,12 @@ func (sv *Service) runTicks() {
 		case <-ticks:
 			sv.raftNode.Tick()
 		}
+	}
+}
+
+func advanceTicksUntilElection(raftNode raft.Node, electionTicks int) {
+	for i := 0; i < electionTicks-1; i++ {
+		raftNode.Tick()
 	}
 }
 
