@@ -18,10 +18,9 @@ func opTracer(t testing.TB) func(stack, byte, []byte, []byte) {
 
 func TestIssue(t *testing.T) {
 	proof, err := Assemble(`
-		""x 10000 0 [1] 4 tuple anchor
-		10 ""x [1] ""x 3 tuple issue
+		10000 0 [1] 0 tuple "6e6f6e6365"x 5 tuple anchor
+		[1] 0 tuple "6173736574646566696e6974696f6e"x 3 tuple issue
 		[1] 1 ""x lock
-		satisfy satisfy
 	`)
 	if err != nil {
 		t.Fatal(err)

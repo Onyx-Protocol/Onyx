@@ -4,7 +4,25 @@ const (
 	TypeInt64  = 0
 	TypeString = 1
 	TypeTuple  = 2
+
+	ValueTuple           = "value"
+	OutputTuple          = "output"
+	NonceTuple           = "nonce"
+	RetirementTuple      = "retirement"
+	AnchorTuple          = "anchor"
+	AssetDefinitionTuple = "assetdefinition"
+	TxHeaderTuple        = "txheader"
 )
+
+var tupleContents = map[string][]int{
+	ValueTuple:           []int{TypeString, TypeTuple, TypeString, TypeInt64, TypeString},
+	OutputTuple:          []int{TypeString, TypeTuple, TypeString, TypeTuple},
+	NonceTuple:           []int{TypeString, TypeTuple, TypeString, TypeInt64, TypeInt64},
+	RetirementTuple:      []int{TypeString, TypeTuple},
+	AnchorTuple:          []int{TypeString, TypeTuple, TypeString},
+	AssetDefinitionTuple: []int{TypeString, TypeTuple, TypeString},
+	TxHeaderTuple:        []int{TypeString, TypeTuple, TypeString, TypeTuple, TypeTuple, TypeInt64, TypeInt64},
+}
 
 type Value interface {
 	value()

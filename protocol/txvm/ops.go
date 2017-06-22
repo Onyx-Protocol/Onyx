@@ -413,23 +413,31 @@ func opCheckMultiSig(vm *vm) {
 
 func opAnchor(vm *vm) {
 	tuple := vm.data.PopTuple()
-	stackNonce := vm.nonces.Pop()
-	id := tupleHash(tuple)
-	if !bytes.Equal(stackNonce[0].(Bytes), id) {
-		panic(errors.New("bad nonce id"))
+	if !checkTuple(tuple, NonceTuple) {
+		panic("expected nonce tuple")
 	}
-	vm.anchors.Push(VMTuple{Bytes(id[:])})
-	vm.conditions.Push(VMTuple{tuple[0]})
+	vm.nonces.Push(tuple)
+	vm.anchors.Push(VMTuple{
+		Bytes(AnchorTuple),
+		VMTuple{},
+		historyID(Anchor, 0, tuple),
+	})
+	exec(vm, tuple[2].(Bytes))
 }
 
 func opIssue(vm *vm) {
 	assetDef := vm.data.PopTuple()
 	amount := vm.data.PopInt64()
 	anchor := vm.anchors.Pop()
-	_ = anchor
-	vm.conditions.Push(VMTuple{assetDef[1]})
-	assetID := tupleHash(assetDef)
-	vm.values.Push(VMTuple{Int64(amount), Bytes(assetID[:]), Bool(true), VMTuple{}})
+	assetID := calcID(assetDef)
+	vm.values.Push(VMTuple{
+		Bytes(ValueTuple),
+		VMTuple{},
+		historyID(Issue, 0, assetDef, Int64(amount), anchor),
+		Int64(amount),
+		Bytes(assetID),
+	})
+	exec(vm, assetDef[2].(Bytes))
 }
 
 func opLock(vm *vm) {
@@ -440,7 +448,16 @@ func opLock(vm *vm) {
 		values = append(values, vm.values.Pop())
 	}
 	prog := vm.data.PopBytes()
-	vm.outputs.Push(VMTuple{Bytes(prog), values, VMTuple{}, Bytes(refData)})
+
+	historyArgs := append(append([]Value{Bytes(refData), Int64(n)}, values...), Bytes(prog))
+
+	vm.outputs.Push(VMTuple{
+		Bytes(OutputTuple),
+		VMTuple{Bytes(refData)},
+		historyID(Lock, 0, historyArgs...),
+		values,
+		Bytes(prog),
+	})
 }
 
 func opSatisfy(vm *vm) {
@@ -448,26 +465,23 @@ func opSatisfy(vm *vm) {
 	exec(vm, tuple[0].(Bytes))
 }
 
-func tupleHash(tuple VMTuple) []byte {
-	flattened := flatten(tuple)
-	hash := [32]byte{}
-	sha3.TupleHash256(flattened, nil, hash[:])
-	return hash[:]
+func historyID(op byte, idx int, vals ...Value) Bytes {
+	history := VMTuple{
+		Bytes([]byte{op}),
+		append(VMTuple{}, vals...),
+		Int64(idx),
+	}
+	return Bytes(calcID(history))
 }
 
-func flatten(tuple VMTuple) [][]byte {
-	var byteTuple [][]byte
-	for _, v := range tuple {
-		switch v := v.(type) {
-		case Int64:
-			buf := make([]byte, 10)
-			str := append([]byte{TypeInt64}, buf[:binary.PutUvarint(buf, uint64(v))]...)
-			byteTuple = append(byteTuple, str)
-		case Bytes:
-			byteTuple = append(byteTuple, append([]byte{TypeString}, v...))
-		case VMTuple:
-			byteTuple = append(byteTuple, append([]byte{TypeTuple}, tupleHash(v)...))
+func checkTuple(v VMTuple, expected string) bool {
+	if len(v) != len(tupleContents[expected]) {
+		return false
+	}
+	for i := range v {
+		if v[i].typ() != tupleContents[expected][i] {
+			return false
 		}
 	}
-	return byteTuple
+	return true
 }

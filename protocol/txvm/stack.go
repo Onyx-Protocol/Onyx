@@ -32,7 +32,7 @@ func (s *stack) Push(v Value) {
 
 func (s *stack) PushBytes(b []byte)  { s.Push(Bytes(b)) }
 func (s *stack) PushInt64(n int64)   { s.Push(Int64(n)) }
-func (s *stack) PushTuple(t []Value) { s.Push(VMTuple(t)) }
+func (s *stack) PushTuple(t VMTuple) { s.Push(VMTuple(t)) }
 
 func (s *stack) Pop() Value {
 	v := s.a[len(s.a)-1]
@@ -42,7 +42,7 @@ func (s *stack) Pop() Value {
 
 func (s *stack) PopBytes() []byte  { return []byte(s.Pop().(Bytes)) }
 func (s *stack) PopInt64() int64   { return int64(s.Pop().(Int64)) }
-func (s *stack) PopTuple() []Value { return []Value(s.Pop().(VMTuple)) }
+func (s *stack) PopTuple() VMTuple { return s.Pop().(VMTuple) }
 
 func (s *stack) Peek() Value {
 	return s.a[len(s.a)-1]

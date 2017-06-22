@@ -23,9 +23,6 @@ type Tx struct {
 	In, Nonce        [][32]byte
 	Out, Retire      [][32]byte
 
-	VM1In, VM1Nonce [][32]byte
-	VM1Out          [][32]byte
-
 	Data    [32]byte
 	ExtHash [32]byte
 	Proof   []byte
@@ -46,22 +43,14 @@ type vm struct {
 	data stack
 	alt  stack
 
-	inputs        tupleStack
-	values        tupleStack
-	outputs       tupleStack
-	conditions    tupleStack
-	nonces        tupleStack
-	anchors       tupleStack
-	retirements   tupleStack
-	txheader      tupleStack
-	vm1inputs     tupleStack
-	vm1values     tupleStack
-	vm1muxes      tupleStack
-	vm1results    tupleStack
-	vm1conditions tupleStack
-	vm1nonces     tupleStack
-	vm1anchors    tupleStack
-	vm1txheader   tupleStack
+	inputs      tupleStack
+	values      tupleStack
+	outputs     tupleStack
+	conditions  tupleStack
+	nonces      tupleStack
+	anchors     tupleStack
+	retirements tupleStack
+	txheader    tupleStack
 }
 
 // Validate returns whether x is valid.
@@ -77,10 +66,6 @@ func Validate(x *Tx, o ...Option) bool {
 	for _, o := range o {
 		o(vm)
 	}
-	for _, nonce := range x.Nonce {
-		n := nonce
-		vm.nonces.Push(VMTuple{Bytes(n[:])})
-	}
 
 	defer func() {
 		err := recover()
@@ -94,11 +79,10 @@ func Validate(x *Tx, o ...Option) bool {
 	// TODO(kr): call some tracing hook here
 	// to signal end of execution.
 
-	return vm.inputs.Len() == 0 &&
-		vm.values.Len() == 0 &&
-		vm.conditions.Len() == 0 &&
-		vm.anchors.Len() == 0 &&
-		vm.nonces.Len() == 0
+	// check ids are equal
+
+	return vm.conditions.Len() == 0 &&
+		vm.anchors.Len() == 0
 }
 
 func exec(vm *vm, prog []byte) {
