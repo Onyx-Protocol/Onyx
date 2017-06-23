@@ -157,7 +157,7 @@ func (a *API) configure(ctx context.Context, x *config.Config) error {
 }
 
 func CheckConfigMaybeExec(ctx context.Context, sdb *sinkdb.DB, nodeAddr string) {
-	conf, err := config.UpdateConfigStatus(ctx, sdb)
+	conf, err := config.CheckConfigExists(ctx, sdb)
 	if err != nil && errors.Root(err) != raft.ErrUninitialized {
 		log.Fatalkv(ctx, log.KeyError, err)
 	}

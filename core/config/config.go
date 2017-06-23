@@ -162,7 +162,7 @@ func deleteFromPG(ctx context.Context, db pg.DB) error {
 
 // Loads config status from sinkdb to see if other raft nodes have configured
 // so that uncofigured nodes can update.
-func UpdateConfigStatus(ctx context.Context, sdb *sinkdb.DB) (*Config, error) {
+func CheckConfigExists(ctx context.Context, sdb *sinkdb.DB) (*Config, error) {
 	c := new(Config)
 	ver, err := sdb.Get(ctx, "/core/config", c)
 	if err != nil {

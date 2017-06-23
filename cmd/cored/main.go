@@ -292,15 +292,9 @@ func main() {
 		h = core.RunUnconfigured(ctx, db, sdb, *listenAddr, opts...)
 
 		go func() {
-			ticker := time.Tick(5 * time.Second)
 			for {
-				select {
-				case <-ticker:
-					if conf != nil {
-						return
-					}
-					core.CheckConfigMaybeExec(ctx, sdb, *listenAddr)
-				}
+				core.CheckConfigMaybeExec(ctx, sdb, *listenAddr)
+				time.Sleep(5 * time.Second)
 			}
 		}()
 	}
