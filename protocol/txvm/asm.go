@@ -16,9 +16,18 @@ const (
 	mnemonicTok
 	numberTok
 	hexTok
-	progTok
+	progOpenTok
+	progCloseTok
+	tupleOpenTok
+	tupleSepTok
+	tupleCloseTok
 	eofTok = -1
 )
+
+type token struct {
+	typ int
+	lit string
+}
 
 var composite = map[string][]byte{
 	"bool":   {Not, Not},
@@ -36,45 +45,143 @@ var composite = map[string][]byte{
 //   "aa"x  hex data
 //   [dup]  quoted program
 func Assemble(src string) ([]byte, error) {
+	tokens := tokenize(src)
+	return parse(tokens)
+}
+
+func parse(tokens []token) ([]byte, error) {
 	var p []byte
 	r := 0
-	for r < len(src) {
-		typ, lit, n := scan(src[r:])
-		switch typ {
-		case mnemonicTok:
-			if opcode, ok := OpCodes[lit]; ok {
-				p = append(p, opcode)
-			} else if seq, ok := composite[lit]; ok {
-				p = append(p, seq...)
-			} else {
-				return nil, errors.New("bad mnemonic " + lit)
-			}
-		case numberTok:
-			v, _ := strconv.ParseInt(lit, 0, 64)
-			p = append(p, pushInt64(v)...)
-		case hexTok:
-			s := lit[1 : len(lit)-2] // remove " and "x
-			b, err := hex.DecodeString(s)
-			if err != nil || lit[len(lit)-2] != '"' || lit[len(lit)-1] != 'x' {
-				return nil, errors.New("bad hex string " + lit)
-			}
-			p = append(p, pushData(b)...)
-		case progTok:
-			if lit[len(lit)-1] != ']' {
-				return nil, fmt.Errorf("parsing quoted program %s: missing ]", lit)
-			}
-			innerSrc := lit[1 : len(lit)-1]
-			innerProg, err := Assemble(innerSrc)
-			if err != nil {
-				return nil, fmt.Errorf("parsing quoted program %s: %v", lit, err)
-			}
-			p = append(p, pushData(innerProg)...)
-		default:
-			return nil, errors.New("bad source")
+	for r < len(tokens) {
+		sub, n, err := parseStatement(tokens[r:])
+		if err != nil {
+			return nil, err
 		}
+		p = append(p, sub...)
 		r += n
 	}
 	return p, nil
+}
+
+func parseStatement(tokens []token) ([]byte, int, error) {
+	token := tokens[0]
+	var p []byte
+	switch token.typ {
+	case mnemonicTok:
+		if opcode, ok := OpCodes[token.lit]; ok {
+			p = append(p, opcode)
+		} else if seq, ok := composite[token.lit]; ok {
+			p = append(p, seq...)
+		} else {
+			return nil, 0, errors.New("bad mnemonic " + token.lit)
+		}
+	case numberTok, hexTok, progOpenTok, tupleOpenTok:
+		return parseValue(tokens)
+	default:
+		return nil, 0, fmt.Errorf("unexpected token: %s", token.lit)
+	}
+	return p, 1, nil
+}
+
+func parseValue(tokens []token) ([]byte, int, error) {
+	token := tokens[0]
+	switch token.typ {
+	case numberTok:
+		v, _ := strconv.ParseInt(token.lit, 0, 64)
+		return pushInt64(v), 1, nil
+	case hexTok:
+		s := token.lit[1 : len(token.lit)-2] // remove " and "x
+		b, err := hex.DecodeString(s)
+		if err != nil || token.lit[len(token.lit)-2] != '"' || token.lit[len(token.lit)-1] != 'x' {
+			return nil, 0, errors.New("bad hex string " + token.lit)
+		}
+		return pushData(b), 1, nil
+	case progOpenTok:
+		val, n, err := parseProgram(tokens[1:])
+		if err != nil {
+			return nil, 0, err
+		}
+		return val, n + 1, nil
+	case tupleOpenTok:
+		val, n, err := parseTuple(tokens[1:])
+		if err != nil {
+			return nil, 0, err
+		}
+		return val, n + 1, nil
+	}
+	return nil, 0, fmt.Errorf("unexpected token: %s", token.lit)
+}
+
+func parseProgram(tokens []token) ([]byte, int, error) {
+	var p []byte
+	r := 0
+	for r < len(tokens) {
+		token := tokens[r]
+		switch token.typ {
+		case progCloseTok:
+			return pushData(p), r + 1, nil
+		default:
+			sub, n, err := parseStatement(tokens[r:])
+			if err != nil {
+				return nil, 0, err
+			}
+			p = append(p, sub...)
+			r += n
+		}
+	}
+	return nil, 0, errors.New("parsing quoted program missing ]")
+}
+
+func parseTuple(tokens []token) ([]byte, int, error) {
+	var (
+		vals        [][]byte
+		r           = 0
+		requiresSep = false
+	)
+	for r < len(tokens) {
+		token := tokens[r]
+		switch token.typ {
+		case tupleCloseTok:
+			var p []byte
+			for i := len(vals) - 1; i >= 0; i-- {
+				p = append(p, vals[i]...)
+			}
+			p = append(p, pushInt64(int64(len(vals)))...)
+			p = append(p, MakeTuple)
+			return p, r + 1, nil
+		case tupleSepTok:
+			if !requiresSep {
+				return nil, 0, fmt.Errorf("unexpected token %s", token.lit)
+			}
+			requiresSep = false
+			r++
+		case numberTok, hexTok, progOpenTok, tupleOpenTok:
+			if requiresSep {
+				return nil, 0, errors.New("parsing tuple missing ,")
+			}
+			val, n, err := parseValue(tokens[r:])
+			if err != nil {
+				return nil, 0, err
+			}
+			vals = append(vals, val)
+			requiresSep = true
+			r += n
+		default:
+			return nil, 0, fmt.Errorf("unexpected token %s", token.lit)
+		}
+	}
+	return nil, 0, errors.New("parsing tuple missing }")
+}
+
+func tokenize(src string) []token {
+	r := 0
+	var tokens []token
+	for r < len(src) {
+		typ, lit, n := scan(src[r:])
+		tokens = append(tokens, token{typ: typ, lit: lit})
+		r += n
+	}
+	return tokens
 }
 
 func scan(src string) (typ int, lit string, n int) {
@@ -88,8 +195,20 @@ func scan(src string) (typ int, lit string, n int) {
 		typ = hexTok
 		r = scanString(src[n:])
 	case c == '[':
-		typ = progTok
-		r = scanProg(src[n:])
+		typ = progOpenTok
+		r = 1
+	case c == ']':
+		typ = progCloseTok
+		r = 1
+	case c == '{':
+		typ = tupleOpenTok
+		r = 1
+	case c == ',':
+		typ = tupleSepTok
+		r = 1
+	case c == '}':
+		typ = tupleCloseTok
+		r = 1
 	case c == '-' || isDigit(rune(c)):
 		typ = numberTok
 		r = scanNumber(src[n:])
@@ -142,19 +261,6 @@ func isHex(r rune) bool {
 
 func scanWord(s string) int {
 	return scanFunc(s, unicode.IsLetter)
-}
-
-func scanProg(s string) (i int) {
-	for i < len(s) {
-		i++
-		c := s[i]
-		if c == '[' {
-			i += scanProg(s[i:])
-		} else if c == ']' {
-			return i + 1
-		}
-	}
-	return i
 }
 
 func scanFunc(s string, f func(rune) bool) (n int) {
