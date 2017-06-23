@@ -225,95 +225,105 @@ func parseUnlockStmt(p *parser) (*unlockStatement, []token) {
 	return &unlockStatement{expr, tokens: tokens}, tokens
 }
 
-func parseExpr(p *parser) expression {
+func parseExpr(p *parser) (expression, []token) {
 	// Uses the precedence-climbing algorithm
 	// <https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method>
-	expr := parseUnaryExpr(p)
-	expr2, pos := parseExprCont(p, expr, 0)
+	expr, tok1 := parseUnaryExpr(p)
+	expr2, pos, tok2 := parseExprCont(p, expr, 0)
 	if pos < 0 {
 		p.errorf("expected expression")
 	}
 	p.pos = pos
-	return expr2
+	return expr2, tokConcat(tok1, tok2)
 }
 
-func parseUnaryExpr(p *parser) expression {
-	op, pos := scanUnaryOp(p.buf, p.pos)
+func parseUnaryExpr(p *parser) (expression, []token) {
+	op, pos, tok1 := scanUnaryOp(p.buf, p.pos)
 	if pos < 0 {
 		return parseExpr2(p)
 	}
 	p.pos = pos
-	expr := parseUnaryExpr(p)
-	return &unaryExpr{op: op, expr: expr}
+	expr, tok2 := parseUnaryExpr(p)
+	tokens := tokConcat(tok1, tok2)
+	return &unaryExpr{op: op, expr: expr, tokens: tokens}, tokens
 }
 
-func parseExprCont(p *parser, lhs expression, minPrecedence int) (expression, int) {
+func parseExprCont(p *parser, lhs expression, minPrecedence int) (expression, int, []token) {
+	var tokens []token
 	for {
-		op, pos := scanBinaryOp(p.buf, p.pos)
+		op, pos, tok1 := scanBinaryOp(p.buf, p.pos)
 		if pos < 0 || op.precedence < minPrecedence {
 			break
 		}
+		tokens = append(tokens, tok1...)
 		p.pos = pos
 
-		rhs := parseUnaryExpr(p)
+		rhs, tok2 := parseUnaryExpr(p)
+		tokens = append(tokens, tok2...)
 
 		for {
-			op2, pos2 := scanBinaryOp(p.buf, p.pos)
+			op2, pos2, _ := scanBinaryOp(p.buf, p.pos)
 			if pos2 < 0 || op2.precedence <= op.precedence {
 				break
 			}
-			rhs, p.pos = parseExprCont(p, rhs, op2.precedence)
+			var tok3 []token
+			rhs, p.pos, tok3 = parseExprCont(p, rhs, op2.precedence)
 			if p.pos < 0 {
 				return nil, -1 // or is this an error?
 			}
+			tokens = append(tokens, tok3...)
 		}
-		lhs = &binaryExpr{left: lhs, right: rhs, op: op}
+		lhs = &binaryExpr{left: lhs, right: rhs, op: op, tokens: tokens}
 	}
-	return lhs, p.pos
+	return lhs, p.pos, tokens
 }
 
-func parseExpr2(p *parser) expression {
-	if expr, pos := scanLiteralExpr(p.buf, p.pos); pos >= 0 {
+func parseExpr2(p *parser) (expression, []token) {
+	if expr, pos, tok1 := scanLiteralExpr(p.buf, p.pos); pos >= 0 {
 		p.pos = pos
-		return expr
+		return expr, tok1
 	}
 	return parseExpr3(p)
 }
 
-func parseExpr3(p *parser) expression {
-	e := parseExpr4(p)
+func parseExpr3(p *parser) (expression, []token) {
+	e, tok1 := parseExpr4(p)
 	if peekTok(p, "(") {
-		args := parseArgs(p)
-		return &callExpr{fn: e, args: args}
+		args, tok2 := parseArgs(p)
+		tokens := tokConcat(tok1, tok2)
+		return &callExpr{fn: e, args: args, tokens: tokens}, tokens
 	}
-	return e
+	return e, tok1
 }
 
-func parseExpr4(p *parser) expression {
+func parseExpr4(p *parser) (expression, []token) {
 	if peekTok(p, "(") {
-		consumeTok(p, "(")
-		e := parseExpr(p)
-		consumeTok(p, ")")
-		return e
+		tok1 := consumeTok(p, "(")
+		e, tok2 := parseExpr(p)
+		tok3 := consumeTok(p, ")")
+		return e, tokConcat(tok1, tok2, tok3)
 	}
 	if peekTok(p, "[") {
 		var elts []expression
-		consumeTok(p, "[")
+		tokens := consumeTok(p, "[")
 		first := true
 		for !peekTok(p, "]") {
 			if first {
 				first = false
 			} else {
-				consumeTok(p, ",")
+				tok2 := consumeTok(p, ",")
+				tokens = append(tokens, tok2...)
 			}
-			e := parseExpr(p)
+			e, tok3 := parseExpr(p)
 			elts = append(elts, e)
+			tokens = append(tokens, tok3...)
 		}
-		consumeTok(p, "]")
-		return listExpr(elts)
+		tok4 := consumeTok(p, "]")
+		tokens = append(tokens, tok4...)
+		return listExpr(elts), tokens // xxx make listExpr include tokens
 	}
-	name := consumeIdentifier(p)
-	return varRef(name)
+	name, tokens := consumeIdentifier(p)
+	return varRef(name), tokens		// xxx make varRef include tokens
 }
 
 func parseArgs(p *parser) []expression {
