@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 var idCases = []struct {
@@ -147,23 +146,40 @@ func TestNodeEviction(t *testing.T) {
 
 	// Create new test cluster
 	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
-
 	addrB := nodeB.addr
 
 	// Have nodeA evict nodeB
-	nodeA.service.Evict(ctx, nodeB.addr)
-
-	// Wait for config change to update
-	time.Sleep(50 * time.Millisecond)
-
-	got := nodeA.service.state.Peers()
-
-	for _, addr := range got {
+	nodeA.service.Evict(ctx, addrB)
+	must(t, nodeA.service.WaitRead(ctx))
+	peers := nodeA.service.state.Peers()
+	for _, addr := range peers {
 		if addr == addrB {
 			t.Errorf("expected nodeB to be evicted: still in peer list")
 		}
 	}
+	nodeA.cleanup()
+	nodeB.cleanup()
+	nodeC.cleanup()
+}
 
+func TestEvictMultiple(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new test cluster
+	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	addrB := nodeB.addr
+	addrC := nodeC.addr
+
+	// Have nodeC evict nodeA and nodeB
+	nodeA.service.Evict(ctx, addrB)
+	nodeA.service.Evict(ctx, addrC)
+	must(t, nodeA.service.WaitRead(ctx))
+	peers := nodeA.service.state.Peers()
+	for _, addr := range peers {
+		if addr == addrB || addr == addrC {
+			t.Errorf("expected node to be evicted: stil in peer list")
+		}
+	}
 	nodeA.cleanup()
 	nodeB.cleanup()
 	nodeC.cleanup()
