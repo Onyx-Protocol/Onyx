@@ -145,15 +145,15 @@ func idSetEqual(a [][32]byte, b []Value) bool {
 		return false
 	}
 	for i := range a {
-		if !idsEqual(a[i], b[i].(Bytes)) {
+		if !idsEqual(a[i][:], b[i].(Bytes)) {
 			return false
 		}
 	}
 	return true
 }
 
-func idsEqual(a [32]byte, b []byte) bool {
-	if len(a) != len(b) {
+func idsEqual(a, b []byte) bool {
+	if len(a) != len(b) || len(a) != 32 {
 		return false
 	}
 	for i := range a {

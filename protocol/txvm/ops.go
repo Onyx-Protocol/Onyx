@@ -68,13 +68,17 @@ var ops = [NumOp]func(*vm){
 	CheckSig:      opCheckSig,
 	CheckMultiSig: opCheckMultiSig,
 
-	Satisfy: opSatisfy,
-	Unlock:  opUnlock,
-	Lock:    opLock,
-	Retire:  opRetire,
-	Anchor:  opAnchor,
-	Issue:   opIssue,
-	Header:  opHeader,
+	Defer:        opDefer,
+	Satisfy:      opSatisfy,
+	Unlock:       opUnlock,
+	UnlockOutput: opUnlockOutput,
+	Merge:        opMerge,
+	Split:        opSplit,
+	Lock:         opLock,
+	Retire:       opRetire,
+	Anchor:       opAnchor,
+	Issue:        opIssue,
+	Header:       opHeader,
 }
 
 func opPC(vm *vm) {
@@ -397,6 +401,10 @@ func opCheckMultiSig(vm *vm) {
 	vm.data.Push(Bool(len(sig) == 0))
 }
 
+func opDefer(vm *vm) {
+	vm.conditions.Push(VMTuple{Bytes(vm.data.PopBytes())})
+}
+
 func opSatisfy(vm *vm) {
 	tuple := vm.conditions.Pop()
 	exec(vm, tuple[0].(Bytes))
@@ -422,6 +430,74 @@ func opUnlock(vm *vm) {
 		historyID(Unlock, 0, input),
 	})
 	exec(vm, input[4].(Bytes))
+}
+
+func opUnlockOutput(vm *vm) {
+	output := vm.data.PopTuple()
+	if !checkTuple(output, OutputTuple) {
+		panic(errors.New("expected output tuple"))
+	}
+	vals := output[3].(VMTuple)
+	for _, v := range vals {
+		value := v.(VMTuple)
+		if !checkTuple(value, ValueTuple) {
+			panic(errors.New("expected value tuple"))
+		}
+		vm.values.Push(value)
+	}
+	exec(vm, output[4].(Bytes))
+}
+
+func opMerge(vm *vm) {
+	val1 := vm.values.Pop()
+	val2 := vm.values.Pop()
+
+	if !idsEqual(val1[4].(Bytes), val2[4].(Bytes)) {
+		panic(errors.New("merging different assets"))
+	}
+
+	assetid := val1[4].(Bytes)
+	sum := int64(val1[3].(Int64))
+	var ok bool
+	sum, ok = checked.AddInt64(sum, int64(val2[3].(Int64)))
+	if !ok {
+		panic(errors.New("range"))
+	}
+
+	vm.values.Push(VMTuple{
+		Bytes(ValueTuple),
+		VMTuple{},
+		historyID(Merge, 0, val1, val2),
+		Int64(sum),
+		assetid,
+	})
+}
+
+func opSplit(vm *vm) {
+	val := vm.values.Pop()
+	amt := vm.data.PopInt64()
+
+	originalAmt := int64(val[3].(Int64))
+
+	if amt >= originalAmt {
+		panic(errors.New("split value must be less"))
+	}
+
+	vm.values.Push(VMTuple{
+		Bytes(ValueTuple),
+		VMTuple{},
+		historyID(Split, 0, val, Int64(amt)),
+		Int64(amt),
+		val[4],
+	})
+
+	vm.values.Push(VMTuple{
+		Bytes(ValueTuple),
+		VMTuple{},
+		historyID(Split, 1, val, Int64(amt)),
+		Int64(originalAmt - amt),
+		val[4],
+	})
 }
 
 func opLock(vm *vm) {
