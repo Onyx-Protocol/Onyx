@@ -38,7 +38,7 @@ There are several named types of tuples.
 1. `referencedata`, a tuple of strings (initially empty)
 2. `history`, a 32-byte string
 3. `values`, a tuple of `Value`s
-4. `history`, a tuple (TBD)
+4. `program`, a string
 
 #### Nonce
 
