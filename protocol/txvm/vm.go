@@ -3,8 +3,6 @@ package txvm
 import (
 	"encoding/binary"
 	"errors"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // Tx contains the full transaction data.
@@ -90,22 +88,11 @@ func Validate(x *Tx, o ...Option) bool {
 	outputs := headerTuple[4].(VMTuple)
 	nonces := headerTuple[5].(VMTuple)
 
-	if !idSetEqual(x.In, inputs) {
-		spew.Dump(inputs)
-		panic(errors.New("different inputs"))
-	}
-
-	if !idSetEqual(x.Out, outputs) {
-		panic(errors.New("different outputs"))
-	}
-
-	if !idSetEqual(x.Nonce, nonces) {
-		spew.Dump(nonces)
-		panic(errors.New("different nonces"))
-	}
-
 	return vm.conditions.Len() == 0 &&
-		vm.values.Len() == 0
+		vm.values.Len() == 0 &&
+		idSetEqual(x.In, inputs) &&
+		idSetEqual(x.Out, outputs) &&
+		idSetEqual(x.Nonce, nonces)
 }
 
 func exec(vm *vm, prog []byte) {
