@@ -296,7 +296,6 @@ func main() {
 			for {
 				select {
 				case <-ticker:
-					log.Println("Tick!")
 					if conf != nil {
 						return
 					}

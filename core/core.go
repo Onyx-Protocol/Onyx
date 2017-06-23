@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"fmt"
-	stdlog "log"
 	"net"
 	"net/http"
 	"strings"
@@ -163,9 +162,6 @@ func CheckConfigMaybeExec(ctx context.Context, sdb *sinkdb.DB, nodeAddr string) 
 		log.Fatalkv(ctx, log.KeyError, err)
 	}
 	if conf != nil {
-		stdlog.Println("Evicting and execself")
-		// TODO(vniu): do we need to update processID tktk
-		sdb.RaftService().Evict(ctx, nodeAddr)
 		execSelf("")
 	}
 }
