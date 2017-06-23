@@ -52,6 +52,7 @@ There are several named types of tuples.
 
 0. `type`, a string, "retirement"
 1. `referencedata`, a tuple of strings (initially empty)
+2. `history`, a string
 
 #### Anchor
 
@@ -65,35 +66,39 @@ There are several named types of tuples.
 1. `referencedata`, a tuple of strings
 2. `issuanceprogram`, a string
 
-#### Transaction Header
+#### Transaction Summary
 
 0. `type`, an int64
 1. `referencedata`, a tuple of strings (initially empty)
 2. `history`, a string
 3. `inputs`, a tuple of [outputs](#output)
 4. `outputs`, a tuple of [outputs](#output)
-5. `mintime`, an int64
-6. `maxtime`, an int64
+5. `nonces`, a tuple of [nonces](#nonce)
+6. `mintime`, an int64
+7. `maxtime`, an int64
+
+### Legacy Output
+
+0. `sourceID`, a 32-byte ID
+1. `assetID`, a 32-byte asset ID ID
+2. `amount`, an int64
+3. `index`, an int64
+4. `program`, a string
+5. `data`, a string
 
 ## Item IDs
 
-The ID of an item is the SHA3 hash of `"txvm encode(item)`, where `encode` is the [encode](#encode) operation.
+The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` is the [encode](#encode) operation.
 
 ## History
 
-When a new [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Header](#transaction-header)) is created by a VM instruction (including `annotate`), its `history` field is computed based on the instruction that generated it.
+When a new [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Summary](#transaction-summary)) is created by a VM instruction (including `annotate`), its `history` field is computed based on the instruction that generated it.
 
-The `history` field is the [TupleHash](#TupleHash) of:
+The `history` field is the [encoding](#encode) of:
 
 0. `opcode`, an int64 (reflecting the opcode that generated the item)
 1. `arguments`, a tuple (reflecting the arguments consumed by that instruction, in order)
 2. `outputindex`, an int64 (reflecting which output of that instruction this item is)
-
-## Serialization
-
-### Varint encoding
-
-Integers are encoded in [signed LEB128](#https://en.wikipedia.org/wiki/LEB128) format. [TBD: clarify].
 
 ## Stack identifiers
 
@@ -106,8 +111,8 @@ Integers are encoded in [signed LEB128](#https://en.wikipedia.org/wiki/LEB128) f
 6. Nonce stack
 7. Anchor stack
 8. Retirement stack
-9. Transaction header stack
-
+9. Transaction summary stack
+10. Transaction ID stack
 
 ## Data stack
 
@@ -119,7 +124,7 @@ Items on the alt stack have the same types as items on the data stack. The alt s
 
 ### Input stack
 
-Items on the Input stack are [Outputs](#output).
+Items on the Input stack are [Outputs](#output) or [Legacy Outputs](#legacy-output).
 
 ### Value stack
 
@@ -133,13 +138,17 @@ Items on the Output stack are [Outputs](#output).
 
 Items on the Nonce stack are [Nonces](#nonce).
 
-### Anchors stack
+### Anchor stack
 
-Items on the anchors stack are [Anchors](#anchor).
+Items on the anchor stack are [Anchors](#anchor).
 
 ### Condition stack
 
 Items on the Condition stack are strings, representing programs.
+
+### Transaction Summary stack
+
+Items on the Transaction Summary stack are [Transaction Summaries](#transaction-summary).
 
 # Encoding formats
 
@@ -151,35 +160,46 @@ TODO: Describe rules for encoding and decoding unsigned varints.
 
 TODO: Describe rules for Ed25519 curve point encoding (including checks that should be done when decoding.)
 
+# Runlimit
+
+The VM is initialized with a set runlimit. Each instruction reduces that number. When that 
+
+1. Each instruction has a fixed cost of 1.
+2. Each instruction that pushes an item to any stack, including as the result of an operation (such as `add`, `cat`, `merge`, or ), costs an amount based on the type and size of that data:
+  1. Each string that is pushed to the stack costs `1 + len`, where length is the length of that string in bytes.
+  2. Each number that is pushed to the stack costs `1`.
+  3. Each tuple that is pushed to the stack costs `1` plus what it would cost to push all of the items in the tuple to the stack.
+3. Each `checksig` and `pointmul` operation costs `1024`. [TBD: estimate the actual cost of these operations relative to the other operations].
+
 # Operations
 
 ## Control flow operations
 
-# Fail
+### Fail
 
 Halts VM execution, returning false.
 
-# PC
+### PC
 
 Pushes the current program counter (after incrementing for this instruction) to the data stack.
 
-# JumpIf
+### JumpIf
 
 Pops an integer `destination`, then a boolean `cond` from the data stack. If `cond` is false, do nothing. If `cond` is true, set program counter to `destination`. Fail if `destination` is negative, if `destination` is greater than or equal to the length of the current program.
 
 ## Stack operations 
 
-# Roll
+### Roll
 
 Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops another integer `n` from the data stack. On the stack identified by `stackid`, moves the `n`th item from the top from its current position to the top of the stack.
 
 Fails if `stackid` does not correspond to a valid stack, or if the stack has fewer than `n + 1` items.
 
-# Bury
+### Bury
 
 Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. On the stack identified by `stackid`, moves the top item and inserts it at the `n`th-from-top position.
 
-# Depth
+### Depth
 
 Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Counts the number of items on the stack identified by `stackid`, and pushes it to the data stack.
 
@@ -197,19 +217,19 @@ Looks at the top item on the data stack. Pushes a number to the stack correspond
 
 Pops a string or tuple `val` from the data stack. If `val` is a tuple, pushes the number of fields in that tuple to the data stack. If `val` is a string, pushes the length of that string to the data stack. Fails if `val` is a number.
 
-# Drop
+### Drop
 
 Drops an item from the data stack.
 
-# Dup
+### Dup
 	
 Pops the top item from the data stack, and pushes two copies of that item to the data stack.
 
-# ToAlt
+### ToAlt
 
 Pops an item from the data stack and pushes it to the alt stack.
 
-# FromAlt
+### FromAlt
 
 Pops an item from the alt stack and pushes it to the data stack.
 
@@ -357,7 +377,7 @@ Pops a condition from the Condition stack and executes it.
 
 ### Unlock
 
-Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#Item-ID) of the tuple and pushes it to the Input stack. Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchors stack. Executes `input.program`.
+Pops a tuple `input` of type [Output](#output) from the data stack. Pushes it to the Input stack. Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack. Executes `input.program`.
 
 ### UnlockOutput
 
@@ -381,23 +401,41 @@ Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#reti
 
 ### Anchor
 
-Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the anchors stack. Execute `nonce.program`.
+Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the Anchor stack. Execute `nonce.program`.
 
 ### Issue
 
-Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`.
+Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Push an [anchor](#anchor) to the Anchor stack. Execute `assetdefinition.issuanceprogram`.
 
-### Header
+### Summarize
 
-Fail if the [Transaction Headers stack](#transaction-headers-stack) is not empty.
+Fail if the [Transaction Summary stack](#transaction-summary-stack) is not empty.
 
-Pop all items from the Input stack and create a tuple of their IDs, `inputs` (with the top item in the 0th position). Pop all items from the Output stack and create a tuple of their IDs, `outputs`. Pop all items from the Nonce stack and create a tuple of their IDs, `nonces`. Pop all items from the Retirement stack.
+Pop all items from the Input stack and create a tuple of them, `inputs` (with the top item in the 0th position). Pop all items from the Output stack and create a tuple of them, `outputs`. Pop all items from the Nonce stack and create a tuple of them, `nonces`. Pop all items from the Retirement stack.
 
-Pop a string `referencedata` from the data stack, an int64 `mintime` from the data stack, and an int64 `maxtime` from the data stack. Fail if either `maxtime` or `mintime` is negative, or if `maxtime` is not greater than or equal to `mintime`.
+Pop an int64 `mintime` from the data stack, and an int64 `maxtime` from the data stack. Fail if either `maxtime` or `mintime` is negative, or if `maxtime` is not greater than or equal to `mintime`.
 
-Create a [transaction header](#transaction-header) `header` with `referencedata` set to `referencedata`, `inputs` set to `inputs`, `outputs` set to `outputs`, `mintime` set to `mintime`, and `maxtime` set to `maxtime`. Push `header` to the Transaction Header stack.
+Create a [transaction summary](#transaction-summary) `summary` with `referencedata` set to `referencedata`, `inputs` set to `inputs`, `outputs` set to `outputs`, `mintime` set to `mintime`, and `maxtime` set to `maxtime`. Push `summary` to the Transaction Summary stack.
 
-[TO BE DONE: Figure out how `annotate` would work in the context of transaction headers without allowing people to add additional annotations after the transaction has been signed.]
+### Finalize
+
+Fail if the [Transaction ID stack](#transaction-id-stack) is not empty.
+
+Push the [id](#item-ids) of the top item on the Transaction ID stack to the data stack.
+
+### Migrate
+
+Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#item-id) of the tuple and pushes it to the Input stack.
+
+Pop a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Push it to the `inputs` stack. Verify that the old-style ID [TBD: rules for computing this] of `legacy` is `inputID`.
+
+[TBD: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.]
+
+Push a [Value](#value) with amount `legacy.amount` and asset ID `legacy.assetID` to the Value stack.
+
+Push an [anchor](#anchor) to the Anchor stack. 
+
+Execute `newprogram`.
 
 ### IssueCA
 
@@ -435,7 +473,7 @@ Causes the VM to halt and fail.
 
 Pops an item from the data stack. Pushes a string to the data stack which, if executed, would push that item to the data stack.
 
-Strings are encoded as a [Pushdata](#Pushdata) instruction which would push that string to the data stack. Integers greater than or equal to 0 and less than or equal to 32 are encoded as the appropriate [small integer](#small-integer) opcode. Other integers are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint-encoding), followed by an [int64](#int64) instruction. Tuples are encoded as a sequence of [Pushdata](#Pushdata) instructions that would push each of the items in the tuple in reverse order, followed by the instruction given by `encode(len)` where `len` is the length of the tuple, followed by the [tuple](#tuple).
+Strings are encoded as a [Pushdata](#Pushdata) instruction which would push that string to the data stack. Integers greater than or equal to 0 and less than or equal to 32 are encoded as the appropriate [small integer](#small-integer) opcode. Other integers are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint), followed by an [int64](#int64) instruction. Tuples are encoded as a sequence of [Pushdata](#Pushdata) instructions that would push each of the items in the tuple in reverse order, followed by the instruction given by `encode(len)` where `len` is the length of the tuple, followed by the [tuple](#tuple).
 
 ### Int64
 
