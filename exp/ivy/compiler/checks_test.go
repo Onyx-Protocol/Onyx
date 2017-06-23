@@ -5,32 +5,32 @@ import "testing"
 func TestRequireAllParamsUsedInClauses(t *testing.T) {
 	clauses := []*Clause{
 		&Clause{
-			statements: []statement{
-				&verifyStatement{expr: varRef("foo")},
-				&verifyStatement{
-					expr: &binaryExpr{
-						left:  varRef("foo"),
-						right: varRef("bar"),
+			Statements: []Statement{
+				&VerifyStatement{Expr: VarRef("foo")},
+				&VerifyStatement{
+					Expr: &BinaryExpr{
+						left:  VarRef("foo"),
+						right: VarRef("bar"),
 					},
 				},
-				&lockStatement{
-					locked:  varRef("baz"),
-					program: varRef("foo"),
+				&LockStatement{
+					Locked:  VarRef("baz"),
+					Program: VarRef("foo"),
 				},
 			},
 		},
 		&Clause{
-			statements: []statement{
-				&verifyStatement{expr: varRef("foo")},
-				&verifyStatement{
-					expr: &binaryExpr{
-						left:  varRef("foo"),
-						right: varRef("plugh"),
+			Statements: []Statement{
+				&VerifyStatement{Expr: VarRef("foo")},
+				&VerifyStatement{
+					Expr: &BinaryExpr{
+						left:  VarRef("foo"),
+						right: VarRef("plugh"),
 					},
 				},
-				&lockStatement{
-					locked:  varRef("xyzzy"),
-					program: varRef("foo"),
+				&LockStatement{
+					Locked:  VarRef("xyzzy"),
+					Program: VarRef("foo"),
 				},
 			},
 		},

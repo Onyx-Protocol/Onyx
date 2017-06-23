@@ -39,7 +39,7 @@ type Contract struct {
 	// Pre-optimized list of instruction steps, with stack snapshots.
 	Steps []Step `json:"-"`
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
 // Param is a contract or clause parameter.
@@ -54,7 +54,7 @@ type Param struct {
 	// inferred from the logic of the contract.
 	InferredType typeDesc `json:"inferred_type,omitempty"`
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
 // Clause is a compiled contract clause.
@@ -69,7 +69,7 @@ type Clause struct {
 	// section).
 	Reqs []*ClauseReq `json:"reqs,omitempty"`
 
-	statements []statement
+	Statements []Statement
 
 	// MinTimes is the list of expressions passed to after() in this
 	// clause.
@@ -89,7 +89,7 @@ type Clause struct {
 	// Contracts is the list of contracts called by this clause.
 	Contracts []string `json:"contracts,omitempty"`
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
 // HashCall describes a call to a hash function.
@@ -109,7 +109,7 @@ type HashCall struct {
 type ClauseReq struct {
 	Name string `json:"name"`
 
-	assetExpr, amountExpr expression
+	assetExpr, amountExpr Expression
 
 	// Asset is the expression describing the required asset.
 	Asset string `json:"asset"`
@@ -117,101 +117,101 @@ type ClauseReq struct {
 	// Amount is the expression describing the required amount.
 	Amount string `json:"amount"`
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
-type statement interface {
+type Statement interface {
 	countVarRefs(map[string]int)
 }
 
-type verifyStatement struct {
-	expr expression
+type VerifyStatement struct {
+	Expr Expression
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
-func (s verifyStatement) countVarRefs(counts map[string]int) {
-	s.expr.countVarRefs(counts)
+func (s VerifyStatement) countVarRefs(counts map[string]int) {
+	s.Expr.countVarRefs(counts)
 }
 
-type lockStatement struct {
-	locked  expression
-	program expression
+type LockStatement struct {
+	Locked  Expression
+	Program Expression
 
 	// Added as a decoration, used by CHECKOUTPUT
 	index int64
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
-func (s lockStatement) countVarRefs(counts map[string]int) {
-	s.locked.countVarRefs(counts)
-	s.program.countVarRefs(counts)
+func (s LockStatement) countVarRefs(counts map[string]int) {
+	s.Locked.countVarRefs(counts)
+	s.Program.countVarRefs(counts)
 }
 
-type unlockStatement struct {
-	expr expression
+type UnlockStatement struct {
+	Expr Expression
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
-func (s unlockStatement) countVarRefs(counts map[string]int) {
-	s.expr.countVarRefs(counts)
+func (s UnlockStatement) countVarRefs(counts map[string]int) {
+	s.Expr.countVarRefs(counts)
 }
 
-type expression interface {
+type Expression interface {
 	String() string
 	typ(*environ) typeDesc
 	countVarRefs(map[string]int)
 }
 
-type binaryExpr struct {
-	left, right expression
+type BinaryExpr struct {
+	left, right Expression
 	op          *binaryOp
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
-func (e binaryExpr) String() string {
+func (e BinaryExpr) String() string {
 	return fmt.Sprintf("(%s %s %s)", e.left, e.op.op, e.right)
 }
 
-func (e binaryExpr) typ(*environ) typeDesc {
+func (e BinaryExpr) typ(*environ) typeDesc {
 	return e.op.result
 }
 
-func (e binaryExpr) countVarRefs(counts map[string]int) {
+func (e BinaryExpr) countVarRefs(counts map[string]int) {
 	e.left.countVarRefs(counts)
 	e.right.countVarRefs(counts)
 }
 
-type unaryExpr struct {
+type UnaryExpr struct {
 	op   *unaryOp
-	expr expression
+	expr Expression
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
-func (e unaryExpr) String() string {
+func (e UnaryExpr) String() string {
 	return fmt.Sprintf("%s%s", e.op.op, e.expr)
 }
 
-func (e unaryExpr) typ(*environ) typeDesc {
+func (e UnaryExpr) typ(*environ) typeDesc {
 	return e.op.result
 }
 
-func (e unaryExpr) countVarRefs(counts map[string]int) {
+func (e UnaryExpr) countVarRefs(counts map[string]int) {
 	e.expr.countVarRefs(counts)
 }
 
-type callExpr struct {
-	fn   expression
-	args []expression
+type CallExpr struct {
+	fn   Expression
+	args []Expression
 
-	tokens []token
+	Tokens []token `json:"-"`
 }
 
-func (e callExpr) String() string {
+func (e CallExpr) String() string {
 	var argStrs []string
 	for _, a := range e.args {
 		argStrs = append(argStrs, a.String())
@@ -219,7 +219,7 @@ func (e callExpr) String() string {
 	return fmt.Sprintf("%s(%s)", e.fn, strings.Join(argStrs, ", "))
 }
 
-func (e callExpr) typ(env *environ) typeDesc {
+func (e CallExpr) typ(env *environ) typeDesc {
 	if b := referencedBuiltin(e.fn); b != nil {
 		switch b.name {
 		case "sha3":
@@ -254,72 +254,72 @@ func (e callExpr) typ(env *environ) typeDesc {
 	return nilType
 }
 
-func (e callExpr) countVarRefs(counts map[string]int) {
+func (e CallExpr) countVarRefs(counts map[string]int) {
 	e.fn.countVarRefs(counts)
 	for _, a := range e.args {
 		a.countVarRefs(counts)
 	}
 }
 
-type varRef string
+type VarRef string
 
-func (v varRef) String() string {
+func (v VarRef) String() string {
 	return string(v)
 }
 
-func (e varRef) typ(env *environ) typeDesc {
+func (e VarRef) typ(env *environ) typeDesc {
 	if entry := env.lookup(string(e)); entry != nil {
 		return entry.t
 	}
 	return nilType
 }
 
-func (e varRef) countVarRefs(counts map[string]int) {
+func (e VarRef) countVarRefs(counts map[string]int) {
 	counts[string(e)]++
 }
 
-type bytesLiteral []byte
+type BytesLiteral []byte
 
-func (e bytesLiteral) String() string {
+func (e BytesLiteral) String() string {
 	return "0x" + hex.EncodeToString([]byte(e))
 }
 
-func (bytesLiteral) typ(*environ) typeDesc {
+func (BytesLiteral) typ(*environ) typeDesc {
 	return "String"
 }
 
-func (bytesLiteral) countVarRefs(map[string]int) {}
+func (BytesLiteral) countVarRefs(map[string]int) {}
 
-type integerLiteral int64
+type IntegerLiteral int64
 
-func (e integerLiteral) String() string {
+func (e IntegerLiteral) String() string {
 	return strconv.FormatInt(int64(e), 10)
 }
 
-func (integerLiteral) typ(*environ) typeDesc {
+func (IntegerLiteral) typ(*environ) typeDesc {
 	return "Integer"
 }
 
-func (integerLiteral) countVarRefs(map[string]int) {}
+func (IntegerLiteral) countVarRefs(map[string]int) {}
 
-type booleanLiteral bool
+type BooleanLiteral bool
 
-func (e booleanLiteral) String() string {
+func (e BooleanLiteral) String() string {
 	if e {
 		return "true"
 	}
 	return "false"
 }
 
-func (booleanLiteral) typ(*environ) typeDesc {
+func (BooleanLiteral) typ(*environ) typeDesc {
 	return "Boolean"
 }
 
-func (booleanLiteral) countVarRefs(map[string]int) {}
+func (BooleanLiteral) countVarRefs(map[string]int) {}
 
-type listExpr []expression
+type ListExpr []Expression
 
-func (e listExpr) String() string {
+func (e ListExpr) String() string {
 	var elts []string
 	for _, elt := range e {
 		elts = append(elts, elt.String())
@@ -327,11 +327,11 @@ func (e listExpr) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(elts, ", "))
 }
 
-func (listExpr) typ(*environ) typeDesc {
+func (ListExpr) typ(*environ) typeDesc {
 	return "List"
 }
 
-func (e listExpr) countVarRefs(counts map[string]int) {
+func (e ListExpr) countVarRefs(counts map[string]int) {
 	for _, elt := range e {
 		elt.countVarRefs(counts)
 	}

@@ -4,9 +4,9 @@ import "fmt"
 
 func checkRecursive(contract *Contract) bool {
 	for _, clause := range contract.Clauses {
-		for _, stmt := range clause.statements {
-			if l, ok := stmt.(*lockStatement); ok {
-				if c, ok := l.program.(*callExpr); ok {
+		for _, stmt := range clause.Statements {
+			if l, ok := stmt.(*LockStatement); ok {
+				if c, ok := l.Program.(*CallExpr); ok {
 					if references(c.fn, contract.Name) {
 						return true
 					}
@@ -62,14 +62,14 @@ func requireAllParamsUsedInClauses(params []*Param, clauses []*Clause) error {
 func requireAllParamsUsedInClause(params []*Param, clause *Clause) error {
 	for _, p := range params {
 		used := false
-		for _, stmt := range clause.statements {
+		for _, stmt := range clause.Statements {
 			switch s := stmt.(type) {
-			case *verifyStatement:
-				used = references(s.expr, p.Name)
-			case *lockStatement:
-				used = references(s.locked, p.Name) || references(s.program, p.Name)
-			case *unlockStatement:
-				used = references(s.expr, p.Name)
+			case *VerifyStatement:
+				used = references(s.Expr, p.Name)
+			case *LockStatement:
+				used = references(s.Locked, p.Name) || references(s.Program, p.Name)
+			case *UnlockStatement:
+				used = references(s.Expr, p.Name)
 			}
 			if used {
 				break
@@ -90,13 +90,13 @@ func requireAllParamsUsedInClause(params []*Param, clause *Clause) error {
 	return nil
 }
 
-func references(expr expression, name string) bool {
+func references(expr Expression, name string) bool {
 	switch e := expr.(type) {
-	case *binaryExpr:
+	case *BinaryExpr:
 		return references(e.left, name) || references(e.right, name)
-	case *unaryExpr:
+	case *UnaryExpr:
 		return references(e.expr, name)
-	case *callExpr:
+	case *CallExpr:
 		if references(e.fn, name) {
 			return true
 		}
@@ -106,10 +106,10 @@ func references(expr expression, name string) bool {
 			}
 		}
 		return false
-	case varRef:
+	case VarRef:
 		return string(e) == name
-	case listExpr:
-		for _, elt := range []expression(e) {
+	case ListExpr:
+		for _, elt := range []Expression(e) {
 			if references(elt, name) {
 				return true
 			}
@@ -135,14 +135,14 @@ func requireAllValuesDisposedOnce(contract *Contract, clause *Clause) error {
 
 func valueDisposedOnce(name string, clause *Clause) error {
 	var count int
-	for _, s := range clause.statements {
+	for _, s := range clause.Statements {
 		switch stmt := s.(type) {
-		case *unlockStatement:
-			if references(stmt.expr, name) {
+		case *UnlockStatement:
+			if references(stmt.Expr, name) {
 				count++
 			}
-		case *lockStatement:
-			if references(stmt.locked, name) {
+		case *LockStatement:
+			if references(stmt.Locked, name) {
 				count++
 			}
 		}
@@ -157,8 +157,8 @@ func valueDisposedOnce(name string, clause *Clause) error {
 	}
 }
 
-func referencedBuiltin(expr expression) *builtin {
-	if v, ok := expr.(varRef); ok {
+func referencedBuiltin(expr Expression) *builtin {
+	if v, ok := expr.(VarRef); ok {
 		for _, b := range builtins {
 			if string(v) == b.name {
 				return &b
@@ -170,39 +170,39 @@ func referencedBuiltin(expr expression) *builtin {
 
 func assignIndexes(clause *Clause) {
 	var nextIndex int64
-	for _, s := range clause.statements {
+	for _, s := range clause.Statements {
 		switch stmt := s.(type) {
-		case *lockStatement:
+		case *LockStatement:
 			stmt.index = nextIndex
 			nextIndex++
 
-		case *unlockStatement:
+		case *UnlockStatement:
 			nextIndex++
 		}
 	}
 }
 
 func typeCheckClause(contract *Contract, clause *Clause, env *environ) error {
-	for _, s := range clause.statements {
+	for _, s := range clause.Statements {
 		switch stmt := s.(type) {
-		case *verifyStatement:
-			if t := stmt.expr.typ(env); t != boolType {
+		case *VerifyStatement:
+			if t := stmt.Expr.typ(env); t != boolType {
 				return fmt.Errorf("expression in verify statement in clause \"%s\" has type \"%s\", must be Boolean", clause.Name, t)
 			}
 
-		case *lockStatement:
-			if t := stmt.locked.typ(env); t != valueType {
+		case *LockStatement:
+			if t := stmt.Locked.typ(env); t != valueType {
 				return fmt.Errorf("expression in lock statement in clause \"%s\" has type \"%s\", must be Value", clause.Name, t)
 			}
-			if t := stmt.program.typ(env); t != progType {
+			if t := stmt.Program.typ(env); t != progType {
 				return fmt.Errorf("program in lock statement in clause \"%s\" has type \"%s\", must be Program", clause.Name, t)
 			}
 
-		case *unlockStatement:
-			if t := stmt.expr.typ(env); t != valueType {
-				return fmt.Errorf("expression \"%s\" in unlock statement of clause \"%s\" has type \"%s\", must be Value", stmt.expr, clause.Name, t)
+		case *UnlockStatement:
+			if t := stmt.Expr.typ(env); t != valueType {
+				return fmt.Errorf("expression \"%s\" in unlock statement of clause \"%s\" has type \"%s\", must be Value", stmt.Expr, clause.Name, t)
 			}
-			if stmt.expr.String() != contract.Value {
+			if stmt.Expr.String() != contract.Value {
 				return fmt.Errorf("expression in unlock statement of clause \"%s\" must be the contract value", clause.Name)
 			}
 		}

@@ -25,8 +25,8 @@ func (p *parser) errorf(format string, args ...interface{}) {
 	panic(parserErr{tokens: p.tokens, pos: p.pos, format: format, args: args})
 }
 
-// parse is the main entry point to the parser
-func parse(buf []byte) (contracts []*Contract, err error) {
+// Parse is the main entry point to the parser
+func Parse(buf []byte) (contracts []*Contract, err error) {
 	tokens, err := scan(buf)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func parseContract(p *parser) (*Contract, []token) {
 	clauses, tok7 := parseClauses(p)
 	tok8 := consumeDelim(p, "}")
 	tokens := tokConcat(tok1, tok2, tok3, tok4, tok5, tok6, tok7, tok8)
-	return &Contract{Name: name, Params: params, Clauses: clauses, Value: value, tokens: tokens}, tokens
+	return &Contract{Name: name, Params: params, Clauses: clauses, Value: value, Tokens: tokens}, tokens
 }
 
 // (p1, p2: t1, p3: t2)
@@ -107,11 +107,11 @@ func parseClauses(p *parser) ([]*Clause, []token) {
 
 func parseParamsType(p *parser) ([]*Param, []token) {
 	firstName, tokens := consumeIdentifier(p)
-	params := []*Param{&Param{Name: firstName, tokens: tokens}}
+	params := []*Param{&Param{Name: firstName, Tokens: tokens}}
 	for peekDelim(p, ",") {
 		tok2 := consumeDelim(p, ",")
 		name, tok3 := consumeIdentifier(p)
-		params = append(params, &Param{Name: name, tokens: tok3})
+		params = append(params, &Param{Name: name, Tokens: tok3})
 		tokens = append(tokens, tokConcat(tok2, tok3)...)
 	}
 	tok4 := consumeDelim(p, ":")
@@ -139,10 +139,10 @@ func parseClause(p *parser) (*Clause, []token) {
 		c.Reqs, tok5 = parseClauseRequirements(p)
 	}
 	tok6 = consumeDelim(p, "{")
-	c.statements, tok7 = parseStatements(p)
+	c.Statements, tok7 = parseStatements(p)
 	tok8 = consumeDelim(p, "}")
-	c.tokens = tokConcat(tok1, tok2, tok3, tok4, tok5, tok6, tok7, tok8)
-	return &c, c.tokens
+	c.Tokens = tokConcat(tok1, tok2, tok3, tok4, tok5, tok6, tok7, tok8)
+	return &c, c.Tokens
 }
 
 func parseClauseRequirements(p *parser) ([]*ClauseReq, []token) {
@@ -168,15 +168,15 @@ func parseClauseRequirements(p *parser) ([]*ClauseReq, []token) {
 		req.amountExpr, tok4 = parseExpr(p)
 		tok5 = consumeKeyword(p, "of")
 		req.assetExpr, tok6 = parseExpr(p)
-		req.tokens = tokConcat(tok2, tok3, tok4, tok5, tok6)
-		tokens = append(tokens, req.tokens...)
+		req.Tokens = tokConcat(tok2, tok3, tok4, tok5, tok6)
+		tokens = append(tokens, req.Tokens...)
 		result = append(result, &req)
 	}
 }
 
-func parseStatements(p *parser) ([]statement, []token) {
+func parseStatements(p *parser) ([]Statement, []token) {
 	var (
-		statements []statement
+		statements []Statement
 		tokens     []token
 	)
 	for !peekDelim(p, "}") {
@@ -187,7 +187,7 @@ func parseStatements(p *parser) ([]statement, []token) {
 	return statements, tokens
 }
 
-func parseStatement(p *parser) (statement, []token) {
+func parseStatement(p *parser) (Statement, []token) {
 	switch peekKeyword(p) {
 	case "verify":
 		return parseVerifyStmt(p)
@@ -199,30 +199,30 @@ func parseStatement(p *parser) (statement, []token) {
 	panic(parseErr(p.tokens, p.pos, "unknown keyword \"%s\"", peekKeyword(p)))
 }
 
-func parseVerifyStmt(p *parser) (*verifyStatement, []token) {
+func parseVerifyStmt(p *parser) (*VerifyStatement, []token) {
 	tok1 := consumeKeyword(p, "verify")
 	expr, tok2 := parseExpr(p)
 	tokens := tokConcat(tok1, tok2)
-	return &verifyStatement{expr: expr, tokens: tokens}, tokens
+	return &VerifyStatement{Expr: expr, Tokens: tokens}, tokens
 }
 
-func parseLockStmt(p *parser) (*lockStatement, []token) {
+func parseLockStmt(p *parser) (*LockStatement, []token) {
 	tok1 := consumeKeyword(p, "lock")
 	locked, tok2 := parseExpr(p)
 	tok3 := consumeKeyword(p, "with")
 	program, tok4 := parseExpr(p)
 	tokens := tokConcat(tok1, tok2, tok3, tok4)
-	return &lockStatement{locked: locked, program: program, tokens: tokens}, tokens
+	return &LockStatement{Locked: locked, Program: program, Tokens: tokens}, tokens
 }
 
-func parseUnlockStmt(p *parser) (*unlockStatement, []token) {
+func parseUnlockStmt(p *parser) (*UnlockStatement, []token) {
 	tok1 := consumeKeyword(p, "unlock")
 	expr, tok2 := parseExpr(p)
 	tokens := tokConcat(tok1, tok2)
-	return &unlockStatement{expr: expr, tokens: tokens}, tokens
+	return &UnlockStatement{Expr: expr, Tokens: tokens}, tokens
 }
 
-func parseExpr(p *parser) (expression, []token) {
+func parseExpr(p *parser) (Expression, []token) {
 	// Uses the precedence-climbing algorithm
 	// <https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method>
 	expr, tok1 := parseUnaryExpr(p)
@@ -234,7 +234,7 @@ func parseExpr(p *parser) (expression, []token) {
 	return expr2, tokConcat(tok1, tok2)
 }
 
-func parseUnaryExpr(p *parser) (expression, []token) {
+func parseUnaryExpr(p *parser) (Expression, []token) {
 	op, pos, tok1 := scanUnaryOp(p.tokens, p.pos)
 	if pos < 0 {
 		return parseExpr2(p)
@@ -242,10 +242,10 @@ func parseUnaryExpr(p *parser) (expression, []token) {
 	p.pos = pos
 	expr, tok2 := parseUnaryExpr(p)
 	tokens := tokConcat(tok1, tok2)
-	return &unaryExpr{op: op, expr: expr, tokens: tokens}, tokens
+	return &UnaryExpr{op: op, expr: expr, Tokens: tokens}, tokens
 }
 
-func parseExprCont(p *parser, lhs expression, minPrecedence int) (expression, int, []token) {
+func parseExprCont(p *parser, lhs Expression, minPrecedence int) (Expression, int, []token) {
 	var tokens []token
 	for {
 		op, pos, tok1 := scanBinaryOp(p.tokens, p.pos)
@@ -270,12 +270,12 @@ func parseExprCont(p *parser, lhs expression, minPrecedence int) (expression, in
 			}
 			tokens = append(tokens, tok3...)
 		}
-		lhs = &binaryExpr{left: lhs, right: rhs, op: op, tokens: tokens}
+		lhs = &BinaryExpr{left: lhs, right: rhs, op: op, Tokens: tokens}
 	}
 	return lhs, p.pos, tokens
 }
 
-func parseExpr2(p *parser) (expression, []token) {
+func parseExpr2(p *parser) (Expression, []token) {
 	if expr, pos, tok1 := scanLiteralExpr(p.tokens, p.pos); pos >= 0 {
 		p.pos = pos
 		return expr, tok1
@@ -283,17 +283,17 @@ func parseExpr2(p *parser) (expression, []token) {
 	return parseExpr3(p)
 }
 
-func parseExpr3(p *parser) (expression, []token) {
+func parseExpr3(p *parser) (Expression, []token) {
 	e, tok1 := parseExpr4(p)
 	if peekDelim(p, "(") {
 		args, tok2 := parseArgs(p)
 		tokens := tokConcat(tok1, tok2)
-		return &callExpr{fn: e, args: args, tokens: tokens}, tokens
+		return &CallExpr{fn: e, args: args, Tokens: tokens}, tokens
 	}
 	return e, tok1
 }
 
-func parseExpr4(p *parser) (expression, []token) {
+func parseExpr4(p *parser) (Expression, []token) {
 	if peekDelim(p, "(") {
 		tok1 := consumeDelim(p, "(")
 		e, tok2 := parseExpr(p)
@@ -301,7 +301,7 @@ func parseExpr4(p *parser) (expression, []token) {
 		return e, tokConcat(tok1, tok2, tok3)
 	}
 	if peekDelim(p, "[") {
-		var elts []expression
+		var elts []Expression
 		tokens := consumeDelim(p, "[")
 		first := true
 		for !peekDelim(p, "]") {
@@ -317,14 +317,14 @@ func parseExpr4(p *parser) (expression, []token) {
 		}
 		tok4 := consumeDelim(p, "]")
 		tokens = append(tokens, tok4...)
-		return listExpr(elts), tokens // xxx make listExpr include tokens
+		return ListExpr(elts), tokens // xxx make listExpr include tokens
 	}
 	name, tokens := consumeIdentifier(p)
-	return varRef(name), tokens // xxx make varRef include tokens
+	return VarRef(name), tokens // xxx make varRef include tokens
 }
 
-func parseArgs(p *parser) ([]expression, []token) {
-	var exprs []expression
+func parseArgs(p *parser) ([]Expression, []token) {
+	var exprs []Expression
 	tokens := consumeDelim(p, "(")
 	first := true
 	for !peekDelim(p, ")") {
@@ -442,7 +442,7 @@ func scanBinaryOp(tokens []token, pos int) (*binaryOp, int, []token) {
 }
 
 // TODO(bobg): boolean literals?
-func scanLiteralExpr(tokens []token, pos int) (expression, int, []token) {
+func scanLiteralExpr(tokens []token, pos int) (Expression, int, []token) {
 	var skipped []token
 	pos, skipped = skipWsAndComments(tokens, pos)
 	intliteral, newPos, tok := scanIntLiteral(tokens, pos)
@@ -505,7 +505,7 @@ func scanKeyword(tokens []token, pos int, keyword string) (int, []token) {
 	return pos + 1, append(skipped, tok)
 }
 
-func scanIntLiteral(tokens []token, pos int) (integerLiteral, int, []token) {
+func scanIntLiteral(tokens []token, pos int) (IntegerLiteral, int, []token) {
 	var skipped []token
 	pos, skipped = skipWsAndComments(tokens, pos)
 	if pos >= len(tokens) {
@@ -519,18 +519,18 @@ func scanIntLiteral(tokens []token, pos int) (integerLiteral, int, []token) {
 	if err != nil {
 		return 0, -1, nil
 	}
-	return integerLiteral(n), pos + 1, append(skipped, tok)
+	return IntegerLiteral(n), pos + 1, append(skipped, tok)
 }
 
-func scanStrLiteral(tokens []token, pos int) (bytesLiteral, int, []token) {
+func scanStrLiteral(tokens []token, pos int) (BytesLiteral, int, []token) {
 	var skipped []token
 	pos, skipped = skipWsAndComments(tokens, pos)
 	if pos >= len(tokens) {
-		return bytesLiteral{}, -1, nil
+		return BytesLiteral{}, -1, nil
 	}
 	tok := tokens[pos]
 	if tok.typ != tokStrLiteral {
-		return bytesLiteral{}, -1, nil
+		return BytesLiteral{}, -1, nil
 	}
 	var (
 		escape    bool
@@ -546,20 +546,20 @@ func scanStrLiteral(tokens []token, pos int) (bytesLiteral, int, []token) {
 			unescaped = append(unescaped, b)
 		}
 	}
-	return bytesLiteral(unescaped), pos + 1, append(skipped, tok)
+	return BytesLiteral(unescaped), pos + 1, append(skipped, tok)
 }
 
-func scanBytesLiteral(tokens []token, pos int) (bytesLiteral, int, []token) {
+func scanBytesLiteral(tokens []token, pos int) (BytesLiteral, int, []token) {
 	var skipped []token
 	pos, skipped = skipWsAndComments(tokens, pos)
 	if pos >= len(tokens) {
-		return bytesLiteral{}, -1, nil
+		return BytesLiteral{}, -1, nil
 	}
 	tok := tokens[pos]
 	if tok.typ != tokBytesLiteral {
-		return bytesLiteral{}, -1, nil
+		return BytesLiteral{}, -1, nil
 	}
-	return bytesLiteral(tok.text), pos + 1, append(skipped, tok)
+	return BytesLiteral(tok.text), pos + 1, append(skipped, tok)
 }
 
 type parserErr struct {

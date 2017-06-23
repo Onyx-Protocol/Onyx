@@ -53,7 +53,7 @@ func Compile(r io.Reader) ([]*Contract, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "reading input")
 	}
-	contracts, err := parse(inp)
+	contracts, err := Parse(inp)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse error")
 	}
@@ -85,16 +85,16 @@ func Compile(r io.Reader) ([]*Contract, error) {
 			return nil, errors.Wrap(err, "compiling contract")
 		}
 		for _, clause := range contract.Clauses {
-			for _, stmt := range clause.statements {
+			for _, stmt := range clause.Statements {
 				switch s := stmt.(type) {
-				case *lockStatement:
+				case *LockStatement:
 					valueInfo := ValueInfo{
-						Name:    s.locked.String(),
-						Program: s.program.String(),
+						Name:    s.Locked.String(),
+						Program: s.Program.String(),
 					}
-					if s.locked.String() != contract.Value {
+					if s.Locked.String() != contract.Value {
 						for _, r := range clause.Reqs {
-							if s.locked.String() == r.Name {
+							if s.Locked.String() == r.Name {
 								valueInfo.Asset = r.assetExpr.String()
 								valueInfo.Amount = r.amountExpr.String()
 								break
@@ -102,7 +102,7 @@ func Compile(r io.Reader) ([]*Contract, error) {
 						}
 					}
 					clause.Values = append(clause.Values, valueInfo)
-				case *unlockStatement:
+				case *UnlockStatement:
 					valueInfo := ValueInfo{Name: contract.Value}
 					clause.Values = append(clause.Values, valueInfo)
 				}
@@ -331,21 +331,21 @@ func compileClause(b *builder, contractStk stack, contract *Contract, env *envir
 		req.assetExpr.countVarRefs(counts)
 		req.amountExpr.countVarRefs(counts)
 	}
-	for _, s := range clause.statements {
+	for _, s := range clause.Statements {
 		s.countVarRefs(counts)
 	}
 
-	for _, s := range clause.statements {
+	for _, s := range clause.Statements {
 		switch stmt := s.(type) {
-		case *verifyStatement:
-			stk, err = compileExpr(b, stk, contract, clause, env, counts, stmt.expr)
+		case *VerifyStatement:
+			stk, err = compileExpr(b, stk, contract, clause, env, counts, stmt.Expr)
 			if err != nil {
 				return errors.Wrapf(err, "in verify statement in clause \"%s\"", clause.Name)
 			}
 			stk = b.addVerify(stk)
 
 			// special-case reporting of certain function calls
-			if c, ok := stmt.expr.(*callExpr); ok && len(c.args) == 1 {
+			if c, ok := stmt.Expr.(*CallExpr); ok && len(c.args) == 1 {
 				if b := referencedBuiltin(c.fn); b != nil {
 					switch b.name {
 					case "before":
@@ -356,7 +356,7 @@ func compileClause(b *builder, contractStk stack, contract *Contract, env *envir
 				}
 			}
 
-		case *lockStatement:
+		case *LockStatement:
 			// index
 			stk = b.addInt64(stk, stmt.index)
 
@@ -366,19 +366,19 @@ func compileClause(b *builder, contractStk stack, contract *Contract, env *envir
 			// TODO: permit more complex expressions for locked,
 			// like "lock x+y with foo" (?)
 
-			if stmt.locked.String() == contract.Value {
+			if stmt.Locked.String() == contract.Value {
 				stk = b.addAmount(stk)
 				stk = b.addAsset(stk)
 			} else {
 				var req *ClauseReq
 				for _, r := range clause.Reqs {
-					if stmt.locked.String() == r.Name {
+					if stmt.Locked.String() == r.Name {
 						req = r
 						break
 					}
 				}
 				if req == nil {
-					return fmt.Errorf("unknown value \"%s\" in lock statement in clause \"%s\"", stmt.locked, clause.Name)
+					return fmt.Errorf("unknown value \"%s\" in lock statement in clause \"%s\"", stmt.Locked, clause.Name)
 				}
 
 				// amount
@@ -398,16 +398,16 @@ func compileClause(b *builder, contractStk stack, contract *Contract, env *envir
 			stk = b.addInt64(stk, 1)
 
 			// prog
-			stk, err = compileExpr(b, stk, contract, clause, env, counts, stmt.program)
+			stk, err = compileExpr(b, stk, contract, clause, env, counts, stmt.Program)
 			if err != nil {
 				return errors.Wrapf(err, "in lock statement in clause \"%s\"", clause.Name)
 			}
 
-			stk = b.addCheckOutput(stk, fmt.Sprintf("checkOutput(%s, %s)", stmt.locked, stmt.program))
+			stk = b.addCheckOutput(stk, fmt.Sprintf("checkOutput(%s, %s)", stmt.Locked, stmt.Program))
 			stk = b.addVerify(stk)
 
-		case *unlockStatement:
-			if len(clause.statements) == 1 {
+		case *UnlockStatement:
+			if len(clause.Statements) == 1 {
 				// This is the only statement in the clause, make sure TRUE is
 				// on the stack.
 				stk = b.addBoolean(stk, true)
@@ -431,11 +431,11 @@ func compileClause(b *builder, contractStk stack, contract *Contract, env *envir
 	return nil
 }
 
-func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env *environ, counts map[string]int, expr expression) (stack, error) {
+func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env *environ, counts map[string]int, expr Expression) (stack, error) {
 	var err error
 
 	switch e := expr.(type) {
-	case *binaryExpr:
+	case *BinaryExpr:
 		// Do typechecking after compiling subexpressions (because other
 		// compilation errors are more interesting than type mismatch
 		// errors).
@@ -479,7 +479,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 
 		stk = b.addOps(stk.dropN(2), e.op.opcodes, e.String())
 
-	case *unaryExpr:
+	case *UnaryExpr:
 		// Do typechecking after compiling subexpression (because other
 		// compilation errors are more interesting than type mismatch
 		// errors).
@@ -495,10 +495,10 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		}
 		b.addOps(stk.drop(), e.op.opcodes, e.String())
 
-	case *callExpr:
+	case *CallExpr:
 		bi := referencedBuiltin(e.fn)
 		if bi == nil {
-			if v, ok := e.fn.(varRef); ok {
+			if v, ok := e.fn.(VarRef); ok {
 				if entry := env.lookup(string(v)); entry != nil && entry.t == contractType {
 					clause.Contracts = append(clause.Contracts, entry.c.Name)
 
@@ -525,7 +525,7 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 					case entry.c == contract:
 						// Recursive call - cannot use entry.c.Body
 						// <argN> <argN-1> ... <arg1> <body> DEPTH OVER 0 CHECKPREDICATE
-						stk, err = compileRef(b, stk, counts, varRef(contract.Name))
+						stk, err = compileRef(b, stk, counts, VarRef(contract.Name))
 						if err != nil {
 							return stk, errors.Wrap(err, "compiling contract call")
 						}
@@ -576,10 +576,10 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 		// special-case hack
 		// WARNING WARNING WOOP WOOP
 		if bi.name == "checkTxMultiSig" {
-			if _, ok := e.args[0].(listExpr); !ok {
+			if _, ok := e.args[0].(ListExpr); !ok {
 				return stk, fmt.Errorf("checkTxMultiSig expects list literals, got %T for argument 0", e.args[0])
 			}
-			if _, ok := e.args[1].(listExpr); !ok {
+			if _, ok := e.args[1].(ListExpr); !ok {
 				return stk, fmt.Errorf("checkTxMultiSig expects list literals, got %T for argument 1", e.args[1])
 			}
 
@@ -640,19 +640,19 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 			clause.HashCalls = append(clause.HashCalls, HashCall{bi.name, e.args[0].String(), string(e.args[0].typ(env))})
 		}
 
-	case varRef:
+	case VarRef:
 		return compileRef(b, stk, counts, e)
 
-	case integerLiteral:
+	case IntegerLiteral:
 		stk = b.addInt64(stk, int64(e))
 
-	case bytesLiteral:
+	case BytesLiteral:
 		stk = b.addData(stk, []byte(e))
 
-	case booleanLiteral:
+	case BooleanLiteral:
 		stk = b.addBoolean(stk, bool(e))
 
-	case listExpr:
+	case ListExpr:
 		// Lists are excluded here because they disobey the invariant of
 		// this function: namely, that it increases the stack size by
 		// exactly one. (A list pushes its items and its length on the
@@ -663,9 +663,9 @@ func compileExpr(b *builder, stk stack, contract *Contract, clause *Clause, env 
 	return stk, nil
 }
 
-func compileArg(b *builder, stk stack, contract *Contract, clause *Clause, env *environ, counts map[string]int, expr expression) (stack, int, error) {
+func compileArg(b *builder, stk stack, contract *Contract, clause *Clause, env *environ, counts map[string]int, expr Expression) (stack, int, error) {
 	var n int
-	if list, ok := expr.(listExpr); ok {
+	if list, ok := expr.(ListExpr); ok {
 		for i := 0; i < len(list); i++ {
 			elt := list[len(list)-i-1]
 			var err error
@@ -684,7 +684,7 @@ func compileArg(b *builder, stk stack, contract *Contract, clause *Clause, env *
 	return stk, 1, err
 }
 
-func compileRef(b *builder, stk stack, counts map[string]int, ref varRef) (stack, error) {
+func compileRef(b *builder, stk stack, counts map[string]int, ref VarRef) (stack, error) {
 	depth := stk.find(string(ref))
 	if depth < 0 {
 		return stk, fmt.Errorf("undefined reference: \"%s\"", ref)

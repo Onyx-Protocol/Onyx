@@ -55,8 +55,8 @@ func isHashSubtype(t typeDesc) bool {
 	return false
 }
 
-func propagateType(contract *Contract, clause *Clause, env *environ, t typeDesc, e expression) {
-	v, ok := e.(varRef)
+func propagateType(contract *Contract, clause *Clause, env *environ, t typeDesc, e Expression) {
+	v, ok := e.(VarRef)
 	if !ok {
 		return
 	}
