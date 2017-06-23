@@ -23,7 +23,6 @@ type token struct {
 	typ                  int
 	line, column, offset int
 	text                 []byte
-	skipped              []token
 }
 
 var keywords = []string{
@@ -66,7 +65,8 @@ func nextTok(inp []byte, line, column, offset int) (typOut, lineOut, columnOut, 
 
 	case '\r':
 		if offset == len(inp)-1 || inp[offset+1] != '\n' {
-			return fmt.Errorf("bare CR at position %d", offset)
+			err = fmt.Errorf("bare CR at position %d", offset)
+			return
 		}
 		return tokNL, line + 1, 0, offset + 2, inp[offset : offset+2], nil
 
@@ -85,6 +85,27 @@ func nextTok(inp []byte, line, column, offset int) (typOut, lineOut, columnOut, 
 
 	case '{', '}', '(', ')', '[', ']', ',', ':':
 		return tokDelim, line, column + 1, offset + 1, inp[offset : offset+1], nil
+
+	case '^', '|', '+', '&', '%', '*', '~':
+		// unambiguous single-character operators
+		return tokOp, line, column + 1, offset + 1, inp[offset : offset+1], nil
+
+	case '<', '>':
+		if offset < len(inp)-1 {
+			switch inp[offset+1] {
+			case inp[offset], '=':
+				return tokOp, line, column + 2, offset + 2, inp[offset : offset+2], nil
+			}
+		}
+		return tokOp, line, column + 1, offset + 1, inp[offset : offset+1], nil
+
+	case '!', '=':
+		// unary ! temporarily (?) disabled
+		if offset == len(inp)-1 || inp[offset+1] != '=' {
+			err = fmt.Errorf("unexpected character ! at position %d", offset)
+			return
+		}
+		return tokOp, line, column + 2, offset + 2, inp[offset : offset+2], nil
 
 	case '-':
 		if offset < len(inp)-1 && unicode.IsDigit(rune(inp[offset+1])) {
@@ -106,7 +127,7 @@ func nextTok(inp []byte, line, column, offset int) (typOut, lineOut, columnOut, 
 				err = fmt.Errorf("malformed bytes literal at position %d", offset)
 				return
 			}
-			end = offset + 4
+			end := offset + 4
 			for end < len(inp) && isHexDigit(inp[end]) {
 				if end+2 > len(inp) {
 					err = fmt.Errorf("incomplete bytes literal at position %d", offset)
@@ -194,6 +215,10 @@ func isIDChar(c byte, initial bool) bool {
 		return false
 	}
 	return unicode.IsDigit(rune(c))
+}
+
+func isLWSP(c byte) bool {
+	return c == ' ' || c == '\t'
 }
 
 func tokConcat(tokens ...[]token) []token {

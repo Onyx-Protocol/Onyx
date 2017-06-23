@@ -38,6 +38,8 @@ type Contract struct {
 
 	// Pre-optimized list of instruction steps, with stack snapshots.
 	Steps []Step `json:"-"`
+
+	tokens []token
 }
 
 // Param is a contract or clause parameter.
@@ -51,6 +53,8 @@ type Param struct {
 	// InferredType, if available, is a more-specific type than Type,
 	// inferred from the logic of the contract.
 	InferredType typeDesc `json:"inferred_type,omitempty"`
+
+	tokens []token
 }
 
 // Clause is a compiled contract clause.
@@ -84,6 +88,8 @@ type Clause struct {
 
 	// Contracts is the list of contracts called by this clause.
 	Contracts []string `json:"contracts,omitempty"`
+
+	tokens []token
 }
 
 // HashCall describes a call to a hash function.
@@ -110,6 +116,8 @@ type ClauseReq struct {
 
 	// Amount is the expression describing the required amount.
 	Amount string `json:"amount"`
+
+	tokens []token
 }
 
 type statement interface {
@@ -118,6 +126,8 @@ type statement interface {
 
 type verifyStatement struct {
 	expr expression
+
+	tokens []token
 }
 
 func (s verifyStatement) countVarRefs(counts map[string]int) {
@@ -130,6 +140,8 @@ type lockStatement struct {
 
 	// Added as a decoration, used by CHECKOUTPUT
 	index int64
+
+	tokens []token
 }
 
 func (s lockStatement) countVarRefs(counts map[string]int) {
@@ -139,6 +151,8 @@ func (s lockStatement) countVarRefs(counts map[string]int) {
 
 type unlockStatement struct {
 	expr expression
+
+	tokens []token
 }
 
 func (s unlockStatement) countVarRefs(counts map[string]int) {
@@ -154,6 +168,8 @@ type expression interface {
 type binaryExpr struct {
 	left, right expression
 	op          *binaryOp
+
+	tokens []token
 }
 
 func (e binaryExpr) String() string {
@@ -172,6 +188,8 @@ func (e binaryExpr) countVarRefs(counts map[string]int) {
 type unaryExpr struct {
 	op   *unaryOp
 	expr expression
+
+	tokens []token
 }
 
 func (e unaryExpr) String() string {
@@ -189,6 +207,8 @@ func (e unaryExpr) countVarRefs(counts map[string]int) {
 type callExpr struct {
 	fn   expression
 	args []expression
+
+	tokens []token
 }
 
 func (e callExpr) String() string {
