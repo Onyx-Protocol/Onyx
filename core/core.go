@@ -11,9 +11,11 @@ import (
 	"chain/core/config"
 	"chain/core/fetch"
 	"chain/core/leader"
+	"chain/database/sinkdb"
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/httpjson"
+	"chain/net/raft"
 	"chain/protocol/bc"
 )
 
@@ -152,6 +154,16 @@ func (a *API) configure(ctx context.Context, x *config.Config) error {
 	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
 	execSelf("")
 	panic("unreached")
+}
+
+func CheckConfigMaybeExec(ctx context.Context, sdb *sinkdb.DB, nodeAddr string) {
+	conf, err := config.CheckConfigExists(ctx, sdb)
+	if err != nil && errors.Root(err) != raft.ErrUninitialized {
+		log.Fatalkv(ctx, log.KeyError, err)
+	}
+	if conf != nil {
+		execSelf("")
+	}
 }
 
 func (a *API) initCluster(ctx context.Context) error {
