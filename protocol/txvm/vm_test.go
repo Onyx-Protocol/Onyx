@@ -18,8 +18,8 @@ func opTracer(t testing.TB) func(stack, byte, []byte, []byte) {
 
 func TestIssue(t *testing.T) {
 	proof, err := Assemble(`
-		10000 0 [1] 0 maketuple "6e6f6e6365"x 5 maketuple anchor
-		100 [1] 0 maketuple "6173736574646566696e6974696f6e"x 3 maketuple issue
+		{"6e6f6e6365"x, {}, [1], 0, 10000} anchor
+		100 {"6173736574646566696e6974696f6e"x, {}, [1]} issue
 		[1] 1 ""x lock
 		10000 0 ""x header
 	`)
@@ -49,15 +49,19 @@ func TestIssue(t *testing.T) {
 
 func TestSpend(t *testing.T) {
 	proof, err := Assemble(`
-			[1 verify]
-				"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100"x
-				100
-				"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x
-				0 maketuple
-			"76616c7565"x 5 maketuple 1 maketuple
-			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x
-			0 maketuple
-		"6f7574707574"x 5 maketuple unlock
+		{
+			"6f7574707574"x,
+			{},
+			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
+			{{
+				"76616c7565"x,
+				{},
+				"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
+				100,
+				"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100"x,
+			}},
+			[1 verify],
+		} unlock
 		retire
 		10000 0 ""x header
 	`)
@@ -81,8 +85,8 @@ func TestSpend(t *testing.T) {
 
 func TestEntries(t *testing.T) {
 	proof, err := Assemble(`
-		10000 0 [1 verify] 0 maketuple "6e6f6e6365"x 5 maketuple anchor
-		100 [1 verify] 0 maketuple "6173736574646566696e6974696f6e"x 3 maketuple issue
+		{"6e6f6e6365"x, {}, [1 verify], 0, 10000} anchor
+		100 {"6173736574646566696e6974696f6e"x, {}, [1 verify]} issue
 		45 split merge
 		retire
 		10000 0 ""x header
