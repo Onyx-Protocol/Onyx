@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"sync/atomic"
 
@@ -78,6 +79,13 @@ func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	sv.raftNode.Step(req.Context(), m)
+}
+
+// serveKill is registered as a handler for the /raft/kill rpc.
+// It receives notice that the node has been evicted and
+// kills the process.
+func (sv *Service) serveKill(w http.ResponseWriter, req *http.Request) {
+	os.Exit(0)
 }
 
 // serveJoin is registered as a handler for the /raft/join rpc.
@@ -154,6 +162,17 @@ func sendmsg(addr string, data []byte, client *http.Client) {
 	// eviction.
 	url := "https://" + addr + "/raft/msg"
 	resp, err := client.Post(url, contentType, bytes.NewReader(data))
+	if err != nil {
+		log.Printkv(context.Background(), "warning", err)
+		return
+	}
+	defer resp.Body.Close()
+}
+
+// Sends eviction notice to a node to kill the process
+func evictionNotice(addr string, client *http.Client) {
+	url := "https://" + addr + "/raft/kill"
+	resp, err := client.Post(url, contentType, nil)
 	if err != nil {
 		log.Printkv(context.Background(), "warning", err)
 		return

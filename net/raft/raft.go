@@ -200,6 +200,7 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 	// TODO(kr): grpc
 	sv.mux.HandleFunc("/raft/join", sv.serveJoin)
 	sv.mux.HandleFunc("/raft/msg", sv.serveMsg)
+	sv.mux.HandleFunc("/raft/kill", sv.serveKill)
 
 	var err error
 	sv.wal, err = sv.recover()
@@ -731,9 +732,8 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 		case raftpb.ConfChangeAddNode, raftpb.ConfChangeUpdateNode:
 			sv.state.SetPeerAddr(cc.NodeID, string(cc.Context))
 		case raftpb.ConfChangeRemoveNode:
-			if cc.NodeID == sv.id {
-				panic(errors.New("removed from cluster"))
-			}
+			addr := sv.state.Peers()[cc.NodeID]
+			evictionNotice(addr, sv.client)
 			sv.state.RemovePeerAddr(cc.NodeID)
 		default:
 			panic(fmt.Errorf("unknown confchange type: %v", cc.Type))

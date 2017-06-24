@@ -125,6 +125,9 @@ func TestClusterSetup(t *testing.T) {
 
 	// Create new test cluster
 	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
 
 	// Try setting a value on nodeB.
 	_, err := nodeB.service.Exec(ctx, set("/foo", "bar"))
@@ -136,9 +139,6 @@ func TestClusterSetup(t *testing.T) {
 	if got != "bar" {
 		t.Errorf("reading /foo, nodeC got %q want %q", got, "bar")
 	}
-	nodeA.cleanup()
-	nodeB.cleanup()
-	nodeC.cleanup()
 }
 
 func TestNodeEviction(t *testing.T) {
@@ -146,6 +146,9 @@ func TestNodeEviction(t *testing.T) {
 
 	// Create new test cluster
 	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
 	addrB := nodeB.addr
 
 	// Have nodeA evict nodeB
@@ -157,9 +160,6 @@ func TestNodeEviction(t *testing.T) {
 			t.Errorf("expected nodeB to be evicted: still in peer list")
 		}
 	}
-	nodeA.cleanup()
-	nodeB.cleanup()
-	nodeC.cleanup()
 }
 
 func TestEvictMultiple(t *testing.T) {
@@ -170,13 +170,31 @@ func TestEvictMultiple(t *testing.T) {
 	addrB := nodeB.addr
 	addrC := nodeC.addr
 
-	// Have nodeC evict nodeA and nodeB
+	// Have nodeA evict nodeB and nodeC
 	nodeA.service.Evict(ctx, addrB)
 	nodeA.service.Evict(ctx, addrC)
 	must(t, nodeA.service.WaitRead(ctx))
 	peers := nodeA.service.state.Peers()
 	for _, addr := range peers {
 		if addr == addrB || addr == addrC {
+			t.Errorf("expected node to be evicted: stil in peer list")
+		}
+	}
+}
+
+func TestLeaderEviction(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new test cluster
+	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	addrA := nodeA.addr
+
+	// Have nodeC evict nodeA
+	nodeC.service.Evict(ctx, addrA)
+	must(t, nodeC.service.WaitRead(ctx))
+	peers := nodeC.service.state.Peers()
+	for _, addr := range peers {
+		if addr == addrA {
 			t.Errorf("expected node to be evicted: stil in peer list")
 		}
 	}
