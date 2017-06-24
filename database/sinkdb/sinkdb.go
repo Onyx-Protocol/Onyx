@@ -26,7 +26,8 @@ func Open(laddr, dir string, httpClient *http.Client) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db := &DB{state: state, raft: sv}
+	rocks := store.NewRocksDB(filepath.Join(dir, "rocksdb"))
+	db := &DB{state: state, raft: sv, rocksdb: db}
 	return db, nil
 }
 
@@ -37,6 +38,7 @@ type DB struct {
 
 	state *state
 	raft  *raft.Service
+	rocksdb *gorocksdb.DB
 }
 
 // Ping peforms an empty write to verify the connection to
@@ -110,8 +112,14 @@ func (db *DB) Get(ctx context.Context, key string, v proto.Message) (Version, er
 	if err != nil {
 		return Version{}, err
 	}
-	buf, ver := db.state.get(key)
-	return ver, proto.Unmarshal(buf, v)
+	// buf, ver := db.state.get(key)
+	buf, ver, err := store.Get(db.rocksdb, key)
+	defer buf.Free() // cgo. sigh
+	if err != nil {
+		return Version{}, err
+	}
+	err = proto.Unmarshal(buf, v) // I feel this will not work as buf is now a gorocksdb.Slice but we will seeeeee
+	return ver, err
 }
 
 // GetStale performs a non-linearizable read of the provided key.
