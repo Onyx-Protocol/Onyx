@@ -61,6 +61,14 @@ func (s *stack) Bury(n int64) {
 	s.a = append(append(append([]Value{}, s.a[:i]...), x), s.a[i:]...)
 }
 
+func (s *stack) Reverse(n int64) {
+	for i := 0; i < int(n)/2; i++ {
+		a := len(s.a) - i - 1
+		b := len(s.a) - int(n) + i
+		s.a[a], s.a[b] = s.a[b], s.a[a]
+	}
+}
+
 type tupleID struct {
 	tuple VMTuple
 	id    []byte
@@ -103,6 +111,14 @@ func (s *tupleStack) Bury(n int64) {
 	s.a = s.a[:len(s.a)-1]
 	i := len(s.a) - int(n)
 	s.a = append(append(append([]tupleID{}, s.a[:i]...), x), s.a[i:]...)
+}
+
+func (s *tupleStack) Reverse(n int64) {
+	for i := 0; i < int(n)/2; i++ {
+		a := len(s.a) - i - 1
+		b := len(s.a) - int(n) + i
+		s.a[a], s.a[b] = s.a[b], s.a[a]
+	}
 }
 
 func (s *tupleStack) ID() []byte {

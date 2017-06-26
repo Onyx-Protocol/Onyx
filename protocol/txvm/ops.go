@@ -22,10 +22,11 @@ var ops = [NumOp]func(*vm){
 	PC:     opPC,
 	JumpIf: opJumpIf,
 
-	Roll:  opRoll,
-	Bury:  opBury,
-	Depth: opDepth,
-	ID:    opID,
+	Roll:    opRoll,
+	Bury:    opBury,
+	Reverse: opReverse,
+	Depth:   opDepth,
+	ID:      opID,
 
 	Len:     opLen,
 	Drop:    opDrop,
@@ -117,6 +118,19 @@ func opBury(vm *vm) {
 		vm.alt.Bury(n)
 	default:
 		getStack(vm, t).Bury(n)
+	}
+}
+
+func opReverse(vm *vm) {
+	t := vm.data.PopInt64()
+	n := vm.data.PopInt64()
+	switch t {
+	case StackData:
+		vm.data.Reverse(n)
+	case StackAlt:
+		vm.alt.Reverse(n)
+	default:
+		getStack(vm, t).Reverse(n)
 	}
 }
 
