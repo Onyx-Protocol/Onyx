@@ -104,7 +104,7 @@ function checkForError(resp) {
  * creates others. An output is considered unspent when it has not yet been used
  * as an input to a new transaction. All asset units on a blockchain exist in
  * the unspent output set.
- * 
+ *
  * More info: {@link https://chain.com/docs/core/build-applications/unspent-outputs}
  * @typedef {Object} TransactionOutput
  * @global
@@ -347,7 +347,12 @@ const transactionsAPI = (client) => {
      */
     build: (builderBlock, cb) => {
       const builder = new TransactionBuilder()
-      builderBlock(builder)
+
+      try {
+        builderBlock(builder)
+      } catch (err) {
+        return Promise.reject(err)
+      }
 
       return shared.tryCallback(
         client.request('/build-transaction', [builder]).then(resp => checkForError(resp[0])),
@@ -365,11 +370,16 @@ const transactionsAPI = (client) => {
      * @returns {Promise<BatchResponse>} Batch of unsigned transaction templates, or errors.
      */
     buildBatch: (builderBlocks, cb) => {
-      const builders = builderBlocks.map((builderBlock) => {
-        const builder = new TransactionBuilder()
-        builderBlock(builder)
-        return builder
-      })
+      const builders = []
+      for (let i in builderBlocks) {
+        const b = new TransactionBuilder()
+        try {
+          builderBlocks[i](b)
+        } catch (err) {
+          return Promise.reject(err)
+        }
+        builders.push(b)
+      }
 
       return shared.createBatch(client, '/build-transaction', builders, {cb})
     },

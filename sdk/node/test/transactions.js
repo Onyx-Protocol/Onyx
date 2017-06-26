@@ -219,6 +219,26 @@ describe('Transaction', () => {
     })
   })
 
+  describe('Builder function errors', () => {
+    it('rejects via promise', () =>
+      expect(
+        client.transactions.build(() => {
+          throw new Error("test error")
+        })
+      ).to.be.rejectedWith("test error")
+    )
+
+    it('rejects batch errors via promise', () =>
+      expect(
+        client.transactions.buildBatch([
+          () => { /* do nothing */ },
+          () => { throw new Error("test error") },
+          () => { /* do nothing */ },
+        ])
+      ).to.be.rejectedWith("test error")
+    )
+  })
+
   // These just test that the callback is engaged correctly. Behavior is
   // tested in the promises test.
   describe('Callback support', () => {
