@@ -17,7 +17,7 @@ func opTracer(t testing.TB) func(stack, byte, []byte, []byte) {
 }
 
 func TestIssue(t *testing.T) {
-	proof, err := Assemble(`
+	tx, err := Assemble(`
 		{"6e6f6e6365"x, {}, [1], 0, 10000} anchor
 		100 {"6173736574646566696e6974696f6e"x, {}, [1]} issue
 		[1] 1 ""x lock
@@ -26,9 +26,6 @@ func TestIssue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
-		Proof: proof,
-	}
 	ok := Validate(tx, TraceOp(opTracer(t)), TraceError(func(err error) { t.Error(err) }))
 	if !ok {
 		t.Fatal("expected ok")
@@ -36,7 +33,7 @@ func TestIssue(t *testing.T) {
 }
 
 func TestSpend(t *testing.T) {
-	proof, err := Assemble(`
+	tx, err := Assemble(`
 		{
 			"6f7574707574"x,
 			{},
@@ -56,9 +53,6 @@ func TestSpend(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
-		Proof: proof,
-	}
 	ok := Validate(tx, TraceOp(opTracer(t)), TraceError(func(err error) { t.Error(err) }))
 	if !ok {
 		t.Fatal("expected ok")
@@ -66,7 +60,7 @@ func TestSpend(t *testing.T) {
 }
 
 func TestEntries(t *testing.T) {
-	proof, err := Assemble(`
+	tx, err := Assemble(`
 		{"6e6f6e6365"x, {}, [1 verify], 0, 10000} anchor
 		100 {"6173736574646566696e6974696f6e"x, {}, [1 verify]} issue
 		45 split merge
@@ -75,9 +69,6 @@ func TestEntries(t *testing.T) {
 	`)
 	if err != nil {
 		t.Fatal(err)
-	}
-	tx := &Tx{
-		Proof: proof,
 	}
 	ok := Validate(tx, TraceOp(opTracer(t)), TraceError(func(err error) { t.Error(err) }))
 	if !ok {

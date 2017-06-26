@@ -5,24 +5,6 @@ import (
 	"errors"
 )
 
-// Tx contains the full transaction data.
-// Most of the information is contained in Proof,
-// a VM program that transforms elements of In to
-// elements of Out according to the constrained
-// rules of the TXVM.
-//
-// There are some operations that transaction
-// processors need to be able to do without first
-// executing the proof. The other fields exist
-// to facilitate those things.
-// A notable example is computing the txid.
-type Tx struct {
-	Version  int64
-	Runlimit int64
-
-	Proof []byte
-}
-
 type vm struct {
 	// config, doesn't change after init
 	traceUnlock func(Contract)
@@ -53,7 +35,7 @@ type vm struct {
 // To get detailed information about a Tx,
 // such as determining why an invalid Tx is invalid,
 // use Option funcs to trace execution.
-func Validate(x *Tx, o ...Option) bool {
+func Validate(tx []byte, o ...Option) bool {
 	vm := &vm{
 		traceUnlock: func(Contract) {},
 		traceLock:   func(Contract) {},
@@ -69,7 +51,7 @@ func Validate(x *Tx, o ...Option) bool {
 		}
 	}()
 
-	exec(vm, x.Proof)
+	exec(vm, tx)
 
 	// TODO(kr): call some tracing hook here
 	// to signal end of execution.
