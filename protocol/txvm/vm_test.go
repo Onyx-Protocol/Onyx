@@ -21,7 +21,7 @@ func TestIssue(t *testing.T) {
 		{"6e6f6e6365"x, {}, [1], 0, 10000} anchor
 		100 {"6173736574646566696e6974696f6e"x, {}, [1]} issue
 		[1] 1 ""x lock
-		10000 0 ""x header
+		10000 0 ""x summarize
 	`)
 	if err != nil {
 		t.Fatal(err)
@@ -48,7 +48,7 @@ func TestSpend(t *testing.T) {
 			[1 verify],
 		} unlock
 		retire
-		10000 0 ""x header
+		10000 0 ""x summarize
 	`)
 	if err != nil {
 		t.Fatal(err)
@@ -65,7 +65,7 @@ func TestEntries(t *testing.T) {
 		100 {"6173736574646566696e6974696f6e"x, {}, [1 verify]} issue
 		45 split merge
 		retire
-		10000 0 ""x header
+		10000 0 ""x summarize
 	`)
 	if err != nil {
 		t.Fatal(err)

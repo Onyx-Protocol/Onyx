@@ -78,7 +78,7 @@ var ops = [NumOp]func(*vm){
 	Retire:       opRetire,
 	Anchor:       opAnchor,
 	Issue:        opIssue,
-	Header:       opHeader,
+	Summarize:    opSummarize,
 }
 
 func opPC(vm *vm) {
@@ -561,7 +561,7 @@ func opIssue(vm *vm) {
 	exec(vm, assetDef[2].(Bytes))
 }
 
-func opHeader(vm *vm) {
+func opSummarize(vm *vm) {
 	if vm.txheader.Len() > 0 {
 		panic(errors.New("txheader already created"))
 	}
@@ -598,7 +598,7 @@ func opHeader(vm *vm) {
 	vm.txheader.Push(VMTuple{
 		Bytes(TxHeaderTuple),
 		VMTuple{Bytes(refData)},
-		history(Header, 0, historyArgs...),
+		history(Summarize, 0, historyArgs...),
 		inputs,
 		outputs,
 		nonces,

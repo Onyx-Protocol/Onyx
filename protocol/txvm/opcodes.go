@@ -10,95 +10,98 @@ const (
 	JumpIf = 2
 
 	// stack
-	Roll  = 3 // any stack
-	Bury  = 4 // any stack
-	Depth = 5 // any stack
-	ID    = 6
+	Roll    = 3 // any stack
+	Bury    = 4 // any stack
+	Reverse = 5
+	Depth   = 6 // any stack
+	ID      = 7
 
 	// Data Stack
-	Len     = 7
-	Drop    = 8
-	Dup     = 9
-	ToAlt   = 10
-	FromAlt = 11
+	Len     = 8
+	Drop    = 9
+	Dup     = 10
+	ToAlt   = 11
+	FromAlt = 12
 
 	// boolean
-	Equal = 12
-	Not   = 13
-	And   = 14
-	Or    = 15
+	Equal = 13
+	Not   = 14
+	And   = 15
+	Or    = 16
 
 	// math
-	Add    = 16
-	Sub    = 17
-	Mul    = 18
-	Div    = 19
-	Mod    = 20
-	Lshift = 21
-	Rshift = 22
-	GT     = 23
+	Add    = 17
+	Sub    = 18
+	Mul    = 19
+	Div    = 20
+	Mod    = 21
+	Lshift = 22
+	Rshift = 23
+	GT     = 24
 
 	// string
-	Cat   = 24
-	Slice = 25
+	Cat   = 25
+	Slice = 26
 
 	// bitwise (int64 or string)
-	BitNot = 26
-	BitAnd = 27
-	BitOr  = 28
-	BitXor = 29
+	BitNot = 27
+	BitAnd = 28
+	BitOr  = 29
+	BitXor = 30
 
 	// crypto
-	SHA256        = 30
-	SHA3          = 31
-	CheckSig      = 32
-	CheckMultiSig = 33
-	PointAdd      = 34 // TODO(kr): review for CA
-	PointSub      = 35 // TODO(kr): review for CA
-	PointMul      = 36 // TODO(kr): review for CA
+	SHA256        = 31
+	SHA3          = 32
+	CheckSig      = 33
+	CheckMultiSig = 34
+	PointAdd      = 35 // TODO(kr): review for CA
+	PointSub      = 36 // TODO(kr): review for CA
+	PointMul      = 37 // TODO(kr): review for CA
 
 	// constructors
-	Encode = 37
-	Varint = 38
+	Encode = 38
+	Varint = 39
 
 	// Tuple
-	MakeTuple = 39
-	Untuple   = 40
-	Field     = 41
+	MakeTuple = 40
+	Untuple   = 41
+	Field     = 42
 
 	// introspection
-	Type = 42
+	Type = 43
 
 	// entries
-	Annotate     = 43
-	Defer        = 44 // prog => cond
-	Satisfy      = 45 // cond => {}
-	Unlock       = 46 // inputid + data => value + cond
-	UnlockOutput = 47 // outputid + data => value + cond
-	Merge        = 48 // value value => value
-	Split        = 49 // value + amount => value value
-	Lock         = 50 // value + prog => outputid
-	Retire       = 51 // value + refdata => {}
-	Anchor       = 52 // nonce + data => anchor + cond
-	Issue        = 53 // anchor + data => value + cond
-	IssueCA      = 54 // TODO(kr): review for CA
-	Header       = 55
-	ProveRange   = 56 // TODO(kr): review for CA
-	ProveValue   = 57 // TODO(kr): review for CA
-	ProveAsset   = 58 // TODO(kr): review for CA
-	Blind        = 59 // TODO(kr): review for CA
+	Annotate     = 44
+	Defer        = 45 // prog => cond
+	Satisfy      = 46 // cond => {}
+	Unlock       = 47 // inputid + data => value + cond
+	UnlockOutput = 48 // outputid + data => value + cond
+	Merge        = 49 // value value => value
+	Split        = 50 // value + amount => value value
+	Lock         = 51 // value + prog => outputid
+	Retire       = 52 // value + refdata => {}
+	Anchor       = 53 // nonce + data => anchor + cond
+	Issue        = 54 // anchor + data => value + cond
+	IssueCA      = 55 // TODO(kr): review for CA
+	Summarize    = 56
+	Finalize     = 57
+	Migrate      = 58
+	ProveRange   = 59 // TODO(kr): review for CA
+	ProveValue   = 60 // TODO(kr): review for CA
+	ProveAsset   = 61 // TODO(kr): review for CA
+	Blind        = 62 // TODO(kr): review for CA
 
 	// extensions
-	Nop0    = 60
-	Nop1    = 61
-	Nop2    = 62
-	Nop3    = 63
-	Nop4    = 64
-	Nop5    = 65
-	Nop6    = 66
-	Nop7    = 67
-	Nop8    = 68
-	Private = 69
+	Nop0    = 63
+	Nop1    = 64
+	Nop2    = 65
+	Nop3    = 66
+	Nop4    = 67
+	Nop5    = 68
+	Nop6    = 69
+	Nop7    = 70
+	Nop8    = 71
+	Private = 72
 
 	NumOp = 80
 
