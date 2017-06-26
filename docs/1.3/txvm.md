@@ -33,67 +33,69 @@ There are several named types of tuples.
 #### Value
 
 0. `type`, a string, "value"
-2. `referencedata`, a tuple of strings (initially empty)
 1. `history`, a string
-3. `amount`, an int64
-4. `assetID`, a string
+2. `amount`, an int64
+3. `assetID`, a string
 
 #### Output
 
 0. `type`, a string, "output"
-1. `referencedata`, a tuple of strings (initially empty)
-2. `history`, a 32-byte string
-3. `values`, a tuple of `Value`s
-4. `program`, a string
+1. `history`, a 32-byte string
+2. `values`, a tuple of `Value`s
+3. `program`, a string
 
 #### Nonce
 
 0. `type`, a string, "nonce"
-1. `referencedata`, a tuple of strings (initially empty)
-2. `program`, a string
-3. `mintime`, an int64
-4. `maxtime`, an int64
+1. `program`, a string
+2. `mintime`, an int64
+3. `maxtime`, an int64
 
 #### Retirement
 
 0. `type`, a string, "retirement"
-1. `referencedata`, a tuple of strings (initially empty)
-2. `history`, a string
+1. `history`, a string
 
 #### Anchor
 
 0. `type`, a string, "anchor"
-1. `referencedata`, a tuple of strings (initially empty)
 1. `history`, a string
 
 #### Asset Definition
 
 0. `type`, a string, "assetdefinition"
-1. `referencedata`, a tuple of strings
-2. `issuanceprogram`, a string
+1. `issuanceprogram`, a string
 
 #### Maxtime
 
 0. `type`, a string, "beforeconstraint"
-1. `referencedata`, a tuple of strings
-2. `maxtime`, an int64
+1. `maxtime`, an int64
 
 #### Mintime
 
 0. `type`, a string, "afterconstraint"
-1. `referencedata`, a tuple of strings
-2. `mintime`, an int64
+1. `mintime`, an int64
+
+### Item Annotation
+
+0. `type`, a string, "itemannotation"
+1. `id`, a string representing an [item ID](#item-id)
+2. `referencedata`, a string
+
+### Transaction Annotation
+
+0. `type`, a string, "transactionannotation"
+1. `referencedata`, a string
 
 #### Transaction Summary
 
 0. `type`, an int64
-1. `referencedata`, a tuple of strings (initially empty)
-2. `history`, a string
+1. `history`, a string
 
 ### Legacy Output
 
 0. `sourceID`, a 32-byte ID
-1. `assetID`, a 32-byte asset ID ID
+1. `assetID`, a 32-byte asset ID
 2. `amount`, an int64
 3. `index`, an int64
 4. `program`, a string
@@ -125,8 +127,9 @@ The `history` field is the [encoding](#encode) of:
 7. Anchor stack
 8. Retirement stack
 9. Time Constraint stack
-10. Transaction summary stack
-11. Transaction ID stack
+10. Annotation stack
+11. Transaction summary stack
+12. Transaction ID stack
 
 ## Data stack
 
@@ -391,9 +394,9 @@ Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed2
 
 TODO: add descriptions.
 
-### Annotate
+### AnnotateItem
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops a string, `referencedatastring`. If `stackid` is not a valid stack identifier, or if it identifies the data stack, or if the stack identified by `stackid` is empty, fails. Pops the item on top of the stack identified by `stackid`, replaces the `referencedata` tuple with a new tuple with one additional field containing the string `referencedatastring`, and puts the item back on top of the same stack.
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops a string, `referencedatastring`. If `stackid` is not a valid stack identifier, or if it identifies the data stack, or if the stack identified by `stackid` is empty, fails. Gets the [item id](#item-id) of the item on top of the stack identified by `stackid`. Adds an [item annotation](#item-annotation) to the Annotations stack.
 
 ### Defer
 
@@ -421,7 +424,7 @@ Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` f
 
 ### Lock
 
-Pop a string `referencedata` from the data stack. Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Value stack. Pop a string `program` from the data stack. Push an [output](#output) to the Output stack with `referencedata` as the `referencedata`, a tuple of the `values` as the `values`, and `program` as the `program`.
+Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Value stack. Pop a string `program` from the data stack. Push an [output](#output) to the Output stack with a tuple of the `values` as the `values`, and `program` as the `program`.
 
 ### Retire
 
@@ -447,7 +450,7 @@ Pop an int64 `min` from the stack. Push a [Mintime](#mintime) to the [Time Const
 
 Fail if the [Transaction Summary stack](#transaction-summary-stack) is not empty.
 
-Pop all items from the Input stack. Pop all items from the Output stack. Pop all items from the Nonce stack. Pop all items from the Retirement stack. Pop all items from the Time Constraint stack.
+Pop all items from the Input stack. Pop all items from the Output stack. Pop all items from the Nonce stack. Pop all items from the Retirement stack. Pop all items from the Time Constraint stack. Pop all items from the Annotation stack.
 
 Create a [transaction summary](#transaction-summary) `summary` and push it to the Transaction Summary stack.
 
