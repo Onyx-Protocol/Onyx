@@ -1,3 +1,9 @@
+# VM Execution
+
+The VM is initialized with all stacks empty.
+
+When the program counter is equal to the length of the program, execution is complete. The [Transaction ID stack](#transaction-id-stack) must have one item on it. Other than the transaction ID stack and the data stack, all of the stacks must be empty.
+
 # Stacks
 
 ## Types
@@ -150,6 +156,10 @@ Items on the Condition stack are strings, representing programs.
 
 Items on the Transaction Summary stack are [Transaction Summaries](#transaction-summary).
 
+### Transaction ID stack
+
+Items on the Transaction ID stack are 32-byte strings.
+
 # Encoding formats
 
 ## Varint
@@ -162,14 +172,16 @@ TODO: Describe rules for Ed25519 curve point encoding (including checks that sho
 
 # Runlimit
 
-The VM is initialized with a set runlimit. Each instruction reduces that number. When that 
+The VM is initialized with a set runlimit. Each instruction reduces that number. If the runlimit goes below zero while the program counter is less than the length of the program, execution fails.
 
-1. Each instruction has a fixed cost of 1.
-2. Each instruction that pushes an item to any stack, including as the result of an operation (such as `add`, `cat`, `merge`, or ), costs an amount based on the type and size of that data:
-  1. Each string that is pushed to the stack costs `1 + len`, where length is the length of that string in bytes.
+1. Each instruction costs `1`.
+2. Each instruction that pushes an item to the data stack, including as the result of an operation (such as `add`, `cat`, `merge`, `field`, and `untuple`), costs an amount based on the type and size of that data:
+  1. Each string that is pushed to the stack costs `1 + len`, where `len` is the length of that string in bytes.
   2. Each number that is pushed to the stack costs `1`.
-  3. Each tuple that is pushed to the stack costs `1` plus what it would cost to push all of the items in the tuple to the stack.
-3. Each `checksig` and `pointmul` operation costs `1024`. [TBD: estimate the actual cost of these operations relative to the other operations].
+  3. Each tuple that is pushed to the stack costs `1 + len`, where `len` is the length of that tuple.
+3. Each instruction that pushes an item to any stack other than the data or alt stack costs `256` for each item so pushed.
+4. Each `checksig` and `pointmul` instruction costs `1024`. [TBD: estimate the actual cost of these instruction relative to the other instructions].
+5. Each `roll`, `bury`, or `reverse` instruction costs `n`, where `n` is the `n` argument to that operation.
 
 # Operations
 
@@ -185,7 +197,7 @@ Pushes the current program counter (after incrementing for this instruction) to 
 
 ### JumpIf
 
-Pops an integer `destination`, then a boolean `cond` from the data stack. If `cond` is false, do nothing. If `cond` is true, set program counter to `destination`. Fail if `destination` is negative, if `destination` is greater than or equal to the length of the current program.
+Pops an integer `destination`, then a boolean `cond` from the data stack. If `cond` is false, do nothing. If `cond` is true, set program counter to `destination`. Fail if `destination` is negative, if `destination` is greater than the length of the current program.
 
 ## Stack operations 
 
@@ -198,6 +210,10 @@ Fails if `stackid` does not correspond to a valid stack, or if the stack has few
 ### Bury
 
 Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. On the stack identified by `stackid`, moves the top item and inserts it at the `n`th-from-top position.
+
+### Reverse
+
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. On the stack identified by `stackid`, pops the top `n` items and inserts them back to the same stack in reverse order.
 
 ### Depth
 
@@ -421,7 +437,7 @@ Create a [transaction summary](#transaction-summary) `summary` with `referenceda
 
 Fail if the [Transaction ID stack](#transaction-id-stack) is not empty.
 
-Push the [id](#item-ids) of the top item on the Transaction ID stack to the data stack.
+Push the [id](#item-ids) of the top item on the Transaction Summary stack to the Transaction ID stack.
 
 ### Migrate
 
