@@ -167,6 +167,9 @@ func TestEvictMultiple(t *testing.T) {
 
 	// Create new test cluster
 	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
 	addrB := nodeB.addr
 	addrC := nodeC.addr
 
@@ -187,6 +190,9 @@ func TestLeaderEviction(t *testing.T) {
 
 	// Create new test cluster
 	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
 	addrA := nodeA.addr
 
 	// Have nodeC evict nodeA
@@ -198,9 +204,6 @@ func TestLeaderEviction(t *testing.T) {
 			t.Errorf("expected node to be evicted: stil in peer list")
 		}
 	}
-	nodeA.cleanup()
-	nodeB.cleanup()
-	nodeC.cleanup()
 }
 
 func must(t *testing.T, err error) {

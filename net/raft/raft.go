@@ -389,13 +389,22 @@ func (sv *Service) runUpdatesReady(rd raft.Ready, wal *wal.WAL, writers map[stri
 	// NOTE(kr): we must apply entries before sending messages,
 	// because some ConfChangeAddNode entries contain the address
 	// needed for subsequent messages.
-	sv.send(rd.Messages)
+	sv.send(sv.processMessages(rd.Messages))
 	if lastEntryIndex > sv.snapIndex+snapCount {
 		sv.redo(func() error {
 			return sv.triggerSnapshot()
 		})
 	}
 	sv.raftNode.Advance()
+}
+
+func (sv *Service) processMessages(msgs []raftpb.Message) []raftpb.Message {
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if sv.state.Peers()[msgs[i].To] == "" {
+			msgs[i].To = 0
+		}
+	}
+	return msgs
 }
 
 func replyReadIndex(rdIndices map[string]chan uint64, readStates []raft.ReadState) {
@@ -733,8 +742,8 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 			sv.state.SetPeerAddr(cc.NodeID, string(cc.Context))
 		case raftpb.ConfChangeRemoveNode:
 			addr := sv.state.Peers()[cc.NodeID]
-			evictionNotice(addr, sv.client)
 			sv.state.RemovePeerAddr(cc.NodeID)
+			evictionNotice(addr, sv.client)
 		default:
 			panic(fmt.Errorf("unknown confchange type: %v", cc.Type))
 		}
@@ -766,6 +775,10 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 
 func (sv *Service) send(msgs []raftpb.Message) {
 	for _, msg := range msgs {
+		if msg.To == 0 {
+			// ignore intentionally dropped message
+			continue
+		}
 		data, err := msg.Marshal()
 		if err != nil {
 			panic(err)
@@ -773,10 +786,6 @@ func (sv *Service) send(msgs []raftpb.Message) {
 		sv.stateMu.Lock()
 		addr := sv.state.Peers()[msg.To]
 		sv.stateMu.Unlock()
-		if addr == "" {
-			log.Printkv(context.Background(), "no-addr-for-peer", msg.To)
-			continue
-		}
 		sendmsg(addr, data, sv.client)
 	}
 }

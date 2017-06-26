@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"sync/atomic"
 
@@ -85,7 +84,7 @@ func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
 // It receives notice that the node has been evicted and
 // kills the process.
 func (sv *Service) serveKill(w http.ResponseWriter, req *http.Request) {
-	os.Exit(0)
+	panic("Removed from cluster")
 }
 
 // serveJoin is registered as a handler for the /raft/join rpc.
