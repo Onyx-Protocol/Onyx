@@ -123,32 +123,14 @@ func TestStartUninitialized(t *testing.T) {
 func TestClusterSetup(t *testing.T) {
 	ctx := context.Background()
 
-	// Create three uninitialized raft services.
-	nodeA := newTestNode(t)
+	// Create new test cluster
+	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
 	defer nodeA.cleanup()
-	nodeB := newTestNode(t)
 	defer nodeB.cleanup()
-	nodeC := newTestNode(t)
 	defer nodeC.cleanup()
 
-	// Initialize A, creating a fresh cluster.
-	must(t, nodeA.service.Init())
-
-	// Update the cluster to allow A, B and C's addresses.
-	var err error
-	_, err = nodeA.service.Exec(ctx, set("/allowed/"+nodeA.addr, "yes"))
-	must(t, err)
-	_, err = nodeA.service.Exec(ctx, set("/allowed/"+nodeB.addr, "yes"))
-	must(t, err)
-	_, err = nodeA.service.Exec(ctx, set("/allowed/"+nodeC.addr, "yes"))
-	must(t, err)
-
-	// Add B and C to the cluster.
-	must(t, nodeB.service.Join("https://"+nodeA.addr))
-	must(t, nodeC.service.Join("https://"+nodeA.addr))
-
 	// Try setting a value on nodeB.
-	_, err = nodeB.service.Exec(ctx, set("/foo", "bar"))
+	_, err := nodeB.service.Exec(ctx, set("/foo", "bar"))
 	must(t, err)
 
 	// Try reading the value on nodeC's state.
@@ -156,6 +138,71 @@ func TestClusterSetup(t *testing.T) {
 	got := nodeC.state.Data["/foo"]
 	if got != "bar" {
 		t.Errorf("reading /foo, nodeC got %q want %q", got, "bar")
+	}
+}
+
+func TestNodeEviction(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new test cluster
+	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
+	addrB := nodeB.addr
+
+	// Have nodeA evict nodeB
+	nodeA.service.Evict(ctx, addrB)
+	must(t, nodeA.service.WaitRead(ctx))
+	peers := nodeA.service.state.Peers()
+	for _, addr := range peers {
+		if addr == addrB {
+			t.Errorf("expected nodeB to be evicted: still in peer list")
+		}
+	}
+}
+
+func TestEvictMultiple(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new test cluster
+	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
+	addrB := nodeB.addr
+	addrC := nodeC.addr
+
+	// Have nodeA evict nodeB and nodeC
+	nodeA.service.Evict(ctx, addrB)
+	nodeA.service.Evict(ctx, addrC)
+	must(t, nodeA.service.WaitRead(ctx))
+	peers := nodeA.service.state.Peers()
+	for _, addr := range peers {
+		if addr == addrB || addr == addrC {
+			t.Errorf("expected node to be evicted: stil in peer list")
+		}
+	}
+}
+
+func TestLeaderEviction(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new test cluster
+	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
+	addrA := nodeA.addr
+
+	// Have nodeC evict nodeA
+	nodeC.service.Evict(ctx, addrA)
+	must(t, nodeC.service.WaitRead(ctx))
+	peers := nodeC.service.state.Peers()
+	for _, addr := range peers {
+		if addr == addrA {
+			t.Errorf("expected node to be evicted: stil in peer list")
+		}
 	}
 }
 
@@ -181,6 +228,32 @@ func (n *testNode) cleanup() {
 	n.server.Close()
 	n.service.Stop()
 	os.RemoveAll(n.dir)
+}
+
+// Initializes a new test cluster with three raft nodes
+// After calling, must remember to call node.cleanup() on each test node
+func newTestCluster(ctx context.Context, t *testing.T) (*testNode, *testNode, *testNode) {
+	// Create three uninitialized raft services.
+	nodeA := newTestNode(t)
+	nodeB := newTestNode(t)
+	nodeC := newTestNode(t)
+
+	// Initialize A, creating a fresh cluster.
+	must(t, nodeA.service.Init())
+
+	// Update the cluster to allow A, B and C's addresses.
+	var err error
+	_, err = nodeA.service.Exec(ctx, set("/allowed/"+nodeA.addr, "yes"))
+	must(t, err)
+	_, err = nodeA.service.Exec(ctx, set("/allowed/"+nodeB.addr, "yes"))
+	must(t, err)
+	_, err = nodeA.service.Exec(ctx, set("/allowed/"+nodeC.addr, "yes"))
+	must(t, err)
+
+	// Add B and C to the cluster.
+	must(t, nodeB.service.Join("https://"+nodeA.addr))
+	must(t, nodeC.service.Join("https://"+nodeA.addr))
+	return nodeA, nodeB, nodeC
 }
 
 // newTestNode creates a new local raft Service listening on a random

@@ -77,6 +77,23 @@ func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
 		errorFormatter.Write(req.Context(), w, err)
 		return
 	}
+
+	// If message is from node not in cluster, tell node to remove itself
+	if sv.state.Peers()[m.From] == "" {
+		cc := raftpb.ConfChange{
+			ID:     atomic.AddUint64(&sv.confChangeID, 1),
+			Type:   raftpb.ConfChangeRemoveNode,
+			NodeID: m.From,
+		}
+		data, err := cc.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		sv.send([]raftpb.Message{{
+			Type:    raftpb.MsgProp,
+			Entries: []raftpb.Entry{{Type: raftpb.EntryConfChange, Data: data}},
+		}})
+	}
 	sv.raftNode.Step(req.Context(), m)
 }
 
