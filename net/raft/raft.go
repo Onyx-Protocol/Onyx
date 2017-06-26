@@ -200,7 +200,6 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 	// TODO(kr): grpc
 	sv.mux.HandleFunc("/raft/join", sv.serveJoin)
 	sv.mux.HandleFunc("/raft/msg", sv.serveMsg)
-	sv.mux.HandleFunc("/raft/kill", sv.serveKill)
 
 	var err error
 	sv.wal, err = sv.recover()
