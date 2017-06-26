@@ -397,6 +397,9 @@ func (sv *Service) runUpdatesReady(rd raft.Ready, wal *wal.WAL, writers map[stri
 	sv.raftNode.Advance()
 }
 
+// processMessages checks all the messages for valid To addresses, changing
+// to 0 if not found in peers so that we can drop the messages with invalid
+// destinations
 func (sv *Service) processMessages(msgs []raftpb.Message) []raftpb.Message {
 	for i := len(msgs) - 1; i >= 0; i-- {
 		if sv.state.Peers()[msgs[i].To] == "" {
