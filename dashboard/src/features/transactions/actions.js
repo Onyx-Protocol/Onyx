@@ -70,16 +70,39 @@ function getTemplateXpubs(tpl) {
 }
 
 form.submitForm = (formParams) => function(dispatch) {
-  const buildPromise = chainClient().transactions.build(builder => {
-    const processed = preprocessTransaction(formParams)
+  try {
+    const buildPromise = chainClient().transactions.build(builder => {
+      const processed = preprocessTransaction(formParams)
 
-    builder.actions = processed.actions
-    if (processed.baseTransaction) {
-      builder.baseTransaction = processed.baseTransaction
+      builder.actions = processed.actions
+      if (processed.baseTransaction) {
+        builder.baseTransaction = processed.baseTransaction
+      }
+    })
+
+    if (formParams.submitAction == 'submit') {
+      return buildPromise
+        .then(tpl => {
+          const signer = chainSigner()
+
+          getTemplateXpubs(tpl).forEach(key => {
+            signer.addKey(key, chainClient().mockHsm.signerConnection)
+          })
+
+          return signer.sign(tpl)
+        }).then(signed => chainClient().transactions.submit(signed))
+        .then(resp => {
+          dispatch(form.created())
+          dispatch(push({
+            pathname: `/transactions/${resp.id}`,
+            state: {
+              preserveFlash: true
+            }
+          }))
+        })
     }
-  })
 
-  if (formParams.submitAction == 'submit') {
+    // submitAction == 'generate'
     return buildPromise
       .then(tpl => {
         const signer = chainSigner()
@@ -88,41 +111,22 @@ form.submitForm = (formParams) => function(dispatch) {
           signer.addKey(key, chainClient().mockHsm.signerConnection)
         })
 
-        return signer.sign(tpl)
-      }).then(signed => chainClient().transactions.submit(signed))
-      .then(resp => {
-        dispatch(form.created())
-        dispatch(push({
-          pathname: `/transactions/${resp.id}`,
-          state: {
-            preserveFlash: true
-          }
-        }))
+        return signer.sign({...tpl, allowAdditionalActions: true})
       })
-  }
-
-  // submitAction == 'generate'
-  return buildPromise
-    .then(tpl => {
-      const signer = chainSigner()
-
-      getTemplateXpubs(tpl).forEach(key => {
-        signer.addKey(key, chainClient().mockHsm.signerConnection)
+      .then(signed => {
+        const id = uuid.v4()
+        dispatch({
+          type: 'GENERATED_TX_HEX',
+          generated: {
+            id: id,
+            hex: signed.rawTransaction,
+          },
+        })
+        dispatch(push(`/transactions/generated/${id}`))
       })
-
-      return signer.sign({...tpl, allowAdditionalActions: true})
-    })
-    .then(signed => {
-      const id = uuid.v4()
-      dispatch({
-        type: 'GENERATED_TX_HEX',
-        generated: {
-          id: id,
-          hex: signed.rawTransaction,
-        },
-      })
-      dispatch(push(`/transactions/generated/${id}`))
-    })
+    } catch (err) {
+      return Promise.reject(err)
+    }
 }
 
 export default {
