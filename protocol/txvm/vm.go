@@ -17,15 +17,10 @@ import (
 // to facilitate those things.
 // A notable example is computing the txid.
 type Tx struct {
-	Version          int64
-	MinTime, MaxTime uint64
-	Runlimit         int64
-	In, Nonce        [][32]byte
-	Out, Retire      [][32]byte
+	Version  int64
+	Runlimit int64
 
-	Data    [32]byte
-	ExtHash [32]byte
-	Proof   []byte
+	Proof []byte
 }
 
 type vm struct {
@@ -83,16 +78,8 @@ func Validate(x *Tx, o ...Option) bool {
 		panic(errors.New("missing tx header"))
 	}
 
-	headerTuple := vm.txheader.Peek()
-	inputs := headerTuple[3].(VMTuple)
-	outputs := headerTuple[4].(VMTuple)
-	nonces := headerTuple[5].(VMTuple)
-
 	return vm.conditions.Len() == 0 &&
-		vm.values.Len() == 0 &&
-		idSetEqual(x.In, inputs) &&
-		idSetEqual(x.Out, outputs) &&
-		idSetEqual(x.Nonce, nonces)
+		vm.values.Len() == 0
 }
 
 func exec(vm *vm, prog []byte) {
@@ -125,18 +112,6 @@ func decodeInst(buf []byte) (opcode byte, imm []byte, n int) {
 	}
 	r := v - BaseData + uint64(n)
 	return BaseData, append([]byte{}, buf[n:r]...), int(r)
-}
-
-func idSetEqual(a [][32]byte, b []Value) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if !idsEqual(a[i][:], b[i].(Bytes)) {
-			return false
-		}
-	}
-	return true
 }
 
 func idsEqual(a, b []byte) bool {
