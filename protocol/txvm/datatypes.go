@@ -47,12 +47,12 @@ type Bytes []byte
 
 type Int64 int64
 
-type VMTuple []Value
+type Tuple []Value
 
-func (Bytes) value()   {}
-func (Int64) value()   {}
-func (VMTuple) value() {}
+func (Bytes) value() {}
+func (Int64) value() {}
+func (Tuple) value() {}
 
-func (Bytes) typ() int   { return TypeString }
-func (Int64) typ() int   { return TypeInt64 }
-func (VMTuple) typ() int { return TypeTuple }
+func (Bytes) typ() int { return TypeString }
+func (Int64) typ() int { return TypeInt64 }
+func (Tuple) typ() int { return TypeTuple }

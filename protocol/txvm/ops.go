@@ -241,7 +241,7 @@ func opEqual(vm *vm) {
 	case Bytes:
 		b := b.(Bytes)
 		ok = bytes.Equal(a, b)
-	case VMTuple:
+	case Tuple:
 		panic(errors.New("can't compare tuples"))
 	}
 	vm.data.Push(Bool(ok))
@@ -296,7 +296,7 @@ func encode(v Value) []byte {
 		return pushData(v)
 	case Int64:
 		return pushInt64(int64(v))
-	case VMTuple:
+	case Tuple:
 		var b []byte
 		for i := len(v) - 1; i >= 0; i-- {
 			b = append(b, encode(v[i])...)
@@ -340,10 +340,10 @@ func opField(vm *vm) {
 
 	switch t {
 	case StackData:
-		tuple := vm.data.Peek().(VMTuple)
+		tuple := vm.data.Peek().(Tuple)
 		vm.data.Push(tuple[n])
 	case StackAlt:
-		tuple := vm.alt.Peek().(VMTuple)
+		tuple := vm.alt.Peek().(Tuple)
 		vm.data.Push(tuple[n])
 	case StackInput:
 	default:
@@ -416,7 +416,7 @@ func opCheckMultiSig(vm *vm) {
 }
 
 func opDefer(vm *vm) {
-	vm.conditions.Push(VMTuple{Bytes(vm.data.PopBytes())})
+	vm.conditions.Push(Tuple{Bytes(vm.data.PopBytes())})
 }
 
 func opSatisfy(vm *vm) {
@@ -430,17 +430,17 @@ func opUnlock(vm *vm) {
 		panic(errors.New("expected output tuple"))
 	}
 	vm.inputs.Push(input)
-	vals := input[3].(VMTuple)
+	vals := input[3].(Tuple)
 	for _, v := range vals {
-		value := v.(VMTuple)
+		value := v.(Tuple)
 		if !checkTuple(value, ValueTuple) {
 			panic(errors.New("expected value tuple"))
 		}
 		vm.values.Push(value)
 	}
-	vm.anchors.Push(VMTuple{
+	vm.anchors.Push(Tuple{
 		Bytes(AnchorTuple),
-		VMTuple{},
+		Tuple{},
 		history(Unlock, 0, input),
 	})
 	exec(vm, input[4].(Bytes))
@@ -451,9 +451,9 @@ func opUnlockOutput(vm *vm) {
 	if !checkTuple(output, OutputTuple) {
 		panic(errors.New("expected output tuple"))
 	}
-	vals := output[3].(VMTuple)
+	vals := output[3].(Tuple)
 	for _, v := range vals {
-		value := v.(VMTuple)
+		value := v.(Tuple)
 		if !checkTuple(value, ValueTuple) {
 			panic(errors.New("expected value tuple"))
 		}
@@ -478,9 +478,9 @@ func opMerge(vm *vm) {
 		panic(errors.New("range"))
 	}
 
-	vm.values.Push(VMTuple{
+	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		VMTuple{},
+		Tuple{},
 		history(Merge, 0, val1, val2),
 		Int64(sum),
 		assetid,
@@ -497,17 +497,17 @@ func opSplit(vm *vm) {
 		panic(errors.New("split value must be less"))
 	}
 
-	vm.values.Push(VMTuple{
+	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		VMTuple{},
+		Tuple{},
 		history(Split, 0, val, Int64(amt)),
 		Int64(amt),
 		val[4],
 	})
 
-	vm.values.Push(VMTuple{
+	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		VMTuple{},
+		Tuple{},
 		history(Split, 1, val, Int64(amt)),
 		Int64(originalAmt - amt),
 		val[4],
@@ -517,7 +517,7 @@ func opSplit(vm *vm) {
 func opLock(vm *vm) {
 	refData := vm.data.PopBytes()
 	n := vm.data.PopInt64()
-	var values VMTuple
+	var values Tuple
 	for i := int64(0); i < n; i++ {
 		values = append(values, vm.values.Pop())
 	}
@@ -525,9 +525,9 @@ func opLock(vm *vm) {
 
 	historyArgs := append(append([]Value{Bytes(refData), Int64(n)}, values...), Bytes(prog))
 
-	vm.outputs.Push(VMTuple{
+	vm.outputs.Push(Tuple{
 		Bytes(OutputTuple),
-		VMTuple{Bytes(refData)},
+		Tuple{Bytes(refData)},
 		history(Lock, 0, historyArgs...),
 		values,
 		Bytes(prog),
@@ -536,9 +536,9 @@ func opLock(vm *vm) {
 
 func opRetire(vm *vm) {
 	val := vm.values.Pop()
-	vm.retirements.Push(VMTuple{
+	vm.retirements.Push(Tuple{
 		Bytes(RetirementTuple),
-		VMTuple{},
+		Tuple{},
 		history(Retire, 0, val),
 	})
 }
@@ -549,9 +549,9 @@ func opAnchor(vm *vm) {
 		panic("expected nonce tuple")
 	}
 	vm.nonces.Push(tuple)
-	vm.anchors.Push(VMTuple{
+	vm.anchors.Push(Tuple{
 		Bytes(AnchorTuple),
-		VMTuple{},
+		Tuple{},
 		history(Anchor, 0, tuple),
 	})
 	exec(vm, tuple[2].(Bytes))
@@ -565,9 +565,9 @@ func opIssue(vm *vm) {
 	amount := vm.data.PopInt64()
 	anchor := vm.anchors.Pop()
 	assetID := calcID(assetDef)
-	vm.values.Push(VMTuple{
+	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		VMTuple{},
+		Tuple{},
 		history(Issue, 0, assetDef, Int64(amount), anchor),
 		Int64(amount),
 		Bytes(assetID),
@@ -580,9 +580,9 @@ func opSummarize(vm *vm) {
 		panic(errors.New("txheader already created"))
 	}
 	var (
-		inputs      VMTuple
-		outputs     VMTuple
-		nonces      VMTuple
+		inputs      Tuple
+		outputs     Tuple
+		nonces      Tuple
 		historyArgs []Value
 	)
 	for vm.inputs.Len() > 0 {
@@ -609,9 +609,9 @@ func opSummarize(vm *vm) {
 	}
 
 	historyArgs = append(historyArgs, Bytes(refData), Int64(minTime), Int64(maxTime))
-	vm.txheader.Push(VMTuple{
+	vm.txheader.Push(Tuple{
 		Bytes(TxHeaderTuple),
-		VMTuple{Bytes(refData)},
+		Tuple{Bytes(refData)},
 		history(Summarize, 0, historyArgs...),
 		inputs,
 		outputs,
@@ -622,15 +622,15 @@ func opSummarize(vm *vm) {
 }
 
 func history(op byte, idx int, vals ...Value) Bytes {
-	history := VMTuple{
+	history := Tuple{
 		Bytes([]byte{op}),
-		append(VMTuple{}, vals...),
+		append(Tuple{}, vals...),
 		Int64(idx),
 	}
 	return Bytes(encode(history))
 }
 
-func checkTuple(v VMTuple, expected string) bool {
+func checkTuple(v Tuple, expected string) bool {
 	if len(v) != len(tupleContents[expected]) {
 		return false
 	}
