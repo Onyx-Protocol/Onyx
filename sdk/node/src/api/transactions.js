@@ -350,7 +350,7 @@ const transactionsAPI = (client) => {
 
       try {
         builderBlock(builder)
-      } catch(err) {
+      } catch (err) {
         return Promise.reject(err)
       }
 
@@ -375,7 +375,7 @@ const transactionsAPI = (client) => {
         const b = new TransactionBuilder()
         try {
           builderBlocks[i](b)
-        } catch(err) {
+        } catch (err) {
           return Promise.reject(err)
         }
         builders.push(b)
