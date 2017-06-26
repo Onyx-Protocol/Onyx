@@ -741,9 +741,10 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 		case raftpb.ConfChangeAddNode, raftpb.ConfChangeUpdateNode:
 			sv.state.SetPeerAddr(cc.NodeID, string(cc.Context))
 		case raftpb.ConfChangeRemoveNode:
-			addr := sv.state.Peers()[cc.NodeID]
 			sv.state.RemovePeerAddr(cc.NodeID)
-			evictionNotice(addr, sv.client)
+			if cc.NodeID == sv.id {
+				os.Exit(0)
+			}
 		default:
 			panic(fmt.Errorf("unknown confchange type: %v", cc.Type))
 		}
