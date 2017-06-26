@@ -5,10 +5,12 @@ import (
 	"context"
 	"net/http"
 	"sort"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/tecbot/gorocksdb"
 
 	"chain/database/sinkdb/internal/sinkpb"
 	"chain/errors"
@@ -26,8 +28,11 @@ func Open(laddr, dir string, httpClient *http.Client) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	rocks := store.NewRocksDB(filepath.Join(dir, "rocksdb"))
-	db := &DB{state: state, raft: sv, rocksdb: db}
+	rocks, err := NewRocksDB(filepath.Join(dir, "rocksdb"))
+	if err != nil {
+		return nil, errors.Wrap(err, "could not open rocksdb")
+	}
+	db := &DB{state: state, raft: sv, rocksdb: rocks}
 	return db, nil
 }
 
@@ -107,13 +112,17 @@ func (db *DB) Exec(ctx context.Context, ops ...Op) error {
 
 // Get performs a linearizable read of the provided key. The
 // read value is unmarshalled into v.
+// It first checks the rocksdb; if there is nothing stored
+// at that key in rocksdb, Get then checks the protobuf-on-disk
+// store. If it finds something in the protobuf-on-disk store, it
+// will write that value to rocksdb.
 func (db *DB) Get(ctx context.Context, key string, v proto.Message) (Version, error) {
 	err := db.raft.WaitRead(ctx)
 	if err != nil {
 		return Version{}, err
 	}
 	// buf, ver := db.state.get(key)
-	buf, ver, err := store.Get(db.rocksdb, key)
+	buf, err := Get(db.rocksdb, key)
 	defer buf.Free() // cgo. sigh
 	if err != nil {
 		return Version{}, err
