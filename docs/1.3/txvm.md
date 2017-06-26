@@ -2,7 +2,7 @@
 
 The VM is initialized with all stacks empty.
 
-When the program counter is equal to the length of the program, execution is complete. The [Transaction ID stack](#transaction-id-stack) must have one item on it. Other than the transaction ID stack and the data stack, all of the stacks must be empty.
+When the program counter is equal to the length of the program, execution is complete. The [Transaction ID stack](#transaction-id-stack) must have one item on it. Other than the Transaction ID stack, the anchor stack, the data stack, and the alt stack, all of the stacks must be empty.
 
 # Stacks
 
@@ -72,16 +72,23 @@ There are several named types of tuples.
 1. `referencedata`, a tuple of strings
 2. `issuanceprogram`, a string
 
+#### Maxtime
+
+0. `type`, a string, "beforeconstraint"
+1. `referencedata`, a tuple of strings
+2. `maxtime`, an int64
+
+#### Mintime
+
+0. `type`, a string, "afterconstraint"
+1. `referencedata`, a tuple of strings
+2. `mintime`, an int64
+
 #### Transaction Summary
 
 0. `type`, an int64
 1. `referencedata`, a tuple of strings (initially empty)
 2. `history`, a string
-3. `inputs`, a tuple of [outputs](#output)
-4. `outputs`, a tuple of [outputs](#output)
-5. `nonces`, a tuple of [nonces](#nonce)
-6. `mintime`, an int64
-7. `maxtime`, an int64
 
 ### Legacy Output
 
@@ -117,8 +124,9 @@ The `history` field is the [encoding](#encode) of:
 6. Nonce stack
 7. Anchor stack
 8. Retirement stack
-9. Transaction summary stack
-10. Transaction ID stack
+9. Time Constraint stack
+10. Transaction summary stack
+11. Transaction ID stack
 
 ## Data stack
 
@@ -151,6 +159,10 @@ Items on the anchor stack are [Anchors](#anchor).
 ### Condition stack
 
 Items on the Condition stack are strings, representing programs.
+
+### Time Constraint stack
+
+Items on the Time Constraint stack are [Mintimes](#mintime) or [Maxtimes](#maxtime).
 
 ### Transaction Summary stack
 
@@ -423,15 +435,21 @@ Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Non
 
 Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Push an [anchor](#anchor) to the Anchor stack. Execute `assetdefinition.issuanceprogram`.
 
+### Before
+
+Pop an int64 `max` from the stack. Push a [Maxtime](#maxtime) to the [Time Constraint stack](#time-constraint-stack) with `maxtime` equal to `max`.
+
+### After
+
+Pop an int64 `min` from the stack. Push a [Mintime](#mintime) to the [Time Constraint stack](#time-constraint-stack) with `mintime` equal to `min`.
+
 ### Summarize
 
 Fail if the [Transaction Summary stack](#transaction-summary-stack) is not empty.
 
-Pop all items from the Input stack and create a tuple of them, `inputs` (with the top item in the 0th position). Pop all items from the Output stack and create a tuple of them, `outputs`. Pop all items from the Nonce stack and create a tuple of them, `nonces`. Pop all items from the Retirement stack.
+Pop all items from the Input stack. Pop all items from the Output stack. Pop all items from the Nonce stack. Pop all items from the Retirement stack. Pop all items from the Time Constraint stack.
 
-Pop an int64 `mintime` from the data stack, and an int64 `maxtime` from the data stack. Fail if either `maxtime` or `mintime` is negative, or if `maxtime` is not greater than or equal to `mintime`.
-
-Create a [transaction summary](#transaction-summary) `summary` with `referencedata` set to `referencedata`, `inputs` set to `inputs`, `outputs` set to `outputs`, `mintime` set to `mintime`, and `maxtime` set to `maxtime`. Push `summary` to the Transaction Summary stack.
+Create a [transaction summary](#transaction-summary) `summary` and push it to the Transaction Summary stack.
 
 ### Finalize
 
