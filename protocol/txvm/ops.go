@@ -440,7 +440,7 @@ func opUnlock(vm *vm) {
 	}
 	vm.anchors.Push(Tuple{
 		Bytes(AnchorTuple),
-		history(Unlock, 0, input),
+		historyID(Unlock, 0, input),
 	})
 	exec(vm, input[3].(Bytes))
 }
@@ -479,7 +479,7 @@ func opMerge(vm *vm) {
 
 	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		history(Merge, 0, val1, val2),
+		historyID(Merge, 0, val1, val2),
 		Int64(sum),
 		assetid,
 	})
@@ -497,14 +497,14 @@ func opSplit(vm *vm) {
 
 	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		history(Split, 0, val, Int64(amt)),
+		historyID(Split, 0, val, Int64(amt)),
 		Int64(amt),
 		val[3],
 	})
 
 	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		history(Split, 1, val, Int64(amt)),
+		historyID(Split, 1, val, Int64(amt)),
 		Int64(originalAmt - amt),
 		val[3],
 	})
@@ -522,7 +522,7 @@ func opLock(vm *vm) {
 
 	vm.outputs.Push(Tuple{
 		Bytes(OutputTuple),
-		history(Lock, 0, historyArgs...),
+		historyID(Lock, 0, historyArgs...),
 		values,
 		Bytes(prog),
 	})
@@ -532,7 +532,7 @@ func opRetire(vm *vm) {
 	val := vm.values.Pop()
 	vm.retirements.Push(Tuple{
 		Bytes(RetirementTuple),
-		history(Retire, 0, val),
+		historyID(Retire, 0, val),
 	})
 }
 
@@ -544,7 +544,7 @@ func opAnchor(vm *vm) {
 	vm.nonces.Push(tuple)
 	vm.anchors.Push(Tuple{
 		Bytes(AnchorTuple),
-		history(Anchor, 0, tuple),
+		historyID(Anchor, 0, tuple),
 	})
 	exec(vm, tuple[1].(Bytes))
 }
@@ -559,7 +559,7 @@ func opIssue(vm *vm) {
 	assetID := calcID(assetDef)
 	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		history(Issue, 0, assetDef, Int64(amount), anchor),
+		historyID(Issue, 0, assetDef, Int64(amount), anchor),
 		Int64(amount),
 		Bytes(assetID),
 	})
@@ -601,7 +601,7 @@ func opSummarize(vm *vm) {
 	historyArgs = append(historyArgs, Int64(minTime), Int64(maxTime))
 	vm.txheader.Push(Tuple{
 		Bytes(TxHeaderTuple),
-		history(Summarize, 0, historyArgs...),
+		historyID(Summarize, 0, historyArgs...),
 		inputs,
 		outputs,
 		nonces,
@@ -610,13 +610,13 @@ func opSummarize(vm *vm) {
 	})
 }
 
-func history(op byte, idx int, vals ...Value) Bytes {
+func historyID(op byte, idx int, vals ...Value) Bytes {
 	history := Tuple{
 		Bytes([]byte{op}),
 		append(Tuple{}, vals...),
 		Int64(idx),
 	}
-	return Bytes(encode(history))
+	return Bytes(calcID(history))
 }
 
 func checkTuple(v Tuple, expected string) bool {
