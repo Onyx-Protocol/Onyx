@@ -121,10 +121,12 @@ export const create = () => {
       return client.ivy.compile({ contract: source, args: args })
     })
 
+    let futureDate = new Date()
+    futureDate.setDate(futureDate.getDate() + 1000)
     const promisedUtxo = promisedTemplate.then(template => {
       const receiver: Receiver = {
         controlProgram: template.program,
-        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
+        expiresAt: futureDate.toISOString()
       }
       const controlWithReceiver: ControlWithReceiver = {
         type: "controlWithReceiver",

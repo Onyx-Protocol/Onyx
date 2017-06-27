@@ -432,9 +432,12 @@ export const getLockActions = createSelector(
         const progInput = inputMap["contractParameters." + progName + ".programInput"] as ProgramInput
         if (progInput === undefined) throw "programInput unexpectedly undefined"
         if (progInput.computedData === undefined) throw "programInput.computedData unexpectedly undefined"
+
+        let futureDate = new Date()
+        futureDate.setDate(futureDate.getDate() + 1000)
         const receiver: Receiver = {
           controlProgram: progInput.computedData,
-          expiresAt: "2020-06-25T00:00:00.000Z" // TODO
+          expiresAt: futureDate.toISOString()
         }
 
         // Handles locking a contract paramater's asset amount
