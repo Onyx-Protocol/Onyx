@@ -76,15 +76,9 @@ There are several named types of tuples.
 0. `type`, a string, "afterconstraint"
 1. `mintime`, an int64
 
-### Item Annotation
+### Annotation stack
 
-0. `type`, a string, "itemannotation"
-1. `id`, a string representing an [item ID](#item-id)
-2. `referencedata`, a string
-
-### Transaction Annotation
-
-0. `type`, a string, "transactionannotation"
+0. `type`, a string, "annotation"
 1. `referencedata`, a string
 
 #### Transaction Summary
@@ -107,9 +101,9 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 
 ## History
 
-When a new [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Summary](#transaction-summary)) is created by a VM instruction (including `annotate`), its `history` field is computed based on the instruction that generated it.
+When a new [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Summary](#transaction-summary)) is created by a VM instruction, its `history` field is computed based on the instruction that generated it.
 
-The `history` field is the [encoding](#encode) of:
+The `history` field is the SHA3 hash of `"txvm" || encode(historytuple)`, where `encode` is the [encode](#encode) operation, and `historytuple` is a tuple of the following items:
 
 0. `opcode`, an int64 (reflecting the opcode that generated the item)
 1. `arguments`, a tuple (reflecting the arguments consumed by that instruction, in order)
@@ -129,7 +123,6 @@ The `history` field is the [encoding](#encode) of:
 9. Time Constraint stack
 10. Annotation stack
 11. Transaction summary stack
-12. Transaction ID stack
 
 ## Data stack
 
@@ -394,9 +387,9 @@ Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed2
 
 TODO: add descriptions.
 
-### AnnotateItem
+### Annotate
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops a string, `referencedatastring`. If `stackid` is not a valid stack identifier, or if it identifies the data stack, or if the stack identified by `stackid` is empty, fails. Gets the [item id](#item-id) of the item on top of the stack identified by `stackid`. Adds an [item annotation](#item-annotation) to the Annotations stack.
+Pops a string, `referencedata`, from the data stack. Pushes an [annotation](#annotation) with `referencedata` `referencedata` to the Annotation stack.
 
 ### Defer
 
@@ -454,12 +447,6 @@ Pop all items from the Input stack. Pop all items from the Output stack. Pop all
 
 Create a [transaction summary](#transaction-summary) `summary` and push it to the Transaction Summary stack.
 
-### Finalize
-
-Fail if the [Transaction ID stack](#transaction-id-stack) is not empty.
-
-Push the [id](#item-ids) of the top item on the Transaction Summary stack to the Transaction ID stack.
-
 ### Migrate
 
 Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#item-id) of the tuple and pushes it to the Input stack.
@@ -473,6 +460,10 @@ Push a [Value](#value) with amount `legacy.amount` and asset ID `legacy.assetID`
 Push an [anchor](#anchor) to the Anchor stack. 
 
 Execute `newprogram`.
+
+### Extend
+
+TBD.
 
 ### IssueCA
 
