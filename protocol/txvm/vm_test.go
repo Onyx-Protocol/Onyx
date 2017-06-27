@@ -4,14 +4,14 @@ import (
 	"testing"
 )
 
-func opTracer(t testing.TB) func(stack, byte, []byte) {
-	return func(s stack, op byte, data []byte) {
+func opTracer(t testing.TB) func(byte, []byte, stack, stack, [NumStacks]tupleStack) {
+	return func(op byte, opData []byte, data stack, alt stack, tuples [NumStacks]tupleStack) {
 		if op >= BaseData {
-			t.Logf("[%x]\t\t#stack len: %d", data, s.Len())
+			t.Logf("[%x]\t\t#stack len: %d", opData, data.Len())
 		} else if op >= BaseInt {
-			t.Logf("%d\t\t#stack len: %d", op-BaseInt, s.Len())
+			t.Logf("%d\t\t#stack len: %d", op-BaseInt, data.Len())
 		} else {
-			t.Logf("%s\t\t#stack len: %d", OpNames[op], s.Len())
+			t.Logf("%s\t\t#stack len: %d", OpNames[op], data.Len())
 		}
 	}
 }

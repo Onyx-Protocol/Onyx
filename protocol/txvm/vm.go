@@ -4,7 +4,7 @@ import "encoding/binary"
 
 type vm struct {
 	// config, doesn't change after init
-	traceOp    func(stack, byte, []byte)
+	traceOp    func(byte, []byte, stack, stack, [NumStacks]tupleStack)
 	traceError func(error)
 
 	pc   int    // program counter
@@ -62,7 +62,7 @@ func exec(vm *vm, prog []byte) {
 
 func step(vm *vm) {
 	opcode, data, n := decodeInst(vm.prog[vm.pc:])
-	vm.traceOp(vm.data, opcode, data)
+	vm.traceOp(opcode, data, vm.data, vm.alt, vm.tupleStacks)
 	vm.pc += n
 	if opcode == BaseData {
 		vm.data.PushBytes(data)
