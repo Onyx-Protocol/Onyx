@@ -419,15 +419,15 @@ func opCheckMultiSig(vm *vm) {
 }
 
 func opAnnotate(vm *vm) {
-	vm.annotations.Push(Tuple{Bytes(AnnotationTuple), Bytes(vm.data.PopBytes())})
+	vm.tupleStacks[StackAnnotation].Push(Tuple{Bytes(AnnotationTuple), Bytes(vm.data.PopBytes())})
 }
 
 func opDefer(vm *vm) {
-	vm.conditions.Push(Tuple{Bytes(vm.data.PopBytes())})
+	vm.tupleStacks[StackCond].Push(Tuple{Bytes(vm.data.PopBytes())})
 }
 
 func opSatisfy(vm *vm) {
-	tuple := vm.conditions.Pop()
+	tuple := vm.tupleStacks[StackCond].Pop()
 	exec(vm, tuple[0].(Bytes))
 }
 
@@ -436,16 +436,16 @@ func opUnlock(vm *vm) {
 	if !checkTuple(input, OutputTuple) {
 		panic(errors.New("expected output tuple"))
 	}
-	vm.inputs.Push(input)
+	vm.tupleStacks[StackInput].Push(input)
 	vals := input[2].(Tuple)
 	for _, v := range vals {
 		value := v.(Tuple)
 		if !checkTuple(value, ValueTuple) {
 			panic(errors.New("expected value tuple"))
 		}
-		vm.values.Push(value)
+		vm.tupleStacks[StackValue].Push(value)
 	}
-	vm.anchors.Push(Tuple{
+	vm.tupleStacks[StackAnchor].Push(Tuple{
 		Bytes(AnchorTuple),
 		historyID(Unlock, 0, input),
 	})
@@ -463,14 +463,14 @@ func opUnlockOutput(vm *vm) {
 		if !checkTuple(value, ValueTuple) {
 			panic(errors.New("expected value tuple"))
 		}
-		vm.values.Push(value)
+		vm.tupleStacks[StackValue].Push(value)
 	}
 	exec(vm, output[3].(Bytes))
 }
 
 func opMerge(vm *vm) {
-	val1 := vm.values.Pop()
-	val2 := vm.values.Pop()
+	val1 := vm.tupleStacks[StackValue].Pop()
+	val2 := vm.tupleStacks[StackValue].Pop()
 
 	if !idsEqual(val1[3].(Bytes), val2[3].(Bytes)) {
 		panic(errors.New("merging different assets"))
@@ -484,7 +484,7 @@ func opMerge(vm *vm) {
 		panic(errors.New("range"))
 	}
 
-	vm.values.Push(Tuple{
+	vm.tupleStacks[StackValue].Push(Tuple{
 		Bytes(ValueTuple),
 		historyID(Merge, 0, val1, val2),
 		Int64(sum),
@@ -493,7 +493,7 @@ func opMerge(vm *vm) {
 }
 
 func opSplit(vm *vm) {
-	val := vm.values.Pop()
+	val := vm.tupleStacks[StackValue].Pop()
 	amt := vm.data.PopInt64()
 
 	originalAmt := int64(val[2].(Int64))
@@ -502,14 +502,14 @@ func opSplit(vm *vm) {
 		panic(errors.New("split value must be less"))
 	}
 
-	vm.values.Push(Tuple{
+	vm.tupleStacks[StackValue].Push(Tuple{
 		Bytes(ValueTuple),
 		historyID(Split, 0, val, Int64(amt)),
 		Int64(amt),
 		val[3],
 	})
 
-	vm.values.Push(Tuple{
+	vm.tupleStacks[StackValue].Push(Tuple{
 		Bytes(ValueTuple),
 		historyID(Split, 1, val, Int64(amt)),
 		Int64(originalAmt - amt),
@@ -521,13 +521,13 @@ func opLock(vm *vm) {
 	n := vm.data.PopInt64()
 	var values Tuple
 	for i := int64(0); i < n; i++ {
-		values = append(values, vm.values.Pop())
+		values = append(values, vm.tupleStacks[StackValue].Pop())
 	}
 	prog := vm.data.PopBytes()
 
 	historyArgs := append(append([]Value{Int64(n)}, values...), Bytes(prog))
 
-	vm.outputs.Push(Tuple{
+	vm.tupleStacks[StackOutput].Push(Tuple{
 		Bytes(OutputTuple),
 		historyID(Lock, 0, historyArgs...),
 		values,
@@ -536,8 +536,8 @@ func opLock(vm *vm) {
 }
 
 func opRetire(vm *vm) {
-	val := vm.values.Pop()
-	vm.retirements.Push(Tuple{
+	val := vm.tupleStacks[StackValue].Pop()
+	vm.tupleStacks[StackRetirement].Push(Tuple{
 		Bytes(RetirementTuple),
 		historyID(Retire, 0, val),
 	})
@@ -548,8 +548,8 @@ func opAnchor(vm *vm) {
 	if !checkTuple(tuple, NonceTuple) {
 		panic(errors.New("expected nonce tuple"))
 	}
-	vm.nonces.Push(tuple)
-	vm.anchors.Push(Tuple{
+	vm.tupleStacks[StackNonce].Push(tuple)
+	vm.tupleStacks[StackAnchor].Push(Tuple{
 		Bytes(AnchorTuple),
 		historyID(Anchor, 0, tuple),
 	})
@@ -562,9 +562,9 @@ func opIssue(vm *vm) {
 		panic(errors.New("expected asset definition tuple"))
 	}
 	amount := vm.data.PopInt64()
-	anchor := vm.anchors.Pop()
+	anchor := vm.tupleStacks[StackAnchor].Pop()
 	assetID := calcID(assetDef)
-	vm.values.Push(Tuple{
+	vm.tupleStacks[StackValue].Push(Tuple{
 		Bytes(ValueTuple),
 		historyID(Issue, 0, assetDef, Int64(amount), anchor),
 		Int64(amount),
@@ -574,38 +574,38 @@ func opIssue(vm *vm) {
 }
 
 func opBefore(vm *vm) {
-	vm.timeconstraints.Push(Tuple{Bytes(MaxTimeTuple), Int64(vm.data.PopInt64())})
+	vm.tupleStacks[StackTimeConstraint].Push(Tuple{Bytes(MaxTimeTuple), Int64(vm.data.PopInt64())})
 }
 
 func opAfter(vm *vm) {
-	vm.timeconstraints.Push(Tuple{Bytes(MinTimeTuple), Int64(vm.data.PopInt64())})
+	vm.tupleStacks[StackTimeConstraint].Push(Tuple{Bytes(MinTimeTuple), Int64(vm.data.PopInt64())})
 }
 
 func opSummarize(vm *vm) {
-	if vm.summary.Len() > 0 {
+	if vm.tupleStacks[StackSummary].Len() > 0 {
 		panic(errors.New("txheader already created"))
 	}
 	var historyArgs []Value
-	for vm.inputs.Len() > 0 {
-		historyArgs = append(historyArgs, vm.inputs.Pop())
+	for vm.tupleStacks[StackInput].Len() > 0 {
+		historyArgs = append(historyArgs, vm.tupleStacks[StackInput].Pop())
 	}
-	for vm.outputs.Len() > 0 {
-		historyArgs = append(historyArgs, vm.outputs.Pop())
+	for vm.tupleStacks[StackOutput].Len() > 0 {
+		historyArgs = append(historyArgs, vm.tupleStacks[StackOutput].Pop())
 	}
-	for vm.nonces.Len() > 0 {
-		historyArgs = append(historyArgs, vm.nonces.Pop())
+	for vm.tupleStacks[StackNonce].Len() > 0 {
+		historyArgs = append(historyArgs, vm.tupleStacks[StackNonce].Pop())
 	}
-	for vm.retirements.Len() > 0 {
-		historyArgs = append(historyArgs, vm.retirements.Pop())
+	for vm.tupleStacks[StackRetirement].Len() > 0 {
+		historyArgs = append(historyArgs, vm.tupleStacks[StackRetirement].Pop())
 	}
-	for vm.timeconstraints.Len() > 0 {
-		historyArgs = append(historyArgs, vm.timeconstraints.Pop())
+	for vm.tupleStacks[StackTimeConstraint].Len() > 0 {
+		historyArgs = append(historyArgs, vm.tupleStacks[StackTimeConstraint].Pop())
 	}
-	for vm.annotations.Len() > 0 {
-		historyArgs = append(historyArgs, vm.annotations.Pop())
+	for vm.tupleStacks[StackAnnotation].Len() > 0 {
+		historyArgs = append(historyArgs, vm.tupleStacks[StackAnnotation].Pop())
 	}
 
-	vm.summary.Push(Tuple{
+	vm.tupleStacks[StackSummary].Push(Tuple{
 		Bytes(SummaryTuple),
 		historyID(Summarize, 0, historyArgs...),
 	})

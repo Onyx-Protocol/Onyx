@@ -18,6 +18,7 @@ const (
 	StackTimeConstraint = 9
 	StackAnnotation     = 10
 	StackSummary        = 11
+	NumStacks           = 12
 )
 
 type stack struct {

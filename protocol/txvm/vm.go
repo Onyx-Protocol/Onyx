@@ -1,9 +1,6 @@
 package txvm
 
-import (
-	"encoding/binary"
-	"errors"
-)
+import "encoding/binary"
 
 type vm struct {
 	// config, doesn't change after init
@@ -20,16 +17,7 @@ type vm struct {
 	data stack
 	alt  stack
 
-	inputs          tupleStack
-	values          tupleStack
-	outputs         tupleStack
-	conditions      tupleStack
-	nonces          tupleStack
-	anchors         tupleStack
-	retirements     tupleStack
-	timeconstraints tupleStack
-	annotations     tupleStack
-	summary         tupleStack
+	tupleStacks [NumStacks]tupleStack
 }
 
 // Validate returns whether x is valid.
@@ -58,15 +46,15 @@ func Validate(tx []byte, o ...Option) bool {
 	// TODO(kr): call some tracing hook here
 	// to signal end of execution.
 
-	return vm.summary.Len() == 1 &&
-		vm.inputs.Len() == 0 &&
-		vm.values.Len() == 0 &&
-		vm.outputs.Len() == 0 &&
-		vm.conditions.Len() == 0 &&
-		vm.nonces.Len() == 0 &&
-		vm.retirements.Len() == 0 &&
-		vm.timeconstraints.Len() == 0 &&
-		vm.annotations.Len() == 0
+	return vm.tupleStacks[StackSummary].Len() == 1 &&
+		vm.tupleStacks[StackInput].Len() == 0 &&
+		vm.tupleStacks[StackValue].Len() == 0 &&
+		vm.tupleStacks[StackOutput].Len() == 0 &&
+		vm.tupleStacks[StackCond].Len() == 0 &&
+		vm.tupleStacks[StackNonce].Len() == 0 &&
+		vm.tupleStacks[StackRetirement].Len() == 0 &&
+		vm.tupleStacks[StackTimeConstraint].Len() == 0 &&
+		vm.tupleStacks[StackAnnotation].Len() == 0
 }
 
 func exec(vm *vm, prog []byte) {
@@ -114,28 +102,5 @@ func idsEqual(a, b []byte) bool {
 }
 
 func getStack(vm *vm, t int64) *tupleStack {
-	switch t {
-	case StackInput:
-		return &vm.inputs
-	case StackValue:
-		return &vm.values
-	case StackOutput:
-		return &vm.outputs
-	case StackCond:
-		return &vm.conditions
-	case StackNonce:
-		return &vm.nonces
-	case StackAnchor:
-		return &vm.anchors
-	case StackRetirement:
-		return &vm.retirements
-	case StackTimeConstraint:
-		return &vm.timeconstraints
-	case StackAnnotation:
-		return &vm.annotations
-	case StackSummary:
-		return &vm.summary
-	default:
-		panic(errors.New("bad stack identifier"))
-	}
+	return &vm.tupleStacks[t]
 }
