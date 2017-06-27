@@ -4,12 +4,8 @@ import "encoding/binary"
 
 type vm struct {
 	// config, doesn't change after init
-	traceUnlock func(Contract)
-	traceLock   func(Contract)
-	traceOp     func(stack, byte, []byte, []byte)
-	traceError  func(error)
-	tmin        int64
-	tmax        int64
+	traceOp    func(stack, byte, []byte)
+	traceError func(error)
 
 	pc   int    // program counter
 	prog []byte // current program
@@ -26,10 +22,7 @@ type vm struct {
 // such as determining why an invalid Tx is invalid,
 // use Option funcs to trace execution.
 func Validate(tx []byte, o ...Option) bool {
-	vm := &vm{
-		traceUnlock: func(Contract) {},
-		traceLock:   func(Contract) {},
-	}
+	vm := &vm{}
 	for _, o := range o {
 		o(vm)
 	}
@@ -69,7 +62,7 @@ func exec(vm *vm, prog []byte) {
 
 func step(vm *vm) {
 	opcode, data, n := decodeInst(vm.prog[vm.pc:])
-	vm.traceOp(vm.data, opcode, data, vm.prog[vm.pc:])
+	vm.traceOp(vm.data, opcode, data)
 	vm.pc += n
 	if opcode == BaseData {
 		vm.data.PushBytes(data)
