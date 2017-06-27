@@ -6,16 +6,18 @@ import "golang.org/x/crypto/sha3"
 // For example, ROLL reads a stack code
 // to select which stack to modify.
 const (
-	StackData       = 0
-	StackAlt        = 1
-	StackInput      = 2
-	StackValue      = 3
-	StackOutput     = 4
-	StackCond       = 5
-	StackNonce      = 6
-	StackAnchor     = 7
-	StackRetirement = 8
-	StackTxHeader   = 9
+	StackData           = 0
+	StackAlt            = 1
+	StackInput          = 2
+	StackValue          = 3
+	StackOutput         = 4
+	StackCond           = 5
+	StackNonce          = 6
+	StackAnchor         = 7
+	StackRetirement     = 8
+	StackTimeConstraint = 9
+	StackAnnotation     = 10
+	StackSummary        = 11
 )
 
 type stack struct {

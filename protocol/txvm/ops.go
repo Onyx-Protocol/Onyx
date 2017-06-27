@@ -567,7 +567,7 @@ func opIssue(vm *vm) {
 }
 
 func opSummarize(vm *vm) {
-	if vm.txheader.Len() > 0 {
+	if vm.summary.Len() > 0 {
 		panic(errors.New("txheader already created"))
 	}
 	var (
@@ -599,7 +599,7 @@ func opSummarize(vm *vm) {
 	}
 
 	historyArgs = append(historyArgs, Int64(minTime), Int64(maxTime))
-	vm.txheader.Push(Tuple{
+	vm.summary.Push(Tuple{
 		Bytes(TxHeaderTuple),
 		historyID(Summarize, 0, historyArgs...),
 		inputs,

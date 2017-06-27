@@ -20,14 +20,16 @@ type vm struct {
 	data stack
 	alt  stack
 
-	inputs      tupleStack
-	values      tupleStack
-	outputs     tupleStack
-	conditions  tupleStack
-	nonces      tupleStack
-	anchors     tupleStack
-	retirements tupleStack
-	txheader    tupleStack
+	inputs          tupleStack
+	values          tupleStack
+	outputs         tupleStack
+	conditions      tupleStack
+	nonces          tupleStack
+	anchors         tupleStack
+	retirements     tupleStack
+	timeconstraints tupleStack
+	annotations     tupleStack
+	summary         tupleStack
 }
 
 // Validate returns whether x is valid.
@@ -56,12 +58,15 @@ func Validate(tx []byte, o ...Option) bool {
 	// TODO(kr): call some tracing hook here
 	// to signal end of execution.
 
-	if vm.txheader.Len() != 1 {
-		panic(errors.New("missing tx header"))
-	}
-
-	return vm.conditions.Len() == 0 &&
-		vm.values.Len() == 0
+	return vm.summary.Len() == 1 &&
+		vm.inputs.Len() == 0 &&
+		vm.values.Len() == 0 &&
+		vm.outputs.Len() == 0 &&
+		vm.conditions.Len() == 0 &&
+		vm.nonces.Len() == 0 &&
+		vm.retirements.Len() == 0 &&
+		vm.timeconstraints.Len() == 0 &&
+		vm.annotations.Len() == 0
 }
 
 func exec(vm *vm, prog []byte) {
@@ -124,8 +129,12 @@ func getStack(vm *vm, t int64) *tupleStack {
 		return &vm.anchors
 	case StackRetirement:
 		return &vm.retirements
-	case StackTxHeader:
-		return &vm.txheader
+	case StackTimeConstraint:
+		return &vm.timeconstraints
+	case StackAnnotation:
+		return &vm.annotations
+	case StackSummary:
+		return &vm.summary
 	default:
 		panic(errors.New("bad stack identifier"))
 	}
