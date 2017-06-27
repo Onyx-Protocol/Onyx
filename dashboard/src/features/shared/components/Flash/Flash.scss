@@ -3,8 +3,14 @@
 }
 
 .alert {
-  padding: 15px;
+  padding: $gutter-size/2 $gutter-size+2px;
   border-bottom: 1px solid transparent;
+
+  :global {
+    .close {
+      padding-right: 10px;
+    }
+  }
 }
 
 .info {
