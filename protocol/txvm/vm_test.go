@@ -18,9 +18,9 @@ func opTracer(t testing.TB) func(stack, byte, []byte, []byte) {
 
 func TestIssue(t *testing.T) {
 	tx, err := Assemble(`
-		{"6e6f6e6365"x, [1], 0, 10000} anchor
-		100 {"6173736574646566696e6974696f6e"x, {}, [1]} issue
-		[1] 1 lock
+		{"6e6f6e6365"x, [1 verify], 0, 10000} anchor
+		100 {"6173736574646566696e6974696f6e"x, {}, [1 verify]} issue
+		[1 verify] 1 lock
 		summarize
 	`)
 	if err != nil {
