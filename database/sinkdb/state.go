@@ -92,6 +92,13 @@ func (s *state) RestoreSnapshot(data []byte, index uint64) error {
 	s.peers = snapshot.Peers
 	s.state = snapshot.State
 	s.version = snapshot.Version
+
+	if s.version == nil {
+		s.version = make(map[string]uint64)
+	}
+	if s.peers == nil {
+		s.peers = make(map[uint64]string)
+	}
 	return errors.Wrap(err)
 }
 
@@ -105,6 +112,7 @@ func (s *state) Snapshot() ([]byte, uint64, error) {
 		State:   s.state,
 		Peers:   s.peers,
 	})
+
 	return data, s.appliedIndex, errors.Wrap(err)
 }
 
