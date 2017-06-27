@@ -126,6 +126,7 @@ type State interface {
 	IsAllowedMember(addr string) bool
 	NextNodeID() (id, version uint64)
 	EmptyWrite() (instruction []byte)
+	WriteFile(name string, data []byte, perm os.FileMode) error
 	IncrementNextNodeID(oldID uint64, index uint64) (instruction []byte)
 }
 
@@ -276,7 +277,7 @@ func (sv *Service) Init() error {
 	}
 
 	log.Printkv(ctx, "raftid", firstNodeID)
-	err := writeID(sv.dir, firstNodeID)
+	err := sv.writeID(sv.dir, firstNodeID)
 	if err != nil {
 		return err
 	}
@@ -671,7 +672,7 @@ func (sv *Service) join(addr, baseURL string) error {
 	}
 
 	log.Printkv(ctx, "raftid", sv.id)
-	err = writeID(sv.dir, sv.id)
+	err = sv.writeID(sv.dir, sv.id)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -899,7 +900,7 @@ func (sv *Service) saveSnapshot(snapshot *raftpb.Snapshot) error {
 	}
 
 	// Then atomically replace the on-disk snapshot.
-	return writeFile(sv.snapFile(), d, 0666)
+	return sv.state.WriteFile(sv.snapFile(), d, 0666)
 }
 
 func readID(dir string) (uint64, error) {
@@ -920,12 +921,12 @@ func readID(dir string) (uint64, error) {
 	return id, nil
 }
 
-func writeID(dir string, id uint64) error {
+func (sv *Service) writeID(dir string, id uint64) error {
 	b := make([]byte, 12)
 	binary.BigEndian.PutUint64(b, id)
 	binary.BigEndian.PutUint32(b[8:], crc32.Checksum(b[:8], crcTable))
 	name := filepath.Join(dir, "id")
-	return errors.Wrap(writeFile(name, b, 0666))
+	return errors.Wrap(sv.state.WriteFile(name, b, 0666))
 }
 
 func (sv *Service) walDir() string   { return filepath.Join(sv.dir, "wal") }

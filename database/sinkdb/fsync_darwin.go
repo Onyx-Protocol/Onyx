@@ -6,7 +6,7 @@
 // For more, see the Apple man page for fsync:
 // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man2/fsync.2.html
 
-package raft
+package sinkdb
 
 import (
 	"os"

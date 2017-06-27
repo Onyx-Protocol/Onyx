@@ -3,6 +3,8 @@ package raft
 import (
 	"bytes"
 	"encoding/gob"
+	"os"
+	"io/ioutil"
 )
 
 func newTestState() *state {
@@ -52,6 +54,10 @@ func (s *state) IsAllowedMember(addr string) bool {
 
 func (s *state) EmptyWrite() []byte {
 	return encodeInstruction(instruction{})
+}
+
+func (s *state) WriteFile(name string, data []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(name, data, perm)
 }
 
 func (s *state) NextNodeID() (id, version uint64) {

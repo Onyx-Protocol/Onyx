@@ -27,8 +27,9 @@ func TestWriteID(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	sv := Service{state: newTestState()}
 	for _, test := range idCases {
-		err = writeID(dir, test.id)
+		err = sv.writeID(dir, test.id)
 		if err != nil {
 			t.Error(err)
 			continue
