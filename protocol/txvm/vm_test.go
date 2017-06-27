@@ -61,6 +61,7 @@ func TestEntries(t *testing.T) {
 	tx, err := Assemble(`
 		{"6e6f6e6365"x, [1 verify], 0, 10000} anchor
 		100 {"6173736574646566696e6974696f6e"x, {}, [1 verify]} issue
+		"abba"x 3 id 2 maketuple encode annotate
 		45 split merge
 		retire
 		10000 0 summarize

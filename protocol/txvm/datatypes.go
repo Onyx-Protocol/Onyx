@@ -11,7 +11,10 @@ const (
 	RetirementTuple      = "retirement"
 	AnchorTuple          = "anchor"
 	AssetDefinitionTuple = "assetdefinition"
-	TxHeaderTuple        = "txheader"
+	MaxTimeTuple         = "maxtime"
+	MinTimeTuple         = "mintime"
+	AnnotationTuple      = "annotation"
+	SummaryTuple         = "summary"
 )
 
 var tupleContents = map[string][]int{
@@ -21,7 +24,10 @@ var tupleContents = map[string][]int{
 	RetirementTuple:      []int{TypeString, TypeString},
 	AnchorTuple:          []int{TypeString, TypeString},
 	AssetDefinitionTuple: []int{TypeString, TypeTuple, TypeString},
-	TxHeaderTuple:        []int{TypeString, TypeString, TypeTuple, TypeTuple, TypeInt64, TypeInt64},
+	MaxTimeTuple:         []int{TypeString, TypeInt64},
+	MinTimeTuple:         []int{TypeString, TypeInt64},
+	AnnotationTuple:      []int{TypeString, TypeString},
+	SummaryTuple:         []int{TypeString, TypeString},
 }
 
 type Value interface {

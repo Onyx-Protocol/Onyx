@@ -69,6 +69,7 @@ var ops = [NumOp]func(*vm){
 	CheckSig:      opCheckSig,
 	CheckMultiSig: opCheckMultiSig,
 
+	Annotate:     opAnnotate,
 	Defer:        opDefer,
 	Satisfy:      opSatisfy,
 	Unlock:       opUnlock,
@@ -415,6 +416,10 @@ func opCheckMultiSig(vm *vm) {
 	vm.data.Push(Bool(len(sig) == 0))
 }
 
+func opAnnotate(vm *vm) {
+	vm.annotations.Push(Tuple{Bytes(AnnotationTuple), Bytes(vm.data.PopBytes())})
+}
+
 func opDefer(vm *vm) {
 	vm.conditions.Push(Tuple{Bytes(vm.data.PopBytes())})
 }
@@ -570,43 +575,29 @@ func opSummarize(vm *vm) {
 	if vm.summary.Len() > 0 {
 		panic(errors.New("txheader already created"))
 	}
-	var (
-		inputs      Tuple
-		outputs     Tuple
-		nonces      Tuple
-		historyArgs []Value
-	)
+	var historyArgs []Value
 	for vm.inputs.Len() > 0 {
-		inputs = append(inputs, Bytes(vm.inputs.ID()))
 		historyArgs = append(historyArgs, vm.inputs.Pop())
 	}
 	for vm.outputs.Len() > 0 {
-		outputs = append(outputs, Bytes(vm.outputs.ID()))
 		historyArgs = append(historyArgs, vm.outputs.Pop())
 	}
 	for vm.nonces.Len() > 0 {
-		nonces = append(nonces, Bytes(vm.nonces.ID()))
 		historyArgs = append(historyArgs, vm.nonces.Pop())
 	}
 	for vm.retirements.Len() > 0 {
 		historyArgs = append(historyArgs, vm.retirements.Pop())
 	}
-	minTime := vm.data.PopInt64()
-	maxTime := vm.data.PopInt64()
-
-	if minTime < 0 || maxTime < minTime {
-		panic(errors.New("invalid time range"))
+	for vm.timeconstraints.Len() > 0 {
+		historyArgs = append(historyArgs, vm.timeconstraints.Pop())
+	}
+	for vm.annotations.Len() > 0 {
+		historyArgs = append(historyArgs, vm.annotations.Pop())
 	}
 
-	historyArgs = append(historyArgs, Int64(minTime), Int64(maxTime))
 	vm.summary.Push(Tuple{
-		Bytes(TxHeaderTuple),
+		Bytes(SummaryTuple),
 		historyID(Summarize, 0, historyArgs...),
-		inputs,
-		outputs,
-		nonces,
-		Int64(minTime),
-		Int64(maxTime),
 	})
 }
 
