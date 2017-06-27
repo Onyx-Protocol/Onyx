@@ -131,9 +131,11 @@ export const create = () => {
       if (result.error) {
         throw result.error
       }
+      let futureDate = new Date()
+      futureDate.setDate(futureDate.getDate() + 1000)
       const receiver: Receiver = {
         controlProgram: result.programMap[name],
-        expiresAt: "2017-06-25T00:00:00.000Z" // TODO
+        expiresAt: futureDate.toISOString()
       }
       const controlWithReceiver: ControlWithReceiver = {
         type: "controlWithReceiver",
