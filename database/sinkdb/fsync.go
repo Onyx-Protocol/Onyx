@@ -1,6 +1,6 @@
 // +build !darwin
 
-package raft
+package sinkdb
 
 import "os"
 
