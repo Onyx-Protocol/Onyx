@@ -570,6 +570,10 @@ func opIssue(vm *vm) {
 		Int64(amount),
 		Bytes(assetID),
 	})
+	vm.tupleStacks[StackAnchor].Push(Tuple{
+		Bytes(AnchorTuple),
+		historyID(Issue, 1, assetDef, Int64(amount), anchor),
+	})
 	exec(vm, assetDef[2].(Bytes))
 }
 
