@@ -298,8 +298,6 @@ func scanFunc(s string, f func(rune) bool) (n int) {
 func pushInt64(n int64) []byte {
 	if 0 <= n && n <= 0xf {
 		return []byte{BaseInt + byte(n)}
-	} else if n <= -0x10 && n != -n {
-		return append(pushData(encVarint(n)), Varint)
 	} else {
 		return append(pushData(encVarint(n)), Varint)
 	}

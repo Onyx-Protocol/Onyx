@@ -298,7 +298,7 @@ func encode(v Value) []byte {
 	case Bytes:
 		return pushData(v)
 	case Int64:
-		return pushInt64(int64(v))
+		return append(pushData(encVarint(int64(v))), Varint)
 	case Tuple:
 		var b []byte
 		for i := len(v) - 1; i >= 0; i-- {
