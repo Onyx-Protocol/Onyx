@@ -1,5 +1,7 @@
 package main
 
+//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -output zsyscall_windows.go syscall_windows.go
+
 import (
 	"errors"
 	"fmt"
@@ -45,6 +47,11 @@ func main() {
 	cclog := log.New(os.Stdout, "app=core-manager ", log.Ldate|log.Ltime)
 
 	err := os.MkdirAll(home, 0666) // #nosec
+	if err != nil {
+		cclog.Fatalln("error:", err)
+	}
+
+	err = dropAdminPrivs()
 	if err != nil {
 		cclog.Fatalln("error:", err)
 	}
@@ -98,7 +105,6 @@ func main() {
 	if err != nil {
 		pglog.Println("could not start Postgres: " + err.Error())
 		cclog.Fatal("Postgres could not be started. Please check postgres.log for more info.")
-
 	}
 
 	pgStatus := make(chan error, 1)
