@@ -21,7 +21,7 @@ func TestIssue(t *testing.T) {
 		{"6e6f6e6365"x, [1], 0, 10000} anchor
 		100 {"6173736574646566696e6974696f6e"x, {}, [1]} issue
 		[1] 1 lock
-		10000 0 summarize
+		summarize
 	`)
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +46,7 @@ func TestSpend(t *testing.T) {
 			[1 verify],
 		} unlock
 		retire
-		10000 0 summarize
+		summarize
 	`)
 	if err != nil {
 		t.Fatal(err)
@@ -64,7 +64,9 @@ func TestEntries(t *testing.T) {
 		"abba"x 3 id 2 maketuple encode annotate
 		45 split merge
 		retire
-		10000 0 summarize
+		0 after
+		10000 before
+		summarize
 	`)
 	if err != nil {
 		t.Fatal(err)
