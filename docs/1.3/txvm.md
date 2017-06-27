@@ -30,6 +30,38 @@ An immutable collection of items of any type.
 
 There are several named types of tuples.
 
+#### Value Commitment
+
+0. `type`, a string, "valuecommitment"
+1. `amountcommitment`, a [point](#point)
+2. `blindingcommitment`, a [point](#point)
+
+#### Asset Commitment
+
+0. `type`, a string, "assetcommitment"
+1. `assetcommitment`, a [point](#point)
+2. `blindingcommitment`, a [point](#point)
+
+#### Raw Value
+
+0. `type`, a string, "rawvalue"
+1. `history`, a string
+2. `valuecommitment`, a [value commitment](#value-commitment)
+
+#### Unproven Value
+
+0. `type`, a string, "unprovenvalue"
+1. `history`, a string
+2. `valuecommitment`, a [value commitment](#value-commitment)
+3. `assetcommitment`, an [asset commitment](#asset-commitment)
+
+#### Proven Value
+
+0. `type`, a string, "provenvalue"
+1. `history`, a string
+2. `valuecommitment`, a [value commitment](#value-commitment)
+3. `assetcommitment`, an [asset commitment](#asset-commitment)
+
 #### Value
 
 0. `type`, a string, "value"
@@ -122,7 +154,8 @@ The `history` field is the SHA3 hash of `"txvm" || encode(historytuple)`, where 
 8. Retirement stack
 9. Time Constraint stack
 10. Annotation stack
-11. Transaction summary stack
+11. Asset commitment stack
+12. Transaction summary stack
 
 ## Data stack
 
@@ -174,7 +207,7 @@ Items on the Transaction ID stack are 32-byte strings.
 
 TODO: Describe rules for encoding and decoding unsigned varints.
 
-## Ed25519 Curve Points
+## Point
 
 TODO: Describe rules for Ed25519 curve point encoding (including checks that should be done when decoding.)
 
@@ -425,7 +458,7 @@ Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#reti
 
 ### Anchor
 
-Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the Anchor stack. Execute `nonce.program`.
+Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the Anchor stack. Push a [Maxtime](#maxtime) to the [Time Constraints stack] with `maxtime` equal to `nonce.maxtime`. Push a [Mintime](#mintime) to the [Time Constraints stack] with `mintime` equal to `nonce.mintime`. Execute `nonce.program`.
 
 ### Issue
 
