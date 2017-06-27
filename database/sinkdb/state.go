@@ -2,9 +2,9 @@ package sinkdb
 
 import (
 	"bytes"
-	"sync"
-	"os"
 	"io"
+	"os"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 

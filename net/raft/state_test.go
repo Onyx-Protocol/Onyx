@@ -3,8 +3,8 @@ package raft
 import (
 	"bytes"
 	"encoding/gob"
-	"os"
 	"io/ioutil"
+	"os"
 )
 
 func newTestState() *state {
