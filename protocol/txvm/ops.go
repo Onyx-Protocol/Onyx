@@ -437,17 +437,24 @@ func opUnlock(vm *vm) {
 		panic(errors.New("expected output tuple"))
 	}
 	vm.tupleStacks[StackInput].Push(input)
-	vals := input[2].(Tuple)
-	for _, v := range vals {
-		value := v.(Tuple)
-		if !checkTuple(value, ValueTuple) {
-			panic(errors.New("expected value tuple"))
+	assetAmounts := input[2].(Tuple)
+	n := 0
+	for _, aa := range assetAmounts {
+		assetAmount := aa.(Tuple)
+		if !checkTuple(assetAmount, AssetAmountTuple) {
+			panic(errors.New("expected asset amount tuple"))
 		}
-		vm.tupleStacks[StackValue].Push(value)
+		vm.tupleStacks[StackValue].Push(Tuple{
+			Bytes(ValueTuple),
+			historyID(Unlock, n, input),
+			assetAmount[0],
+			assetAmount[1],
+		})
+		n++
 	}
 	vm.tupleStacks[StackAnchor].Push(Tuple{
 		Bytes(AnchorTuple),
-		historyID(Unlock, 0, input),
+		historyID(Unlock, n, input),
 	})
 	exec(vm, input[3].(Bytes))
 }
@@ -457,13 +464,18 @@ func opUnlockOutput(vm *vm) {
 	if !checkTuple(output, OutputTuple) {
 		panic(errors.New("expected output tuple"))
 	}
-	vals := output[2].(Tuple)
-	for _, v := range vals {
-		value := v.(Tuple)
-		if !checkTuple(value, ValueTuple) {
-			panic(errors.New("expected value tuple"))
+	assetAmounts := output[2].(Tuple)
+	for i, aa := range assetAmounts {
+		assetAmount := aa.(Tuple)
+		if !checkTuple(assetAmount, AssetAmountTuple) {
+			panic(errors.New("expected assetAmount tuple"))
 		}
-		vm.tupleStacks[StackValue].Push(value)
+		vm.tupleStacks[StackValue].Push(Tuple{
+			Bytes(ValueTuple),
+			historyID(UnlockOutput, i, output),
+			assetAmount[0],
+			assetAmount[1],
+		})
 	}
 	exec(vm, output[3].(Bytes))
 }
@@ -519,18 +531,26 @@ func opSplit(vm *vm) {
 
 func opLock(vm *vm) {
 	n := vm.data.PopInt64()
-	var values Tuple
+	var (
+		values       Tuple
+		assetAmounts Tuple
+	)
 	for i := int64(0); i < n; i++ {
-		values = append(values, vm.tupleStacks[StackValue].Pop())
+		value := vm.tupleStacks[StackValue].Pop()
+		values = append(values, value)
+		assetAmounts = append(assetAmounts, Tuple{
+			value[2],
+			value[3],
+		})
 	}
-	prog := vm.data.PopBytes()
 
+	prog := vm.data.PopBytes()
 	historyArgs := append(append([]Value{Int64(n)}, values...), Bytes(prog))
 
 	vm.tupleStacks[StackOutput].Push(Tuple{
 		Bytes(OutputTuple),
 		historyID(Lock, 0, historyArgs...),
-		values,
+		assetAmounts,
 		Bytes(prog),
 	})
 }

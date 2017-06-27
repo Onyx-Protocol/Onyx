@@ -15,6 +15,7 @@ const (
 	MinTimeTuple         = "mintime"
 	AnnotationTuple      = "annotation"
 	SummaryTuple         = "summary"
+	AssetAmountTuple     = "assetamount"
 )
 
 var tupleContents = map[string][]int{
@@ -28,6 +29,7 @@ var tupleContents = map[string][]int{
 	MinTimeTuple:         []int{TypeString, TypeInt64},
 	AnnotationTuple:      []int{TypeString, TypeString},
 	SummaryTuple:         []int{TypeString, TypeString},
+	AssetAmountTuple:     []int{TypeInt64, TypeString},
 }
 
 type Value interface {

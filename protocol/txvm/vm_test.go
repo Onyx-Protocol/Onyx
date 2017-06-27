@@ -38,8 +38,6 @@ func TestSpend(t *testing.T) {
 			'output',
 			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
 			{{
-				'value',
-				"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
 				100,
 				"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100"x,
 			}},
