@@ -126,7 +126,7 @@ type State interface {
 	IsAllowedMember(addr string) bool
 	NextNodeID() (id, version uint64)
 	EmptyWrite() (instruction []byte)
-	WriteFile(name string, data []byte, perm os.FileMode) error
+	Write(name string, data []byte) error
 	IncrementNextNodeID(oldID uint64, index uint64) (instruction []byte)
 }
 
@@ -900,7 +900,7 @@ func (sv *Service) saveSnapshot(snapshot *raftpb.Snapshot) error {
 	}
 
 	// Then atomically replace the on-disk snapshot.
-	return sv.state.WriteFile(sv.snapFile(), d, 0666)
+	return sv.state.Write(sv.snapFile(), d)
 }
 
 func readID(dir string) (uint64, error) {
@@ -926,7 +926,7 @@ func (sv *Service) writeID(dir string, id uint64) error {
 	binary.BigEndian.PutUint64(b, id)
 	binary.BigEndian.PutUint32(b[8:], crc32.Checksum(b[:8], crcTable))
 	name := filepath.Join(dir, "id")
-	return errors.Wrap(sv.state.WriteFile(name, b, 0666))
+	return errors.Wrap(sv.state.Write(name, b))
 }
 
 func (sv *Service) walDir() string   { return filepath.Join(sv.dir, "wal") }

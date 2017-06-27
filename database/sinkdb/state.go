@@ -25,6 +25,8 @@ type state struct {
 	peers        map[uint64]string // id -> addr
 	appliedIndex uint64
 	version      map[string]uint64 //key -> value index
+
+	db *gorocksdb.DB // TODO(tessr): use an interface here, so we could use a different store
 }
 
 // newState returns a new State.
@@ -233,6 +235,8 @@ func (s *state) EmptyWrite() (instruction []byte) {
 		}}})
 	return instruction
 }
+
+
 
 // WriteFile is like ioutil.WriteFile, but it writes safely and atomically.
 // (It writes data to a temp file (name+".temp"), syncs data to disk,
