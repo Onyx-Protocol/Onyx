@@ -18,8 +18,8 @@ func opTracer(t testing.TB) func(stack, byte, []byte, []byte) {
 
 func TestIssue(t *testing.T) {
 	tx, err := Assemble(`
-		{"6e6f6e6365"x, [1 verify], 0, 10000} anchor
-		100 {"6173736574646566696e6974696f6e"x, {}, [1 verify]} issue
+		{'nonce', [1 verify], 0, 10000} anchor
+		100 {'assetdefinition', {}, [1 verify]} issue
 		[1 verify] 1 lock
 		summarize
 	`)
@@ -35,10 +35,10 @@ func TestIssue(t *testing.T) {
 func TestSpend(t *testing.T) {
 	tx, err := Assemble(`
 		{
-			"6f7574707574"x,
+			'output',
 			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
 			{{
-				"76616c7565"x,
+				'value',
 				"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
 				100,
 				"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100"x,
@@ -59,8 +59,8 @@ func TestSpend(t *testing.T) {
 
 func TestEntries(t *testing.T) {
 	tx, err := Assemble(`
-		{"6e6f6e6365"x, [1 verify], 0, 10000} anchor
-		100 {"6173736574646566696e6974696f6e"x, {}, [1 verify]} issue
+		{'nonce', [1 verify], 0, 10000} anchor
+		100 {'assetdefinition', {}, [1 verify]} issue
 		"abba"x 3 id 2 maketuple encode annotate
 		45 split merge
 		retire

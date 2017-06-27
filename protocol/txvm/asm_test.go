@@ -26,6 +26,7 @@ var asmValid = []struct {
 	// assemble only:
 	{`{5, {6, 7}, 8}`, []byte{BaseInt + 8, BaseInt + 7, BaseInt + 6, BaseInt + 2, MakeTuple, BaseInt + 5, BaseInt + 3, MakeTuple}},
 	{`{5, {6, 7}, [{2}]}`, []byte{BaseData + 3, BaseInt + 2, BaseInt + 1, MakeTuple, BaseInt + 7, BaseInt + 6, BaseInt + 2, MakeTuple, BaseInt + 5, BaseInt + 3, MakeTuple}},
+	{`'test'`, []byte{BaseData + 4, 0x74, 0x65, 0x73, 0x74}},
 }
 
 func TestAssemble(t *testing.T) {
@@ -42,7 +43,7 @@ func TestAssemble(t *testing.T) {
 }
 
 func TestDisassemble(t *testing.T) {
-	for _, test := range asmValid[:len(asmValid)-2] {
+	for _, test := range asmValid[:len(asmValid)-3] {
 		src := Disassemble(test.prog)
 		if src != test.src {
 			t.Errorf("Disassemble(%x) = %#q want %#q", test.prog, src, test.src)

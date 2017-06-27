@@ -16,6 +16,7 @@ const (
 	mnemonicTok
 	numberTok
 	hexTok
+	stringTok
 	progOpenTok
 	progCloseTok
 	tupleOpenTok
@@ -75,7 +76,7 @@ func parseStatement(tokens []token) ([]byte, int, error) {
 		} else {
 			return nil, 0, errors.New("bad mnemonic " + token.lit)
 		}
-	case numberTok, hexTok, progOpenTok, tupleOpenTok:
+	case numberTok, hexTok, stringTok, progOpenTok, tupleOpenTok:
 		return parseValue(tokens)
 	default:
 		return nil, 0, fmt.Errorf("unexpected token: %s", token.lit)
@@ -96,6 +97,12 @@ func parseValue(tokens []token) ([]byte, int, error) {
 			return nil, 0, errors.New("bad hex string " + token.lit)
 		}
 		return pushData(b), 1, nil
+	case stringTok:
+		s := token.lit[1 : len(token.lit)-1]
+		if token.lit[len(token.lit)-1] != '\'' {
+			return nil, 0, errors.New("bad text string " + token.lit)
+		}
+		return pushData([]byte(s)), 1, nil
 	case progOpenTok:
 		val, n, err := parseProgram(tokens[1:])
 		if err != nil {
@@ -155,7 +162,7 @@ func parseTuple(tokens []token) ([]byte, int, error) {
 			}
 			requiresSep = false
 			r++
-		case numberTok, hexTok, progOpenTok, tupleOpenTok:
+		case numberTok, hexTok, stringTok, progOpenTok, tupleOpenTok:
 			if requiresSep {
 				return nil, 0, errors.New("parsing tuple missing ,")
 			}
@@ -193,6 +200,9 @@ func scan(src string) (typ int, lit string, n int) {
 	switch c := src[n]; {
 	case c == '"':
 		typ = hexTok
+		r = scanHex(src[n:])
+	case c == '\'':
+		typ = stringTok
 		r = scanString(src[n:])
 	case c == '[':
 		typ = progOpenTok
@@ -234,6 +244,17 @@ func skipWS(s string) (i int) {
 }
 
 func scanString(s string) int {
+	n := 1
+	for n < len(s) {
+		if s[n] == '\'' {
+			return n + 1
+		}
+		n++
+	}
+	return n
+}
+
+func scanHex(s string) int {
 	n := 1 + scanFunc(s[1:], isHex) + 2
 	if len(s) < n {
 		return len(s)
