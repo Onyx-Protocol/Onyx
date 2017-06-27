@@ -313,7 +313,7 @@ func opVarint(vm *vm) {
 	buf := vm.data.PopBytes()
 	x, n := binary.Uvarint(buf)
 	if n <= 0 {
-		panic("bad varint")
+		panic(errors.New("bad varint"))
 	}
 	vm.data.PushInt64(int64(x))
 }
@@ -430,7 +430,7 @@ func opUnlock(vm *vm) {
 		panic(errors.New("expected output tuple"))
 	}
 	vm.inputs.Push(input)
-	vals := input[3].(Tuple)
+	vals := input[2].(Tuple)
 	for _, v := range vals {
 		value := v.(Tuple)
 		if !checkTuple(value, ValueTuple) {
@@ -440,10 +440,9 @@ func opUnlock(vm *vm) {
 	}
 	vm.anchors.Push(Tuple{
 		Bytes(AnchorTuple),
-		Tuple{},
 		history(Unlock, 0, input),
 	})
-	exec(vm, input[4].(Bytes))
+	exec(vm, input[3].(Bytes))
 }
 
 func opUnlockOutput(vm *vm) {
@@ -451,7 +450,7 @@ func opUnlockOutput(vm *vm) {
 	if !checkTuple(output, OutputTuple) {
 		panic(errors.New("expected output tuple"))
 	}
-	vals := output[3].(Tuple)
+	vals := output[2].(Tuple)
 	for _, v := range vals {
 		value := v.(Tuple)
 		if !checkTuple(value, ValueTuple) {
@@ -459,28 +458,27 @@ func opUnlockOutput(vm *vm) {
 		}
 		vm.values.Push(value)
 	}
-	exec(vm, output[4].(Bytes))
+	exec(vm, output[3].(Bytes))
 }
 
 func opMerge(vm *vm) {
 	val1 := vm.values.Pop()
 	val2 := vm.values.Pop()
 
-	if !idsEqual(val1[4].(Bytes), val2[4].(Bytes)) {
+	if !idsEqual(val1[3].(Bytes), val2[3].(Bytes)) {
 		panic(errors.New("merging different assets"))
 	}
 
-	assetid := val1[4].(Bytes)
-	sum := int64(val1[3].(Int64))
+	assetid := val1[3].(Bytes)
+	sum := int64(val1[2].(Int64))
 	var ok bool
-	sum, ok = checked.AddInt64(sum, int64(val2[3].(Int64)))
+	sum, ok = checked.AddInt64(sum, int64(val2[2].(Int64)))
 	if !ok {
 		panic(errors.New("range"))
 	}
 
 	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		Tuple{},
 		history(Merge, 0, val1, val2),
 		Int64(sum),
 		assetid,
@@ -491,7 +489,7 @@ func opSplit(vm *vm) {
 	val := vm.values.Pop()
 	amt := vm.data.PopInt64()
 
-	originalAmt := int64(val[3].(Int64))
+	originalAmt := int64(val[2].(Int64))
 
 	if amt >= originalAmt {
 		panic(errors.New("split value must be less"))
@@ -499,23 +497,20 @@ func opSplit(vm *vm) {
 
 	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		Tuple{},
 		history(Split, 0, val, Int64(amt)),
 		Int64(amt),
-		val[4],
+		val[3],
 	})
 
 	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		Tuple{},
 		history(Split, 1, val, Int64(amt)),
 		Int64(originalAmt - amt),
-		val[4],
+		val[3],
 	})
 }
 
 func opLock(vm *vm) {
-	refData := vm.data.PopBytes()
 	n := vm.data.PopInt64()
 	var values Tuple
 	for i := int64(0); i < n; i++ {
@@ -523,11 +518,10 @@ func opLock(vm *vm) {
 	}
 	prog := vm.data.PopBytes()
 
-	historyArgs := append(append([]Value{Bytes(refData), Int64(n)}, values...), Bytes(prog))
+	historyArgs := append(append([]Value{Int64(n)}, values...), Bytes(prog))
 
 	vm.outputs.Push(Tuple{
 		Bytes(OutputTuple),
-		Tuple{Bytes(refData)},
 		history(Lock, 0, historyArgs...),
 		values,
 		Bytes(prog),
@@ -538,7 +532,6 @@ func opRetire(vm *vm) {
 	val := vm.values.Pop()
 	vm.retirements.Push(Tuple{
 		Bytes(RetirementTuple),
-		Tuple{},
 		history(Retire, 0, val),
 	})
 }
@@ -546,28 +539,26 @@ func opRetire(vm *vm) {
 func opAnchor(vm *vm) {
 	tuple := vm.data.PopTuple()
 	if !checkTuple(tuple, NonceTuple) {
-		panic("expected nonce tuple")
+		panic(errors.New("expected nonce tuple"))
 	}
 	vm.nonces.Push(tuple)
 	vm.anchors.Push(Tuple{
 		Bytes(AnchorTuple),
-		Tuple{},
 		history(Anchor, 0, tuple),
 	})
-	exec(vm, tuple[2].(Bytes))
+	exec(vm, tuple[1].(Bytes))
 }
 
 func opIssue(vm *vm) {
 	assetDef := vm.data.PopTuple()
 	if !checkTuple(assetDef, AssetDefinitionTuple) {
-		panic("expected asset definition tuple")
+		panic(errors.New("expected asset definition tuple"))
 	}
 	amount := vm.data.PopInt64()
 	anchor := vm.anchors.Pop()
 	assetID := calcID(assetDef)
 	vm.values.Push(Tuple{
 		Bytes(ValueTuple),
-		Tuple{},
 		history(Issue, 0, assetDef, Int64(amount), anchor),
 		Int64(amount),
 		Bytes(assetID),
@@ -600,7 +591,6 @@ func opSummarize(vm *vm) {
 	for vm.retirements.Len() > 0 {
 		historyArgs = append(historyArgs, vm.retirements.Pop())
 	}
-	refData := vm.data.PopBytes()
 	minTime := vm.data.PopInt64()
 	maxTime := vm.data.PopInt64()
 
@@ -608,10 +598,9 @@ func opSummarize(vm *vm) {
 		panic(errors.New("invalid time range"))
 	}
 
-	historyArgs = append(historyArgs, Bytes(refData), Int64(minTime), Int64(maxTime))
+	historyArgs = append(historyArgs, Int64(minTime), Int64(maxTime))
 	vm.txheader.Push(Tuple{
 		Bytes(TxHeaderTuple),
-		Tuple{Bytes(refData)},
 		history(Summarize, 0, historyArgs...),
 		inputs,
 		outputs,
