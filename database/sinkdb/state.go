@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/tecbot/gorocksdb"
 
 	"chain/database/sinkdb/internal/sinkpb"
 	"chain/errors"
@@ -235,8 +236,6 @@ func (s *state) EmptyWrite() (instruction []byte) {
 		}}})
 	return instruction
 }
-
-
 
 // WriteFile is like ioutil.WriteFile, but it writes safely and atomically.
 // (It writes data to a temp file (name+".temp"), syncs data to disk,
