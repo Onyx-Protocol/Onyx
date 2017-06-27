@@ -80,6 +80,8 @@ var ops = [NumOp]func(*vm){
 	Retire:       opRetire,
 	Anchor:       opAnchor,
 	Issue:        opIssue,
+	Before:       opBefore,
+	After:        opAfter,
 	Summarize:    opSummarize,
 }
 
@@ -569,6 +571,14 @@ func opIssue(vm *vm) {
 		Bytes(assetID),
 	})
 	exec(vm, assetDef[2].(Bytes))
+}
+
+func opBefore(vm *vm) {
+	vm.timeconstraints.Push(Tuple{Bytes(MaxTimeTuple), Int64(vm.data.PopInt64())})
+}
+
+func opAfter(vm *vm) {
+	vm.timeconstraints.Push(Tuple{Bytes(MinTimeTuple), Int64(vm.data.PopInt64())})
 }
 
 func opSummarize(vm *vm) {

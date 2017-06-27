@@ -83,24 +83,26 @@ const (
 	Anchor       = 53 // nonce + data => anchor + cond
 	Issue        = 54 // anchor + data => value + cond
 	IssueCA      = 55 // TODO(kr): review for CA
-	Summarize    = 56
-	Migrate      = 57
-	ProveRange   = 58 // TODO(kr): review for CA
-	ProveValue   = 59 // TODO(kr): review for CA
-	ProveAsset   = 60 // TODO(kr): review for CA
-	Blind        = 61 // TODO(kr): review for CA
+	Before       = 56
+	After        = 57
+	Summarize    = 58
+	Migrate      = 59
+	ProveRange   = 60 // TODO(kr): review for CA
+	ProveValue   = 61 // TODO(kr): review for CA
+	ProveAsset   = 62 // TODO(kr): review for CA
+	Blind        = 63 // TODO(kr): review for CA
 
 	// extensions
-	Nop0    = 62
-	Nop1    = 63
-	Nop2    = 64
-	Nop3    = 65
-	Nop4    = 66
-	Nop5    = 67
-	Nop6    = 68
-	Nop7    = 69
-	Nop8    = 70
-	Private = 71
+	Nop0    = 64
+	Nop1    = 65
+	Nop2    = 66
+	Nop3    = 67
+	Nop4    = 68
+	Nop5    = 69
+	Nop6    = 70
+	Nop7    = 71
+	Nop8    = 72
+	Private = 73
 
 	NumOp = 80
 
