@@ -1,0 +1,59 @@
+package config
+
+import (
+	"context"
+	"reflect"
+	"testing"
+
+	"chain/database/sinkdb/sinkdbtest"
+)
+
+func identityFunc(tup []string) error    { return nil }
+func reflectEquality(a, b []string) bool { return reflect.DeepEqual(a, b) }
+
+func must(t testing.TB, err error) {
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSetTuples(t *testing.T) {
+	sdb := sinkdbtest.NewDB(t)
+	opts := New(sdb)
+	opts.DefineSet("example", 2, identityFunc, reflectEquality)
+
+	ctx := context.Background()
+	op, err := opts.Add("example", []string{"foo", "bar"})
+	must(t, err)
+	must(t, sdb.Exec(ctx, op))
+
+	op, err = opts.Add("example", []string{"baz", "bax"})
+	must(t, err)
+	must(t, sdb.Exec(ctx, op))
+
+	// duplicate write should be no-op
+	op, err = opts.Add("example", []string{"foo", "bar"})
+	must(t, err)
+	must(t, sdb.Exec(ctx, op))
+
+	got, err := opts.List(ctx, "example")
+	must(t, err)
+	want := [][]string{
+		{"foo", "bar"},
+		{"baz", "bax"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+
+	op, err = opts.Remove("example", []string{"foo", "bar"})
+	must(t, err)
+	must(t, sdb.Exec(ctx, op))
+
+	got, err = opts.List(ctx, "example")
+	must(t, err)
+	want = [][]string{{"baz", "bax"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+}
