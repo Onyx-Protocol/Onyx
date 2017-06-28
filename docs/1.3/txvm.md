@@ -1,3 +1,17 @@
+# Txvm
+
+This is the specification for txvm, which combines a representation for blockchain transactions with the rules for ensuring their validity.
+
+## Motivation
+
+Earlier versions of Chain Core represented transactions with a static data structure, exposing the pieces of information needed to test the transaction’s validity. A separate set of validation rules could be applied to that information to get a true/false result.
+
+Under txvm, these functions are combined in such a way that an executable program string is both the transaction’s representation and the proof of its validity.
+
+When the virtual machine executes a txvm program, it accumulates different types of data on different stacks. This data corresponds to the information exposed in earlier versions of the transaction data structure: inputs, outputs, time constraints, nonces, and so on. Under txvm, that information is _only_ available as a result of executing the program, and the program only completes without error if the transaction is well-formed (i.e., its inputs and outputs balance, prevout control programs are correctly satisfied, etc). No separate validation steps are required.
+
+The pieces of transaction information - the inputs, outputs, etc. - that are produced during txvm execution are also _consumed_ in order to produce the transaction ID, which is the sole output of a successful txvm program. To capture pieces of transaction information for purposes other than validation, txvm implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
+
 # VM Execution
 
 The VM is initialized with all stacks empty.
