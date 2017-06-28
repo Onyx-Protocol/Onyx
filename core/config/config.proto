@@ -25,3 +25,4 @@ message BlockSigner {
 	bytes pubkey = 2;
 	string url = 3;
 }
+
