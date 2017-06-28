@@ -28,8 +28,7 @@ type Options struct {
 }
 
 // CleanFunc is required when defining a new configuration option.
-// Implementations should canonicalize and validate newTuple. In-place
-// modifications are ok.
+// Implementations should validate and canonicalize newTuple in-place.
 type CleanFunc func(newTuple []string) error
 
 // EqualFunc is required when defining a new set configuration option.
