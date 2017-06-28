@@ -112,7 +112,6 @@ func (s *state) Snapshot() ([]byte, uint64, error) {
 		State:   s.state,
 		Peers:   s.peers,
 	})
-
 	return data, s.appliedIndex, errors.Wrap(err)
 }
 
