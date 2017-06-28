@@ -85,7 +85,7 @@ func (opts *Options) Add(key string, tup []string) (sinkdb.Op, error) {
 		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.")
 	}
 
-	// make a copy to avoid mutatating tup
+	// make a copy to avoid mutating tup
 	cleaned := make([]string, len(tup))
 	copy(cleaned, tup)
 	err := opt.cleanFunc(cleaned)
@@ -127,7 +127,7 @@ func (opts *Options) Remove(key string, tup []string) (sinkdb.Op, error) {
 		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.")
 	}
 
-	// make a copy to avoid mutatating tup
+	// make a copy to avoid mutating tup
 	cleaned := make([]string, len(tup))
 	copy(cleaned, tup)
 	err := opt.cleanFunc(cleaned)
