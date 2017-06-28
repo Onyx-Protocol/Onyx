@@ -75,7 +75,9 @@ var migrations = []migration{
 	{Name: `2017-06-28.0.core.coreid.sql`, SQL: `
 		CREATE TABLE core_id (
 			singleton boolean DEFAULT true NOT NULL,
-			id text);
+			id text,
+			CONSTRAINT core_id_singleton CHECK (singleton)
+		);
 		ALTER TABLE ONLY core_id
 			ADD CONSTRAINT core_id_pkey PRIMARY KEY (singleton);
 	`},
