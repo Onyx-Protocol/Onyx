@@ -119,6 +119,9 @@ func (opts *Options) Remove(key string, tup []string) (sinkdb.Op, error) {
 	if !ok {
 		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q undefined", key)
 	}
+	if opt.tupleSize != len(tup) {
+		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize)
+	}
 	if opt.equalFunc == nil {
 		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.")
 	}
