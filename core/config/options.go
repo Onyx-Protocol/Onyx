@@ -157,10 +157,10 @@ func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	)
 }
 
-func tupleIndex(set []*configpb.ValueTuple, search []string, equal func([]string, []string) bool) int {
-	for idx, tup := range set {
+func tupleIndex(set []*configpb.ValueTuple, search []string, equal func(a, b []string) bool) int {
+	for i, tup := range set {
 		if equal(tup.Values, search) {
-			return idx
+			return i
 		}
 	}
 	return -1
