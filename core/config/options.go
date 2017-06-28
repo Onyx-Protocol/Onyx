@@ -27,14 +27,14 @@ type Options struct {
 	schema map[string]option
 }
 
-// CleanFunc is implemented when defining a new configuration option.
+// CleanFunc is required when defining a new configuration option.
 // Implementations should canonicalize and validate newTuple. In-place
 // modifications are ok.
 type CleanFunc func(newTuple []string) error
 
-// EqualFunc is implemented when defining a new set configuration option.
-// Both a and b are guaranteed to be valid, canonicalized tuples. The
-// function will only ever be called on input where len(a) == len(b).
+// EqualFunc is required when defining a new set configuration option.
+// Both a and b are guaranteed to have already been cleaned by the
+// option's CleanFunc. It is also guaranteed that len(a) == len(b).
 type EqualFunc func(a, b []string) bool
 
 type option struct {
