@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 
+	"chain/core/config/internal/configpb"
 	"chain/database/sinkdb"
 	"chain/errors"
 )
@@ -58,7 +59,7 @@ func (opts *Options) List(ctx context.Context, key string) ([][]string, error) {
 	if _, ok := opts.schema[key]; !ok {
 		return nil, errors.WithDetailf(ErrConfigOp, "Configuration option %q is undefined.", key)
 	}
-	var set ValueSet
+	var set configpb.ValueSet
 	_, err := opts.sdb.Get(ctx, filepath.Join(sinkdbPrefix, key), &set)
 	if err != nil {
 		return nil, err
@@ -92,7 +93,7 @@ func (opts *Options) Add(key string, tup []string) sinkdb.Op {
 		return sinkdb.Error(errors.Sub(ErrConfigOp, err))
 	}
 
-	var existing ValueSet
+	var existing configpb.ValueSet
 	ver, err := opts.sdb.GetStale(filepath.Join(sinkdbPrefix, key), &existing)
 	if err != nil {
 		return sinkdb.Error(err)
@@ -104,8 +105,8 @@ func (opts *Options) Add(key string, tup []string) sinkdb.Op {
 	}
 
 	// If the new tuple passed validation, then modify and write.
-	modified := new(ValueSet)
-	modified.Tuples = append(existing.Tuples, &ValueTuple{Values: cleaned})
+	modified := new(configpb.ValueSet)
+	modified.Tuples = append(existing.Tuples, &configpb.ValueTuple{Values: cleaned})
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
 		sinkdb.Set(filepath.Join(sinkdbPrefix, key), modified),
@@ -134,7 +135,7 @@ func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 		return sinkdb.Error(errors.Sub(ErrConfigOp, err))
 	}
 
-	var existing ValueSet
+	var existing configpb.ValueSet
 	ver, err := opts.sdb.GetStale(filepath.Join(sinkdbPrefix, key), &existing)
 	if err != nil {
 		return sinkdb.Error(err)
@@ -147,7 +148,7 @@ func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	}
 
 	// Remove the tuple at the index from the set.
-	modified := new(ValueSet)
+	modified := new(configpb.ValueSet)
 	modified.Tuples = append(modified.Tuples, existing.Tuples[:idx]...)
 	modified.Tuples = append(modified.Tuples, existing.Tuples[idx+1:]...)
 	return sinkdb.All(
@@ -156,7 +157,7 @@ func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	)
 }
 
-func tupleIndex(set []*ValueTuple, search []string, equal func([]string, []string) bool) int {
+func tupleIndex(set []*configpb.ValueTuple, search []string, equal func([]string, []string) bool) int {
 	for idx, tup := range set {
 		if equal(tup.Values, search) {
 			return idx

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package configpb;
+
+message ValueTuple {
+	// values is an ordered list of the values in the tuple
+	repeated string values = 1;
+}
+
+message ValueSet {
+	// tuples is an unordered list of the tuples in the set
+	repeated ValueTuple tuples = 1;
+}
