@@ -24,6 +24,7 @@ const (
 type Stack interface {
 	Len() int64
 	Element(n int) Value
+	ID(n int) []byte
 }
 
 type stack struct {
@@ -81,6 +82,10 @@ func (s *stack) Reverse(n int64) {
 	}
 }
 
+func (s *stack) ID(n int) []byte {
+	panic("unsupported")
+}
+
 type tupleID struct {
 	tuple Tuple
 	id    []byte
@@ -96,6 +101,10 @@ func (s *tupleStack) Len() int64 {
 
 func (s *tupleStack) Element(n int) Value {
 	return s.a[n].tuple
+}
+
+func (s *tupleStack) ID(n int) []byte {
+	return s.a[n].id
 }
 
 func (s *tupleStack) Pop() Tuple {
@@ -135,10 +144,6 @@ func (s *tupleStack) Reverse(n int64) {
 		b := len(s.a) - int(n) + i
 		s.a[a], s.a[b] = s.a[b], s.a[a]
 	}
-}
-
-func (s *tupleStack) ID() []byte {
-	return s.a[len(s.a)-1].id
 }
 
 func calcID(v Tuple) []byte {

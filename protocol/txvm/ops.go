@@ -153,7 +153,8 @@ func opDepth(vm *vm) {
 
 func opID(vm *vm) {
 	t := vm.data.PopInt64()
-	vm.data.PushBytes(getStack(vm, t).ID())
+	stack := getStack(vm, t)
+	vm.data.PushBytes(stack.ID(int(stack.Len() - 1)))
 }
 
 func opDrop(vm *vm) {
