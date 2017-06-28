@@ -855,8 +855,8 @@ func (sv *Service) getSnapshot() *raftpb.Snapshot {
 		panic(err)
 	}
 	sv.confMu.Lock()
-	defer sv.confMu.Unlock()
 	snap, err := sv.raftStorage.CreateSnapshot(index, &sv.confState, data)
+	sv.confMu.Unlock()
 	if err != nil {
 		panic(err)
 	}
