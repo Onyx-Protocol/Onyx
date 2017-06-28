@@ -21,7 +21,7 @@ func New(sdb *sinkdb.DB) *Options {
 
 // Options provides access to Chain Core configuration options. All
 // options should be defined before accessing and modifying any
-// options.
+// of their values.
 type Options struct {
 	sdb    *sinkdb.DB
 	schema map[string]option
