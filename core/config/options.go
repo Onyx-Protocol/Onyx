@@ -83,7 +83,11 @@ func (opts *Options) Add(key string, tup []string) (sinkdb.Op, error) {
 	if opt.equalFunc == nil {
 		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.")
 	}
-	err := opt.cleanFunc(tup)
+
+	// make a copy to avoid mutatating tup
+	cleaned := make([]string, len(tup))
+	copy(cleaned, tup)
+	err := opt.cleanFunc(cleaned)
 	if err != nil {
 		return sinkdb.Op{}, errors.Sub(ErrConfigOp, err)
 	}
@@ -93,7 +97,7 @@ func (opts *Options) Add(key string, tup []string) (sinkdb.Op, error) {
 	if err != nil {
 		return sinkdb.Op{}, err
 	}
-	idx := findIndex(existing.Tuples, tup, opt.equalFunc)
+	idx := findIndex(existing.Tuples, cleaned, opt.equalFunc)
 	if idx != -1 {
 		// tuple already exists, so the sinkdb op is a no-op
 		return sinkdb.IfNotModified(ver), nil
@@ -101,7 +105,7 @@ func (opts *Options) Add(key string, tup []string) (sinkdb.Op, error) {
 
 	// If the new tuple passed validation, then modify and write.
 	modified := new(ValueSet)
-	modified.Tuples = append(existing.Tuples, &ValueTuple{Values: tup})
+	modified.Tuples = append(existing.Tuples, &ValueTuple{Values: cleaned})
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
 		sinkdb.Set(filepath.Join(sinkdbPrefix, key), modified),
@@ -118,7 +122,11 @@ func (opts *Options) Remove(key string, tup []string) (sinkdb.Op, error) {
 	if opt.equalFunc == nil {
 		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.")
 	}
-	err := opt.cleanFunc(tup)
+
+	// make a copy to avoid mutatating tup
+	cleaned := make([]string, len(tup))
+	copy(cleaned, tup)
+	err := opt.cleanFunc(cleaned)
 	if err != nil {
 		return sinkdb.Op{}, errors.Sub(ErrConfigOp, err)
 	}
@@ -129,7 +137,7 @@ func (opts *Options) Remove(key string, tup []string) (sinkdb.Op, error) {
 		return sinkdb.Op{}, err
 	}
 
-	idx := findIndex(existing.Tuples, tup, opt.equalFunc)
+	idx := findIndex(existing.Tuples, cleaned, opt.equalFunc)
 	if idx == -1 {
 		// tuple doesn't exists, so the sinkdb op is a no-op
 		return sinkdb.IfNotModified(ver), nil
