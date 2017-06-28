@@ -277,6 +277,14 @@ func Configure(ctx context.Context, db pg.DB, sdb *sinkdb.DB, httpClient *http.C
 	c.Id = hex.EncodeToString(b)
 	c.ConfiguredAt = bc.Millis(time.Now())
 
+	// Write core ID to postgres to check for matching config between
+	// postgres and raft
+	const q = `INSERT INTO core_id (id) VALUES ($1)`
+	_, err = db.ExecContext(ctx, q, c.Id)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
 	return sdb.Exec(ctx,
 		sinkdb.IfNotExists("/core/config"),
 		sinkdb.Set("/core/config", c),
