@@ -55,7 +55,21 @@ type Bytes []byte
 
 type Int64 int64
 
-type Tuple []Value
+type Tuple struct {
+	a []Value
+}
+
+func (t *Tuple) Len() int {
+	return len(t.a)
+}
+
+func (t *Tuple) Field(n int) Value {
+	return t.a[n]
+}
+
+func newTuple(vals ...Value) Tuple {
+	return Tuple{a: vals}
+}
 
 func (Bytes) value() {}
 func (Int64) value() {}
