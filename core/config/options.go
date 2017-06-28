@@ -33,7 +33,8 @@ type Options struct {
 type CleanFunc func(newTuple []string) error
 
 // EqualFunc is implemented when defining a new set configuration option.
-// Both a and b are guaranteed to be valid, canonicalized tuples.
+// Both a and b are guaranteed to be valid, canonicalized tuples. The
+// function will only ever be called on input where len(a) == len(b).
 type EqualFunc func(a, b []string) bool
 
 type option struct {
