@@ -340,6 +340,14 @@ CREATE TABLE config (
 
 
 
+CREATE TABLE core_id (
+    singleton boolean DEFAULT true NOT NULL,
+    id text,
+    CONSTRAINT core_id_singleton CHECK (singleton)
+);
+
+
+
 CREATE TABLE generator_pending_block (
     singleton boolean DEFAULT true NOT NULL,
     data bytea NOT NULL,
@@ -549,6 +557,11 @@ ALTER TABLE ONLY config
 
 
 
+ALTER TABLE ONLY core_id
+    ADD CONSTRAINT core_id_pkey PRIMARY KEY (singleton);
+
+
+
 ALTER TABLE ONLY generator_pending_block
     ADD CONSTRAINT generator_pending_block_pkey PRIMARY KEY (singleton);
 
@@ -654,3 +667,4 @@ insert into migrations (filename, hash) values ('2017-04-13.0.query.block-transa
 insert into migrations (filename, hash) values ('2017-04-17.0.core.null-token-type.sql', '185942cec464c12a2573f19ae386153389328f8e282af071024706e105e37eeb');
 insert into migrations (filename, hash) values ('2017-04-27.0.generator.pending-block-height.sql', 'bfe4fe5eec143e4367a91fd952cb5e3879f1c311f649ec13bfe95b202e94d4ec');
 insert into migrations (filename, hash) values ('2017-05-08.0.core.drop-redundant-indexes.sql', '5140e53b287b058c57ddf361d61cff3d3d1cbc3259a9de413b11574a71d09bec');
+insert into migrations (filename, hash) values ('2017-06-28.0.core.coreid.sql', 'a147b93ba1bf404265efedde066532c937070a87e15123b1d9277daba431ee01');
