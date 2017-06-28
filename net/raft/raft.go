@@ -104,16 +104,22 @@ type Service struct {
 	// complete current state.
 	raftStorage *raft.MemoryStorage
 
+	// Condition variable for applyEntry's changes to state
+	applyMu   sync.Mutex
+	applyCond sync.Cond
+
 	// The actual replicated data set.
-	stateMu   sync.Mutex
-	stateCond sync.Cond
-	state     State
+	state State
+
+	confMu    sync.Mutex
 	confState raftpb.ConfState
 
 	// Current log position, accessed only from runUpdates goroutine
 	snapIndex uint64
 }
 
+// State provides access to the actual replicated data set. It must be
+// safe for concurrent access.
 type State interface {
 	AppliedIndex() uint64
 	Apply(data []byte, index uint64) (satisfied bool)
@@ -196,7 +202,7 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 		client:      httpClient,
 		stop:        make(chan struct{}),
 	}
-	sv.stateCond.L = &sv.stateMu
+	sv.applyCond.L = &sv.applyMu
 
 	// TODO(kr): grpc
 	sv.mux.HandleFunc("/raft/join", sv.serveJoin)
@@ -375,9 +381,9 @@ func (sv *Service) runUpdatesReady(rd raft.Ready, wal *wal.WAL, writers map[stri
 			panic(err)
 		}
 		sv.snapIndex = rd.Snapshot.Metadata.Index
-		sv.stateMu.Lock()
+		sv.confMu.Lock()
 		sv.confState = rd.Snapshot.Metadata.ConfState
-		sv.stateMu.Unlock()
+		sv.confMu.Unlock()
 	}
 	sv.raftStorage.Append(rd.Entries)
 	var lastEntryIndex uint64
@@ -507,10 +513,8 @@ func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 	var satisfied bool
 	var nextID, index uint64
 	for !satisfied {
-		sv.stateMu.Lock()
 		nextID, index = sv.state.NextNodeID()
 		log.Printf(ctx, "raft: attempting to allocate nodeID %d at version %d", nextID, index)
-		sv.stateMu.Unlock()
 		b := sv.state.IncrementNextNodeID(nextID, index)
 		satisfied, err = sv.Exec(ctx, b)
 		if err != nil {
@@ -602,20 +606,20 @@ func (sv *Service) waitRead(ctx context.Context) error {
 }
 
 func (sv *Service) wait(index uint64) {
-	sv.stateMu.Lock()
-	defer sv.stateMu.Unlock()
+	sv.applyMu.Lock()
+	defer sv.applyMu.Unlock()
 	for sv.state.AppliedIndex() < index {
-		sv.stateCond.Wait()
+		sv.applyCond.Wait()
 	}
 }
 
 // waitForNode waits until the provided nodeID is committed into
 // the cluster peer list.
 func (sv *Service) waitForNode(nodeID uint64) {
-	sv.stateMu.Lock()
-	defer sv.stateMu.Unlock()
+	sv.applyMu.Lock()
+	defer sv.applyMu.Unlock()
 	for sv.state.Peers()[nodeID] == "" {
-		sv.stateCond.Wait()
+		sv.applyCond.Wait()
 	}
 }
 
@@ -727,6 +731,10 @@ func decodeSnapshot(data []byte, snapshot *raftpb.Snapshot) error {
 }
 
 func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
+	sv.applyMu.Lock()
+	defer sv.applyCond.Broadcast()
+	defer sv.applyMu.Unlock()
+
 	switch ent.Type {
 	case raftpb.EntryConfChange:
 		var cc raftpb.ConfChange
@@ -734,11 +742,10 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 		if err != nil {
 			panic(err)
 		}
-		sv.stateMu.Lock()
-		defer sv.stateMu.Unlock()
-		defer sv.stateCond.Broadcast()
 
+		sv.confMu.Lock()
 		sv.confState = *sv.raftNode.ApplyConfChange(cc)
+		sv.confMu.Unlock()
 		sv.state.SetAppliedIndex(ent.Index)
 		switch cc.Type {
 		case raftpb.ConfChangeAddNode, raftpb.ConfChangeUpdateNode:
@@ -752,9 +759,6 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 			panic(fmt.Errorf("unknown confchange type: %v", cc.Type))
 		}
 	case raftpb.EntryNormal:
-		sv.stateMu.Lock()
-		defer sv.stateCond.Broadcast()
-		defer sv.stateMu.Unlock()
 		//raft will send empty request defaulted to EntryNormal on leader election
 		//we need to handle that here
 		if ent.Data == nil {
@@ -787,9 +791,7 @@ func (sv *Service) send(msgs []raftpb.Message) {
 		if err != nil {
 			panic(err)
 		}
-		sv.stateMu.Lock()
 		addr := sv.state.Peers()[msg.To]
-		sv.stateMu.Unlock()
 		sendmsg(addr, data, sv.client)
 	}
 }
@@ -848,12 +850,12 @@ func (sv *Service) recover() (*wal.WAL, error) {
 }
 
 func (sv *Service) getSnapshot() *raftpb.Snapshot {
-	sv.stateMu.Lock()
-	defer sv.stateMu.Unlock()
 	data, index, err := sv.state.Snapshot()
 	if err != nil {
 		panic(err)
 	}
+	sv.confMu.Lock()
+	defer sv.confMu.Unlock()
 	snap, err := sv.raftStorage.CreateSnapshot(index, &sv.confState, data)
 	if err != nil {
 		panic(err)

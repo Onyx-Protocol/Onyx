@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"io/ioutil"
 	"os"
+	"sync"
 )
 
 func newTestState() *state {
@@ -21,6 +22,7 @@ func newTestState() *state {
 // encoded using the stdlib gob package. A snapshot is just a gob-encoded
 // state struct.
 type state struct {
+	mu            sync.Mutex
 	NodeIDCounter uint64
 	Index         uint64
 	PeersByID     map[uint64]string
@@ -28,26 +30,38 @@ type state struct {
 }
 
 func (s *state) AppliedIndex() uint64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.Index
 }
 
 func (s *state) SetAppliedIndex(index uint64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Index = index
 }
 
 func (s *state) SetPeerAddr(id uint64, addr string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.PeersByID[id] = addr
 }
 
 func (s *state) RemovePeerAddr(id uint64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	delete(s.PeersByID, id)
 }
 
 func (s *state) Peers() map[uint64]string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.PeersByID
 }
 
 func (s *state) IsAllowedMember(addr string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	_, ok := s.Data["/allowed/"+addr]
 	return ok
 }
@@ -61,6 +75,8 @@ func (s *state) WriteFile(name string, data []byte, perm os.FileMode) error {
 }
 
 func (s *state) NextNodeID() (id, version uint64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.NodeIDCounter, s.Index
 }
 
@@ -72,6 +88,8 @@ func (s *state) IncrementNextNodeID(oldID uint64, index uint64) []byte {
 }
 
 func (s *state) Apply(data []byte, index uint64) (satisfied bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var inst instruction
 	err := gob.NewDecoder(bytes.NewReader(data)).Decode(&inst)
 	if err != nil {
@@ -93,12 +111,16 @@ func (s *state) Apply(data []byte, index uint64) (satisfied bool) {
 }
 
 func (s *state) Snapshot() (data []byte, index uint64, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var buf bytes.Buffer
 	err = gob.NewEncoder(&buf).Encode(s)
 	return buf.Bytes(), s.Index, err
 }
 
 func (s *state) RestoreSnapshot(data []byte, index uint64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	err := gob.NewDecoder(bytes.NewReader(data)).Decode(s)
 	return err
 }
