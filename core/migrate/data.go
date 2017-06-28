@@ -72,4 +72,11 @@ var migrations = []migration{
 		DROP INDEX signers_type_id_idx;
 		DROP INDEX assets_sort_id;
 	`},
+	{Name: `2017-06-28.0.core.coreid.sql`, SQL: `
+		CREATE TABLE core_id (
+			singleton boolean DEFAULT true NOT NULL,
+			id text);
+		ALTER TABLE ONLY core_id
+			ADD CONSTRAINT core_id_pkey PRIMARY KEY (singleton);
+	`},
 }
