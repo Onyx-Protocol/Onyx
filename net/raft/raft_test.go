@@ -142,6 +142,63 @@ func TestClusterSetup(t *testing.T) {
 	}
 }
 
+func TestNodeRestart(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new test cluster
+	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
+
+	httpClient := nodeA.service.client
+
+	_, err := nodeA.service.Exec(ctx, set("/foo", "bar"))
+	must(t, err)
+
+	// Stop the node
+	nodeA.service.Stop()
+
+	// Restart the node
+	nodeA.service, err = Start(nodeA.addr, nodeA.dir, httpClient, newTestState())
+	if err != nil {
+		nodeA.cleanup()
+		t.Fatal(err)
+	}
+}
+
+func TestNodeRestartMultiple(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new test cluster
+	nodeA, nodeB, nodeC := newTestCluster(ctx, t)
+	defer nodeA.cleanup()
+	defer nodeB.cleanup()
+	defer nodeC.cleanup()
+
+	httpClientA := nodeA.service.client
+	httpClientB := nodeB.service.client
+
+	_, err := nodeA.service.Exec(ctx, set("/foo", "bar"))
+	must(t, err)
+
+	// Stop two nodes
+	nodeA.service.Stop()
+	nodeB.service.Stop()
+
+	// Restart the nodes
+	nodeA.service, err = Start(nodeA.addr, nodeA.dir, httpClientA, newTestState())
+	if err != nil {
+		nodeA.cleanup()
+		t.Fatal(err)
+	}
+	nodeB.service, err = Start(nodeB.addr, nodeB.dir, httpClientB, newTestState())
+	if err != nil {
+		nodeB.cleanup()
+		t.Fatal(err)
+	}
+}
+
 func TestNodeEviction(t *testing.T) {
 	ctx := context.Background()
 
