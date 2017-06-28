@@ -2,9 +2,11 @@ package txvm
 
 import "encoding/binary"
 
+type OpTracer func(op byte, prog []byte, vm *vm)
+
 type vm struct {
 	// config, doesn't change after init
-	traceOp    func(byte, []byte, stack, stack, [NumStacks]tupleStack)
+	traceOp    OpTracer
 	traceError func(error)
 
 	pc   int    // program counter
@@ -14,6 +16,21 @@ type vm struct {
 	alt  stack
 
 	tupleStacks [NumStacks]tupleStack
+}
+
+func (vm *vm) PC() int {
+	return vm.pc
+}
+
+func (vm *vm) Stack(stacknum int) Stack {
+	switch stacknum {
+	case StackData:
+		return &vm.data
+	case StackAlt:
+		return &vm.alt
+	default:
+		return getStack(vm, int64(stacknum))
+	}
 }
 
 // Validate returns whether x is valid.
@@ -62,7 +79,7 @@ func exec(vm *vm, prog []byte) {
 
 func step(vm *vm) {
 	opcode, data, n := decodeInst(vm.prog[vm.pc:])
-	vm.traceOp(opcode, data, vm.data, vm.alt, vm.tupleStacks)
+	vm.traceOp(opcode, vm.prog, vm)
 	vm.pc += n
 	if opcode == BaseData {
 		vm.data.PushBytes(data)

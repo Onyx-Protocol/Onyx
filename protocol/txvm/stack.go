@@ -21,12 +21,21 @@ const (
 	NumStacks           = 12
 )
 
+type Stack interface {
+	Len() int64
+	Element(n int) Value
+}
+
 type stack struct {
 	a []Value
 }
 
 func (s *stack) Len() int64 {
 	return int64(len(s.a))
+}
+
+func (s *stack) Element(n int) Value {
+	return s.a[len(s.a)-1-n]
 }
 
 func (s *stack) Push(v Value) {
@@ -83,6 +92,10 @@ type tupleStack struct {
 
 func (s *tupleStack) Len() int64 {
 	return int64(len(s.a))
+}
+
+func (s *tupleStack) Element(n int) Value {
+	return s.a[n].tuple
 }
 
 func (s *tupleStack) Pop() Tuple {

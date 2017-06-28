@@ -2,7 +2,7 @@ package txvm
 
 type Option func(*vm)
 
-func TraceOp(f func(op byte, opData []byte, data, alt stack, tuples [NumStacks]tupleStack)) Option {
+func TraceOp(f OpTracer) Option {
 	// TODO(kr): provide other state too (if necessary?)
 	return func(vm *vm) {
 		vm.traceOp = f
