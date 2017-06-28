@@ -95,7 +95,8 @@ func (s *state) RestoreSnapshot(data []byte, index uint64) error {
 
 	// Chain Core 1.2.x generates snapshots without populating versions,
 	// so we manually initialize here to avoid nil errors after marshaling
-	// and unmarshaling the snapshot
+	// and unmarshaling the snapshot, which turns an initialized-but-empty
+	// map into a nil map
 	if s.version == nil {
 		s.version = make(map[string]uint64)
 	}
