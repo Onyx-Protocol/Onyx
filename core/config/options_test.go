@@ -23,18 +23,12 @@ func TestSetTuples(t *testing.T) {
 	opts.DefineSet("example", 2, identityFunc, reflectEquality)
 
 	ctx := context.Background()
-	op, err := opts.Add("example", []string{"foo", "bar"})
-	must(t, err)
-	must(t, sdb.Exec(ctx, op))
 
-	op, err = opts.Add("example", []string{"baz", "bax"})
-	must(t, err)
-	must(t, sdb.Exec(ctx, op))
+	must(t, sdb.Exec(ctx, opts.Add("example", []string{"foo", "bar"})))
+	must(t, sdb.Exec(ctx, opts.Add("example", []string{"baz", "bax"})))
 
 	// duplicate write should be no-op
-	op, err = opts.Add("example", []string{"foo", "bar"})
-	must(t, err)
-	must(t, sdb.Exec(ctx, op))
+	must(t, sdb.Exec(ctx, opts.Add("example", []string{"foo", "bar"})))
 
 	got, err := opts.List(ctx, "example")
 	must(t, err)
@@ -46,9 +40,7 @@ func TestSetTuples(t *testing.T) {
 		t.Errorf("got %#v, want %#v", got, want)
 	}
 
-	op, err = opts.Remove("example", []string{"foo", "bar"})
-	must(t, err)
-	must(t, sdb.Exec(ctx, op))
+	must(t, sdb.Exec(ctx, opts.Remove("example", []string{"foo", "bar"})))
 
 	got, err = opts.List(ctx, "example")
 	must(t, err)

@@ -73,16 +73,16 @@ func (opts *Options) List(ctx context.Context, key string) ([][]string, error) {
 
 // Add adds the provided tuple to the configuration option set indicated
 // by key.
-func (opts *Options) Add(key string, tup []string) (sinkdb.Op, error) {
+func (opts *Options) Add(key string, tup []string) sinkdb.Op {
 	opt, ok := opts.schema[key]
 	if !ok {
-		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q is undefined.", key)
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is undefined.", key))
 	}
 	if opt.tupleSize != len(tup) {
-		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize)
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
 	}
 	if opt.equalFunc == nil {
-		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.")
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead."))
 	}
 
 	// make a copy to avoid mutating tup
@@ -90,18 +90,18 @@ func (opts *Options) Add(key string, tup []string) (sinkdb.Op, error) {
 	copy(cleaned, tup)
 	err := opt.cleanFunc(cleaned)
 	if err != nil {
-		return sinkdb.Op{}, errors.Sub(ErrConfigOp, err)
+		return sinkdb.Error(errors.Sub(ErrConfigOp, err))
 	}
 
 	var existing ValueSet
 	ver, err := opts.sdb.GetStale(filepath.Join(sinkdbPrefix, key), &existing)
 	if err != nil {
-		return sinkdb.Op{}, err
+		return sinkdb.Error(err)
 	}
-	idx := findIndex(existing.Tuples, cleaned, opt.equalFunc)
+	idx := tupleIndex(existing.Tuples, cleaned, opt.equalFunc)
 	if idx != -1 {
 		// tuple already exists, so the sinkdb op is a no-op
-		return sinkdb.IfNotModified(ver), nil
+		return sinkdb.IfNotModified(ver)
 	}
 
 	// If the new tuple passed validation, then modify and write.
@@ -110,21 +110,21 @@ func (opts *Options) Add(key string, tup []string) (sinkdb.Op, error) {
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
 		sinkdb.Set(filepath.Join(sinkdbPrefix, key), modified),
-	), nil
+	)
 }
 
 // Remove removes the provided tuple from the configuration option set
 // indicated by key.
-func (opts *Options) Remove(key string, tup []string) (sinkdb.Op, error) {
+func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	opt, ok := opts.schema[key]
 	if !ok {
-		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q undefined", key)
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q undefined", key))
 	}
 	if opt.tupleSize != len(tup) {
-		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize)
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
 	}
 	if opt.equalFunc == nil {
-		return sinkdb.Op{}, errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.")
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead."))
 	}
 
 	// make a copy to avoid mutating tup
@@ -132,19 +132,19 @@ func (opts *Options) Remove(key string, tup []string) (sinkdb.Op, error) {
 	copy(cleaned, tup)
 	err := opt.cleanFunc(cleaned)
 	if err != nil {
-		return sinkdb.Op{}, errors.Sub(ErrConfigOp, err)
+		return sinkdb.Error(errors.Sub(ErrConfigOp, err))
 	}
 
 	var existing ValueSet
 	ver, err := opts.sdb.GetStale(filepath.Join(sinkdbPrefix, key), &existing)
 	if err != nil {
-		return sinkdb.Op{}, err
+		return sinkdb.Error(err)
 	}
 
-	idx := findIndex(existing.Tuples, cleaned, opt.equalFunc)
+	idx := tupleIndex(existing.Tuples, cleaned, opt.equalFunc)
 	if idx == -1 {
-		// tuple doesn't exists, so the sinkdb op is a no-op
-		return sinkdb.IfNotModified(ver), nil
+		// tuple doesn't exist, so the sinkdb op is a no-op
+		return sinkdb.IfNotModified(ver)
 	}
 
 	// Remove the tuple at the index from the set.
@@ -154,10 +154,10 @@ func (opts *Options) Remove(key string, tup []string) (sinkdb.Op, error) {
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
 		sinkdb.Set(filepath.Join(sinkdbPrefix, key), modified),
-	), nil
+	)
 }
 
-func findIndex(set []*ValueTuple, search []string, equal func([]string, []string) bool) int {
+func tupleIndex(set []*ValueTuple, search []string, equal func([]string, []string) bool) int {
 	for idx, tup := range set {
 		if equal(tup.Values, search) {
 			return idx
