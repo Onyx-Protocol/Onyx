@@ -58,6 +58,7 @@ var policyByRoute = map[string][]string{
 	"/join-cluster":               {"internal"},
 	"/evict":                      {"internal"},
 	"/configure":                  {"client-readwrite", "internal"},
+	"/config":                     {"client-readwrite", "client-readonly", "monitoring", "internal"},
 	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring", "internal"},
 
 	"/debug/": {"client-readwrite", "client-readonly", "monitoring"},

@@ -127,6 +127,7 @@ func RunUnconfigured(ctx context.Context, db pg.DB, sdb *sinkdb.DB, routableAddr
 		sdb:          sdb,
 		accessTokens: &accesstoken.CredentialStore{DB: db},
 		grants:       authz.NewStore(sdb, GrantPrefix),
+		options:      config.New(sdb),
 		mux:          http.NewServeMux(),
 		addr:         routableAddress,
 	}
@@ -185,6 +186,7 @@ func Run(
 		accessTokens: &accesstoken.CredentialStore{DB: db},
 		grants:       authz.NewStore(sdb, GrantPrefix),
 		config:       conf,
+		options:      config.New(sdb),
 		db:           db,
 		sdb:          sdb,
 		mux:          http.NewServeMux(),

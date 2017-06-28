@@ -65,6 +65,9 @@ var commands = map[string]*command{
 	"init":                 {initCluster},
 	"evict":                {evictNode},
 	"allow-address":        {allowRaftMember},
+	"get":                  {get},
+	"add":                  {add},
+	"rm":                   {rm},
 	"wait":                 {wait},
 }
 
@@ -417,6 +420,69 @@ func evictNode(client *rpc.Client, args []string) {
 
 	req := map[string]string{"node_address": args[0]}
 	err := client.Call(context.Background(), "/evict", req, nil)
+	dieOnRPCError(err)
+}
+
+func get(client *rpc.Client, args []string) {
+	const usage = "usage: corectl get [key]"
+	if len(args) != 1 {
+		fatalln(usage)
+	}
+
+	req := map[string]interface{}{
+		"keys": []interface{}{args[0]},
+	}
+
+	var resp map[string][][]string
+	err := client.Call(context.Background(), "/config", req, &resp)
+	dieOnRPCError(err)
+	for key, tuples := range resp {
+		if len(tuples) == 1 {
+			fmt.Printf("%s: %s\n", key, strings.Join(tuples[0], " "))
+		} else {
+			fmt.Printf("%s:\n", key)
+			for _, tup := range tuples {
+				fmt.Printf(" - %s\n", strings.Join(tup, " "))
+			}
+		}
+	}
+}
+
+func add(client *rpc.Client, args []string) {
+	const usage = "usage: corectl add [key] [value]..."
+	if len(args) < 2 {
+		fatalln(usage)
+	}
+
+	req := map[string]interface{}{
+		"updates": []interface{}{
+			map[string]interface{}{
+				"op":    "add",
+				"key":   args[0],
+				"tuple": args[1:],
+			},
+		},
+	}
+	err := client.Call(context.Background(), "/configure", req, nil)
+	dieOnRPCError(err)
+}
+
+func rm(client *rpc.Client, args []string) {
+	const usage = "usage: corectl rm [key] [value]..."
+	if len(args) < 2 {
+		fatalln(usage)
+	}
+
+	req := map[string]interface{}{
+		"updates": []interface{}{
+			map[string]interface{}{
+				"op":    "rm",
+				"key":   args[0],
+				"tuple": args[1:],
+			},
+		},
+	}
+	err := client.Call(context.Background(), "/configure", req, nil)
 	dieOnRPCError(err)
 }
 
