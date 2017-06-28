@@ -25,10 +25,19 @@ func (s *state) Write(key string, value []byte) error {
 }
 
 func (s *state) Get(key string) (*gorocksdb.Slice, Version, error) {
-	// TODO(tessr): tune rocksdb - tweak read options
-	ro := gorocksdb.NewDefaultReadOptions()
-	slice, err := s.db.Get(ro, []byte(key))
+	slice, err := s.rs.Get([]byte(key))
 	_, ok := s.state[key]
 	n := s.version[key]
 	return slice, Version{key, ok, n}, err
+}
+
+// rocksStore implements store
+type rocksStore struct {
+	rocks *gorocksdb.DB
+}
+
+func (rs *rocksStore) Get(key []byte) error {
+		// TODO(tessr): tune rocksdb - tweak read options
+	ro := gorocksdb.NewDefaultReadOptions()
+	slice, err := rs.rocks.Get(ro, []byte(key))
 }

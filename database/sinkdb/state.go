@@ -27,7 +27,7 @@ type state struct {
 	appliedIndex uint64
 	version      map[string]uint64 //key -> value index
 
-	db *gorocksdb.DB // TODO(tessr): use an interface here, so we could use a different store
+	db store // TODO(tessr): use an interface here, so we could use a different store
 }
 
 // newState returns a new State.
