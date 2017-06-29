@@ -59,36 +59,32 @@ There are several named types of tuples.
 #### Raw Value
 
 0. `type`, a string, "rawvalue"
-1. `history`, a string
-2. `valuecommitment`, a [value commitment](#value-commitment)
+1. `valuecommitment`, a [value commitment](#value-commitment)
 
 #### Unproven Value
 
 0. `type`, a string, "unprovenvalue"
-1. `history`, a string
-2. `valuecommitment`, a [value commitment](#value-commitment)
-3. `assetcommitment`, an [asset commitment](#asset-commitment)
+1. `valuecommitment`, a [value commitment](#value-commitment)
+2. `assetcommitment`, an [asset commitment](#asset-commitment)
 
 #### Proven Value
 
 0. `type`, a string, "provenvalue"
-1. `history`, a string
-2. `valuecommitment`, a [value commitment](#value-commitment)
-3. `assetcommitment`, an [asset commitment](#asset-commitment)
+1. `valuecommitment`, a [value commitment](#value-commitment)
+2. `assetcommitment`, an [asset commitment](#asset-commitment)
 
 #### Value
 
 0. `type`, a string, "value"
-1. `history`, a string
-2. `amount`, an int64
-3. `assetID`, a string
+1. `amount`, an int64
+2. `assetID`, a string
 
 #### Output
 
 0. `type`, a string, "output"
-1. `history`, a 32-byte string
-2. `values`, a tuple of `Value`s
-3. `program`, a string
+1. `values`, a tuple of [value commitments](#value-commitment)
+2. `program`, a string
+3. `anchor`, a string
 
 #### Nonce
 
@@ -97,15 +93,15 @@ There are several named types of tuples.
 2. `mintime`, an int64
 3. `maxtime`, an int64
 
-#### Retirement
-
-0. `type`, a string, "retirement"
-1. `history`, a string
-
 #### Anchor
 
 0. `type`, a string, "anchor"
-1. `history`, a string
+1. `value`, a string
+
+#### Retirement
+
+0. `type`, a string, "retirement"
+1. `value`, a [value commitment](#value-commitment)
 
 #### Asset Definition
 
@@ -130,7 +126,11 @@ There are several named types of tuples.
 #### Transaction Summary
 
 0. `type`, an int64
-1. `history`, a string
+1. `inputs`, a tuple of [outputs](#output)
+2. `outputs`, a tuple of [outputs](#input)
+3. `retirements`, a tuple of [retirements](#retirement)
+4. `nonces`, a tuple of [nonces](#nonces)
+5. `annotations`, a tuple of [annotations](#annotation)
 
 ### Legacy Output
 
@@ -144,16 +144,6 @@ There are several named types of tuples.
 ## Item IDs
 
 The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` is the [encode](#encode) operation.
-
-## History
-
-When a new [Output](#output), [Value](#Value), [Anchor](#Anchor), [Retirement](#Retirement), or [Transaction Summary](#transaction-summary)) is created by a VM instruction, its `history` field is computed based on the instruction that generated it.
-
-The `history` field is the SHA3 hash of `"txvm" || encode(historytuple)`, where `encode` is the [encode](#encode) operation, and `historytuple` is a tuple of the following items:
-
-0. `opcode`, an int64 (reflecting the opcode that generated the item)
-1. `arguments`, a tuple (reflecting the arguments consumed by that instruction, in order)
-2. `outputindex`, an int64 (reflecting which output of that instruction this item is)
 
 ## Stack identifiers
 
@@ -448,7 +438,7 @@ Pops a condition from the Condition stack and executes it.
 
 ### Unlock
 
-Pops a tuple `input` of type [Output](#output) from the data stack. Pushes it to the Input stack. Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack. Executes `input.program`.
+Pops a tuple `input` of type [Output](#output) from the data stack. Pushes it to the Input stack. Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-id) of `input`. Executes `input.program`.
 
 ### UnlockOutput
 
@@ -464,19 +454,23 @@ Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` f
 
 ### Lock
 
-Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Value stack. Pop a string `program` from the data stack. Push an [output](#output) to the Output stack with a tuple of the `values` as the `values`, and `program` as the `program`.
+Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Value stack. Pop a string `program` from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Push an [output](#output) to the Output stack with a tuple of the `values` as the `values`, `program` as the `program`, and the ID of `anchor` as the `anchor`.
 
 ### Retire
 
 Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack.
 
-### Anchor
+### Nonce
 
-Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the Anchor stack. Push a [Maxtime](#maxtime) to the [Time Constraints stack] with `maxtime` equal to `nonce.maxtime`. Push a [Mintime](#mintime) to the [Time Constraints stack] with `mintime` equal to `nonce.mintime`. Execute `nonce.program`.
+Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the Anchor stack, with `value` equal to the [ID](#item-ids) of `nonce` . Push a [Maxtime](#maxtime) to the [Time Constraints stack] with `maxtime` equal to `nonce.maxtime`. Push a [Mintime](#mintime) to the [Time Constraints stack] with `mintime` equal to `nonce.mintime`. Execute `nonce.program`.
+
+### Reanchor
+
+Pop an [anchor](#anchor) `anchor` from the Anchor stack. Push a new anchor, with `value` set to the [ID](#item-ids) of `anchor`.
 
 ### Issue
 
-Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Push an [anchor](#anchor) to the Anchor stack. Execute `assetdefinition.issuanceprogram`.
+Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`.
 
 ### Before
 
@@ -490,21 +484,17 @@ Pop an int64 `min` from the stack. Push a [Mintime](#mintime) to the [Time Const
 
 Fail if the [Transaction Summary stack](#transaction-summary-stack) is not empty.
 
-Pop all items from the Input stack. Pop all items from the Output stack. Pop all items from the Nonce stack. Pop all items from the Retirement stack. Pop all items from the Time Constraint stack. Pop all items from the Annotation stack.
+Pop all items from the Input stack and create a tuple of them (with the top item first), `inputs`. Pop all items from the Output stack and create a tuple of them, `outputs`. Pop all items from the Nonce stack and create a tuple of them, `nonces`. Pop all items from the Retirement stack and create a tuple of them, `retirements`. Pop all items from the Time Constraint stack and create a tuple of them, `timeconstraints`. Pop all items from the Annotation stack and create a tuple of them, `annotations`.
 
-Create a [transaction summary](#transaction-summary) `summary` and push it to the Transaction Summary stack.
+Create a [transaction summary](#transaction-summary) `summary` with `inputs`, `outputs`, `nonces`, `retirements`, `timeconstraints`, and `annotations`, and push it to the Transaction Summary stack.
 
 ### Migrate
 
-Pops a tuple `input` of type [Output](#output) from the data stack. Computes the [id](#item-id) of the tuple and pushes it to the Input stack.
-
-Pop a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Push it to the `inputs` stack. Verify that the old-style ID [TBD: rules for computing this] of `legacy` is `inputID`.
+Pop a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Push it to the `inputs` stack. Push an [anchor](#anchor) to the Anchor stack with `value` set to the old-style ID (TBD) of `legacy`.
 
 [TBD: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.]
 
 Push a [Value](#value) with amount `legacy.amount` and asset ID `legacy.assetID` to the Value stack.
-
-Push an [anchor](#anchor) to the Anchor stack. 
 
 Execute `newprogram`.
 
