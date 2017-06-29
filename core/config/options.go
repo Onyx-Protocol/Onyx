@@ -2,7 +2,7 @@ package config
 
 import (
 	"context"
-	"path/filepath"
+	"path"
 
 	"chain/core/config/internal/configpb"
 	"chain/database/sinkdb"
@@ -60,7 +60,7 @@ func (opts *Options) List(ctx context.Context, key string) ([][]string, error) {
 		return nil, errors.WithDetailf(ErrConfigOp, "Configuration option %q is undefined.", key)
 	}
 	var set configpb.ValueSet
-	_, err := opts.sdb.Get(ctx, filepath.Join(sinkdbPrefix, key), &set)
+	_, err := opts.sdb.Get(ctx, path.Join(sinkdbPrefix, key), &set)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (opts *Options) Add(key string, tup []string) sinkdb.Op {
 	}
 
 	var existing configpb.ValueSet
-	ver, err := opts.sdb.GetStale(filepath.Join(sinkdbPrefix, key), &existing)
+	ver, err := opts.sdb.GetStale(path.Join(sinkdbPrefix, key), &existing)
 	if err != nil {
 		return sinkdb.Error(err)
 	}
@@ -109,7 +109,7 @@ func (opts *Options) Add(key string, tup []string) sinkdb.Op {
 	modified.Tuples = append(existing.Tuples, &configpb.ValueTuple{Values: cleaned})
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
-		sinkdb.Set(filepath.Join(sinkdbPrefix, key), modified),
+		sinkdb.Set(path.Join(sinkdbPrefix, key), modified),
 	)
 }
 
@@ -136,7 +136,7 @@ func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	}
 
 	var existing configpb.ValueSet
-	ver, err := opts.sdb.GetStale(filepath.Join(sinkdbPrefix, key), &existing)
+	ver, err := opts.sdb.GetStale(path.Join(sinkdbPrefix, key), &existing)
 	if err != nil {
 		return sinkdb.Error(err)
 	}
@@ -153,7 +153,7 @@ func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	modified.Tuples = append(modified.Tuples, existing.Tuples[idx+1:]...)
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
-		sinkdb.Set(filepath.Join(sinkdbPrefix, key), modified),
+		sinkdb.Set(path.Join(sinkdbPrefix, key), modified),
 	)
 }
 
