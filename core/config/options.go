@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"path"
 
 	"chain/core/config/internal/configpb"
@@ -69,6 +70,35 @@ func (opts *Options) List(ctx context.Context, key string) ([][]string, error) {
 		tuples = append(tuples, tup.Values)
 	}
 	return tuples, nil
+}
+
+// ListFunc returns a closure that returns the set of tuples for the
+// provided key.
+//
+// The configuration option for key must be a set of tuples.
+// ListFunc will panic if the provided key is undefined in the schema or
+// is defined as a scalar. The returned function will perform a stale
+// read of the configuration value.
+func (opts *Options) ListFunc(key string) func() ([][]string, error) {
+	opt, ok := opts.schema[key]
+	if !ok {
+		panic(fmt.Errorf("unknown config option %q", key))
+	} else if opt.equalFunc == nil {
+		panic(fmt.Errorf("config option %q is a scalar, not a set", key))
+	}
+
+	return func() ([][]string, error) {
+		var set configpb.ValueSet
+		_, err := opts.sdb.GetStale(path.Join(sinkdbPrefix, key), &set)
+		if err != nil {
+			return nil, err
+		}
+		var tuples [][]string
+		for _, tup := range set.Tuples {
+			tuples = append(tuples, tup.Values)
+		}
+		return tuples, nil
+	}
 }
 
 // Add adds the provided tuple to the configuration option set indicated
