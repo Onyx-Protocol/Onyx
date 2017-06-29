@@ -1,13 +1,14 @@
 package config
 
 import (
-	"chain/database/pg/pgtest"
-	"chain/database/sinkdb"
-	"chain/database/sinkdb/sinkdbtest"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"testing"
+
+	"chain/database/pg/pgtest"
+	"chain/database/sinkdb"
+	"chain/database/sinkdb/sinkdbtest"
 )
 
 func TestDetectStaleConfig(t *testing.T) {

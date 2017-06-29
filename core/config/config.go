@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"time"
 
 	"chain/core/accesstoken"
@@ -68,7 +69,7 @@ func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 	} else if ver.Exists() {
 		raftID := c.Id
 		if !idMatchesPG(ctx, raftID, db) {
-			raftDir := HomeDirFromEnvironment() + "/raft"
+			raftDir := filepath.Join(HomeDirFromEnvironment(), "raft")
 			return nil, errors.Wrap(ErrStaleRaftConfig, "Stale Raft config in "+raftDir)
 		}
 		return c, nil
