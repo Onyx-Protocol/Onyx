@@ -13,9 +13,8 @@ import (
 	"chain/log"
 	"chain/metrics"
 	"chain/protocol/bc"
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 	"chain/protocol/state"
-	"chain/protocol/vm/vmutil"
 )
 
 // errTooFewSigners is returned when a block-signing attempt finds
@@ -40,14 +39,14 @@ func recordSince(t0 time.Time) {
 	latency.RecordSince(t0)
 }
 
-// makeBlock generates a new legacy.Block, collects the required signatures
+// makeBlock generates a new bcvm.Block, collects the required signatures
 // and commits the block to the blockchain.
 func (g *Generator) makeBlock(ctx context.Context) (err error) {
 	t0 := time.Now()
 	defer recordSince(t0)
 
 	latestBlock, latestSnapshot := g.chain.State()
-	var b *legacy.Block
+	var b *bcvm.Block
 	var s *state.Snapshot
 
 	// Check to see if we already have a pending, generated block.
@@ -59,7 +58,7 @@ func (g *Generator) makeBlock(ctx context.Context) (err error) {
 	}
 	if b != nil && (latestBlock == nil || b.Height == latestBlock.Height+1) {
 		s = state.Copy(latestSnapshot)
-		err = s.ApplyBlock(legacy.MapBlock(b))
+		err = s.ApplyBlock(b)
 		if err != nil {
 			log.Fatalkv(ctx, log.KeyError, err)
 		}
@@ -85,7 +84,7 @@ func (g *Generator) makeBlock(ctx context.Context) (err error) {
 	return g.commitBlock(ctx, b, s, latestBlock)
 }
 
-func (g *Generator) commitBlock(ctx context.Context, b *legacy.Block, s *state.Snapshot, prevBlock *legacy.Block) error {
+func (g *Generator) commitBlock(ctx context.Context, b *bcvm.Block, s *state.Snapshot, prevBlock *bcvm.Block) error {
 	err := g.getAndAddBlockSignatures(ctx, b, prevBlock)
 	if err != nil {
 		return errors.Wrap(err, "sign")
@@ -98,17 +97,18 @@ func (g *Generator) commitBlock(ctx context.Context, b *legacy.Block, s *state.S
 	return nil
 }
 
-func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *legacy.Block) error {
+func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *bcvm.Block) error {
 	if prevBlock == nil && b.Height == 1 {
 		return nil // no signatures needed for initial block
 	}
 
-	pubkeys, quorum, err := vmutil.ParseBlockMultiSigProgram(prevBlock.ConsensusProgram)
-	if err != nil {
-		return errors.Wrap(err, "parsing prevblock output script")
-	}
-	if len(g.signers) < quorum {
+	if uint32(len(g.signers)) < prevBlock.ConsensusQuorum {
 		return errTooFewSigners
+	}
+
+	var pubkeys []ed25519.PublicKey
+	for _, k := range prevBlock.ConsensusPubkeys {
+		pubkeys = append(pubkeys, k)
 	}
 
 	hashForSig := b.Hash()
@@ -127,8 +127,8 @@ func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		go getSig(ctx, signer, marshalledBlock, &replies[i], i, done)
 	}
 
-	nready := 0
-	for i := 0; i < len(g.signers) && nready < quorum; i++ {
+	var nready uint32
+	for i := 0; i < len(g.signers) && nready < prevBlock.ConsensusQuorum; i++ {
 		sig := replies[<-done]
 		if sig == nil {
 			continue
@@ -142,8 +142,8 @@ func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		}
 	}
 
-	if nready < quorum {
-		return fmt.Errorf("got %d of %d needed signatures", nready, quorum)
+	if nready < prevBlock.ConsensusQuorum {
+		return fmt.Errorf("got %d of %d needed signatures", nready, prevBlock.ConsensusQuorum)
 	}
 	b.Witness = nonNilSigs(goodSigs)
 	return nil
@@ -177,9 +177,9 @@ func nonNilSigs(a [][]byte) (b [][]byte) {
 }
 
 // getPendingBlock retrieves the generated, uncommitted block if it exists.
-func getPendingBlock(ctx context.Context, db pg.DB) (*legacy.Block, error) {
+func getPendingBlock(ctx context.Context, db pg.DB) (*bcvm.Block, error) {
 	const q = `SELECT data FROM generator_pending_block`
-	var block legacy.Block
+	var block bcvm.Block
 	err := db.QueryRowContext(ctx, q).Scan(&block)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -192,7 +192,7 @@ func getPendingBlock(ctx context.Context, db pg.DB) (*legacy.Block, error) {
 // savePendingBlock persists a pending, uncommitted block to the database.
 // The generator should save a pending block *before* asking signers to
 // sign the block.
-func savePendingBlock(ctx context.Context, db pg.DB, b *legacy.Block) error {
+func savePendingBlock(ctx context.Context, db pg.DB, b *bcvm.Block) error {
 	const q = `
 		INSERT INTO generator_pending_block (data, height) VALUES($1, $2)
 		ON CONFLICT (singleton) DO UPDATE

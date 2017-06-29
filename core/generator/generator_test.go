@@ -2,16 +2,13 @@ package generator
 
 import (
 	"context"
-	"fmt"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/protocol"
-	"chain/protocol/bc/bctest"
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -48,43 +45,6 @@ func TestGeneratorRecovery(t *testing.T) {
 	}
 	if confirmedBlock.Hash() != pendingBlock.Hash() {
 		t.Errorf("got=%s, want=%s", confirmedBlock.Hash(), pendingBlock.Hash())
-	}
-}
-
-func TestGeneratorSignatureFailures(t *testing.T) {
-	ctx := context.Background()
-	c := prottest.NewChain(t, prottest.WithBlockSigners(1, 1))
-	pubkeys, privkeys := prottest.BlockKeyPairs(c)
-
-	// Use a signer that fails to sign the first 3 times then succeeds.
-	failuresRemaining := int64(3)
-	signers := []BlockSigner{testSigner{
-		before: func() error {
-			if v := atomic.AddInt64(&failuresRemaining, -1); v >= 0 {
-				return fmt.Errorf("error %d", v)
-			}
-			return nil
-		},
-		pubKey:  pubkeys[0],
-		privKey: privkeys[0],
-	}}
-
-	g := New(c, signers, pgtest.NewTx(t))
-	tx := bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash())
-	g.pool = append(g.pool, tx)
-
-	height := c.Height()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	go g.Generate(ctx, 50*time.Millisecond, func(err error) { t.Logf("%s\n", err) })
-
-	<-c.BlockWaiter(height + 1)
-	block, err := c.GetBlock(ctx, height+1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if block.Transactions[0].ID != tx.ID {
-		t.Errorf("got tx %s want %s", block.Transactions[0].ID, tx.ID)
 	}
 }
 
@@ -177,7 +137,7 @@ func (s testSigner) SignBlock(ctx context.Context, marshalledBlock []byte) ([]by
 		}
 	}
 
-	var b legacy.Block
+	var b bcvm.Block
 	err := b.UnmarshalText(marshalledBlock)
 	if err != nil {
 		return nil, err

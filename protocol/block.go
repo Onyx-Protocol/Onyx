@@ -9,10 +9,9 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 	"chain/protocol/state"
 	"chain/protocol/validation"
-	"chain/protocol/vm/vmutil"
 )
 
 // maxBlockTxs limits the number of transactions
@@ -38,7 +37,7 @@ var (
 
 // GetBlock returns the block at the given height, if there is one,
 // otherwise it returns an error.
-func (c *Chain) GetBlock(ctx context.Context, height uint64) (*legacy.Block, error) {
+func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bcvm.Block, error) {
 	return c.store.GetBlock(ctx, height)
 }
 
@@ -48,7 +47,7 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*legacy.Block, err
 //
 // After generating the block, the pending transaction pool will be
 // empty.
-func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot *state.Snapshot, now time.Time, txs []*legacy.Tx) (*legacy.Block, *state.Snapshot, error) {
+func (c *Chain) GenerateBlock(ctx context.Context, prev *bcvm.Block, snapshot *state.Snapshot, now time.Time, txs [][]byte) (*bcvm.Block, *state.Snapshot, error) {
 	// TODO(kr): move this into a lower-level package (e.g. chain/protocol/bc)
 	// so that other packages (e.g. chain/protocol/validation) unit tests can
 	// call this function.
@@ -62,19 +61,20 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot 
 	newSnapshot := state.Copy(c.state.snapshot)
 	newSnapshot.PruneNonces(timestampMS)
 
-	b := &legacy.Block{
-		BlockHeader: legacy.BlockHeader{
+	b := &bcvm.Block{
+		BlockHeader: bcvm.BlockHeader{
 			Version:           1,
 			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.Hash(),
 			TimestampMS:       timestampMS,
-			BlockCommitment: legacy.BlockCommitment{
-				ConsensusProgram: prev.ConsensusProgram,
+			BlockCommitment: bcvm.BlockCommitment{
+				ConsensusPubkeys: prev.ConsensusPubkeys,
+				ConsensusQuorum:  prev.ConsensusQuorum,
 			},
 		},
 	}
 
-	var txEntries []*bc.Tx
+	var ids []bc.Hash
 
 	for _, tx := range txs {
 		if len(b.Transactions) >= maxBlockTxs {
@@ -82,37 +82,42 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot 
 		}
 
 		// Filter out transactions that are not well-formed.
-		err := c.ValidateTx(tx.Tx)
+		err := c.ValidateTx(tx)
 		if err != nil {
 			// TODO(bobg): log this?
 			continue
 		}
 
-		// Filter out transactions that are not yet valid, or no longer
-		// valid, per the block's timestamp.
-		if tx.Tx.MinTimeMs > 0 && tx.Tx.MinTimeMs > b.TimestampMS {
-			// TODO(bobg): log this?
+		deserialized, err := bcvm.NewTx(tx)
+		if err != nil {
 			continue
 		}
-		if tx.Tx.MaxTimeMs > 0 && tx.Tx.MaxTimeMs < b.TimestampMS {
-			// TODO(bobg): log this?
+
+		timestampsValid := true
+		for _, tc := range deserialized.TimeConstraints {
+			if (tc.Type == "min" && b.TimestampMS < uint64(tc.Time)) || (tc.Type == "max" && b.TimestampMS > uint64(tc.Time)) {
+				timestampsValid = false
+				break
+			}
+		}
+		if !timestampsValid {
 			continue
 		}
 
 		// Filter out double-spends etc.
-		err = newSnapshot.ApplyTx(tx.Tx)
+		err = newSnapshot.ApplyTx(deserialized)
 		if err != nil {
 			// TODO(bobg): log this?
 			continue
 		}
 
 		b.Transactions = append(b.Transactions, tx)
-		txEntries = append(txEntries, tx.Tx)
+		ids = append(ids, deserialized.ID)
 	}
 
 	var err error
 
-	b.TransactionsMerkleRoot, err = bc.MerkleRoot(txEntries)
+	b.TransactionsMerkleRoot, err = bcvm.MerkleRoot(ids)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "calculating tx merkle root")
 	}
@@ -125,24 +130,22 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot 
 // ValidateBlock validates an incoming block in advance of applying it
 // to a snapshot (with ApplyValidBlock) and committing it to the
 // blockchain (with CommitAppliedBlock).
-func (c *Chain) ValidateBlock(block, prev *legacy.Block) error {
-	blockEnts := legacy.MapBlock(block)
-	prevEnts := legacy.MapBlock(prev)
-	err := validation.ValidateBlock(blockEnts, prevEnts, c.InitialBlockHash, c.ValidateTx)
+func (c *Chain) ValidateBlock(block, prev *bcvm.Block) error {
+	err := validation.ValidateBlock(block, prev)
 	if err != nil {
 		return errors.Sub(ErrBadBlock, err)
 	}
 	if block.Height > 1 {
-		err = validation.ValidateBlockSig(blockEnts, prevEnts.NextConsensusProgram)
+		err = validation.ValidateBlockSig(block, prev.ConsensusPubkeys, prev.ConsensusQuorum)
 	}
 	return errors.Sub(ErrBadBlock, err)
 }
 
 // ApplyValidBlock creates an updated snapshot without validating the
 // block.
-func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
+func (c *Chain) ApplyValidBlock(block *bcvm.Block) (*state.Snapshot, error) {
 	newSnapshot := state.Copy(c.state.snapshot)
-	err := newSnapshot.ApplyBlock(legacy.MapBlock(block))
+	err := newSnapshot.ApplyBlock(block)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +166,7 @@ func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
 // are triggered.
 //
 // TODO(bobg): rename to CommitAppliedBlock for clarity (deferred from https://github.com/chain/chain/pull/788)
-func (c *Chain) CommitAppliedBlock(ctx context.Context, block *legacy.Block, snapshot *state.Snapshot) error {
+func (c *Chain) CommitAppliedBlock(ctx context.Context, block *bcvm.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.
@@ -226,8 +229,8 @@ func (c *Chain) setHeight(h uint64) {
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it. By definition it does not
 // execute the consensus program.
-func (c *Chain) ValidateBlockForSig(ctx context.Context, block *legacy.Block) error {
-	var prev *legacy.Block
+func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bcvm.Block) error {
+	var prev *bcvm.Block
 
 	if block.Height > 1 {
 		var err error
@@ -237,33 +240,34 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *legacy.Block) er
 		}
 	}
 
-	err := validation.ValidateBlock(legacy.MapBlock(block), legacy.MapBlock(prev), c.InitialBlockHash, c.ValidateTx)
+	err := validation.ValidateBlock(block, prev)
 	return errors.Sub(ErrBadBlock, err)
 }
 
-func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*legacy.Block, error) {
+func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bcvm.Block, error) {
 	// TODO(kr): move this into a lower-level package (e.g. chain/protocol/bc)
 	// so that other packages (e.g. chain/protocol/validation) unit tests can
 	// call this function.
-
-	script, err := vmutil.BlockMultiSigProgram(pubkeys, nSigs)
-	if err != nil {
-		return nil, err
-	}
 
 	root, err := bc.MerkleRoot(nil) // calculate the zero value of the tx merkle root
 	if err != nil {
 		return nil, errors.Wrap(err, "calculating zero value of tx merkle root")
 	}
 
-	b := &legacy.Block{
-		BlockHeader: legacy.BlockHeader{
+	var keybytes [][]byte
+	for _, k := range pubkeys {
+		keybytes = append(keybytes, []byte(k))
+	}
+
+	b := &bcvm.Block{
+		BlockHeader: bcvm.BlockHeader{
 			Version:     1,
 			Height:      1,
 			TimestampMS: bc.Millis(timestamp),
-			BlockCommitment: legacy.BlockCommitment{
+			BlockCommitment: bcvm.BlockCommitment{
 				TransactionsMerkleRoot: root,
-				ConsensusProgram:       script,
+				ConsensusPubkeys:       keybytes,
+				ConsensusQuorum:        uint32(nSigs),
 			},
 		},
 	}

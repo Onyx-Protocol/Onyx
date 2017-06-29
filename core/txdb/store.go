@@ -6,7 +6,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 	"chain/protocol/state"
 )
 
@@ -29,9 +29,9 @@ var _ protocol.Store = (*Store)(nil)
 func NewStore(db pg.DB) *Store {
 	return &Store{
 		db: db,
-		cache: newBlockCache(func(height uint64) (*legacy.Block, error) {
+		cache: newBlockCache(func(height uint64) (*bcvm.Block, error) {
 			const q = `SELECT data FROM blocks WHERE height = $1`
-			var b legacy.Block
+			var b bcvm.Block
 			err := db.QueryRowContext(context.Background(), q, height).Scan(&b)
 			if err != nil {
 				return nil, errors.Wrap(err, "select query")
@@ -52,7 +52,7 @@ func (s *Store) Height(ctx context.Context) (uint64, error) {
 // GetBlock looks up the block with the provided block height.
 // If no block is found at that height, it returns an error that
 // wraps sql.ErrNoRows.
-func (s *Store) GetBlock(ctx context.Context, height uint64) (*legacy.Block, error) {
+func (s *Store) GetBlock(ctx context.Context, height uint64) (*bcvm.Block, error) {
 	return s.cache.lookup(height)
 }
 
@@ -80,7 +80,7 @@ func (s *Store) GetSnapshot(ctx context.Context, height uint64) ([]byte, error) 
 }
 
 // SaveBlock persists a new block in the database.
-func (s *Store) SaveBlock(ctx context.Context, block *legacy.Block) error {
+func (s *Store) SaveBlock(ctx context.Context, block *bcvm.Block) error {
 	const q = `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES ($1, $2, $3, $4)

@@ -13,7 +13,7 @@ import (
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 )
 
 // A BlockSigner signs blocks.
@@ -33,7 +33,7 @@ type Generator struct {
 	signers []BlockSigner
 
 	mu         sync.Mutex
-	pool       []*legacy.Tx // in topological order
+	pool       [][]byte // in topological order
 	poolHashes map[bc.Hash]bool
 }
 
@@ -53,17 +53,17 @@ func New(
 
 // PendingTxs returns all of the pendings txs that will be
 // included in the generator's next block.
-func (g *Generator) PendingTxs() []*legacy.Tx {
+func (g *Generator) PendingTxs() [][]byte {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	txs := make([]*legacy.Tx, len(g.pool))
+	txs := make([][]byte, len(g.pool))
 	copy(txs, g.pool)
 	return txs
 }
 
 // Submit adds a new pending tx to the pending tx pool.
-func (g *Generator) Submit(ctx context.Context, tx *legacy.Tx) error {
+func (g *Generator) Submit(ctx context.Context, tx *bcvm.Tx) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -72,7 +72,7 @@ func (g *Generator) Submit(ctx context.Context, tx *legacy.Tx) error {
 	}
 
 	g.poolHashes[tx.ID] = true
-	g.pool = append(g.pool, tx)
+	g.pool = append(g.pool, tx.Program)
 	return nil
 }
 

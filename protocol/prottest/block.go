@@ -9,7 +9,7 @@ import (
 	"chain/crypto/ed25519"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
@@ -95,7 +95,7 @@ func NewChain(tb testing.TB, opts ...Option) *protocol.Chain {
 }
 
 // Initial returns the provided Chain's initial block.
-func Initial(tb testing.TB, c *protocol.Chain) *legacy.Block {
+func Initial(tb testing.TB, c *protocol.Chain) *bcvm.Block {
 	ctx := context.Background()
 	b1, err := c.GetBlock(ctx, 1)
 	if err != nil {
@@ -119,7 +119,7 @@ func BlockKeyPairs(c *protocol.Chain) ([]ed25519.PublicKey, []ed25519.PrivateKey
 // MakeBlock always makes a block;
 // if there are no transactions in txs,
 // it makes an empty block.
-func MakeBlock(tb testing.TB, c *protocol.Chain, txs []*legacy.Tx) *legacy.Block {
+func MakeBlock(tb testing.TB, c *protocol.Chain, txs [][]byte) *bcvm.Block {
 	ctx := context.Background()
 	curBlock, err := c.GetBlock(ctx, c.Height())
 	if err != nil {

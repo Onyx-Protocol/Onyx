@@ -5,6 +5,7 @@ import (
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/bcvm"
 	"chain/protocol/patricia"
 )
 
@@ -58,10 +59,14 @@ func Empty() *Snapshot {
 }
 
 // ApplyBlock updates s in place.
-func (s *Snapshot) ApplyBlock(block *bc.Block) error {
-	s.PruneNonces(block.TimestampMs)
+func (s *Snapshot) ApplyBlock(block *bcvm.Block) error {
+	s.PruneNonces(block.TimestampMS)
 	for i, tx := range block.Transactions {
-		err := s.ApplyTx(tx)
+		deserialized, err := bcvm.NewTx(tx)
+		if err != nil {
+			return errors.Wrapf(err, "applying block transaction %d", i)
+		}
+		err = s.ApplyTx(deserialized)
 		if err != nil {
 			return errors.Wrapf(err, "applying block transaction %d", i)
 		}
@@ -70,44 +75,28 @@ func (s *Snapshot) ApplyBlock(block *bc.Block) error {
 }
 
 // ApplyTx updates s in place.
-func (s *Snapshot) ApplyTx(tx *bc.Tx) error {
-	for _, n := range tx.NonceIDs {
+func (s *Snapshot) ApplyTx(tx *bcvm.Tx) error {
+	for _, n := range tx.Nonces {
 		// Add new nonces. They must not conflict with nonces already
 		// present.
-		if _, ok := s.Nonces[n]; ok {
-			return fmt.Errorf("conflicting nonce %x", n.Bytes())
+		if _, ok := s.Nonces[n.ID]; ok {
+			return fmt.Errorf("conflicting nonce %x", n.ID.Bytes())
 		}
 
-		nonce, err := tx.Nonce(n)
-		if err != nil {
-			return errors.Wrap(err, "applying nonce")
-		}
-		tr, err := tx.TimeRange(*nonce.TimeRangeId)
-		if err != nil {
-			return errors.Wrap(err, "applying nonce")
-		}
-
-		s.Nonces[n] = tr.MaxTimeMs
+		s.Nonces[n.ID] = uint64(n.MaxTime)
 	}
 
 	// Remove spent outputs. Each output must be present.
-	for _, prevout := range tx.SpentOutputIDs {
-		if !s.Tree.Contains(prevout.Bytes()) {
-			return fmt.Errorf("invalid prevout %x", prevout.Bytes())
+	for _, prevout := range tx.Inputs {
+		if !s.Tree.Contains(prevout.ID.Bytes()) {
+			return fmt.Errorf("invalid prevout %x", prevout.ID.Bytes())
 		}
-		s.Tree.Delete(prevout.Bytes())
+		s.Tree.Delete(prevout.ID.Bytes())
 	}
 
 	// Add new outputs. They must not yet be present.
-	for _, id := range tx.TxHeader.ResultIds {
-		// Ensure that this result is an output. It could be a retirement
-		// which should not be inserted into the state tree.
-		e := tx.Entries[*id]
-		if _, ok := e.(*bc.Output); !ok {
-			continue
-		}
-
-		err := s.Tree.Insert(id.Bytes())
+	for _, out := range tx.Outputs {
+		err := s.Tree.Insert(out.ID.Bytes())
 		if err != nil {
 			return err
 		}

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"chain/database/pg/pgtest"
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 )
 
 func TestSavePendingBlock(t *testing.T) {
@@ -35,8 +35,8 @@ func TestSavePendingBlock(t *testing.T) {
 	}
 }
 
-func fakeBlock(height uint64) *legacy.Block {
-	return &legacy.Block{
-		BlockHeader: legacy.BlockHeader{Height: height},
+func fakeBlock(height uint64) *bcvm.Block {
+	return &bcvm.Block{
+		BlockHeader: bcvm.BlockHeader{Height: height},
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"chain/errors"
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 	"chain/protocol/state"
 )
 
@@ -15,12 +15,12 @@ import (
 //
 // If the blockchain is empty (missing initial block), this function
 // returns a nil block and an empty snapshot.
-func (c *Chain) Recover(ctx context.Context) (*legacy.Block, *state.Snapshot, error) {
+func (c *Chain) Recover(ctx context.Context) (*bcvm.Block, *state.Snapshot, error) {
 	snapshot, snapshotHeight, err := c.store.LatestSnapshot(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting latest snapshot")
 	}
-	var b *legacy.Block
+	var b *bcvm.Block
 	if snapshotHeight > 0 {
 		b, err = c.store.GetBlock(ctx, snapshotHeight)
 		if err != nil {
@@ -46,7 +46,7 @@ func (c *Chain) Recover(ctx context.Context) (*legacy.Block, *state.Snapshot, er
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "getting block")
 		}
-		err = snapshot.ApplyBlock(legacy.MapBlock(b))
+		err = snapshot.ApplyBlock(b)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "applying block")
 		}

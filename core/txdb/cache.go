@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"sync"
 
-	"chain/protocol/bc/legacy"
+	"chain/protocol/bc/bcvm"
 
 	"github.com/golang/groupcache/lru"
 	"github.com/golang/groupcache/singleflight"
@@ -12,7 +12,7 @@ import (
 
 const maxCachedBlocks = 30
 
-func newBlockCache(fillFn func(height uint64) (*legacy.Block, error)) blockCache {
+func newBlockCache(fillFn func(height uint64) (*bcvm.Block, error)) blockCache {
 	return blockCache{
 		lru:    lru.New(maxCachedBlocks),
 		fillFn: fillFn,
@@ -23,12 +23,12 @@ type blockCache struct {
 	mu  sync.Mutex
 	lru *lru.Cache
 
-	fillFn func(height uint64) (*legacy.Block, error)
+	fillFn func(height uint64) (*bcvm.Block, error)
 
 	single singleflight.Group // for cache misses
 }
 
-func (c *blockCache) lookup(height uint64) (*legacy.Block, error) {
+func (c *blockCache) lookup(height uint64) (*bcvm.Block, error) {
 	b, ok := c.get(height)
 	if ok {
 		return b, nil
@@ -48,20 +48,20 @@ func (c *blockCache) lookup(height uint64) (*legacy.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	return block.(*legacy.Block), nil
+	return block.(*bcvm.Block), nil
 }
 
-func (c *blockCache) get(height uint64) (*legacy.Block, bool) {
+func (c *blockCache) get(height uint64) (*bcvm.Block, bool) {
 	c.mu.Lock()
 	block, ok := c.lru.Get(height)
 	c.mu.Unlock()
 	if block == nil {
 		return nil, ok
 	}
-	return block.(*legacy.Block), ok
+	return block.(*bcvm.Block), ok
 }
 
-func (c *blockCache) add(block *legacy.Block) {
+func (c *blockCache) add(block *bcvm.Block) {
 	c.mu.Lock()
 	c.lru.Add(block.Height, block)
 	c.mu.Unlock()
