@@ -1,4 +1,4 @@
-# Txvm
+# TxVM
 
 This is the specification for txvm, which combines a representation for blockchain transactions with the rules for ensuring their validity.
 
@@ -12,6 +12,43 @@ When the virtual machine executes a txvm program, it accumulates different types
 
 The pieces of transaction information - the inputs, outputs, etc. - that are produced during txvm execution are also _consumed_ in order to produce the transaction ID, which is the sole output of a successful txvm program. To capture pieces of transaction information for purposes other than validation, txvm implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
+## Overview of Confidential Assets in TxVM
+
+All values are represented as commitments by default. Perfect binding is ensured by a combination of asset ID commitment (AC, 2 points) and a value commitment (VC, 2 points).
+
+Non-blinded commitments are done using zero blinding factors with "non-confidential range proofs":
+
+* Non-confidential ARP contains simply an asset ID. Verifier converts asset ID to asset point A, which is then wrapped in a commitment `AC=(A,O)`.
+* Non-confidential VRP contains simply an amount. Verifier multiplies amount by AC: `VC = amount*AC = (amount*A, O)`.
+
+TxVM has three stacks for managing value flow:
+
+* IC-stack: issuance candidates
+* PAC-stack: Proven asset commitments
+* PVC-stack: Proven value commitments
+* UVC-stack: Unproven value commitments
+
+When an input is unlocked, its AC and VC are pushed to the PAC- and PVC-stacks respectively.
+
+When issuance is performed, the AC and VC are proven using IARP and VRP and placed to the PAC- and PVC-stacks respectively.
+
+Note: issuance candiates, and issued AC and VC should be prepared up-front (with deferred predicates on the condition stack) so that IARP and issuance programs can sign the entire tx or introspect these values. 
+
+**Merge** of proven value commitments does not require a proof.
+
+**Split** takes a proven value commitment from PVC-stack (VC0), a VC from data stack (VC1), a VRP for VC1 and outputs VC2 to UVC.
+
+**ProveAssetRange** takes an AC’ from data stack, a ARP that references ACs on PAC-stack. If ARP is valid in respect to prove ACs, the AC' is pushed to PAC-stack.
+
+**ProveValueRange** takes VC from UVC-stack, AC from PAC-stack, VRP, verifies VRP and pushes VC unmodified to PVC-stack.
+
+**ProveAsset** pops AC, asset ID and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes asset ID to the data stack.
+
+**ProveValue** pops VC, AC, amount and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes amount to the data stack.
+
+When tx is summarized, no unproven VCs must be left.
+
+
 # VM Execution
 
 The VM is initialized with all stacks empty.
@@ -24,9 +61,9 @@ When the program counter is equal to the length of the program, execution is com
 
 There are three types of items on the VM stacks, with the following numeric identifiers.
 
-Int64 (33)
-String String (34)
-Tuple (35)
+* Int64 (33)
+* String (34)
+* Tuple (35)
 
 "Boolean" is not a separate type. Operations that produce booleans produce the two int64 values `0` (for false) and `1` (for true). Operations that consume booleans treat `0` as false, and all other values (including all strings and tuples) as `true`.
 
@@ -551,3 +588,5 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 ### Pushdata
 
 [TBD: use Keith's method for this]
+
+
