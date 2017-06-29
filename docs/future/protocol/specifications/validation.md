@@ -64,18 +64,17 @@ A new node starts here when joining a new network (with height = 1).
 1. consensus program,
 2. time.
 
-**Output:** true or false.
+**Output:** true.
 
 **Affects:** current blockchain state.
 
 **Algorithm:**
 
-1. [Make an initial block](#make-initial-block) with the input block’s timestamp and [consensus program](blockchain.md#block-header).
-2. The created block must equal the input block; if not, halt and return false.
-3. Allocate an empty unspent output set.
-4. The initial block and these empty sets together constitute the *initial state*.
-5. Assign the initial state to the current blockchain state.
-6. Return true.
+1. [Make an initial block](#make-initial-block) with the given time and [consensus program](blockchain.md#block-header).
+2. Allocate an empty unspent output set.
+3. The initial block and these empty sets together constitute the *initial state*.
+4. Assign the initial state to the current blockchain state.
+5. Return true.
 
 
 ### Join existing network
