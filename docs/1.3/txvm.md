@@ -21,7 +21,7 @@ Non-blinded commitments are done using zero blinding factors with "non-confident
 * Non-confidential ARP contains simply an asset ID. Verifier converts asset ID to asset point A, which is then wrapped in a commitment `AC=(A,O)`.
 * Non-confidential VRP contains simply an amount. Verifier multiplies amount by AC: `VC = amount*AC = (amount*A, O)`.
 
-TxVM has three stacks for managing value flow:
+TxVM has 4 stacks for managing value flow:
 
 * IC-stack: issuance candidates
 * PAC-stack: Proven asset commitments
@@ -65,6 +65,8 @@ Pushes:
 * `iarp-condition` to condition stack. 
 * each `(assetdefinition, issuance pubkey)` to IC-stack.
 * each `assetdefinition.issuanceprogram` to condition stack.
+
+IC-stack is necessary so that `issuanceprogram` can verify that the correct issuance key is used.
 
 When tx is summarized, no unproven VCs must be left on the UVC-stack.
 
