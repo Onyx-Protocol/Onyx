@@ -11,12 +11,6 @@ import (
 )
 
 func TestDetectStaleConfig(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("Expected panic detecting stale config")
-		}
-	}()
-
 	ctx := context.Background()
 	sdb := sinkdbtest.NewDB(t)
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
@@ -24,11 +18,13 @@ func TestDetectStaleConfig(t *testing.T) {
 
 	// Write config to sinkdb
 	sdb.Exec(ctx,
-		sinkdb.IfNotExists("/core/config"),
 		sinkdb.Set("/core/config", c),
 	)
 
-	Load(ctx, db, sdb)
+	c, _ = Load(ctx, db, sdb)
+	if c != nil {
+		t.Errorf("Expected nil config")
+	}
 }
 
 // newTestConfig returns a new Config object
