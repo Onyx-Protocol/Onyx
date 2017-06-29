@@ -113,7 +113,7 @@ func idMatchesPG(ctx context.Context, id string, db pg.DB) (bool, error) {
 	const q = `SELECT id FROM core_id`
 	var pgID string
 	err := db.QueryRowContext(ctx, q).Scan(&pgID)
-	if err != sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
 		return false, errors.Wrap(err)
 	}
 	return err == nil && pgID == id, nil

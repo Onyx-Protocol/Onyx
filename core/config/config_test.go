@@ -9,6 +9,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/database/sinkdb"
 	"chain/database/sinkdb/sinkdbtest"
+	"chain/errors"
 )
 
 func TestDetectStaleConfig(t *testing.T) {
@@ -22,10 +23,51 @@ func TestDetectStaleConfig(t *testing.T) {
 		sinkdb.Set("/core/config", c),
 	)
 
-	c, _ = Load(ctx, db, sdb)
+	var err error
+	c, err = Load(ctx, db, sdb)
 	if c != nil {
 		t.Errorf("Expected nil config")
 	}
+	err = errors.Root(err)
+	if err != ErrStaleRaftConfig {
+		t.Errorf("Expected ErrStaleRaftConfig")
+	}
+}
+
+func TestLoadUnconfigured(t *testing.T) {
+	ctx := context.Background()
+	sdb := sinkdbtest.NewDB(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	c := newTestConfig(t)
+
+	var err error
+	c, err = Load(ctx, db, sdb)
+	if c != nil {
+		t.Errorf("Expected nil config")
+	}
+	must(t, err)
+}
+
+func TestLoadConfigNoErr(t *testing.T) {
+	ctx := context.Background()
+	sdb := sinkdbtest.NewDB(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	c := newTestConfig(t)
+
+	// Write config to sinkdb and pg
+	sdb.Exec(ctx,
+		sinkdb.Set("/core/config", c),
+	)
+	const q = `INSERT INTO core_id (id) VALUES ($1)`
+	var err error
+	_, err = db.ExecContext(ctx, q, c.Id)
+	must(t, err)
+
+	c, err = Load(ctx, db, sdb)
+	if c == nil {
+		t.Errorf("Expected loaded config")
+	}
+	must(t, err)
 }
 
 // newTestConfig returns a new Config object
