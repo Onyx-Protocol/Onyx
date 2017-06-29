@@ -114,7 +114,8 @@ func (opts *Options) ListFunc(key string) func() [][]string {
 	// configuration key. The returned closure will update it on
 	// every successful lookup. If an error occurs, the closure
 	// returns this value.
-	var old atomic.Value // [][]string
+	var old atomic.Value
+	old.Store([][]string(nil))
 
 	return func() [][]string {
 		var set configpb.ValueSet
