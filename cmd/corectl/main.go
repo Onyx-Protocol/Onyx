@@ -436,14 +436,9 @@ func get(client *rpc.Client, args []string) {
 	var resp map[string][][]string
 	err := client.Call(context.Background(), "/config", req, &resp)
 	dieOnRPCError(err)
-	for key, tuples := range resp {
-		if len(tuples) == 1 {
-			fmt.Printf("%s: %s\n", key, strings.Join(tuples[0], " "))
-		} else {
-			fmt.Printf("%s:\n", key)
-			for _, tup := range tuples {
-				fmt.Printf(" - %s\n", strings.Join(tup, " "))
-			}
+	for _, tuples := range resp {
+		for _, tup := range tuples {
+			fmt.Println(strings.Join(tup, " "))
 		}
 	}
 }
