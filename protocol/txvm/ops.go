@@ -610,24 +610,25 @@ func opSummarize(vm *vm) {
 	if vm.tupleStacks[StackSummary].Len() > 0 {
 		panic(errors.New("txheader already created"))
 	}
-	var historyArgs []Value
-	for vm.tupleStacks[StackInput].Len() > 0 {
-		historyArgs = append(historyArgs, vm.tupleStacks[StackInput].Pop())
-	}
-	for vm.tupleStacks[StackOutput].Len() > 0 {
-		historyArgs = append(historyArgs, vm.tupleStacks[StackOutput].Pop())
-	}
-	for vm.tupleStacks[StackNonce].Len() > 0 {
-		historyArgs = append(historyArgs, vm.tupleStacks[StackNonce].Pop())
-	}
-	for vm.tupleStacks[StackRetirement].Len() > 0 {
-		historyArgs = append(historyArgs, vm.tupleStacks[StackRetirement].Pop())
-	}
-	for vm.tupleStacks[StackTimeConstraint].Len() > 0 {
-		historyArgs = append(historyArgs, vm.tupleStacks[StackTimeConstraint].Pop())
-	}
-	for vm.tupleStacks[StackAnnotation].Len() > 0 {
-		historyArgs = append(historyArgs, vm.tupleStacks[StackAnnotation].Pop())
+
+	var (
+		historyArgs []Value
+		usedIDs     = make(map[string]bool)
+		stacks      = []int{StackInput, StackOutput, StackNonce, StackRetirement, StackTimeConstraint, StackAnnotation}
+	)
+	for _, s := range stacks {
+		stack := &vm.tupleStacks[s]
+		for stack.Len() > 0 {
+			if s == StackInput || s == StackNonce {
+				id := string(stack.ID(stack.Len() - 1))
+				if usedIDs[id] {
+					panic(errors.New("reused id"))
+				}
+				usedIDs[id] = true
+			}
+
+			historyArgs = append(historyArgs, vm.tupleStacks[s].Pop())
+		}
 	}
 
 	vm.tupleStacks[StackSummary].Push(newTuple(
