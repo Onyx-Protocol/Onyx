@@ -69,7 +69,7 @@ var (
 	rpsToken      = env.Int("RATELIMIT_TOKEN", 0)       // reqs/sec
 	rpsRemoteAddr = env.Int("RATELIMIT_REMOTE_ADDR", 0) // reqs/sec
 	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
-	home          = core.HomeDirFromEnvironment()
+	home          = config.HomeDirFromEnvironment()
 
 	version string // initialized in init()
 

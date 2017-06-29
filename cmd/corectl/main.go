@@ -30,7 +30,7 @@ import (
 
 // config vars
 var (
-	home    = core.HomeDirFromEnvironment()
+	home    = config.HomeDirFromEnvironment()
 	coreURL = env.String("CORE_URL", "http://localhost:1999")
 
 	// build vars; initialized by the linker
