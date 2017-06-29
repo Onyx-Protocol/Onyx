@@ -67,8 +67,11 @@ func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err)
 	} else if ver.Exists() {
-		raftID := c.Id
-		if !idMatchesPG(ctx, raftID, db) {
+		var match bool
+		match, err = idMatchesPG(ctx, c.Id, db)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		} else if !match {
 			raftDir := filepath.Join(HomeDirFromEnvironment(), "raft")
 			return nil, errors.Wrap(ErrStaleRaftConfig, "Stale Raft config in "+raftDir)
 		}
@@ -106,11 +109,14 @@ func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 	return c, nil
 }
 
-func idMatchesPG(ctx context.Context, id string, db pg.DB) bool {
+func idMatchesPG(ctx context.Context, id string, db pg.DB) (bool, error) {
 	const q = `SELECT id FROM core_id`
 	var pgID string
 	err := db.QueryRowContext(ctx, q).Scan(&pgID)
-	return err == nil && pgID == id
+	if err != sql.ErrNoRows {
+		return false, errors.Wrap(err)
+	}
+	return err == nil && pgID == id, nil
 }
 
 // loadFromPG loads the stored configuration from Postgres.
