@@ -22,7 +22,7 @@ const (
 )
 
 type Stack interface {
-	Len() int64
+	Len() int
 	Element(n int) Value
 	ID(n int) []byte
 }
@@ -31,8 +31,8 @@ type stack struct {
 	a []Value
 }
 
-func (s *stack) Len() int64 {
-	return int64(len(s.a))
+func (s *stack) Len() int {
+	return len(s.a)
 }
 
 func (s *stack) Element(n int) Value {
@@ -95,8 +95,8 @@ type tupleStack struct {
 	a []tupleID
 }
 
-func (s *tupleStack) Len() int64 {
-	return int64(len(s.a))
+func (s *tupleStack) Len() int {
+	return len(s.a)
 }
 
 func (s *tupleStack) Element(n int) Value {

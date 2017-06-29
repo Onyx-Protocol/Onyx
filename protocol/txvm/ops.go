@@ -78,7 +78,8 @@ var ops = [NumOp]func(*vm){
 	Split:        opSplit,
 	Lock:         opLock,
 	Retire:       opRetire,
-	Anchor:       opAnchor,
+	Nonce:        opNonce,
+	Reanchor:     opReanchor,
 	Issue:        opIssue,
 	Before:       opBefore,
 	After:        opAfter,
@@ -438,8 +439,7 @@ func opUnlock(vm *vm) {
 		panic(errors.New("expected output tuple"))
 	}
 	vm.tupleStacks[StackInput].Push(input)
-	assetAmounts := input.Field(2).(Tuple)
-	n := 0
+	assetAmounts := input.Field(1).(Tuple)
 	for i := 0; i < assetAmounts.Len(); i++ {
 		assetAmount := assetAmounts.Field(i).(Tuple)
 		if !checkTuple(assetAmount, AssetAmountTuple) {
@@ -447,25 +447,24 @@ func opUnlock(vm *vm) {
 		}
 		vm.tupleStacks[StackValue].Push(newTuple(
 			Bytes(ValueTuple),
-			historyID(Unlock, n, input),
 			assetAmount.Field(0),
 			assetAmount.Field(1),
 		))
-		n++
 	}
 	vm.tupleStacks[StackAnchor].Push(newTuple(
 		Bytes(AnchorTuple),
-		historyID(Unlock, n, input),
+		Bytes(vm.tupleStacks[StackInput].ID(vm.tupleStacks[StackInput].Len()-1)),
 	))
-	exec(vm, input.Field(3).(Bytes))
+	exec(vm, input.Field(2).(Bytes))
 }
 
 func opUnlockOutput(vm *vm) {
-	output := vm.data.PopTuple()
+	outputID := vm.tupleStacks[StackOutput].ID(vm.tupleStacks[StackOutput].Len() - 1)
+	output := vm.tupleStacks[StackOutput].Pop()
 	if !checkTuple(output, OutputTuple) {
 		panic(errors.New("expected output tuple"))
 	}
-	assetAmounts := output.Field(2).(Tuple)
+	assetAmounts := output.Field(1).(Tuple)
 	for i := 0; i < assetAmounts.Len(); i++ {
 		assetAmount := assetAmounts.Field(i).(Tuple)
 		if !checkTuple(assetAmount, AssetAmountTuple) {
@@ -473,33 +472,35 @@ func opUnlockOutput(vm *vm) {
 		}
 		vm.tupleStacks[StackValue].Push(newTuple(
 			Bytes(ValueTuple),
-			historyID(UnlockOutput, i, output),
 			assetAmount.Field(0),
 			assetAmount.Field(1),
 		))
 	}
-	exec(vm, output.Field(3).(Bytes))
+	vm.tupleStacks[StackAnchor].Push(newTuple(
+		Bytes(AnchorTuple),
+		Bytes(outputID),
+	))
+	exec(vm, output.Field(2).(Bytes))
 }
 
 func opMerge(vm *vm) {
 	val1 := vm.tupleStacks[StackValue].Pop()
 	val2 := vm.tupleStacks[StackValue].Pop()
 
-	if !idsEqual(val1.Field(3).(Bytes), val2.Field(3).(Bytes)) {
+	if !idsEqual(val1.Field(2).(Bytes), val2.Field(2).(Bytes)) {
 		panic(errors.New("merging different assets"))
 	}
 
-	assetid := val1.Field(3).(Bytes)
-	sum := int64(val1.Field(2).(Int64))
+	assetid := val1.Field(2).(Bytes)
+	sum := int64(val1.Field(1).(Int64))
 	var ok bool
-	sum, ok = checked.AddInt64(sum, int64(val2.Field(2).(Int64)))
+	sum, ok = checked.AddInt64(sum, int64(val2.Field(1).(Int64)))
 	if !ok {
 		panic(errors.New("range"))
 	}
 
 	vm.tupleStacks[StackValue].Push(newTuple(
 		Bytes(ValueTuple),
-		historyID(Merge, 0, val1, val2),
 		Int64(sum),
 		assetid,
 	))
@@ -509,7 +510,7 @@ func opSplit(vm *vm) {
 	val := vm.tupleStacks[StackValue].Pop()
 	amt := vm.data.PopInt64()
 
-	originalAmt := int64(val.Field(2).(Int64))
+	originalAmt := int64(val.Field(1).(Int64))
 
 	if amt >= originalAmt {
 		panic(errors.New("split value must be less"))
@@ -517,16 +518,14 @@ func opSplit(vm *vm) {
 
 	vm.tupleStacks[StackValue].Push(newTuple(
 		Bytes(ValueTuple),
-		historyID(Split, 0, val, Int64(amt)),
 		Int64(amt),
-		val.Field(3),
+		val.Field(2),
 	))
 
 	vm.tupleStacks[StackValue].Push(newTuple(
 		Bytes(ValueTuple),
-		historyID(Split, 1, val, Int64(amt)),
 		Int64(originalAmt-amt),
-		val.Field(3),
+		val.Field(2),
 	))
 }
 
@@ -540,31 +539,32 @@ func opLock(vm *vm) {
 		value := vm.tupleStacks[StackValue].Pop()
 		values = append(values, value)
 		assetAmounts = append(assetAmounts, newTuple(
+			value.Field(1),
 			value.Field(2),
-			value.Field(3),
 		))
 	}
 
 	prog := vm.data.PopBytes()
-	historyArgs := append(append([]Value{Int64(n)}, values...), Bytes(prog))
+
+	anchorID := vm.tupleStacks[StackAnchor].ID(vm.tupleStacks[StackAnchor].Len() - 1)
+	vm.tupleStacks[StackAnchor].Pop()
 
 	vm.tupleStacks[StackOutput].Push(newTuple(
 		Bytes(OutputTuple),
-		historyID(Lock, 0, historyArgs...),
 		newTuple(assetAmounts...),
 		Bytes(prog),
+		Bytes(anchorID),
 	))
 }
 
 func opRetire(vm *vm) {
-	val := vm.tupleStacks[StackValue].Pop()
 	vm.tupleStacks[StackRetirement].Push(newTuple(
 		Bytes(RetirementTuple),
-		historyID(Retire, 0, val),
+		vm.tupleStacks[StackValue].Pop(),
 	))
 }
 
-func opAnchor(vm *vm) {
+func opNonce(vm *vm) {
 	tuple := vm.data.PopTuple()
 	if !checkTuple(tuple, NonceTuple) {
 		panic(errors.New("expected nonce tuple"))
@@ -572,9 +572,18 @@ func opAnchor(vm *vm) {
 	vm.tupleStacks[StackNonce].Push(tuple)
 	vm.tupleStacks[StackAnchor].Push(newTuple(
 		Bytes(AnchorTuple),
-		historyID(Anchor, 0, tuple),
+		historyID(Nonce, 0, tuple),
 	))
 	exec(vm, tuple.Field(1).(Bytes))
+}
+
+func opReanchor(vm *vm) {
+	id := vm.tupleStacks[StackAnchor].ID(vm.tupleStacks[StackAnchor].Len() - 1)
+	vm.tupleStacks[StackAnchor].Pop()
+	vm.tupleStacks[StackAnchor].Push(newTuple(
+		Bytes(AnchorTuple),
+		Bytes(id),
+	))
 }
 
 func opIssue(vm *vm) {
@@ -583,19 +592,14 @@ func opIssue(vm *vm) {
 		panic(errors.New("expected asset definition tuple"))
 	}
 	amount := vm.data.PopInt64()
-	anchor := vm.tupleStacks[StackAnchor].Pop()
 	assetID := calcID(assetDef)
 	vm.tupleStacks[StackValue].Push(newTuple(
 		Bytes(ValueTuple),
-		historyID(Issue, 0, assetDef, Int64(amount), anchor),
 		Int64(amount),
 		Bytes(assetID),
 	))
-	vm.tupleStacks[StackAnchor].Push(newTuple(
-		Bytes(AnchorTuple),
-		historyID(Issue, 1, assetDef, Int64(amount), anchor),
-	))
-	exec(vm, assetDef.Field(2).(Bytes))
+	opReanchor(vm)
+	exec(vm, assetDef.Field(1).(Bytes))
 }
 
 func opBefore(vm *vm) {

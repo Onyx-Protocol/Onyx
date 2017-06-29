@@ -19,8 +19,8 @@ func testTracer(t testing.TB) OpTracer {
 
 func TestIssue(t *testing.T) {
 	tx, err := Assemble(`
-		{'nonce', [1 verify], 0, 10000} anchor
-		100 {'assetdefinition', {}, [1 verify]} issue
+		{'nonce', [1 verify], 0, 10000} nonce
+		100 {'assetdefinition', [1 verify]} issue
 		[1 verify] 1 lock
 		summarize
 	`)
@@ -37,12 +37,12 @@ func TestSpend(t *testing.T) {
 	tx, err := Assemble(`
 		{
 			'output',
-			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
 			{{
 				100,
 				"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100"x,
 			}},
 			[1 verify],
+			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
 		} unlock
 		retire
 		summarize
@@ -58,8 +58,8 @@ func TestSpend(t *testing.T) {
 
 func TestEntries(t *testing.T) {
 	tx, err := Assemble(`
-		{'nonce', [1 verify], 0, 10000} anchor
-		100 {'assetdefinition', {}, [1 verify]} issue
+		{'nonce', [1 verify], 0, 10000} nonce
+		100 {'assetdefinition', [1 verify]} issue
 		"abba"x 3 id 2 maketuple encode annotate
 		45 split merge
 		retire

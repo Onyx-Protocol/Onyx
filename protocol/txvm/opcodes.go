@@ -80,29 +80,30 @@ const (
 	Split        = 50 // value + amount => value value
 	Lock         = 51 // value + prog => outputid
 	Retire       = 52 // value + refdata => {}
-	Anchor       = 53 // nonce + data => anchor + cond
-	Issue        = 54 // anchor + data => value + cond
-	IssueCA      = 55 // TODO(kr): review for CA
-	Before       = 56
-	After        = 57
-	Summarize    = 58
-	Migrate      = 59
-	ProveRange   = 60 // TODO(kr): review for CA
-	ProveValue   = 61 // TODO(kr): review for CA
-	ProveAsset   = 62 // TODO(kr): review for CA
-	Blind        = 63 // TODO(kr): review for CA
+	Nonce        = 53 // nonce + data => anchor + cond
+	Reanchor     = 54
+	Issue        = 55 // anchor + data => value + cond
+	IssueCA      = 56 // TODO(kr): review for CA
+	Before       = 57
+	After        = 58
+	Summarize    = 59
+	Migrate      = 60
+	ProveRange   = 61 // TODO(kr): review for CA
+	ProveValue   = 62 // TODO(kr): review for CA
+	ProveAsset   = 63 // TODO(kr): review for CA
+	Blind        = 64 // TODO(kr): review for CA
 
 	// extensions
-	Nop0    = 64
-	Nop1    = 65
-	Nop2    = 66
-	Nop3    = 67
-	Nop4    = 68
-	Nop5    = 69
-	Nop6    = 70
-	Nop7    = 71
-	Nop8    = 72
-	Private = 73
+	Nop0    = 65
+	Nop1    = 66
+	Nop2    = 67
+	Nop3    = 68
+	Nop4    = 69
+	Nop5    = 70
+	Nop6    = 71
+	Nop7    = 72
+	Nop8    = 73
+	Private = 74
 
 	NumOp = 80
 

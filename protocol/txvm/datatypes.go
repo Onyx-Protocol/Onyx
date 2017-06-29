@@ -19,16 +19,16 @@ const (
 )
 
 var tupleContents = map[string][]int{
-	ValueTuple:           []int{TypeString, TypeString, TypeInt64, TypeString},
-	OutputTuple:          []int{TypeString, TypeString, TypeTuple, TypeString},
+	ValueTuple:           []int{TypeString, TypeInt64, TypeString},
+	OutputTuple:          []int{TypeString, TypeTuple, TypeString, TypeString},
 	NonceTuple:           []int{TypeString, TypeString, TypeInt64, TypeInt64},
-	RetirementTuple:      []int{TypeString, TypeString},
+	RetirementTuple:      []int{TypeString, TypeTuple},
 	AnchorTuple:          []int{TypeString, TypeString},
-	AssetDefinitionTuple: []int{TypeString, TypeTuple, TypeString},
+	AssetDefinitionTuple: []int{TypeString, TypeString},
 	MaxTimeTuple:         []int{TypeString, TypeInt64},
 	MinTimeTuple:         []int{TypeString, TypeInt64},
 	AnnotationTuple:      []int{TypeString, TypeString},
-	SummaryTuple:         []int{TypeString, TypeString},
+	SummaryTuple:         []int{TypeString, TypeTuple, TypeTuple, TypeTuple, TypeTuple, TypeTuple},
 	AssetAmountTuple:     []int{TypeInt64, TypeString},
 }
 
