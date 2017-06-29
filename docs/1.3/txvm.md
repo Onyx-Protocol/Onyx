@@ -40,13 +40,33 @@ Note: issuance candiates, and issued AC and VC should be prepared up-front (with
 
 **ProveAssetRange** takes an AC’ from data stack, a ARP that references ACs on PAC-stack. If ARP is valid in respect to prove ACs, the AC' is pushed to PAC-stack.
 
-**ProveValueRange** takes VC from UVC-stack, AC from PAC-stack, VRP, verifies VRP and pushes VC unmodified to PVC-stack.
+**ProveValueRange** takes VC from UVC-stack, AC from PAC-stack, VRP, verifies VRP and pushes VC unmodified to PVC-stack. VRP can be non-confidential.
 
 **ProveAsset** pops AC, asset ID and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes asset ID to the data stack.
 
 **ProveValue** pops VC, AC, amount and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes amount to the data stack.
 
-When tx is summarized, no unproven VCs must be left.
+**Issue** pops from data stack:
+
+* AC
+* VC
+* iarp-condition
+* list of candidate tuples (asset definition, issuance pubkey)
+* IARP
+* VRP
+
+Verifies IARP using issuance pubkeys and signing over (AC,VC,iarp-condition)
+
+Verifies VRP over (AC,VC,iarp-condition).
+
+Pushes:
+
+* AC and VC to PAC-stack and PVC-stack respectively. 
+* `iarp-condition` to condition stack. 
+* each `(assetdefinition, issuance pubkey)` to IC-stack.
+* each `assetdefinition.issuanceprogram` to condition stack.
+
+When tx is summarized, no unproven VCs must be left on the UVC-stack.
 
 
 # VM Execution
