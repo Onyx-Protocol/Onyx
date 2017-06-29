@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"time"
 
 	"chain/core/accesstoken"
@@ -41,6 +42,7 @@ var (
 	ErrBadQuorum       = errors.New("quorum must be greater than 0 if there are signers")
 	ErrNoBlockPub      = errors.New("blockpub cannot be empty in mockhsm disabled build")
 	ErrNoBlockHSMURL   = errors.New("block hsm URL cannot be empty in mockhsm disabled build")
+	ErrStaleRaftConfig = errors.New("raft core ID doesn't match Postgres core ID")
 
 	Version, BuildCommit, BuildDate string
 
@@ -65,6 +67,14 @@ func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err)
 	} else if ver.Exists() {
+		var match bool
+		match, err = idMatchesPG(ctx, c.Id, db)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		} else if !match {
+			raftDir := filepath.Join(HomeDirFromEnvironment(), "raft")
+			return nil, errors.Wrap(ErrStaleRaftConfig, "Stale Raft config in "+raftDir)
+		}
 		return c, nil
 	}
 
@@ -97,6 +107,16 @@ func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 		panic(err)
 	}
 	return c, nil
+}
+
+func idMatchesPG(ctx context.Context, id string, db pg.DB) (bool, error) {
+	const q = `SELECT id FROM core_id`
+	var pgID string
+	err := db.QueryRowContext(ctx, q).Scan(&pgID)
+	if err != nil && err != sql.ErrNoRows {
+		return false, errors.Wrap(err)
+	}
+	return err == nil && pgID == id, nil
 }
 
 // loadFromPG loads the stored configuration from Postgres.
