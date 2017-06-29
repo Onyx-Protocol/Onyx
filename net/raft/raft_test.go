@@ -46,6 +46,7 @@ func TestWriteID(t *testing.T) {
 }
 
 func TestReadID(t *testing.T) {
+	sv := Service{state: newTestState()}
 	dir, err := ioutil.TempDir("", "raft_test.go")
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +59,7 @@ func TestReadID(t *testing.T) {
 			continue
 		}
 
-		got, err := readID(dir)
+		got, err := sv.readID(dir)
 		if err != nil {
 			t.Error(err)
 			continue

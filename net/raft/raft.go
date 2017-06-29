@@ -126,6 +126,7 @@ type State interface {
 	IsAllowedMember(addr string) bool
 	NextNodeID() (id, version uint64)
 	EmptyWrite() (instruction []byte)
+	ReadFile(name string) (data []byte, err error)
 	WriteFile(name string, data []byte, perm os.FileMode) error
 	IncrementNextNodeID(oldID uint64, index uint64) (instruction []byte)
 }
@@ -214,7 +215,7 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 		return sv, nil
 	}
 
-	id, err := readID(sv.dir)
+	id, err := sv.readID(sv.dir)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -804,7 +805,7 @@ func (sv *Service) recover() (*wal.WAL, error) {
 	}
 
 	var raftSnap raftpb.Snapshot
-	snapData, err := ioutil.ReadFile(sv.snapFile())
+	snapData, err := sv.state.ReadFile(sv.snapFile())
 	if err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrap(err)
 	}
@@ -903,8 +904,8 @@ func (sv *Service) saveSnapshot(snapshot *raftpb.Snapshot) error {
 	return sv.state.WriteFile(sv.snapFile(), d, 0666)
 }
 
-func readID(dir string) (uint64, error) {
-	d, err := ioutil.ReadFile(filepath.Join(dir, "id"))
+func (sv *Service) readID(dir string) (uint64, error) {
+	d, err := sv.state.ReadFile(filepath.Join(dir, "id"))
 	if err != nil {
 		return 0, err
 	}
