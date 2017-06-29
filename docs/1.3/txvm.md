@@ -138,12 +138,17 @@ There are several named types of tuples.
 1. `amount`, an int64
 2. `assetID`, a string
 
-#### Output
+#### Contract
 
-0. `type`, a string, "output"
+0. `type`, a string, "contract"
 1. `values`, a tuple of [value commitments](#value-commitment)
-2. `program`, a string
+2. `program`, a [Program](#program)
 3. `anchor`, a string
+
+#### Program
+
+0. `type`, a string, "program"
+1. `script`, a string
 
 #### Nonce
 
@@ -165,7 +170,7 @@ There are several named types of tuples.
 #### Asset Definition
 
 0. `type`, a string, "assetdefinition"
-1. `issuanceprogram`, a string
+1. `issuanceprogram`, a [Program](#program)
 
 #### Maxtime
 
@@ -180,13 +185,13 @@ There are several named types of tuples.
 ### Annotation stack
 
 0. `type`, a string, "annotation"
-1. `referencedata`, a string
+1. `data`, a string
 
 #### Transaction Summary
 
 0. `type`, an int64
-1. `inputs`, a tuple of [outputs](#output)
-2. `outputs`, a tuple of [outputs](#input)
+1. `inputs`, a tuple of [contracts](#contract)
+2. `outputs`, a tuple of [contracts](#contract)
 3. `retirements`, a tuple of [retirements](#retirement)
 4. `nonces`, a tuple of [nonces](#nonces)
 5. `annotations`, a tuple of [annotations](#annotation)
@@ -230,7 +235,7 @@ Items on the alt stack have the same types as items on the data stack. The alt s
 
 ### Input stack
 
-Items on the Input stack are [Outputs](#output) or [Legacy Outputs](#legacy-output).
+Items on the Input stack are [Contracts](#contract) or [Legacy Outputs](#legacy-output).
 
 ### Value stack
 
@@ -238,7 +243,7 @@ Items on the Value stack are [Values](#value).
 
 ### Output stack
 
-Items on the Output stack are [Outputs](#output).
+Items on the Output stack are [Contracts](#contract).
 
 ### Nonce stack
 
@@ -250,7 +255,7 @@ Items on the anchor stack are [Anchors](#anchor).
 
 ### Condition stack
 
-Items on the Condition stack are strings, representing programs.
+Items on the Condition stack are [Programs](#program).
 
 ### Time Constraint stack
 
@@ -323,6 +328,10 @@ Pops an integer `stackid` from the data stack, representing a [stack identifier]
 
 Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Counts the number of items on the stack identified by `stackid`, and pushes it to the data stack.
 
+### Inspect
+
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Looks at the item on top of the stack identified by `stackid`, and pushes a copy of it to the data stack.
+
 ## Data stack operations
 
 ### Equal
@@ -365,9 +374,9 @@ Pops a tuple `tuple` from the data stack. Pushes each of the fields in `tuple` t
 
 ### Field
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stack-identifier), and pops another integer `i` from the top of the data stack. Looks at the tuple on top of the stack identified by `stackid`, and pushes the item in its `i`th field to the top of the data stack.
+Pops an integer `i` from the top of the data stack, and pops a tuple `tuple`. Pushes the item in the `i`th field of `tuple` to the top of the data stack.
 
-Fails if the stack identified by `stackid` is empty or does not have a tuple of at least length `i + 1` on top of it, or if `i` is negative.
+Fails if `i` is negative or greater than or equal to the number of fields in `tuple`.
 
 ## Boolean operations
 
@@ -481,15 +490,13 @@ Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed2
 
 ## Entry operations
 
-TODO: add descriptions.
-
 ### Annotate
 
-Pops a string, `referencedata`, from the data stack. Pushes an [annotation](#annotation) with `referencedata` `referencedata` to the Annotation stack.
+Pops a string, `data`, from the data stack. Pushes an [annotation](#annotation) with `data` of `data` to the Annotation stack.
 
 ### Defer
 
-Pops a string from the data stack and pushes it as an condition to the Condition stack.
+Pops a [Program](#program) from the data stack and pushes it to the Condition stack.
 
 ### Satisfy
 
@@ -497,11 +504,11 @@ Pops a condition from the Condition stack and executes it.
 
 ### Unlock
 
-Pops a tuple `input` of type [Output](#output) from the data stack. Pushes it to the Input stack. Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-id) of `input`. Executes `input.program`.
+Pops a tuple `input` of type [Contract](#contract) from the data stack. Pushes it to the Input stack. Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-id) of `input`. Executes `input.program`.
 
 ### UnlockOutput
 
-Pops an output `output` from the Output stack. Pushes each of the `values` to the Value stack. Executes `output.program`.
+Pops a [Contract](#contract) `output` from the Output stack. Pushes each of the `values` to the Value stack. Executes `output.program`.
 
 ### Merge
 
@@ -513,11 +520,11 @@ Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` f
 
 ### Lock
 
-Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Value stack. Pop a string `program` from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Push an [output](#output) to the Output stack with a tuple of the `values` as the `values`, `program` as the `program`, and the ID of `anchor` as the `anchor`.
+Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Value stack. Pop a [Program](#program) `program` from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Push a [Contract](#contract) to the Output stack with a tuple of the `values` as the `values`, `program` as the `program`, and the ID of `anchor` as the `anchor`.
 
 ### Retire
 
-Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack.
+Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack. (TBD: only proven values!)
 
 ### Nonce
 
@@ -529,7 +536,7 @@ Pop an [anchor](#anchor) `anchor` from the Anchor stack. Push a new anchor, with
 
 ### Issue
 
-Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Compute an assetID `assetID` from `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`.
+Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Compute the [ID](#item-ids) `assetid` of `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`. (TBD: confidential issuance etc).
 
 ### Before
 
