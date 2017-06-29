@@ -65,6 +65,10 @@ func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err)
 	} else if ver.Exists() {
+		raftID := c.Id
+		if !idMatchesPG(ctx, raftID, db) {
+			panic("Raft core ID doesn't match Postgres core ID: do you have a stale Raft config? Try: `rm -rf ~/.chaincore/raft`")
+		}
 		return c, nil
 	}
 
@@ -97,6 +101,19 @@ func Load(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*Config, error) {
 		panic(err)
 	}
 	return c, nil
+}
+
+func idMatchesPG(ctx context.Context, id string, db pg.DB) bool {
+	const q = `SELECT id FROM core_id`
+	var pgID string
+	err := db.QueryRowContext(ctx, q).Scan(&pgID)
+	if err != nil {
+		return false
+	}
+	if pgID == id {
+		return true
+	}
+	return false
 }
 
 // loadFromPG loads the stored configuration from Postgres.
