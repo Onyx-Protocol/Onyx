@@ -87,7 +87,7 @@ func (tx *Tx) traceSummarize(vm txvm.VM) {
 	for i := 0; i < nonces.Len(); i++ {
 		tuple := nonces.Element(i).(txvm.Tuple)
 		var id [32]byte
-		copy(nonces.ID(i), id[:])
+		copy(id[:], nonces.ID(i))
 		tx.Nonces = append(tx.Nonces, Nonce{
 			ID:      bc.NewHash(id),
 			MinTime: int64(tuple.Field(2).(txvm.Int64)),
@@ -105,15 +105,15 @@ func (tx *Tx) traceSummarize(vm txvm.VM) {
 				id     [32]byte
 				anchor [32]byte
 			)
-			copy(stack.ID(i), id[:])
-			copy(tuple.Field(3).(txvm.Bytes), anchor[:])
+			copy(id[:], stack.ID(i))
+			copy(anchor[:], tuple.Field(3).(txvm.Bytes))
 
 			var values []Value
 			tupleVals := tuple.Field(1).(txvm.Tuple)
 			for j := 0; j < tupleVals.Len(); j++ {
 				valueTuple := tupleVals.Field(j).(txvm.Tuple)
 				var assetID [32]byte
-				copy(valueTuple.Field(1).(txvm.Bytes), assetID[:])
+				copy(assetID[:], valueTuple.Field(1).(txvm.Bytes))
 				values = append(values, Value{
 					Amount:  int64(valueTuple.Field(0).(txvm.Int64)),
 					AssetID: bc.NewHash(assetID),
@@ -144,6 +144,6 @@ func (tx *Tx) traceSummarize(vm txvm.VM) {
 func (tx *Tx) traceIssue(vm txvm.VM) {
 	stack := vm.Stack(txvm.StackAnchor)
 	var id [32]byte
-	copy(stack.ID(stack.Len()-1), id[:])
+	copy(id[:], stack.ID(stack.Len()-1))
 	tx.IssueAnchors = append(tx.IssueAnchors, bc.NewHash(id))
 }

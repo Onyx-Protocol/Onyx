@@ -68,7 +68,7 @@ func Validate(tx []byte, o ...Option) ([32]byte, bool) {
 
 	var id [32]byte
 	if vm.tupleStacks[StackSummary].Len() == 1 {
-		copy(vm.tupleStacks[StackSummary].ID(0), id[:])
+		copy(id[:], vm.tupleStacks[StackSummary].ID(0))
 	}
 
 	ok := vm.tupleStacks[StackSummary].Len() == 1 &&
