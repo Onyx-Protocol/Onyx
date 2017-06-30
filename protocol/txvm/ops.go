@@ -598,8 +598,8 @@ func opIssue(vm *vm) {
 		Int64(amount),
 		Bytes(assetID),
 	))
-	opReanchor(vm)
 	exec(vm, assetDef.Field(1).(Bytes))
+	opReanchor(vm)
 }
 
 func opBefore(vm *vm) {
