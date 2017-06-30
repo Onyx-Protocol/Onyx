@@ -38,16 +38,15 @@ func NewIssuanceTx(tb testing.TB) []byte {
 		testutil.FatalErr(tb, err)
 	}
 
-	nonceProgram := fmt.Sprintf(`"%x"x drop`, nonce[:])
+	nonceProgram := fmt.Sprintf(`"%x"x drop 100 {'assetdefinition', [%s]} issue`, nonce[:], issuanceProgram)
 	mintime := bc.Millis(time.Now().Add(-5 * time.Minute))
 	maxtime := bc.Millis(time.Now().Add(5 * time.Minute))
 
 	tx, err := txvm.Assemble(fmt.Sprintf(`
 		{'nonce', [%s], %d, %d} nonce
-		100 {'assetdefinition', [%s]} issue
 		[1 verify] 1 lock
 		summarize
-	`, nonceProgram, mintime, maxtime, issuanceProgram))
+	`, nonceProgram, mintime, maxtime))
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
