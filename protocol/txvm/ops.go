@@ -572,7 +572,7 @@ func opNonce(vm *vm) {
 	vm.tupleStacks[StackNonce].Push(tuple)
 	vm.tupleStacks[StackAnchor].Push(newTuple(
 		Bytes(AnchorTuple),
-		historyID(Nonce, 0, tuple),
+		Bytes(vm.tupleStacks[StackNonce].ID(vm.tupleStacks[StackNonce].Len()-1)),
 	))
 	exec(vm, tuple.Field(1).(Bytes))
 }
@@ -616,38 +616,27 @@ func opSummarize(vm *vm) {
 	}
 
 	var (
-		historyArgs []Value
-		usedIDs     = make(map[string]bool)
-		stacks      = []int{StackInput, StackOutput, StackNonce, StackRetirement, StackTimeConstraint, StackAnnotation}
+		txVals [][]Value
+		stacks = []int{StackInput, StackOutput, StackRetirement, StackNonce, StackTimeConstraint, StackAnnotation}
 	)
 	for _, s := range stacks {
 		stack := &vm.tupleStacks[s]
+		var fieldVals []Value
 		for stack.Len() > 0 {
-			if s == StackInput || s == StackNonce {
-				id := string(stack.ID(stack.Len() - 1))
-				if usedIDs[id] {
-					panic(errors.New("reused id"))
-				}
-				usedIDs[id] = true
-			}
-
-			historyArgs = append(historyArgs, vm.tupleStacks[s].Pop())
+			fieldVals = append(fieldVals, stack.Pop())
 		}
+		txVals = append(txVals, fieldVals)
 	}
 
 	vm.tupleStacks[StackSummary].Push(newTuple(
 		Bytes(SummaryTuple),
-		historyID(Summarize, 0, historyArgs...),
+		newTuple(txVals[0]...),
+		newTuple(txVals[1]...),
+		newTuple(txVals[2]...),
+		newTuple(txVals[3]...),
+		newTuple(txVals[4]...),
+		newTuple(txVals[5]...),
 	))
-}
-
-func historyID(op byte, idx int, vals ...Value) Bytes {
-	history := newTuple(
-		Bytes([]byte{op}),
-		newTuple(vals...),
-		Int64(idx),
-	)
-	return Bytes(calcID(history))
 }
 
 func checkTuple(v Tuple, expected string) bool {
