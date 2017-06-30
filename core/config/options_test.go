@@ -62,8 +62,7 @@ func TestListFunc(t *testing.T) {
 
 	// perform a linearizable read since ListFunc won't and we
 	// want a deterministic test case
-	_, err := opts.List(ctx, "example")
-	must(t, err)
+	must(t, sdb.RaftService().WaitRead(ctx))
 
 	got := opts.ListFunc("example")()
 	want := [][]string{{"foo"}, {"bar"}}
