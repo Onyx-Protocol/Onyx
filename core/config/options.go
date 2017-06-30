@@ -169,14 +169,20 @@ func (opts *Options) Add(key string, tup []string) sinkdb.Op {
 		return sinkdb.Error(err)
 	}
 	idx := tupleIndex(existing.Tuples, cleaned, opt.equalFunc)
-	if idx != -1 {
-		// tuple already exists, so the sinkdb op is a no-op
-		return sinkdb.IfNotModified(ver)
-	}
 
 	// If the new tuple passed validation, then modify and write.
 	modified := new(configpb.ValueSet)
-	modified.Tuples = append(existing.Tuples, &configpb.ValueTuple{Values: cleaned})
+	if idx == -1 {
+		modified.Tuples = append(modified.Tuples, existing.Tuples...)
+		modified.Tuples = append(modified.Tuples, &configpb.ValueTuple{Values: cleaned})
+	} else {
+		// If the tuple's key already exists, replace it with the new value.
+		// This might be a no-op if equality for this option covers the
+		// entire tuple.
+		modified.Tuples = append(modified.Tuples, existing.Tuples[:idx]...)
+		modified.Tuples = append(modified.Tuples, &configpb.ValueTuple{Values: cleaned})
+		modified.Tuples = append(modified.Tuples, existing.Tuples[idx+1:]...)
+	}
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
 		sinkdb.Set(path.Join(sinkdbPrefix, key), modified),

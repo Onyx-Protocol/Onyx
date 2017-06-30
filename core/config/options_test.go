@@ -10,6 +10,7 @@ import (
 
 func identityFunc(tup []string) error    { return nil }
 func reflectEquality(a, b []string) bool { return reflect.DeepEqual(a, b) }
+func firstEqual(a, b []string) bool      { return a[0] == b[0] }
 
 func must(t testing.TB, err error) {
 	if err != nil {
@@ -45,6 +46,26 @@ func TestSetTuples(t *testing.T) {
 	got, err = opts.List(ctx, "example")
 	must(t, err)
 	want = [][]string{{"baz", "bax"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+}
+
+func TestSetTuplesOverwrite(t *testing.T) {
+	sdb := sinkdbtest.NewDB(t)
+	opts := New(sdb)
+	opts.DefineSet("example", 2, identityFunc, firstEqual)
+
+	ctx := context.Background()
+	must(t, sdb.Exec(ctx, opts.Add("example", []string{"foo", "bar"})))
+	must(t, sdb.Exec(ctx, opts.Add("example", []string{"foo", "baz"})))
+
+	// Because equality is defined on the first tuple, "example" should
+	// now have a single tuple in its set: (foo, baz).
+
+	got, err := opts.List(ctx, "example")
+	must(t, err)
+	want := [][]string{{"foo", "baz"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %#v, want %#v", got, want)
 	}
