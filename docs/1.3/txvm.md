@@ -502,17 +502,13 @@ Pops a [Program](#program) from the data stack and pushes it to the Condition st
 
 Pops a condition from the Condition stack and executes it.
 
-### Input
-
-Pops a tuple `input` of type [Contract](#contract) from the data stack. Pushes it to the Input stack and the Value stack. 
-
-### Output
-
-Pops a tuple `output` of type [Contract](#contract) from the Value stack. Pushes it to the Output stack.
-
 ### Unlock 
 
-Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-id) of `input`. Executes `input.program`.
+Pops a tuple `input` of type [Contract](#contract) from the data stack. Pushes it to the Input stack.
+
+Pushes each of the `values` in `input` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-id) of `input`. 
+
+Executes `input.program`.
 
 ### UnlockOutput
 
