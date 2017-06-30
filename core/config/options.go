@@ -91,16 +91,16 @@ func (opts *Options) List(ctx context.Context, key string) ([][]string, error) {
 	return tuples, nil
 }
 
-// ListFunc returns a closure that returns the set of tuples for the
-// provided key.
+// ListFunc returns a closure that returns the set of tuples
+// for the provided key.
 //
 // The configuration option for key must be a set of tuples.
-// ListFunc will panic if the provided key is undefined in the schema or
-// is defined as a scalar.
+// ListFunc panics if the provided key is undefined or is
+// defined as a scalar.
 //
-// The returned function will perform a stale read of the
-// configuration value. If an error occurs while reading the value,
-// the old value is returned and the error is saved on the Options
+// The returned function performs a stale read of the configuration
+// value. If an error occurs while reading the value the old
+// value is returned, and the error is saved on the Options
 // type to be returned in Err.
 func (opts *Options) ListFunc(key string) func() [][]string {
 	opt, ok := opts.schema[key]
@@ -111,7 +111,7 @@ func (opts *Options) ListFunc(key string) func() [][]string {
 	}
 
 	// old is the last successfully retrieved tuple set for this
-	// configuration key. The returned closure will update it on
+	// configuration key. The returned closure updates it on
 	// every successful lookup. If an error occurs, the closure
 	// returns this value.
 	var old atomic.Value
