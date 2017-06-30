@@ -1,6 +1,8 @@
 package txvm
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+)
 
 type OpTracer func(op byte, prog []byte, vm VM)
 
@@ -44,7 +46,10 @@ func (vm *vm) Stack(stacknum int) Stack {
 // such as determining why an invalid Tx is invalid,
 // use Option funcs to trace execution.
 func Validate(tx []byte, o ...Option) ([32]byte, bool) {
-	vm := &vm{}
+	vm := &vm{
+		traceOp:    func(_ byte, _ []byte, _ VM) {},
+		traceError: func(_ error) {},
+	}
 	for _, o := range o {
 		o(vm)
 	}
@@ -61,6 +66,11 @@ func Validate(tx []byte, o ...Option) ([32]byte, bool) {
 	// TODO(kr): call some tracing hook here
 	// to signal end of execution.
 
+	var id [32]byte
+	if vm.tupleStacks[StackSummary].Len() == 1 {
+		copy(vm.tupleStacks[StackSummary].ID(0), id[:])
+	}
+
 	ok := vm.tupleStacks[StackSummary].Len() == 1 &&
 		vm.tupleStacks[StackInput].Len() == 0 &&
 		vm.tupleStacks[StackValue].Len() == 0 &&
@@ -70,11 +80,6 @@ func Validate(tx []byte, o ...Option) ([32]byte, bool) {
 		vm.tupleStacks[StackRetirement].Len() == 0 &&
 		vm.tupleStacks[StackTimeConstraint].Len() == 0 &&
 		vm.tupleStacks[StackAnnotation].Len() == 0
-
-	var id [32]byte
-	if ok {
-		copy(vm.tupleStacks[StackSummary].ID(0), id[:])
-	}
 
 	return id, ok
 }

@@ -24,7 +24,7 @@ type Value struct {
 
 type Output struct {
 	ID      bc.Hash
-	History bc.Hash
+	Anchor  bc.Hash
 	Values  []Value
 	Program []byte
 }
@@ -32,7 +32,7 @@ type Output struct {
 type Tx struct {
 	ID              bc.Hash
 	TimeConstraints []TimeConstraint
-	Anchors         []bc.Hash
+	IssueAnchors    []bc.Hash
 	Nonces          []Nonce
 	Inputs          []Output
 	Outputs         []Output
@@ -42,19 +42,30 @@ type Tx struct {
 
 func NewTx(p []byte) (*Tx, error) {
 	tx := new(Tx)
-	id, ok := txvm.Validate(p, txvm.TraceOp(tx.trace))
-	if !ok {
-		return nil, errors.New("invalid transaction")
-	}
+	var err error
+	id, ok := txvm.Validate(p, txvm.TraceOp(tx.trace), txvm.TraceError(func(e error) {
+		err = e
+	}))
 	tx.ID = bc.NewHash(id)
+	if err != nil {
+		return tx, errors.Wrap(err, "invalid transaction")
+	}
+	if !ok {
+		return tx, errors.New("invalid transaction")
+	}
 	return tx, nil
 }
 
 func (tx *Tx) trace(op byte, _ []byte, vm txvm.VM) {
-	if op != txvm.Summarize {
-		return
+	switch op {
+	case txvm.Summarize:
+		tx.traceSummarize(vm)
+	case txvm.Issue:
+		tx.traceIssue(vm)
 	}
+}
 
+func (tx *Tx) traceSummarize(vm txvm.VM) {
 	tcs := vm.Stack(txvm.StackTimeConstraint)
 	for i := 0; i < tcs.Len(); i++ {
 		tuple := tcs.Element(i).(txvm.Tuple)
@@ -91,14 +102,14 @@ func (tx *Tx) trace(op byte, _ []byte, vm txvm.VM) {
 		for i := 0; i < stack.Len(); i++ {
 			tuple := stack.Element(i).(txvm.Tuple)
 			var (
-				id      [32]byte
-				history [32]byte
+				id     [32]byte
+				anchor [32]byte
 			)
 			copy(stack.ID(i), id[:])
-			copy(tuple.Field(1).(txvm.Bytes), history[:])
+			copy(tuple.Field(3).(txvm.Bytes), anchor[:])
 
 			var values []Value
-			tupleVals := tuple.Field(2).(txvm.Tuple)
+			tupleVals := tuple.Field(1).(txvm.Tuple)
 			for j := 0; j < tupleVals.Len(); j++ {
 				valueTuple := tupleVals.Field(j).(txvm.Tuple)
 				var assetID [32]byte
@@ -111,9 +122,9 @@ func (tx *Tx) trace(op byte, _ []byte, vm txvm.VM) {
 
 			outputs = append(outputs, Output{
 				ID:      bc.NewHash(id),
-				History: bc.NewHash(history),
+				Anchor:  bc.NewHash(anchor),
 				Values:  []Value{},
-				Program: tuple.Field(3).(txvm.Bytes),
+				Program: tuple.Field(2).(txvm.Bytes),
 			})
 		}
 
@@ -128,4 +139,11 @@ func (tx *Tx) trace(op byte, _ []byte, vm txvm.VM) {
 		tuple := annotations.Element(i).(txvm.Tuple)
 		tx.Annotations = append(tx.Annotations, tuple.Field(1).(txvm.Bytes))
 	}
+}
+
+func (tx *Tx) traceIssue(vm txvm.VM) {
+	stack := vm.Stack(txvm.StackAnchor)
+	var id [32]byte
+	copy(stack.ID(stack.Len()-1), id[:])
+	tx.IssueAnchors = append(tx.IssueAnchors, bc.NewHash(id))
 }

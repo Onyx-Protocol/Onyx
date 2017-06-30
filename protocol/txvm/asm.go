@@ -280,8 +280,12 @@ func isHex(r rune) bool {
 		'A' <= r && r <= 'F'
 }
 
+func isAlphaNum(r rune) bool {
+	return isDigit(r) || unicode.IsLetter(r)
+}
+
 func scanWord(s string) int {
-	return scanFunc(s, unicode.IsLetter)
+	return scanFunc(s, isAlphaNum)
 }
 
 func scanFunc(s string, f func(rune) bool) (n int) {
