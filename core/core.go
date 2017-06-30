@@ -183,6 +183,8 @@ func (a *API) configure(ctx context.Context, req configureRequest) error {
 	if err != nil {
 		return err
 	}
+	// TODO(jackson): make the config.Configure atomic with the above
+	// incremental updates.
 
 	// If the monolithic Config is populated, also perform the
 	// one-time configure of the Core.
