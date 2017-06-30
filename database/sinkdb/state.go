@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/tecbot/gorocksdb"
 
 	"chain/database/sinkdb/internal/sinkpb"
 	"chain/errors"
@@ -27,7 +26,7 @@ type state struct {
 	appliedIndex uint64
 	version      map[string]uint64 //key -> value index
 
-	db store // TODO(tessr): use an interface here, so we could use a different store
+	db store // TODO(tessr): build flags specify that we'll use rocksdb or another store
 }
 
 // newState returns a new State.
@@ -180,6 +179,8 @@ func (s *state) Apply(data []byte, index uint64) (satisfied bool) {
 func (s *state) get(key string) ([]byte, Version) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	s.db.Get(ctx, key, v)
 
 	b, ok := s.state[key]
 	n := s.version[key]
