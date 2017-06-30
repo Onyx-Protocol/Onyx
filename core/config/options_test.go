@@ -60,7 +60,7 @@ func TestAddOrUpdate(t *testing.T) {
 	must(t, sdb.Exec(ctx, opts.AddOrUpdate("example", []string{"foo", "bar"})))
 	must(t, sdb.Exec(ctx, opts.AddOrUpdate("example", []string{"foo", "baz"})))
 
-	// Because equality is defined on the first tuple, "example" should
+	// Because equality is defined on the first value, "example" should
 	// now have a single tuple in its set: (foo, baz).
 
 	got, err := opts.List(ctx, "example")
