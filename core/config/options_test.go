@@ -49,3 +49,24 @@ func TestSetTuples(t *testing.T) {
 		t.Errorf("got %#v, want %#v", got, want)
 	}
 }
+
+func TestListFunc(t *testing.T) {
+	sdb := sinkdbtest.NewDB(t)
+	opts := New(sdb)
+	opts.DefineSet("example", 1, identityFunc, reflectEquality)
+
+	ctx := context.Background()
+
+	must(t, sdb.Exec(ctx, opts.Add("example", []string{"foo"})))
+	must(t, sdb.Exec(ctx, opts.Add("example", []string{"bar"})))
+
+	// perform a linearizable read since ListFunc won't and we
+	// want a deterministic test case
+	must(t, sdb.RaftService().WaitRead(ctx))
+
+	got := opts.ListFunc("example")()
+	want := [][]string{{"foo"}, {"bar"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+}

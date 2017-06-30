@@ -2,7 +2,10 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"path"
+	"sync"
+	"sync/atomic"
 
 	"chain/core/config/internal/configpb"
 	"chain/database/sinkdb"
@@ -26,6 +29,9 @@ func New(sdb *sinkdb.DB) *Options {
 type Options struct {
 	sdb    *sinkdb.DB
 	schema map[string]option
+
+	errsMu sync.Mutex
+	errs   map[string]error
 }
 
 // CleanFunc is required when defining a new configuration option.
@@ -41,6 +47,20 @@ type option struct {
 	tupleSize int
 	cleanFunc CleanFunc
 	equalFunc EqualFunc
+}
+
+// Err returns any persistent errors encountered by ListFunc's closures
+// when retrieving configuration values. If there are multiple errors,
+// it'll return an arbitrary one.
+func (opts *Options) Err() error {
+	opts.errsMu.Lock()
+	defer opts.errsMu.Unlock()
+
+	// TODO(jackson): return all of the errors as a composite error?
+	for key, err := range opts.errs {
+		return fmt.Errorf("%q: %s", key, err.Error())
+	}
+	return nil
 }
 
 // DefineSet defines a new configuration option as a set of tuples of
@@ -69,6 +89,56 @@ func (opts *Options) List(ctx context.Context, key string) ([][]string, error) {
 		tuples = append(tuples, tup.Values)
 	}
 	return tuples, nil
+}
+
+// ListFunc returns a closure that returns the set of tuples
+// for the provided key.
+//
+// The configuration option for key must be a set of tuples.
+// ListFunc panics if the provided key is undefined or is
+// defined as a scalar.
+//
+// The returned function performs a stale read of the configuration
+// value. If an error occurs while reading the value the old
+// value is returned, and the error is saved on the Options
+// type to be returned in Err.
+func (opts *Options) ListFunc(key string) func() [][]string {
+	opt, ok := opts.schema[key]
+	if !ok {
+		panic(fmt.Errorf("unknown config option %q", key))
+	} else if opt.equalFunc == nil {
+		panic(fmt.Errorf("config option %q is a scalar, not a set", key))
+	}
+
+	// old is the last successfully retrieved tuple set for this
+	// configuration key. The returned closure updates it on
+	// every successful lookup. If an error occurs, the closure
+	// returns this value.
+	var old atomic.Value
+	old.Store([][]string(nil))
+
+	return func() [][]string {
+		var set configpb.ValueSet
+		_, err := opts.sdb.GetStale(path.Join(sinkdbPrefix, key), &set)
+		if err != nil {
+			opts.errsMu.Lock()
+			opts.errs[key] = err
+			opts.errsMu.Unlock()
+			return old.Load().([][]string)
+		}
+
+		// clear any error for this key bc we succeeded
+		opts.errsMu.Lock()
+		delete(opts.errs, key)
+		opts.errsMu.Unlock()
+
+		var tuples [][]string
+		for _, tup := range set.Tuples {
+			tuples = append(tuples, tup.Values)
+		}
+		old.Store(tuples)
+		return tuples
+	}
 }
 
 // Add adds the provided tuple to the configuration option set indicated
