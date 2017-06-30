@@ -173,6 +173,8 @@ func (a *API) configure(ctx context.Context, req configureRequest) error {
 		switch update.Op {
 		case "add":
 			ops = append(ops, a.options.Add(update.Key, update.Tuple))
+		case "add-or-update":
+			ops = append(ops, a.options.AddOrUpdate(update.Key, update.Tuple))
 		case "rm":
 			ops = append(ops, a.options.Remove(update.Key, update.Tuple))
 		default:

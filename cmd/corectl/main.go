@@ -444,7 +444,13 @@ func get(client *rpc.Client, args []string) {
 }
 
 func add(client *rpc.Client, args []string) {
-	const usage = "usage: corectl add [key] [value]..."
+	const usage = "usage: corectl add [-u] [key] [value]..."
+
+	op := "add"
+	if len(args) > 0 && args[0] == "-u" {
+		op = "add-or-update"
+		args = args[1:]
+	}
 	if len(args) < 2 {
 		fatalln(usage)
 	}
@@ -452,7 +458,7 @@ func add(client *rpc.Client, args []string) {
 	req := map[string]interface{}{
 		"updates": []interface{}{
 			map[string]interface{}{
-				"op":    "add",
+				"op":    op,
 				"key":   args[0],
 				"tuple": args[1:],
 			},

@@ -18,7 +18,7 @@ func must(t testing.TB, err error) {
 	}
 }
 
-func TestSetTuples(t *testing.T) {
+func TestAdd(t *testing.T) {
 	sdb := sinkdbtest.NewDB(t)
 	opts := New(sdb)
 	opts.DefineSet("example", 2, identityFunc, reflectEquality)
@@ -51,14 +51,14 @@ func TestSetTuples(t *testing.T) {
 	}
 }
 
-func TestSetTuplesOverwrite(t *testing.T) {
+func TestAddOrUpdate(t *testing.T) {
 	sdb := sinkdbtest.NewDB(t)
 	opts := New(sdb)
 	opts.DefineSet("example", 2, identityFunc, firstEqual)
 
 	ctx := context.Background()
-	must(t, sdb.Exec(ctx, opts.Add("example", []string{"foo", "bar"})))
-	must(t, sdb.Exec(ctx, opts.Add("example", []string{"foo", "baz"})))
+	must(t, sdb.Exec(ctx, opts.AddOrUpdate("example", []string{"foo", "bar"})))
+	must(t, sdb.Exec(ctx, opts.AddOrUpdate("example", []string{"foo", "baz"})))
 
 	// Because equality is defined on the first tuple, "example" should
 	// now have a single tuple in its set: (foo, baz).
