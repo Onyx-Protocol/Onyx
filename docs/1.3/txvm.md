@@ -502,9 +502,17 @@ Pops a [Program](#program) from the data stack and pushes it to the Condition st
 
 Pops a condition from the Condition stack and executes it.
 
-### Unlock
+### Input
 
-Pops a tuple `input` of type [Contract](#contract) from the data stack. Pushes it to the Input stack. Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-id) of `input`. Executes `input.program`.
+Pops a tuple `input` of type [Contract](#contract) from the data stack. Pushes it to the Input stack and the Value stack. 
+
+### Output
+
+Pops a tuple `output` of type [Contract](#contract) from the Value stack. Pushes it to the Output stack.
+
+### Unlock 
+
+Pushes each of the `values` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-id) of `input`. Executes `input.program`.
 
 ### UnlockOutput
 
@@ -566,7 +574,9 @@ Execute `newprogram`.
 
 ### Extend
 
-TBD.
+Fails if the extension flag is not set. (TBD: clarify)
+
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Pops an item, `extension`, from the data stack. On the stack identified by `stackid`, pops a tuple and pushes a copy of that tuple with one additional field added, containing `extension`.
 
 ### IssueCA
 
@@ -591,6 +601,8 @@ TBD
 ## Extension opcodes
 
 ### NOPs 0–9
+
+Fails if the extension flag is not set. (TBD: clarify)
 
 Have no effect when executed.
 
