@@ -65,8 +65,7 @@ func TestListFunc(t *testing.T) {
 	_, err := opts.List(ctx, "example")
 	must(t, err)
 
-	got, err := opts.ListFunc("example")()
-	must(t, err)
+	got := opts.ListFunc("example")()
 	want := [][]string{{"foo"}, {"bar"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %#v, want %#v", got, want)
