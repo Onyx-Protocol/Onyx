@@ -271,9 +271,10 @@ func tupleIndex(set []*configpb.ValueTuple, search []string, equal func(a, b []s
 }
 
 func exactlyEqual(a, b []string) bool {
-	eq := true
 	for i := range a {
-		eq = eq && a[i] == b[i]
+		if a[i] != b[i] {
+			return false
+		}
 	}
-	return eq
+	return true
 }
