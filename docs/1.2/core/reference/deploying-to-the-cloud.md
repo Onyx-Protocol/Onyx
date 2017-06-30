@@ -22,7 +22,7 @@ First, if you haven't already, download and install the AWS command-line tools, 
 aws configure
 ```
 
-This will install your AWS credentials to a standard location that will be accessible to the `docker-machine` command. Next, run Docker Machine to create a new ECW instance that will serve as your Docker Host:
+This will install your AWS credentials to a standard location that will be accessible to the `docker-machine` command. Next, run Docker Machine to create a new EC2 instance that will serve as your Docker Host:
 
 ```
 docker-machine create      \
