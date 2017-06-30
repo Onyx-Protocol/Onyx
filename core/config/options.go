@@ -203,8 +203,9 @@ func (opts *Options) add(key string, tup []string, onConflict func(new, existing
 		// is a no-op
 		return sinkdb.IfNotModified(ver)
 	} else {
-		// tup's key matches an existing tuple but not exactly.
-		// use onConflict to determine how to handle the conflict
+		// tup's key matches an existing tuple but the rest of
+		// tup does not match. use onConflict to determine how
+		// to handle the conflict
 		err = onConflict(cleaned, set.Tuples[idx].Values)
 		if err != nil {
 			return sinkdb.Error(err)
