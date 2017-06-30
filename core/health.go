@@ -28,6 +28,9 @@ func (a *API) health() (x struct {
 	if err := a.sdb.RaftService().Err(); err != nil {
 		x.Errors["raft"] = err.Error()
 	}
+	if err := a.options.Err(); err != nil {
+		x.Errors["config"] = err.Error()
+	}
 
 	a.healthMu.Lock()
 	defer a.healthMu.Unlock()

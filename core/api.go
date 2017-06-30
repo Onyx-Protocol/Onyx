@@ -67,6 +67,7 @@ type API struct {
 	accessTokens    *accesstoken.CredentialStore
 	grants          *authz.Store
 	config          *config.Config
+	options         *config.Options
 	submitter       txbuilder.Submitter
 	db              pg.DB
 	sdb             *sinkdb.DB
@@ -183,6 +184,7 @@ func (a *API) buildHandler() {
 	m.Handle("/join-cluster", jsonHandler(a.joinCluster))
 	m.Handle("/evict", jsonHandler(a.evict))
 	m.Handle("/configure", jsonHandler(a.configure))
+	m.Handle("/config", jsonHandler(a.retrieveConfig))
 	m.Handle("/info", jsonHandler(a.info))
 
 	m.Handle("/debug/vars", expvar.Handler())

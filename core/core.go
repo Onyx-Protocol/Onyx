@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
 	"chain/core/config"
 	"chain/core/fetch"
 	"chain/core/leader"
@@ -137,16 +139,65 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	return m, nil
 }
 
-func (a *API) configure(ctx context.Context, x *config.Config) error {
+type configureRequest struct {
+	// Config is the old-style monolithic Config object. If any of its
+	// fields are present in the request, the Chain Core must not already
+	// be configured.
+	config.Config
+
+	// Updates contains incremental updates to configuration options.
+	Updates []configUpdate `json:"updates"`
+}
+
+type configUpdate struct {
+	Op    string   `json:"op"`
+	Key   string   `json:"key"`
+	Tuple []string `json:"tuple,omitempty"`
+}
+
+// configure implements the RPC handler for the /configure endpoint.
+//
+// Chain Core has two types of config settings:
+// - the monolithic config.Config struct/protobuf that is required
+//   before a Chain Core can participate in any blockchain network.
+// - individual options set via the config.Options type. Some Chain
+//   Core features may be gated on the presence of options.
+//
+// Eventually if possible, we'd like to replace the monolithic config
+// type with the incremental config options.
+func (a *API) configure(ctx context.Context, req configureRequest) error {
+	// First, apply any of the incremental config updates as one
+	// single, atomic sinkdb batch.
+	var ops []sinkdb.Op
+	for _, update := range req.Updates {
+		switch update.Op {
+		case "add":
+			ops = append(ops, a.options.Add(update.Key, update.Tuple))
+		case "rm":
+			ops = append(ops, a.options.Remove(update.Key, update.Tuple))
+		default:
+			return errors.WithDetailf(config.ErrConfigOp, "Unknown config operation %q.", update.Op)
+		}
+	}
+	err := a.sdb.Exec(ctx, ops...)
+	if err != nil {
+		return err
+	}
+	// TODO(jackson): make the config.Configure atomic with the above
+	// incremental updates.
+
+	// If the monolithic Config is populated, also perform the
+	// one-time configure of the Core.
+	if proto.Equal(&req.Config, &config.Config{}) {
+		return nil
+	}
 	if a.config != nil {
 		return errAlreadyConfigured
 	}
-
-	if x.IsGenerator && x.MaxIssuanceWindowMs == 0 {
-		x.MaxIssuanceWindowMs = bc.DurationMillis(24 * time.Hour)
+	if req.Config.IsGenerator && req.Config.MaxIssuanceWindowMs == 0 {
+		req.Config.MaxIssuanceWindowMs = bc.DurationMillis(24 * time.Hour)
 	}
-
-	err := config.Configure(ctx, a.db, a.sdb, a.httpClient, x)
+	err = config.Configure(ctx, a.db, a.sdb, a.httpClient, &req.Config)
 	if err != nil {
 		return err
 	}
@@ -154,6 +205,22 @@ func (a *API) configure(ctx context.Context, x *config.Config) error {
 	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
 	execSelf("")
 	panic("unreached")
+}
+
+func (a *API) retrieveConfig(ctx context.Context, x struct {
+	Keys []string `json:"keys"`
+}) (map[string][][]string, error) {
+	// TODO(jackson): This waits for len(x.Keys) consensus
+	// rounds. We should batch the reads instead.
+	results := make(map[string][][]string)
+	for _, key := range x.Keys {
+		tups, err := a.options.List(ctx, key)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		results[key] = tups
+	}
+	return results, nil
 }
 
 func CheckConfigMaybeExec(ctx context.Context, sdb *sinkdb.DB, nodeAddr string) {
