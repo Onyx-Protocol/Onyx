@@ -19,7 +19,7 @@ type Nonce struct {
 
 type Value struct {
 	Amount  int64
-	AssetID bc.Hash
+	AssetID bc.AssetID
 }
 
 type Output struct {
@@ -116,7 +116,7 @@ func (tx *Tx) traceSummarize(vm txvm.VM) {
 				copy(assetID[:], valueTuple.Field(1).(txvm.Bytes))
 				values = append(values, Value{
 					Amount:  int64(valueTuple.Field(0).(txvm.Int64)),
-					AssetID: bc.NewHash(assetID),
+					AssetID: bc.NewAssetID(assetID),
 				})
 			}
 
