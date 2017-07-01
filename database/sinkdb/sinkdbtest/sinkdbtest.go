@@ -54,9 +54,7 @@ func gcDataDirectories() {
 }
 
 // fulfills the sinkdb.Store interface
-type testStore struct {
-	dir string
-}
+type testStore struct{}
 
 func (ts *testStore) Put(name string, value []byte) error {
 	return ioutil.WriteFile(name, value, 0666)
