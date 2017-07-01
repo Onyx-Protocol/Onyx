@@ -51,6 +51,7 @@ func TestReadID(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	sv := Service{state: newTestState()}
 	for _, test := range idCases {
 		err = ioutil.WriteFile(filepath.Join(dir, "id"), test.data, 0666)
 		if err != nil {
@@ -58,7 +59,7 @@ func TestReadID(t *testing.T) {
 			continue
 		}
 
-		got, err := readID(dir)
+		got, err := sv.readID(dir)
 		if err != nil {
 			t.Error(err)
 			continue
@@ -82,6 +83,7 @@ func TestReadIDError(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	sv := Service{state: newTestState()}
 	for _, test := range idErrorCases {
 		err = ioutil.WriteFile(filepath.Join(dir, "id"), test, 0666)
 		if err != nil {
@@ -89,7 +91,7 @@ func TestReadIDError(t *testing.T) {
 			continue
 		}
 
-		_, err := readID(dir)
+		_, err := sv.readID(dir)
 		if err == nil {
 			t.Errorf("readID of %v => err = nil, want error", test)
 		}

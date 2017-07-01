@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"io/ioutil"
-	"os"
 	"sync"
 )
 
@@ -70,8 +69,12 @@ func (s *state) EmptyWrite() []byte {
 	return encodeInstruction(instruction{})
 }
 
-func (s *state) WriteFile(name string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(name, data, perm)
+func (s *state) Write(name string, data []byte) error {
+	return ioutil.WriteFile(name, data, 0666)
+}
+
+func (s *state) Read(name string) ([]byte, error) {
+	return ioutil.ReadFile(name)
 }
 
 func (s *state) NextNodeID() (id, version uint64) {

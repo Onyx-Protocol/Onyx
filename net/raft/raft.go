@@ -132,7 +132,8 @@ type State interface {
 	IsAllowedMember(addr string) bool
 	NextNodeID() (id, version uint64)
 	EmptyWrite() (instruction []byte)
-	WriteFile(name string, data []byte, perm os.FileMode) error
+	Write(name string, data []byte) error
+	Read(name string) ([]byte, error)
 	IncrementNextNodeID(oldID uint64, index uint64) (instruction []byte)
 }
 
@@ -220,7 +221,7 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 		return sv, nil
 	}
 
-	id, err := readID(sv.dir)
+	id, err := sv.readID(sv.dir)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -902,11 +903,11 @@ func (sv *Service) saveSnapshot(snapshot *raftpb.Snapshot) error {
 	}
 
 	// Then atomically replace the on-disk snapshot.
-	return sv.state.WriteFile(sv.snapFile(), d, 0666)
+	return sv.state.Write(sv.snapFile(), d)
 }
 
-func readID(dir string) (uint64, error) {
-	d, err := ioutil.ReadFile(filepath.Join(dir, "id"))
+func (sv *Service) readID(dir string) (uint64, error) {
+	d, err := sv.state.Read(filepath.Join(dir, "id"))
 	if err != nil {
 		return 0, err
 	}
@@ -928,7 +929,7 @@ func (sv *Service) writeID(dir string, id uint64) error {
 	binary.BigEndian.PutUint64(b, id)
 	binary.BigEndian.PutUint32(b[8:], crc32.Checksum(b[:8], crcTable))
 	name := filepath.Join(dir, "id")
-	return errors.Wrap(sv.state.WriteFile(name, b, 0666))
+	return errors.Wrap(sv.state.Write(name, b))
 }
 
 func (sv *Service) walDir() string   { return filepath.Join(sv.dir, "wal") }

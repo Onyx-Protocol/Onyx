@@ -2,11 +2,10 @@ package sinkdb
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/tecbot/gorocksdb"
 
 	"chain/database/sinkdb/internal/sinkpb"
 	"chain/errors"
@@ -15,6 +14,7 @@ import (
 const (
 	nextNodeID          = "raft/nextNodeID"
 	allowedMemberPrefix = "/raft/allowed"
+	dbName              = "sinkdb"
 )
 
 // state is a general-purpose data store designed to accumulate
@@ -25,14 +25,27 @@ type state struct {
 	peers        map[uint64]string // id -> addr
 	appliedIndex uint64
 	version      map[string]uint64 //key -> value index
+
+	store *gorocksdb.DB
 }
 
 // newState returns a new State.
 func newState() *state {
+	bbto := gorocksdb.NewDefaultBlockBasedTableOptions()
+	bbto.SetBlockCache(gorocksdb.NewLRUCache(3 << 30))
+	opts := gorocksdb.NewDefaultOptions()
+	opts.SetBlockBasedTableFactory(bbto)
+	opts.SetCreateIfMissing(true)
+	db, err := gorocksdb.OpenDb(opts, dbName)
+	if err != nil {
+		panic(err)
+	}
+
 	return &state{
 		state:   map[string][]byte{nextNodeID: []byte("2")},
 		peers:   make(map[uint64]string),
 		version: make(map[string]uint64),
+		store:   db,
 	}
 }
 
@@ -242,35 +255,17 @@ func (s *state) EmptyWrite() (instruction []byte) {
 	return instruction
 }
 
-// WriteFile is like ioutil.WriteFile, but it writes safely and atomically.
-// (It writes data to a temp file (name+".temp"), syncs data to disk,
-// closes the temp file, then atomically renames the temp file to name.)
-func (s *state) WriteFile(name string, data []byte, perm os.FileMode) error {
-	const suffix = ".temp"
-	temp := name + suffix
-	f, err := os.OpenFile(temp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	defer f.Close()
-	n, err := f.Write(data)
-	if err == nil && n < len(data) {
-		return errors.Wrap(io.ErrShortWrite)
-	} else if err != nil {
-		return errors.Wrap(err)
-	}
-	err = fsync(f)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	err = f.Close()
-	if err != nil {
-		return errors.Wrap(err)
-	}
+func (s *state) Write(name string, data []byte) error {
+	wo := gorocksdb.NewDefaultWriteOptions()
+	return s.store.Put(wo, []byte(name), data)
+}
 
-	err = os.Rename(temp, name)
+func (s *state) Read(name string) ([]byte, error) {
+	ro := gorocksdb.NewDefaultReadOptions()
+	slice, err := s.store.Get(ro, []byte(name))
+	defer slice.Free()
 	if err != nil {
-		return errors.Wrap(err)
+		return []byte{}, err
 	}
-	return nil
+	return slice.Data(), nil
 }
