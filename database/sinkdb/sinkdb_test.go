@@ -18,7 +18,7 @@ func TestRestartDB(t *testing.T) {
 	defer os.RemoveAll(raftDir)
 
 	// Create a new fresh db and add an allowed member.
-	sdb1, err := Open("", raftDir, new(http.Client), &testStore{raftDir})
+	sdb1, err := Open("", raftDir, new(http.Client), &testStore{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestRestartDB(t *testing.T) {
 	}
 
 	// Re-open the database and verify that the write is still there.
-	sdb2, err := Open("", raftDir, new(http.Client), &testStore{raftDir})
+	sdb2, err := Open("", raftDir, new(http.Client), &testStore{})
 	if err != nil {
 		t.Fatal(err)
 	}

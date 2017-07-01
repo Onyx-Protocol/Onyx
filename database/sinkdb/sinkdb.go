@@ -21,6 +21,7 @@ var ErrConflict = errors.New("transaction conflict")
 
 // Open initializes the key-value store and returns a database handle.
 func Open(laddr, dir string, httpClient *http.Client, store Store) (*DB, error) {
+	// TODO(tessr): remove "dir"
 	state := newState(store)
 	sv, err := raft.Start(laddr, dir, httpClient, state)
 	if err != nil {

@@ -183,6 +183,7 @@ type proposal struct {
 // connections to peers.
 func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, error) {
 	// TODO(tessr): configure raft service using run options
+	// TODO(tessr): remove "dir"
 	ctx := context.Background()
 
 	// We advertise laddr as the way for peers to reach this process.

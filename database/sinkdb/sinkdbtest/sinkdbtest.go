@@ -24,7 +24,7 @@ func NewDB(t testing.TB) *sinkdb.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sdb, err := sinkdb.Open("", tempDir, new(http.Client), &testStore{tempDir})
+	sdb, err := sinkdb.Open("", tempDir, new(http.Client), &testStore{})
 	if err != nil {
 		t.Fatal(err)
 	}
