@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/tecbot/gorocksdb"
 
 	"chain/database/sinkdb/internal/sinkpb"
 	"chain/errors"
@@ -14,7 +13,7 @@ import (
 const (
 	nextNodeID          = "raft/nextNodeID"
 	allowedMemberPrefix = "/raft/allowed"
-	dbName              = "sinkdb"
+	dbName              = "~/.chaincore/sinkdb"
 )
 
 // state is a general-purpose data store designed to accumulate
@@ -26,21 +25,11 @@ type state struct {
 	appliedIndex uint64
 	version      map[string]uint64 //key -> value index
 
-	store *gorocksdb.DB
+	store Store
 }
 
 // newState returns a new State.
-func newState() *state {
-	bbto := gorocksdb.NewDefaultBlockBasedTableOptions()
-	bbto.SetBlockCache(gorocksdb.NewLRUCache(3 << 30))
-	opts := gorocksdb.NewDefaultOptions()
-	opts.SetBlockBasedTableFactory(bbto)
-	opts.SetCreateIfMissing(true)
-	db, err := gorocksdb.OpenDb(opts, dbName)
-	if err != nil {
-		panic(err)
-	}
-
+func newState(db Store) *state {
 	return &state{
 		state:   map[string][]byte{nextNodeID: []byte("2")},
 		peers:   make(map[uint64]string),
@@ -256,16 +245,9 @@ func (s *state) EmptyWrite() (instruction []byte) {
 }
 
 func (s *state) Write(name string, data []byte) error {
-	wo := gorocksdb.NewDefaultWriteOptions()
-	return s.store.Put(wo, []byte(name), data)
+	return s.store.Put(name, data)
 }
 
 func (s *state) Read(name string) ([]byte, error) {
-	ro := gorocksdb.NewDefaultReadOptions()
-	slice, err := s.store.Get(ro, []byte(name))
-	defer slice.Free()
-	if err != nil {
-		return []byte{}, err
-	}
-	return slice.Data(), nil
+	return s.store.Get(name)
 }

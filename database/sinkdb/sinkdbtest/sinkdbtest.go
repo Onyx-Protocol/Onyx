@@ -24,7 +24,7 @@ func NewDB(t testing.TB) *sinkdb.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sdb, err := sinkdb.Open("", tempDir, new(http.Client))
+	sdb, err := sinkdb.Open("", tempDir, new(http.Client), &testStore{tempDir})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,4 +51,17 @@ func gcDataDirectories() {
 		}
 		os.RemoveAll(filepath.Join(tempDir, dirent.Name()))
 	}
+}
+
+// fulfills the sinkdb.Store interface
+type testStore struct {
+	dir string
+}
+
+func (ts *testStore) Put(name string, value []byte) error {
+	return ioutil.WriteFile(filepath.Join(ts.dir, name), value, 0666)
+}
+
+func (ts *testStore) Get(name string) ([]byte, error) {
+	return ioutil.ReadFile(filepath.Join(ts.dir, name))
 }
