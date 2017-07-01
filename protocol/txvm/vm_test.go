@@ -5,7 +5,7 @@ import (
 )
 
 func testTracer(t testing.TB) OpTracer {
-	return func(op byte, prog []byte, vm *vm) {
+	return func(op byte, prog []byte, vm VM) {
 		_, opData, _ := decodeInst(prog[vm.PC():])
 		if op >= BaseData {
 			t.Logf("[%x]\t\t#stack len: %d", opData, vm.Stack(StackData).Len())
@@ -27,7 +27,7 @@ func TestIssue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok := Validate(tx, TraceOp(testTracer(t)), TraceError(func(err error) { t.Error(err) }))
+	_, ok := Validate(tx, TraceOp(testTracer(t)), TraceError(func(err error) { t.Error(err) }))
 	if !ok {
 		t.Fatal("expected ok")
 	}
@@ -50,7 +50,7 @@ func TestSpend(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok := Validate(tx, TraceOp(testTracer(t)), TraceError(func(err error) { t.Error(err) }))
+	_, ok := Validate(tx, TraceOp(testTracer(t)), TraceError(func(err error) { t.Error(err) }))
 	if !ok {
 		t.Fatal("expected ok")
 	}
@@ -70,7 +70,7 @@ func TestEntries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok := Validate(tx, TraceOp(testTracer(t)), TraceError(func(err error) { t.Error(err) }))
+	_, ok := Validate(tx, TraceOp(testTracer(t)), TraceError(func(err error) { t.Error(err) }))
 	if !ok {
 		t.Fatal("expected ok")
 	}
