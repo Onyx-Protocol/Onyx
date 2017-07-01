@@ -2,6 +2,8 @@ package sinkdb
 
 import (
 	"bytes"
+	"log"
+	"reflect"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -245,6 +247,7 @@ func (s *state) EmptyWrite() (instruction []byte) {
 }
 
 func (s *state) Write(name string, data []byte) error {
+	log.Println(reflect.TypeOf(s.store))
 	return s.store.Put(name, data)
 }
 

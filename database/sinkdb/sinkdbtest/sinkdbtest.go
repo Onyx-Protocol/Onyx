@@ -59,9 +59,9 @@ type testStore struct {
 }
 
 func (ts *testStore) Put(name string, value []byte) error {
-	return ioutil.WriteFile(filepath.Join(ts.dir, name), value, 0666)
+	return ioutil.WriteFile(name, value, 0666)
 }
 
 func (ts *testStore) Get(name string) ([]byte, error) {
-	return ioutil.ReadFile(filepath.Join(ts.dir, name))
+	return ioutil.ReadFile(name)
 }

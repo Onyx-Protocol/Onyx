@@ -20,7 +20,7 @@ func TestRemovePeerAddr(t *testing.T) {
 }
 
 func TestSetPeerAddr(t *testing.T) {
-	s := newState()
+	s := newState(&testStore{"test"})
 	wantPeers := map[uint64]string{1: "1.2.3.4:567"}
 
 	s.SetPeerAddr(1, "1.2.3.4:567")
@@ -30,7 +30,7 @@ func TestSetPeerAddr(t *testing.T) {
 }
 
 func TestGetPeerAddr(t *testing.T) {
-	s := newState()
+	s := newState(&testStore{"test"})
 	s.SetPeerAddr(1, "1.2.3.4:567")
 	want := map[uint64]string{1: "1.2.3.4:567"}
 
@@ -47,7 +47,7 @@ func TestAllowedMember(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	sdb, err := Open("", raftDir, new(http.Client))
+	sdb, err := Open("", raftDir, new(http.Client), &testStore{"test"})
 	if err != nil {
 		t.Fatal(err)
 	}
