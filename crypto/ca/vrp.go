@@ -141,7 +141,7 @@ func (vrp *ValueRangeProof) Payload(ac *AssetCommitment, vc *ValueCommitment, va
 }
 
 func vrpMsgHash(ac *AssetCommitment, vc *ValueCommitment, N, exp, vmin uint64, msg []byte) [32]byte {
-	return hash256("ChainCA.VRP", ac.Bytes(), vc.Bytes(), uint64le(uint64(N)), uint64le(uint64(exp)), uint64le(vmin), msg)
+	return hash256("ChainCA.VRP.msg", ac.Bytes(), vc.Bytes(), uint64le(uint64(N)), uint64le(uint64(exp)), uint64le(vmin), msg)
 }
 
 func (vrp *ValueRangeProof) calcLastDB(ac *AssetCommitment, vc *ValueCommitment) PointPair {

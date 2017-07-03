@@ -1510,7 +1510,7 @@ In case of failure, returns `nil` instead of the range proof.
 3. Define `vmin = 0`.
 4. Define `exp = 0`.
 5. Define `base = 4`.
-6. Calculate the message to sign: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+6. Calculate the message to sign: `msghash = Hash256("VRP.msg", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek", msghash, idek, f)`.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-packet) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPacket({pt[i]}, pek)`.
@@ -1575,7 +1575,7 @@ In case of failure, returns `nil` instead of the range proof.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
 3. Let `base = 4`.
-4. Calculate the message to validate: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+4. Calculate the message to validate: `msghash = Hash256("VRP.msg", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 5. Calculate last digit commitment: `(D[n-1],B[n-1]) = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])`, where `∑(D[t],B[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
     1. For `i` from `0` to `base-1` (each digit’s value):
@@ -1625,7 +1625,7 @@ In case of failure, returns `nil` instead of the range proof.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
 3. Let `base = 4`.
-4. Calculate the message to validate: `msghash = Hash256("VRP", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+4. Calculate the message to validate: `msghash = Hash256("VRP.msg", AC, VC, uint64le(N), uint64le(exp), uint64le(vmin), message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 5. Calculate last digit commitment: `(D[n-1],B[n-1]) = (10^(-exp))·(VC - vmin·AC) - ∑(D[t],B[t])`, where `∑(D[t],B[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
     1. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
