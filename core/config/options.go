@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -142,8 +143,32 @@ func (opts *Options) ListFunc(key string) func() [][]string {
 }
 
 // Add adds the provided tuple to the configuration option set indicated
-// by key.
+// by key. If the added tuple conflicts with an existing tuple in the set,
+// Add returns an error describing the conflict.
 func (opts *Options) Add(key string, tup []string) sinkdb.Op {
+	return opts.add(key, tup, func(new, existing []string) error {
+		return errors.WithDetailf(ErrConfigOp,
+			"Value (%s) conflicts with the existing value (%s)",
+			strings.Join(new, " "),
+			strings.Join(existing, " "))
+	})
+}
+
+// AddOrUpdate adds the provided tuple to the configuration option
+// set indicated by key. If the added tuple conflicts with an
+// existing tuple in the set, AddOrUpdate updates the conflicting
+// tuple to the provided tuple.
+func (opts *Options) AddOrUpdate(key string, tup []string) sinkdb.Op {
+	return opts.add(key, tup, func(new, existing []string) error {
+		// overwrite the existing tuple with the new tuple
+		for k, v := range new {
+			existing[k] = v
+		}
+		return nil
+	})
+}
+
+func (opts *Options) add(key string, tup []string, onConflict func(new, existing []string) error) sinkdb.Op {
 	opt, ok := opts.schema[key]
 	if !ok {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is undefined.", key))
@@ -163,23 +188,32 @@ func (opts *Options) Add(key string, tup []string) sinkdb.Op {
 		return sinkdb.Error(errors.Sub(ErrConfigOp, err))
 	}
 
-	var existing configpb.ValueSet
-	ver, err := opts.sdb.GetStale(path.Join(sinkdbPrefix, key), &existing)
+	var set configpb.ValueSet
+	ver, err := opts.sdb.GetStale(path.Join(sinkdbPrefix, key), &set)
 	if err != nil {
 		return sinkdb.Error(err)
 	}
-	idx := tupleIndex(existing.Tuples, cleaned, opt.equalFunc)
-	if idx != -1 {
-		// tuple already exists, so the sinkdb op is a no-op
-		return sinkdb.IfNotModified(ver)
-	}
 
-	// If the new tuple passed validation, then modify and write.
-	modified := new(configpb.ValueSet)
-	modified.Tuples = append(existing.Tuples, &configpb.ValueTuple{Values: cleaned})
+	idx := tupleIndex(set.Tuples, cleaned, opt.equalFunc)
+	if idx == -1 {
+		// tup is a new tuple so append it to the existing set
+		set.Tuples = append(set.Tuples, &configpb.ValueTuple{Values: cleaned})
+	} else if exactlyEqual(set.Tuples[idx].Values, cleaned) {
+		// tup exactly matches an existing tuple, so this
+		// is a no-op
+		return sinkdb.IfNotModified(ver)
+	} else {
+		// tup's key matches an existing tuple but the rest of
+		// tup does not match. use onConflict to determine how
+		// to handle the conflict
+		err = onConflict(cleaned, set.Tuples[idx].Values)
+		if err != nil {
+			return sinkdb.Error(err)
+		}
+	}
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),
-		sinkdb.Set(path.Join(sinkdbPrefix, key), modified),
+		sinkdb.Set(path.Join(sinkdbPrefix, key), &set),
 	)
 }
 
@@ -234,4 +268,13 @@ func tupleIndex(set []*configpb.ValueTuple, search []string, equal func(a, b []s
 		}
 	}
 	return -1
+}
+
+func exactlyEqual(a, b []string) bool {
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
