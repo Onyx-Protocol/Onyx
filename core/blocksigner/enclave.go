@@ -19,7 +19,7 @@ const enclaveTimeout = time.Second
 // EnclaveClient implements the Signer interface by calling
 // Chain Enclave to sign blocks.
 type EnclaveClient struct {
-	// URLs is called on every Sign request to retrieve the URLs
+	// URLs is called on every Sign call to retrieve the URLs
 	// and access tokens for Chain Enclave.
 	URLs       func() [][]string
 	BaseClient rpc.Client
