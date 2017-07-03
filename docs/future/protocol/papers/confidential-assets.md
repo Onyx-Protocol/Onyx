@@ -112,12 +112,43 @@ Next, an [Asset Range Proof](ca.md#asset-range-proof) that consists of one item 
 
 6. The above equality must hold for any value of `e` because it is determined after `R1`, `R2`, `H1`, `H2`, `B1`, `B2` and due to preimage resistance of the hash function cannot be predicated before these points are fixed. Therefore, `R1/G` must equal `R2/J` and `(H2 - H1)/G` must equal `(B2 - B1)/J` as required.
 
+When [Asset Range Proof](ca.md#asset-range-proof) contains more than one item in its ring signature, it is easy to see that each signature element could be seen as a binding signature with the rest of the ring acting as a Fiat-Shamir challenge:
 
+1. One-item ring signature uses the following hash function (notice that challenge e is both inside and outside the hash function):
 
-Sketch:
-* 1-item ARP perfectly binds the blinding factor.
-* n-item ARP commits to a unique asset commitment.
-* Sequence of ARPs commit to a specific asset ID by induction.
+        e = Hash(s·G - e·P)
+
+2. Two-item ring signature, has a slightly more complex hash function, but with the same trapdoor:
+
+        (a) e1 = Hash(s0·G - Hash(s1·G - e1·P1)·P0)
+        (b) e0 = Hash(s1·G - Hash(s0·G - e0·P0)·P1)
+
+3. In the example (a) above, the s1 can be computed if discrete log P1/G is known, while the remaining value s0 can be chosen freely (“forged”).
+4. Similarly for more items: due to symmetry, any one s-value must be computed, while the remaining s-values can be forged.
+
+The above proves that at least one signature element is correctly computed, but does not prove that it’s the only one. Indeed, in general case it is possible to create a ring signature over arbitrary public keys with several or even all s-values being computed using the corresponding private keys.
+
+In our case, a valid asset range proof proves equality of discrete logs for both halves of the difference between the target commitment and the previous commitment. Below we are demonstrating that it is not possible to have a pair of such discrete logs opening the target commitment to two different previous commitments:
+
+1. Let `(H,B)` be the target asset ID commitment and `(Hi,Bi)` the i-th previous asset commitment, where:
+
+        Hi = c_i·G + Ai
+        Bi = c_i·J
+
+2. Let’s assume that `(H,B)` is both a reblinded commitment to `(H1,B1)` and to `(H2,B2)`:
+
+        (H,B) == (H1 + x·G, B1 + x·J)
+        (H,B) == (H2 + y·G, B2 + y·J)
+
+3. The equality must hold for each half of the commitment independently:
+
+             (c1 + x)·J == (c2 + y)·J
+        A1 + (c1 + x)·G == A2 + (c2 + y)·G
+
+4. From the equations above it follows, that both commitments must necessarily commit to the same asset ID `A1 == A2`.
+
+TBD: prove that a sequence of asset id commitments ultimately commits to the original asset ID since issuance
+
 
 ### Theorem A2: asset commitment is computationally hiding
 
