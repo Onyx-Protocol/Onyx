@@ -41,7 +41,7 @@ TBD: prove a specific asset id / amount
 
 ### Theorem D1: risk of denial of service via asset ID point hashing is negligible
 
-Since the amount of computations it takes to compute an [Asset ID point](#asset-id-point) is variable,
+Since the amount of computations it takes to compute an [Asset ID point](ca.md#asset-id-point) is variable,
 malicious prover may find an `assetID` by brute force that would require the verifier
 to perform arbitrary amount of point decoding operations. The following theorem states
 that the risk is negligible as the malicious prover has to perform exponentially more work than 
@@ -81,22 +81,76 @@ denial of service attack is an acceptable tradeoff.
 
 ### Theorem A1: asset commitment is perfectly binding
 
-**Theorem A1:** Asset ID commitment is statistically binding for asset ID under the assumption of a second preimage-resistant hash function that maps asset ID to a curve point.
+**Theorem A1:** Asset ID commitment is perfectly binding for asset ID under the assumption of a second preimage-resistant hash function that maps asset ID to a curve point.
 
-**Proof:** First, we observe that [PointHash](#pointhash) function that maps asset ID to an [asset ID point](#asset-id-point) based on Keccak permutation is a statistically binding commitment under the assumption that Keccak is second preimage-resistant (that is, probability of finding a different asset ID mapping to the same _asset ID point_ is negligible).
+**Proof:** First, we observe that [PointHash](ca.md#pointhash) function that maps asset ID to an [asset ID point](ca.md#asset-id-point) based on Keccak permutation is a perfectly binding commitment under the assumption that the underlying Keccak instance is second preimage-resistant (that is, probability of finding a different asset ID mapping to the same _asset ID point_ is negligible).
+
+Next, an [Asset Range Proof](ca.md#asset-range-proof) that consists of one item proves that the given commitment perfectly commits to the same value as the previous asset commitment:
+
+1. Let `H1,B1` be the previous asset commitment, known to commit to a certain asset ID `a`:
+
+        H1 = a + b·G
+        B1 = b·J
+        
+2. The asset range proof for `H2,B2` aims to prove the following for an unknown blinding factor `x`:
+    
+        H2 = H1 + x·G
+        B2 = B1 + x·J
+
+    In other words, the `H2-H1` and `B2-B1` must have the same discrete log in respect to `G` and `J` respectively.
+3. The verification procedure is:
+    1. Receive scalars `e`, `s`, and points `H1`, `H2`, `B1`, `B2`.
+    2. Compute `R1 = s·G - e·(H2 - H1)`.
+    3. Compute `R2 = s·J - e·(B2 - B1)`.
+    4. Compute `e' = Hash(R1||R2||H1||B1||H2||B2)`.
+    5. Verify `e' == e`.
+4. Lets use notation `A/B` to mean discrete log of `A` in respect to `B`.
+5. Lets factor out `s` from definitions of R1 and R2:
+
+        s = R1/G + e·(H2 - H1)/G
+        s = R2/J + e·(B2 - B1)/J
+
+6. The above equality must hold for any value of `e` because it is determined after `R1`, `R2`, `H1`, `H2`, `B1`, `B2` and due to preimage resistance of the hash function cannot be predicated before these points are fixed. Therefore, `R1/G` must equal `R2/J` and `(H2 - H1)/G` must equal `(B2 - B1)/J` as required.
 
 
 
-TBD: asset id is hashed, blinding factor is proven to be the same by ARP
+Sketch:
+* 1-item ARP perfectly binds the blinding factor.
+* n-item ARP commits to a unique asset commitment.
+* Sequence of ARPs commit to a specific asset ID by induction.
 
-### Theorem A2: asset commitment is computationally hiding within a given set of commitments
+### Theorem A2: asset commitment is computationally hiding
 
-TBD: 
+Sketch: 
+
+Given H1,B1,H2,B2 determine if H2 is a blinded H1 with the same factor as B2 in respect to B1.
+In this proof we assume absence of the signature that proves the binding.
+
+Let X = x*G = H2 - H1
+Let Y = y*J = B2 - B1
+
+Testing whether x == y requires either breaking ECDLP or DDH:
+
+ECDLP: 
+
+    If j is known (such that J = j*G), then (j^-1)*Y = y*G and can be compared with X.
+
+DDH:
+
+    If we can decide whether Y is DH of (X,J), then we can prove link between H1 and H2:
+
+    DH(x*G, j*G) =?= x*j*G
+
+    E.g. with pairings:
+
+    e(X,J) =?= e(G,Y)
+
+Neither ECDLP nor DDH are tractable for Ed25519.
 
 
-### Theorem A3: asset range proof is statistically unforgeable
 
-TBD: fiat-shamir commitment is a preimage-resistant hash function making.
+
+
 
 
 ### Asset Commitment (AC)
@@ -109,7 +163,7 @@ Non-blinded asset commitment:
 
 Blinded asset commitment:
 
-    (A + f*G, f*J)
+    (A + c*G, c*J)
 
 ### Issuance Asset Range Proof (IARP) - WIP
 
