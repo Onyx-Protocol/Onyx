@@ -32,6 +32,8 @@
   * [Issuance Asset Range Proof](#issuance-asset-range-proof)
   * [Issuance Proof](#issuance-proof)
   * [Value Range Proof](#value-range-proof)
+  * [Asset ID Proof](#asset-id-proof)
+  * [Amount Proof](#amount-proof)
   * [Value Proof](#value-proof)
   * [Validate Issuance](#validate-issuance)
   * [Validate Destination](#validate-destination)
@@ -1651,6 +1653,127 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
+### Asset ID Proof
+
+Asset ID proof demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to a specific asset ID. It is used to privately prove the contents of an output without revealing blinding factors to a counter-party or an HSM. As an optimization, a proof with an empty signature can be used for commitments with zero blinding factor.
+
+#### Create Asset ID Proof
+
+**Inputs:**
+
+1. `AC`: the [asset ID commitment](#asset-id-commitment) being proven.
+2. `assetid`: the [asset ID](blockchain.md#asset-id) to be proven in a given asset commitment.
+3. `message`: a variable-length string.
+4. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) used in the given asset commitment.
+
+**Output:** `p`: asset ID proof, a 64-byte or 0-byte binary string.
+
+**Algorithm:**
+
+1. If `c` is zero, return an empty string.
+2. Otherwise:
+    1. Compute message hash to be signed:
+
+            h = Hash256("AssetIDProof", {assetid, AC, message})
+
+    2. [Create excess commitment](#create-excess-commitment) `E` using scalar `c` and message `h`.
+    3. Return Schnorr signature extracted from the excess commitment (last 64 bytes):
+
+            p = E[64:128]
+
+
+#### Validate Asset ID Proof
+
+**Inputs:**
+
+1. `AC`: the [asset ID commitment](#asset-id-commitment) to `assetid`.
+2. `assetid`: the [asset ID](blockchain.md#asset-id) to be proven used in `AC`.
+3. `message`: a variable-length string.
+4. `p`: the asset ID proof string.
+
+**Output:** `true` if the verification succeeded, `false` otherwise.
+
+**Algorithm:**
+
+1. If `p` is not an empty string or a 64-byte string, return `false`.
+2. Compute [asset ID point](#asset-id-point): `A = PointHash("AssetID", assetID)`.
+3. If `p` is an empty string:
+    1. Return `true` if `AC` equals `(A,O)`, return `false` otherwise.
+4. If `p` is not an empty string:
+    1. Compute a message hash to be signed:
+
+            h = Hash256("AssetIDProof", {assetid, AC, message})
+
+    2. Subtract `A` from the first point of `AC` and leave second point unmodified:
+
+            Q = AC - (A,O)
+
+    3. [Validate excess commitment](#validate-excess-commitment) `Q || p || h`.
+
+
+
+
+### Amount Proof
+
+Amount proof demonstrates that a given [value commitment](#value-commitment) encodes a specific amount. It is used to privately prove the contents of an output without revealing blinding factors to a counter-party or an HSM. As an optimization, a proof with an empty signature can be used for commitments with zero blinding factor.
+
+#### Create Amount Proof
+
+**Inputs:**
+
+1. `AC`: the [asset ID commitment](#asset-id-commitment) being proven.
+2. `VC`: the [value commitment](#value-commitment) being proven.
+3. `value`: the amount to be proven.
+4. `f`: the [value blinding factor](#value-blinding-factor) used in a given asset commitment.
+5. `message`: a variable-length string.
+
+**Output:** `p`: amount proof, a 64-byte or 0-byte binary string.
+
+**Algorithm:**
+
+1. If `f` is zero, return an empty string.
+2. Otherwise:
+    1. Compute message hash to be signed:
+
+            h = Hash256("AmountProof", {uint64le(value), AC, VC, message})
+
+    2. [Create excess commitment](#create-excess-commitment) `E` using scalar `f` and message `h`.
+    3. Return Schnorr signature extracted from the excess commitment (last 64 bytes):
+
+            p = E[64:128]
+
+#### Validate Amount Proof
+
+**Inputs:**
+
+1. `AC`: the [asset ID commitment](#asset-id-commitment) to `assetid`.
+2. `VC`: the [value commitment](#value-commitment) to `value`.
+3. `value`: the amount to be proven.
+4. `message`: a variable-length string.
+5. `p`: the amount proof string.
+
+**Output:** `true` if the verification succeeded, `false` otherwise.
+
+**Algorithm:**
+
+1. If `p` is not an empty string or a 64-byte string, return `false`.
+2. Compute non-blinded value commitment by scalar-multiplying asset ID commitment `AC` by the amount being proven:
+
+        VC’ = value·AC
+
+3. If `p` is an empty string:
+    1. Return `true` if `VC` equals `AC’`, return `false` otherwise.
+4. If `p` is not an empty string:
+    1. Compute a message hash to be signed:
+
+            h = Hash256("AmountProof", {uint64le(value), AC, VC, message})
+
+    2. Subtract non-blinded `VC’` from the given `VC`:
+
+            Q = VC - VC’
+
+    3. [Validate excess commitment](#validate-excess-commitment) `Q || p || h`.
+
 
 ### Value Proof
 
@@ -1668,20 +1791,13 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 6. `f`: the [value blinding factor](#value-blinding-factor) used in a given asset commitment.
 7. `message`: a variable-length string.
 
-**Output:** `vp`: value proof, a 128-byte string containing two schnorr signatures.
+**Output:** `(pa,pv)`: pair of strings representing [asset ID proof](#asset-id-proof) and [amount proof](#amount-proof), each being either empty or 64-byte long.
 
 **Algorithm:**
 
-1. Compute a message hash to be signed:
-
-        h = Hash256("ValueProof", {assetid, uint64le(value), AC, VC, message})
-
-2. [Create excess commitment](#create-excess-commitment) `E1` using scalar `c` and message `h`.
-3. [Create excess commitment](#create-excess-commitment) `E2` using scalar `f` and message `h`.
-4. Return concatenation of Schnorr signatures extracted from excess commitments (last 64 bytes from the each excess commitment):
-
-        vp = E1[64:128] || E2[64:128]
-
+1. [Create asset ID proof](#create-asset-id-proof) `pa` from `AC,assetid,c,message`.
+2. [Create amount proof](#create-amount-proof) `pv` from `AC,VC,value,f,message`.
+3. Return pair of strings `(pa,pv)`.
 
 #### Validate Value Proof
 
@@ -1692,28 +1808,16 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 3. `assetid`: the [asset ID](blockchain.md#asset-id) to be proven used in `AC`.
 4. `value`: the amount to be proven.
 5. `message`: a variable-length string.
-6. `vp`: the value proof, 128-byte string consisting of two Schnorr signatures.
+6. `(pa,pv)`: pair of proof strings, each being either empty or 64-byte long.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. If `vp` is not a 128-byte string, return `false`.
-2. Compute a message hash to be signed:
+1. [Validate Asset ID Proof](#validate-asset-id-proof) `pa`.
+2. [Validate Amount Proof](#validate-amount-proof) `pv`.
+3. Return `true` if both validations succeeded, return `false` otherwise.
 
-        h = Hash256("ValueProof", {assetid, uint64le(value), AC, VC, message})
-
-3. Compute [asset ID point](#asset-id-point): `A = PointHash("AssetID", assetID)`.
-4. Subtract `A` from the first point of `AC` and leave second point unmodified:
-
-        Q1 = AC - (A,O)
-
-5. Scalar-multiply `AC` by `value` and subtract the resulting pair from `VC`:
-
-        Q2 = VC - value·AC
-
-6. [Validate excess commitment](#validate-excess-commitment) `Q1 || vp[0:64] || h`.
-7. [Validate excess commitment](#validate-excess-commitment) `Q2 || vp[64:128] || h`.
 
 
 
