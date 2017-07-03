@@ -1,6 +1,47 @@
 package ca
 
-import "testing"
+import (
+	"chain/crypto/ed25519/ecmath"
+	"testing"
+)
+
+func TestNonblindedAssetIDProof(t *testing.T) {
+	assetID := AssetID{1}
+	ac, _ := CreateAssetCommitment(assetID, nil)
+	msg := []byte("message")
+
+	proof := CreateAssetIDProof(assetID, ac, ecmath.Zero, msg)
+
+	if !ValidateAssetIDProof(assetID, ac, msg, proof) {
+		t.Error("failed to validate asset ID proof")
+	}
+	if len(proof) != 0 {
+		t.Error("asset ID proof for non-blinded commitment must be empty")
+	}
+}
+
+func TestAssetIDProof(t *testing.T) {
+	assetID := AssetID{1}
+	aek := AssetKey{3}
+	ac, c := CreateAssetCommitment(assetID, aek)
+	msg := []byte("message")
+
+	proof := CreateAssetIDProof(assetID, ac, *c, msg)
+
+	if !ValidateAssetIDProof(assetID, ac, msg, proof) {
+		t.Error("failed to validate asset ID proof")
+	}
+	if ValidateAssetIDProof(AssetID{1, 1}, ac, msg, proof) {
+		t.Error("validated invalid asset ID proof")
+	}
+	if ValidateAssetIDProof(assetID, ac, msg[1:], proof) {
+		t.Error("validated invalid asset ID proof")
+	}
+	proof[0] ^= 1
+	if ValidateAssetIDProof(assetID, ac, msg, proof) {
+		t.Error("validated invalid asset ID proof")
+	}
+}
 
 func TestValueProof(t *testing.T) {
 	assetID := AssetID{1}
