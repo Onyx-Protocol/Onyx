@@ -24,7 +24,7 @@ var ErrConsensusChange = errors.New("consensus program has changed")
 var ErrInvalidKey = errors.New("misconfigured signer public key")
 
 // Signer provides the interface for computing the block signature. It's
-// implemented by the MockHSM and our signerd client.
+// implemented by the MockHSM and EnclaveClient.
 type Signer interface {
 	Sign(context.Context, ed25519.PublicKey, *legacy.BlockHeader) ([]byte, error)
 }
