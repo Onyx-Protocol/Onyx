@@ -155,7 +155,7 @@ func (opts *Options) Add(key string, tup []string) sinkdb.Op {
 }
 
 // AddOrUpdate adds the provided tuple to the configuration option
-// set indicated by key. The the added tuple conflicts with an
+// set indicated by key. If the added tuple conflicts with an
 // existing tuple in the set, AddOrUpdate updates the conflicting
 // tuple to the provided tuple.
 func (opts *Options) AddOrUpdate(key string, tup []string) sinkdb.Op {
