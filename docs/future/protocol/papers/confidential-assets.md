@@ -79,7 +79,7 @@ the blockchains deployed before the extension to _Confidential Assets_.
 We consider that to preserve asset ID compatibility at the risk of an infeasible 
 denial of service attack is an acceptable tradeoff.
 
-### Theorem A1: asset commitment is statistically binding
+### Theorem A1: asset commitment is perfectly binding
 
 **Theorem A1:** Asset ID commitment is statistically binding for asset ID under the assumption of a second preimage-resistant hash function that maps asset ID to a curve point.
 

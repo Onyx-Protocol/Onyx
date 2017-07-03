@@ -26,8 +26,8 @@ func TestIssuanceProof(t *testing.T) {
 	aek := []byte("asset encryption key")
 	ac, c := CreateAssetCommitment(assetIDs[j], aek)
 	iarp := CreateConfidentialIARP(ac, *c, assetIDs[:], Y[:], nonce, msg, j, y[j])
-	ip := CreateIssuanceProof(ac, iarp, assetIDs[:], msg, nonce, y[j])
-	valid, yj := ip.Validate(ac, iarp, assetIDs[:], msg, nonce, j)
+	ip := CreateIssuanceProof(ac, iarp, assetIDs[:], Y[:], msg, nonce, y[j])
+	valid, yj := ip.Validate(ac, iarp, assetIDs[:], Y[:], msg, nonce, j)
 	if !valid {
 		t.Error("failed to validate issuance proof")
 	}
@@ -35,37 +35,37 @@ func TestIssuanceProof(t *testing.T) {
 		t.Error("validated issuance proof but not yj")
 	}
 
-	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], msg[1:], nonce, j); valid {
+	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], Y[:], msg[1:], nonce, j); valid {
 		t.Error("validated invalid issuance proof")
 	}
-	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], msg, nonce, 0); valid {
+	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], Y[:], msg, nonce, 0); valid {
 		t.Error("validated invalid issuance proof")
 	}
 
 	nonce2 := nonce
 	nonce2[0] ^= 1
-	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], msg, nonce2, j); valid {
+	if valid, _ = ip.Validate(ac, iarp, assetIDs[:], Y[:], msg, nonce2, j); valid {
 		t.Error("validated invalid issuance proof")
 	}
 
 	ip2 := *ip
 	ip2.e1[0] ^= 1
-	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], msg, nonce, j); valid {
+	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], Y[:], msg, nonce, j); valid {
 		t.Error("validated invalid issuance proof")
 	}
 	ip2 = *ip
 	ip2.s1[0] ^= 1
-	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], msg, nonce, j); valid {
+	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], Y[:], msg, nonce, j); valid {
 		t.Error("validated invalid issuance proof")
 	}
 	ip2 = *ip
 	ip2.e2[0] ^= 1
-	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], msg, nonce, j); valid {
+	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], Y[:], msg, nonce, j); valid {
 		t.Error("validated invalid issuance proof")
 	}
 	ip2 = *ip
 	ip2.s2[0] ^= 1
-	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], msg, nonce, j); valid {
+	if valid, _ = ip2.Validate(ac, iarp, assetIDs[:], Y[:], msg, nonce, j); valid {
 		t.Error("validated invalid issuance proof")
 	}
 }

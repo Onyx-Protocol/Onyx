@@ -1192,7 +1192,6 @@ Asset ID                     | [AssetID](blockchain.md#asset-id)   | 32-byte ass
 Field                           | Type                  | Description
 --------------------------------|-----------------------|------------------
 Type                            | byte                  | Contains value 0x01 to indicate the commitment is blinded.
-Issuance Keys                   | [List](blockchain.md#list)\<[Point](#point)\> | Keys to be used to calculate the public key for the corresponding index in the ring signature.
 Tracing Point                   | [Point](#point)       | A point that lets any issuer to prove or disprove if this issuance is done by them.
 Issuance ZKP                    | [OLEG-ZKP](#oleg-zkp) | An OLEG-ZKP proving that the issuer of an encrypted asset ID approved the issuance.
 
@@ -1350,11 +1349,11 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 
 1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `IARP`: the to-be-verified [confidential issuance asset range proof](#confidential-issuance-asset-range-proof) consisting of:
-    * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
     * `T`: tracing [point](#point),
     * `oleg-zkp = (e0, {s[i,k]})`: the issuance [OLEG-ZKP](#oleg-zkp),
     * And provided separately from the range proof:
         * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
+        * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
         * `message`: a variable-length string,
         * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique.
 3. Issuance key pair `y, Y` (where `Y = y·G`).
@@ -1397,11 +1396,11 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 
 1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `IARP`: the to-be-verified [confidential issuance asset range proof](#confidential-issuance-asset-range-proof) consisting of:
-    * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
     * `T`: tracing [point](#point),
     * `oleg-zkp = (e0, {s[i,k]})`: the issuance [OLEG-ZKP](#oleg-zkp),
     * And provided separately from the range proof:
         * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
+        * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
         * `message`: a variable-length string,
         * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique.
 3. Index `j` of the issuance key `Y[j]` being verified to be used (or not) in the given issuance range proof.

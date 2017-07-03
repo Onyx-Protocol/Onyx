@@ -11,10 +11,8 @@ type OlegZKP struct {
 
 type OlegZKPFunc func([]ecmath.Scalar) ecmath.Point
 
-func CreateOlegZKP(msg []byte, x []ecmath.Scalar, f []OlegZKPFunc, F [][]ecmath.Point, iHat uint64) *OlegZKP {
-	l := uint64(len(x))
-	msghash := ozkpMsgHash(F, l, msg)
-	return createOlegZKP(msghash[:], x, f, F, iHat, 0)
+func CreateOlegZKP(msghash []byte, x []ecmath.Scalar, f []OlegZKPFunc, F [][]ecmath.Point, iHat uint64) *OlegZKP {
+	return createOlegZKP(msghash, x, f, F, iHat, 0)
 }
 
 func createOlegZKP(msghash []byte, x []ecmath.Scalar, f []OlegZKPFunc, F [][]ecmath.Point, iHat, counter uint64) *OlegZKP {
@@ -122,10 +120,9 @@ func ozkpNextE(msghash []byte, i uint64, f []OlegZKPFunc, r []ecmath.Scalar, w [
 	return ozkpEHash(msghash, i, R, w)
 }
 
-func (ozkp *OlegZKP) Validate(msg []byte, f []OlegZKPFunc, F [][]ecmath.Point) bool {
+func (ozkp *OlegZKP) Validate(msghash []byte, f []OlegZKPFunc, F [][]ecmath.Point) bool {
 	n := uint64(len(F))
 	l := uint64(len(ozkp.s[0]))
-	msghash := ozkpMsgHash(F, l, msg)
 	e := make([]ecmath.Scalar, n+1)
 	e[0] = ozkp.e
 	for i := uint64(0); i < n; i++ {

@@ -20,9 +20,6 @@ type NonconfidentialIARP struct {
 }
 
 type ConfidentialIARP struct {
-	// Y is the list of issuance keys
-	Y []ecmath.Point
-
 	// T is the tracing point
 	T           ecmath.Point
 	IssuanceZKP *OlegZKP
@@ -82,7 +79,7 @@ func CreateConfidentialIARP(
 
 	ozkp := CreateOlegZKP(msghash[:], []ecmath.Scalar{c, y}, iarpFunctions(M, h), F, j)
 
-	return &ConfidentialIARP{Y: Y, T: T, IssuanceZKP: ozkp}
+	return &ConfidentialIARP{T: T, IssuanceZKP: ozkp}
 }
 
 func (iarp *ConfidentialIARP) Validate(

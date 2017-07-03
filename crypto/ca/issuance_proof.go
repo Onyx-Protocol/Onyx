@@ -7,9 +7,17 @@ type IssuanceProof struct {
 	e1, s1, e2, s2 ecmath.Scalar
 }
 
-func CreateIssuanceProof(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetID, msg []byte, nonce [32]byte, y ecmath.Scalar) *IssuanceProof {
+func CreateIssuanceProof(
+	ac *AssetCommitment,
+	iarp *ConfidentialIARP,
+	a []AssetID,
+	Y []ecmath.Point,
+	msg []byte,
+	nonce [32]byte,
+	y ecmath.Scalar,
+) *IssuanceProof {
 	// 1. [Validate issuance asset range proof](#validate-issuance-asset-range-proof) to make sure tracing and marker points are correct.
-	if !iarp.Validate(ac, a, iarp.Y, nonce, msg) {
+	if !iarp.Validate(ac, a, Y, nonce, msg) {
 		return nil // xxx or panic?
 	}
 
@@ -20,7 +28,7 @@ func CreateIssuanceProof(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetI
 	var Z ecmath.Point
 	Z.ScMul(&iarp.T, &x)
 
-	M := iarpCalcM(iarpBasehash(ac, nonce, msg, a, iarp.Y))
+	M := iarpCalcM(iarpBasehash(ac, nonce, msg, a, Y))
 
 	// 4. Calculate commitment to the blinding key: `X = x·M`.
 	var X ecmath.Point
@@ -66,13 +74,21 @@ func CreateIssuanceProof(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetI
 }
 
 // Validate validates ip. It returns two bools: overall validity, and whether Y[j] was used to issue the asset ID in commitment ac.
-func (ip *IssuanceProof) Validate(ac *AssetCommitment, iarp *ConfidentialIARP, a []AssetID, msg []byte, nonce [32]byte, j uint64) (valid, yj bool) {
-	if !iarp.Validate(ac, a, iarp.Y, nonce, msg) {
+func (ip *IssuanceProof) Validate(
+	ac *AssetCommitment,
+	iarp *ConfidentialIARP,
+	a []AssetID,
+	Y []ecmath.Point,
+	msg []byte,
+	nonce [32]byte,
+	j uint64,
+) (valid, yj bool) {
+	if !iarp.Validate(ac, a, Y, nonce, msg) {
 		return false, false
 	}
 	msghash := hash256("ChainCA.IP", ac.Bytes(), iarp.T.Bytes(), ip.X.Bytes(), ip.Z.Bytes(), ip.Zprime.Bytes())
 
-	M := iarpCalcM(iarpBasehash(ac, nonce, msg, a, iarp.Y))
+	M := iarpCalcM(iarpBasehash(ac, nonce, msg, a, Y))
 
 	var R1, R2, Temp ecmath.Point
 	R1.ScMul(&M, &ip.s1)
@@ -91,7 +107,7 @@ func (ip *IssuanceProof) Validate(ac *AssetCommitment, iarp *ConfidentialIARP, a
 	Temp.ScMul(&ip.Zprime, &ip.e2)
 	R3.Sub(&R3, &Temp) // R3 = s2·X - e2·Z’
 	R4.ScMul(&G, &ip.s2)
-	Temp.ScMul(&iarp.Y[j], &ip.e2)
+	Temp.ScMul(&Y[j], &ip.e2)
 	R4.Sub(&R4, &Temp) // R4 = s2·G - e2·Y[j]
 	ePrime = scalarHash("ChainCA.e2", msghash[:], R3.Bytes(), R4.Bytes())
 	if ePrime != ip.e2 {
