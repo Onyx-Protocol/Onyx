@@ -380,7 +380,7 @@ func launchConfiguredCore(ctx context.Context, sdb *sinkdb.DB, db *sql.DB, conf 
 		opts = append(opts, core.GeneratorRemote(&rpc.Client{
 			BaseURL:      conf.GeneratorUrl,
 			AccessToken:  conf.GeneratorAccessToken,
-			Username:     processID,
+			ProcessID:    processID,
 			CoreID:       conf.Id,
 			Version:      version,
 			BlockchainID: conf.BlockchainId.String(),
@@ -405,7 +405,7 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 		hsm = &remoteHSM{Client: &rpc.Client{
 			BaseURL:      conf.BlockHsmUrl,
 			AccessToken:  conf.BlockHsmAccessToken,
-			Username:     processID,
+			ProcessID:    processID,
 			CoreID:       conf.Id,
 			Version:      version,
 			BlockchainID: conf.BlockchainId.String(),
@@ -449,7 +449,7 @@ func remoteSignerInfo(ctx context.Context, processID, blockchainID string, conf 
 		client := &rpc.Client{
 			BaseURL:      u.String(),
 			AccessToken:  signer.AccessToken,
-			Username:     processID,
+			ProcessID:    processID,
 			CoreID:       conf.Id,
 			Version:      version,
 			BlockchainID: blockchainID,
