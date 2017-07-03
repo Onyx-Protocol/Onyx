@@ -1,8 +1,6 @@
 package ca
 
 import (
-	"fmt"
-
 	"chain/crypto/ed25519/ecmath"
 )
 
@@ -131,14 +129,16 @@ func createBorromeanRingSignature(msghash []byte, B []ecmath.Point, P [][][]ecma
 func (brs *BorromeanRingSignature) Validate(msghash []byte, B []ecmath.Point, P [][][]ecmath.Point) bool {
 	n := uint64(len(P))
 	if n < 1 {
-		panic("number of rings cannot be less than 1")
+		// number of rings cannot be less than 1
+		return false
 	}
 
 	m := uint64(len(P[0]))
 	M := uint64(len(B))
 
 	if m < 1 {
-		panic("number of signatures per ring cannot be less than 1")
+		// number of signatures per ring cannot be less than 1
+		return false
 	}
 
 	e0 := brs.e
@@ -153,12 +153,14 @@ func (brs *BorromeanRingSignature) Validate(msghash []byte, B []ecmath.Point, P 
 	e0hasher := scalarHasher("ChainCA.BRS.e0")
 	for t := uint64(0); t < n; t++ {
 		if uint64(len(P[t])) != m {
-			panic(fmt.Errorf("number of pubkeys per ring must be %d*%d", m, M))
+			// fmt.Errorf("number of pubkeys per ring must be %d*%d", m, M)
+			return false
 		}
 		e = e0
 		for i := uint64(0); i < m; i++ {
 			if uint64(len(P[t][i])) != M {
-				panic(fmt.Errorf("number of pubkeys per signature must be %d", M))
+				// fmt.Errorf("number of pubkeys per signature must be %d", M)
+				return false
 			}
 
 			z = brs.s[t][i]
@@ -179,20 +181,24 @@ func (brs *BorromeanRingSignature) Payload(msghash []byte, B []ecmath.Point, P [
 
 	n := uint64(len(P))
 	if n < 1 {
-		panic("number of rings cannot be less than 1")
+		// number of rings cannot be less than 1
+		return nil
 	}
 
 	m := uint64(len(P[0]))
 	M := uint64(len(B))
 
 	if m < 1 {
-		panic("number of signatures per ring cannot be less than 1")
+		// number of signatures per ring cannot be less than 1
+		return nil
 	}
 	if uint64(len(p)) != n {
-		panic("number of secret keys must equal number of rings")
+		// number of secret keys must equal number of rings
+		return nil
 	}
 	if uint64(len(j)) != n {
-		panic("number of secret indexes must equal number of rings")
+		// number of secret indexes must equal number of rings
+		return nil
 	}
 
 	e0 := brs.e
@@ -212,12 +218,14 @@ func (brs *BorromeanRingSignature) Payload(msghash []byte, B []ecmath.Point, P [
 	e0hasher := scalarHasher("ChainCA.BRS.e0")
 	for t := uint64(0); t < n; t++ {
 		if uint64(len(P[t])) != m {
-			panic(fmt.Errorf("number of pubkeys per ring must be %d*%d", m, M))
+			// fmt.Errorf("number of pubkeys per ring must be %d*%d", m, M)
+			return nil
 		}
 		e = e0
 		for i := uint64(0); i < m; i++ {
 			if uint64(len(P[t][i])) != M {
-				panic(fmt.Errorf("number of pubkeys per signature must be %d", M))
+				// fmt.Errorf("number of pubkeys per signature must be %d", M)
+				return nil
 			}
 
 			z = brs.s[t][i]
