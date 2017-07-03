@@ -10,14 +10,13 @@ type IssuanceProof struct {
 func CreateIssuanceProof(
 	ac *AssetCommitment,
 	iarp *ConfidentialIARP,
-	a []AssetID,
-	Y []ecmath.Point,
+	candidates []AssetIssuanceCandidate,
 	msg []byte,
 	nonce [32]byte,
 	y ecmath.Scalar,
 ) *IssuanceProof {
 	// 1. [Validate issuance asset range proof](#validate-issuance-asset-range-proof) to make sure tracing and marker points are correct.
-	if !iarp.Validate(ac, a, Y, nonce, msg) {
+	if !iarp.Validate(ac, candidates, nonce, msg) {
 		return nil // xxx or panic?
 	}
 
@@ -28,7 +27,7 @@ func CreateIssuanceProof(
 	var Z ecmath.Point
 	Z.ScMul(&iarp.T, &x)
 
-	M := iarpCalcM(iarpBasehash(ac, nonce, msg, a, Y))
+	M := iarpCalcM(iarpBasehash(ac, nonce, msg, candidates))
 
 	// 4. Calculate commitment to the blinding key: `X = x·M`.
 	var X ecmath.Point
@@ -77,18 +76,20 @@ func CreateIssuanceProof(
 func (ip *IssuanceProof) Validate(
 	ac *AssetCommitment,
 	iarp *ConfidentialIARP,
-	a []AssetID,
-	Y []ecmath.Point,
+	candidates []AssetIssuanceCandidate,
 	msg []byte,
 	nonce [32]byte,
 	j uint64,
 ) (valid, yj bool) {
-	if !iarp.Validate(ac, a, Y, nonce, msg) {
+	if !iarp.Validate(ac, candidates, nonce, msg) {
+		return false, false
+	}
+	if j >= uint64(len(candidates)) {
 		return false, false
 	}
 	msghash := hash256("ChainCA.IP", ac.Bytes(), iarp.T.Bytes(), ip.X.Bytes(), ip.Z.Bytes(), ip.Zprime.Bytes())
 
-	M := iarpCalcM(iarpBasehash(ac, nonce, msg, a, Y))
+	M := iarpCalcM(iarpBasehash(ac, nonce, msg, candidates))
 
 	var R1, R2, Temp ecmath.Point
 	R1.ScMul(&M, &ip.s1)
@@ -107,7 +108,8 @@ func (ip *IssuanceProof) Validate(
 	Temp.ScMul(&ip.Zprime, &ip.e2)
 	R3.Sub(&R3, &Temp) // R3 = s2·X - e2·Z’
 	R4.ScMul(&G, &ip.s2)
-	Temp.ScMul(&Y[j], &ip.e2)
+	Yj := candidates[j].IssuanceKey()
+	Temp.ScMul(Yj, &ip.e2)
 	R4.Sub(&R4, &Temp) // R4 = s2·G - e2·Y[j]
 	ePrime = scalarHash("ChainCA.e2", msghash[:], R3.Bytes(), R4.Bytes())
 	if ePrime != ip.e2 {

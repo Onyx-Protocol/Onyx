@@ -10,8 +10,19 @@ type EncryptedIssuance struct {
 }
 
 // EncryptedIssuance encrypts an issuance. The issued asset is assetIDs[j].
-func EncryptIssuance(value uint64, N, j uint64, assetIDs []AssetID, Y []ecmath.Point, y ecmath.Scalar, msg []byte, nonce [32]byte, aek AssetKey, vek ValueKey, idek DataKey) (ei *EncryptedIssuance, c, f ecmath.Scalar) {
-	assetID := assetIDs[j]
+func EncryptIssuance(
+	value uint64,
+	N uint64,
+	j uint64,
+	candidates []AssetIssuanceCandidate,
+	y ecmath.Scalar,
+	msg []byte,
+	nonce [32]byte,
+	aek AssetKey,
+	vek ValueKey,
+	idek DataKey,
+) (ei *EncryptedIssuance, c, f ecmath.Scalar) {
+	assetID := *candidates[j].AssetID()
 	ac, cp := CreateAssetCommitment(assetID, aek)
 	if cp == nil {
 		c = ecmath.Zero
@@ -24,7 +35,7 @@ func EncryptIssuance(value uint64, N, j uint64, assetIDs []AssetID, Y []ecmath.P
 	} else {
 		f = *fp
 	}
-	iarp := CreateConfidentialIARP(ac, c, assetIDs, Y, nonce, msg, j, y)
+	iarp := CreateConfidentialIARP(ac, c, candidates, nonce, msg, j, y)
 	vrp := CreateValueRangeProof(ac, vc, N, value, nil, f, idek, vek, msg) // xxx msg? nil?
 	return &EncryptedIssuance{ac: ac, vc: vc, iarp: iarp, vrp: vrp}, c, f
 }

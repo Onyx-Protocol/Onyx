@@ -4,20 +4,19 @@ import (
 	//	"encoding/hex"
 	"chain/crypto/ed25519/ecmath"
 	"testing"
-	//	"chain/crypto/ed25519/ecmath"
 )
 
-type testAssetIssuanceKeyTuple struct {
+type testAssetIssuanceCandidate struct {
 	assetID     *AssetID
-	issuanceKey IssuanceKey
+	issuanceKey *ecmath.Point
 }
 
-func (tuple *testAssetIssuanceKeyTuple) AssetID() *AssetID {
-	return tuple.assetID
+func (candidate *testAssetIssuanceCandidate) AssetID() *AssetID {
+	return candidate.assetID
 }
 
-func (tuple *testAssetIssuanceKeyTuple) IssuanceKey() IssuanceKey {
-	return tuple.issuanceKey
+func (candidate *testAssetIssuanceCandidate) IssuanceKey() *ecmath.Point {
+	return candidate.issuanceKey
 }
 
 func TestConfidentialIARP(t *testing.T) {
@@ -45,14 +44,25 @@ func TestConfidentialIARP(t *testing.T) {
 	y := y1
 	ac, c := CreateAssetCommitment(a1, aek)
 
-	assetIDs := []AssetID{a0, a1, a2}
-	Y := []ecmath.Point{Y0, Y1, Y2}
+	candidates := []AssetIssuanceCandidate{
+		&testAssetIssuanceCandidate{
+			assetID:     &a0,
+			issuanceKey: &Y0,
+		},
+		&testAssetIssuanceCandidate{
+			assetID:     &a1,
+			issuanceKey: &Y1,
+		},
+		&testAssetIssuanceCandidate{
+			assetID:     &a2,
+			issuanceKey: &Y2,
+		},
+	}
 
 	iarp := CreateConfidentialIARP(
 		ac,
 		*c,
-		assetIDs,
-		Y,
+		candidates,
 		nonce,
 		msg,
 		secretIndex,
@@ -61,8 +71,7 @@ func TestConfidentialIARP(t *testing.T) {
 
 	result := iarp.Validate(
 		ac,
-		assetIDs,
-		Y,
+		candidates,
 		nonce,
 		msg,
 	)
