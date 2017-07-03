@@ -1112,7 +1112,7 @@ Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signat
 
 1. Calculate the message hash to sign:
 
-        msghash = Hash256("ARP", AC’, AC[0], ..., AC[n-1], message)
+        msghash = Hash256("ARP.msg", AC’, AC[0], ..., AC[n-1], message)
 
 2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
 
@@ -1150,7 +1150,7 @@ the asset ID of one of the inputs to the recipient.
 
 1. Calculate the message hash to sign:
 
-        msghash = Hash256("ARP", AC’, AC[0], ..., AC[n-1], message)
+        msghash = Hash256("ARP.msg", AC’, AC[0], ..., AC[n-1], message)
 
 2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
 

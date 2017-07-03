@@ -15,7 +15,7 @@ type RingSignature struct {
 	s []ecmath.Scalar
 }
 
-// msg: the string to be signed.
+// msghash: the string to be signed.
 // M: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
 // {B[u]}: M base points to validate the signature.
 // {P[i,u]}: n·M points representing the public keys.
@@ -23,11 +23,7 @@ type RingSignature struct {
 // p: the secret scalar representing a private key for the public keys P[u,j].
 //
 // (Layout note: P has n elements; P[i] has M elements.)
-func CreateRingSignature(msg []byte, B []ecmath.Point, P [][]ecmath.Point, j uint64, p ecmath.Scalar) *RingSignature {
-	// 1. Let counter = 0.
-	// 2. Let the msghash be a hash of the input non-secret data:
-	// msghash = Hash256("RS" || byte(48+M) || B || P[0] || ... || P[n-1] || msg).
-	msghash := rsMsgHash(B, P, msg)
+func CreateRingSignature(msghash []byte, B []ecmath.Point, P [][]ecmath.Point, j uint64, p ecmath.Scalar) *RingSignature {
 	return createRingSignature(msghash[:], B, P, j, p, 0)
 }
 
@@ -101,9 +97,7 @@ func createRingSignature(msghash []byte, B []ecmath.Point, P [][]ecmath.Point, j
 	}
 }
 
-func (rs *RingSignature) Validate(msg []byte, B []ecmath.Point, P [][]ecmath.Point) bool {
-	msghash := rsMsgHash(B, P, msg)
-
+func (rs *RingSignature) Validate(msghash []byte, B []ecmath.Point, P [][]ecmath.Point) bool {
 	n := uint64(len(P))
 
 	e := make([]ecmath.Scalar, n+1)
@@ -119,6 +113,7 @@ func (rs *RingSignature) Validate(msg []byte, B []ecmath.Point, P [][]ecmath.Poi
 }
 
 func rsMsgHash(B []ecmath.Point, P [][]ecmath.Point, msg []byte) [32]byte {
+	// msghash = Hash256("RS.msg", {byte(48+M), B[0],...,B[M-1], P[0,0],...,P[n-1,0], ..., P[0,M-1],...,P[n-1,M-1], msg})
 	M := len(B)
 
 	hasher := hasher256("ChainCA.RS.msg", []byte{byte(48 + M)})

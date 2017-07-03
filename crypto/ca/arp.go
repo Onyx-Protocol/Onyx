@@ -12,10 +12,11 @@ type AssetRangeProof struct {
 // caller can decorate the result with an asset ID to make it
 // non-confidential.
 func CreateAssetRangeProof(msg []byte, ac []*AssetCommitment, acPrime *AssetCommitment, j uint64, c, cPrime ecmath.Scalar) *AssetRangeProof {
+	msghash := arpMsgHash(msg, ac, acPrime)
 	P := arpPubkeys(ac, acPrime)
 	var p ecmath.Scalar
 	p.Sub(&cPrime, &c)
-	rs := CreateRingSignature(msg, []ecmath.Point{G, J}, P, j, p)
+	rs := CreateRingSignature(msghash, []ecmath.Point{G, J}, P, j, p)
 	return &AssetRangeProof{
 		commitments: ac,
 		signature:   rs,
@@ -23,10 +24,9 @@ func CreateAssetRangeProof(msg []byte, ac []*AssetCommitment, acPrime *AssetComm
 }
 
 func (arp *AssetRangeProof) Validate(msg []byte, acPrime *AssetCommitment) bool {
-	// xxx pending: whether/how to hash msg before calling
-	// arp.signature.Validate, which also hashes
+	msghash := arpMsgHash(msg, arp.commitments, acPrime)
 	P := arpPubkeys(arp.commitments, acPrime)
-	if !arp.signature.Validate(msg, []ecmath.Point{G, J}, P) {
+	if !arp.signature.Validate(msghash, []ecmath.Point{G, J}, P) {
 		return false
 	}
 	if arp.id != nil {
@@ -39,7 +39,8 @@ func (arp *AssetRangeProof) Validate(msg []byte, acPrime *AssetCommitment) bool 
 	return true
 }
 
-func arpMsgHash(msg []byte, ac []*AssetCommitment, acPrime *AssetCommitment) [32]byte {
+func arpMsgHash(msg []byte, ac []*AssetCommitment, acPrime *AssetCommitment) []byte {
+	// msghash = Hash256("ARP.msg", AC’, AC[0], ..., AC[n-1], message)
 	hasher := hasher256("ChainCA.ARP.msg", acPrime.Bytes())
 	for _, aci := range ac {
 		hasher.WriteItem(aci.Bytes())
@@ -47,7 +48,7 @@ func arpMsgHash(msg []byte, ac []*AssetCommitment, acPrime *AssetCommitment) [32
 	hasher.Write(msg)
 	var result [32]byte
 	hasher.Sum(result[:0])
-	return result
+	return result[:]
 }
 
 func arpPubkeys(ac []*AssetCommitment, acPrime *AssetCommitment) [][]ecmath.Point {
