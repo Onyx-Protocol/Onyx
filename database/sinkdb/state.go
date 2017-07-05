@@ -3,6 +3,7 @@ package sinkdb
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"sync"
 
@@ -240,6 +241,16 @@ func (s *state) EmptyWrite() (instruction []byte) {
 			Value: []byte(""),
 		}}})
 	return instruction
+}
+
+// ReadFile wraps ioutil.ReadFile for future dependcy injection
+func (s *state) ReadFile(filename string) (data []byte, err error) {
+	data, err = ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	return data, nil
 }
 
 // WriteFile is like ioutil.WriteFile, but it writes safely and atomically.
