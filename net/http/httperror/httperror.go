@@ -102,6 +102,7 @@ func (f Formatter) Log(ctx context.Context, err error) {
 		"status", resp.HTTPStatus,
 		"chaincode", resp.ChainCode,
 		"path", reqid.PathFromContext(ctx),
+		"useragent", reqid.UserAgentFromContext(ctx),
 		log.KeyError, errorMessage,
 	}
 	if resp.HTTPStatus == 500 {
