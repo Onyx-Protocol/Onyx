@@ -24,12 +24,16 @@ class Summary extends React.Component {
       if (['issue', 'retire'].includes(inout.type)) {
         asset[inout.type] += inout.amount
       } else {
-        let accountKey = inout.accountId || 'external'
+        let accountKey = inout.accountId || inout.controlProgram
         let account = asset[accountKey]
         if (!account) account = asset[accountKey] = {
           alias: inout.accountAlias,
           spend: 0,
           control: 0
+        }
+
+        if (!inout.accountId) {
+          account.external = true
         }
 
         if (inout.type == 'spend') {
@@ -72,7 +76,7 @@ class Summary extends React.Component {
         const account = asset[accountId]
         if (!account) return
 
-        if (accountId == 'external') {
+        if (account.external) {
           account.alias = 'external'
           accountId = null
         }
