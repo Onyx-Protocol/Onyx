@@ -212,6 +212,7 @@ func (a *API) buildHandler() {
 	if a.config != nil && a.config.BlockchainId != nil {
 		handler = blockchainIDHandler(handler, a.config.BlockchainId.String())
 	}
+	handler = loggingHandler(handler)
 	a.handler = handler
 }
 
@@ -314,6 +315,22 @@ func blockchainIDHandler(handler http.Handler, blockchainID string) http.Handler
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rpc.HeaderBlockchainID, blockchainID)
 		handler.ServeHTTP(w, req)
+	})
+}
+
+// loggingHandler pulls out request data and adds it to the request's
+// logging context.
+func loggingHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		ctx = log.AddPrefixkv(ctx, "path", req.URL.Path)
+		if userAgent := req.Header.Get("User-Agent"); userAgent != "" {
+			ctx = log.AddPrefixkv(ctx, "useragent", userAgent)
+		}
+		if coreID := req.Header.Get("Chain-Core-ID"); coreID != "" {
+			ctx = log.AddPrefixkv(ctx, "coreid", coreID)
+		}
+		handler.ServeHTTP(w, req.WithContext(ctx))
 	})
 }
 
