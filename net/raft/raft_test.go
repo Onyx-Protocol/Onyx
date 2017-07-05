@@ -78,6 +78,7 @@ var idErrorCases = [][]byte{
 }
 
 func TestReadIDError(t *testing.T) {
+	sv := Service{state: newTestState()}
 	dir, err := ioutil.TempDir("", "raft_test.go")
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +91,7 @@ func TestReadIDError(t *testing.T) {
 			continue
 		}
 
-		_, err := readID(dir)
+		_, err := sv.readID(dir)
 		if err == nil {
 			t.Errorf("readID of %v => err = nil, want error", test)
 		}
@@ -105,7 +106,7 @@ func TestStartUninitialized(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	sv, err := Start("", dir, http.DefaultClient, nil)
+	sv, err := Start("", dir, http.DefaultClient, newTestState())
 	if err != nil {
 		t.Fatal(err)
 	}

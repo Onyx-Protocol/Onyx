@@ -56,6 +56,10 @@ func (s *state) EmptyWrite() []byte {
 	return encodeInstruction(instruction{})
 }
 
+func (s *state) ReadFile(filename string) (data []byte, err error) {
+	return ioutil.ReadFile(filename)
+}
+
 func (s *state) WriteFile(name string, data []byte, perm os.FileMode) error {
 	return ioutil.WriteFile(name, data, perm)
 }

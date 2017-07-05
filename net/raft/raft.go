@@ -806,8 +806,8 @@ func (sv *Service) recover() (*wal.WAL, error) {
 
 	var raftSnap raftpb.Snapshot
 	snapData, err := sv.state.ReadFile(sv.snapFile())
-	if err != nil && !os.IsNotExist(err) {
-		return nil, errors.Wrap(err)
+	if err != nil && !os.IsNotExist(errors.Root(err)) {
+		return nil, err
 	}
 	if err == nil {
 		err = decodeSnapshot(snapData, &raftSnap)
