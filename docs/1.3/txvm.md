@@ -506,7 +506,7 @@ Pops a condition from the Condition stack and executes it.
 
 Pops a tuple `input` of type [Contract](#contract) from the data stack. Pushes it to the Input stack.
 
-Pushes each of the `values` in `input` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-id) of `input`. 
+Pushes each of the `values` in `input` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to `input.anchor`. 
 
 Executes `input.program`.
 
