@@ -382,15 +382,15 @@ Fails if `i` is negative or greater than or equal to the number of fields in `tu
 
 ### Not
 
-Pop a boolean `p` from the stack. If `p` is `true`, push `false`. If `p` is `false`, push `true`.
+Pops a boolean `p` from the stack. If `p` is `true`, pushes `false`. If `p` is `false`, pushes `true`.
 
 ### And
 
-Pops two booleans `p` and `q` from the stack. If both `p` and `q` are true, push `true`. Otherwise, push `false`.
+Pops two booleans `p` and `q` from the stack. If both `p` and `q` are true, pushes `true`. Otherwise, pushes `false`.
 
 ### Or
 
-Pops two booleans `p` and `q` from the stack. If both `p` and `q` are false, push `false`. Otherwise, push `true`.
+Pops two booleans `p` and `q` from the stack. If both `p` and `q` are false, pushes `false`. Otherwise, pushes `true`.
 
 ## Math operations
 
@@ -440,7 +440,7 @@ Pops two strings, `a`, then `b`, from the stack, concatenates them, and pushes t
 
 ### Slice
 
-Pops two integers, `start`, then `end`, from the stack. Pops a string `str` from the stack. Pushes the string `str[start:end]` (with the first character being the one at index `start`, and the second character being the one at index `end`). Fails if `end` is less than `start`, if `start` is less than 0, or if `end` is greater thanss the length of `str`.
+Pops two integers, `start`, then `end`, from the stack. Pops a string `str` from the stack. Pushes the string `str[start:end]` (with the first character being the one at index `start`, and the second character being the one at index `end`). Fails if `end` is less than `start`, if `start` is less than 0, or if `end` is greater than the length of `str`.
 
 ## Bitwise operations
 
@@ -524,7 +524,7 @@ Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` f
 
 ### Lock
 
-Pop a number `n` from the data stack. Pop `n` [values](#value), `values`, from the Value stack. Pop a [Program](#program) `program` from the data stack. Pop an [anchor](#anchor) from the Anchor stack. Push a [Contract](#contract) to the Output stack with a tuple of the `values` as the `values`, `program` as the `program`, and the ID of `anchor` as the `anchor`.
+Pops a number `n` from the data stack. Pops `n` [values](#value), `values`, from the Value stack. Pops a [Program](#program) `program` from the data stack. Pops an [anchor](#anchor) from the Anchor stack. Pushes a [Contract](#contract) to the Output stack with a tuple of the `values` as the `values`, `program` as the `program`, and the ID of `anchor` as the `anchor`.
 
 ### Retire
 
@@ -532,41 +532,41 @@ Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#reti
 
 ### Nonce
 
-Pop a [nonce](#nonce) tuple `nonce` from the data stack. Push `nonce` to the Nonce stack. Push an [anchor](#anchor) to the Anchor stack, with `value` equal to the [ID](#item-ids) of `nonce` . Push a [Maxtime](#maxtime) to the [Time Constraints stack] with `maxtime` equal to `nonce.maxtime`. Push a [Mintime](#mintime) to the [Time Constraints stack] with `mintime` equal to `nonce.mintime`. Execute `nonce.program`.
+Pops a [nonce](#nonce) tuple `nonce` from the data stack. Pushes `nonce` to the Nonce stack. Pushes an [anchor](#anchor) to the Anchor stack, with `value` equal to the [ID](#item-ids) of `nonce` . Pushes a [Maxtime](#maxtime) to the [Time Constraints stack] with `maxtime` equal to `nonce.maxtime`. Pushes a [Mintime](#mintime) to the [Time Constraints stack] with `mintime` equal to `nonce.mintime`. Executes `nonce.program`.
 
 ### Reanchor
 
-Pop an [anchor](#anchor) `anchor` from the Anchor stack. Push a new anchor, with `value` set to the [ID](#item-ids) of `anchor`.
+Pops an [anchor](#anchor) `anchor` from the Anchor stack. Pushes a new anchor, with `value` set to the [ID](#item-ids) of `anchor`.
 
 ### Issue
 
-Pop an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pop an int64, `amount`, from the data stack. Compute the [ID](#item-ids) `assetid` of `assetdefinition`. Push a [value](#value) with amount `amount` and assetID `assetID`. Execute `assetdefinition.issuanceprogram`. (TBD: confidential issuance etc).
+Pops an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pops an int64, `amount`, from the data stack. Computes the [ID](#item-ids) `assetid` of `assetdefinition`. Pushes a [value](#value) with amount `amount` and assetID `assetID`. Executes `assetdefinition.issuanceprogram`. (TBD: confidential issuance etc).
 
 ### Before
 
-Pop an int64 `max` from the stack. Push a [Maxtime](#maxtime) to the [Time Constraint stack](#time-constraint-stack) with `maxtime` equal to `max`.
+Pops an int64 `max` from the stack. Pushes a [Maxtime](#maxtime) to the [Time Constraint stack](#time-constraint-stack) with `maxtime` equal to `max`.
 
 ### After
 
-Pop an int64 `min` from the stack. Push a [Mintime](#mintime) to the [Time Constraint stack](#time-constraint-stack) with `mintime` equal to `min`.
+Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Time Constraint stack](#time-constraint-stack) with `mintime` equal to `min`.
 
 ### Summarize
 
-Fail if the [Transaction Summary stack](#transaction-summary-stack) is not empty.
+Fails if the [Transaction Summary stack](#transaction-summary-stack) is not empty.
 
-Pop all items from the Input stack and create a tuple of them (with the top item first), `inputs`. Pop all items from the Output stack and create a tuple of them, `outputs`. Pop all items from the Nonce stack and create a tuple of them, `nonces`. Pop all items from the Retirement stack and create a tuple of them, `retirements`. Pop all items from the Time Constraint stack and create a tuple of them, `timeconstraints`. Pop all items from the Annotation stack and create a tuple of them, `annotations`.
+Pops all items from the Input stack and creates a tuple of them (with the top item first), `inputs`. Pops all items from the Output stack and creates a tuple of them, `outputs`. Pops all items from the Nonce stack and creates a tuple of them, `nonces`. Pops all items from the Retirement stack and creates a tuple of them, `retirements`. Pops all items from the Time Constraint stack and creates a tuple of them, `timeconstraints`. Pops all items from the Annotation stack and creates a tuple of them, `annotations`.
 
-Create a [transaction summary](#transaction-summary) `summary` with `inputs`, `outputs`, `nonces`, `retirements`, `timeconstraints`, and `annotations`, and push it to the Transaction Summary stack.
+Creates a [transaction summary](#transaction-summary) `summary` with `inputs`, `outputs`, `nonces`, `retirements`, `timeconstraints`, and `annotations`, and pushes it to the Transaction Summary stack.
 
 ### Migrate
 
-Pop a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Push it to the `inputs` stack. Push an [anchor](#anchor) to the Anchor stack with `value` set to the old-style ID (TBD) of `legacy`.
+Pops a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Pushes it to the `inputs` stack. Pushes an [anchor](#anchor) to the Anchor stack with `value` set to the old-style ID (TBD) of `legacy`.
 
 [TBD: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.]
 
-Push a [Value](#value) with amount `legacy.amount` and asset ID `legacy.assetID` to the Value stack.
+Pushes a [Value](#value) with amount `legacy.amount` and asset ID `legacy.assetID` to the Value stack.
 
-Execute `newprogram`.
+Executes `newprogram`.
 
 ### Extend
 
