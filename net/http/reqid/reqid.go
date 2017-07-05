@@ -28,6 +28,9 @@ const (
 	coreIDKey
 	// pathKey is the key for the request path being handled.
 	pathKey
+	// userAgentKey is the key for the request's User-Agent request header
+	// field values.
+	userAgentKey
 )
 
 // New generates a random request ID.
@@ -78,6 +81,13 @@ func PathFromContext(ctx context.Context) string {
 	return path
 }
 
+// UserAgentFromContext returns the User-Agent stored in ctx,
+// or the empty string.
+func UserAgentFromContext(ctx context.Context) string {
+	userAgent, _ := ctx.Value(userAgentKey).(string)
+	return userAgent
+}
+
 // NewSubContext returns a new Context that carries subreqid
 // It also adds a log prefix to print the sub-request ID using
 // package chain/log.
@@ -104,6 +114,9 @@ func Handler(handler http.Handler) http.Handler {
 		if coreID := req.Header.Get("Chain-Core-ID"); coreID != "" {
 			ctx = context.WithValue(ctx, coreIDKey, coreID)
 			ctx = log.AddPrefixkv(ctx, "coreid", coreID)
+		}
+		if userAgent := req.Header.Get("User-Agent"); userAgent != "" {
+			ctx = context.WithValue(ctx, userAgentKey, userAgent)
 		}
 
 		defer func() {
