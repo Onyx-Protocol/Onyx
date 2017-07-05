@@ -20,7 +20,7 @@ $ sh bin/build-docker-de
 $ docker run -p 1999:1999 --name chaincore chaincore/developer
 ```
 
-By default, once you stop a running a container, all data is lost. Chain Core stores data in three locations: a data directory, a separate Postgres database, and a log directory. To persist the data, create directories on your development machine and mount them to the container on `docker run`:
+Chain Core stores data in three locations: a data directory, a separate Postgres database, and a log directory. To persist the data, create directories on your development machine and mount them to the container on `docker run`:
 
 ```sh
 $ mkdir -p /path/to/store/datadir
