@@ -2,7 +2,6 @@ package raft
 
 import (
 	"bytes"
-	"chain/net"
 	"context"
 	"crypto/x509"
 	"io/ioutil"
@@ -10,7 +9,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
+	"time"
+
+	"github.com/coreos/etcd/raft/raftpb"
+
+	"chain/net"
 )
 
 var idCases = []struct {
@@ -264,6 +269,47 @@ func TestLeaderEviction(t *testing.T) {
 	}
 }
 
+func TestSnapshot(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new test cluster, triggers snapshot
+	node := newSnapshotTestNode(ctx, 2, t)
+	defer node.cleanup()
+
+	// Wait for snapshot to successfully write, times out after 2 seconds
+loop:
+	for {
+		select {
+		case <-time.After(2 * time.Second):
+			t.Errorf("Timeout: snapshot file not saved")
+		default:
+			_, err := os.Stat(node.service.snapFile())
+			if err == nil {
+				break loop
+			}
+		}
+	}
+
+	data, index, err := node.service.state.Snapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var snapData []byte
+	snapData, err = ioutil.ReadFile(node.service.snapFile())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raftSnap raftpb.Snapshot
+	must(t, decodeSnapshot(snapData, &raftSnap))
+
+	if index != raftSnap.Metadata.Index {
+		t.Errorf("Index: got %v, expected %v", raftSnap.Metadata.Index, index)
+	} else if !reflect.DeepEqual(data, raftSnap.Data) {
+		t.Errorf("Snapshot data does not match node state")
+	}
+}
+
 func must(t *testing.T, err error) {
 	if err != nil {
 		t.Fatal(err)
@@ -312,6 +358,24 @@ func newTestCluster(ctx context.Context, t *testing.T) (*testNode, *testNode, *t
 	must(t, nodeB.service.Join("https://"+nodeA.addr))
 	must(t, nodeC.service.Join("https://"+nodeA.addr))
 	return nodeA, nodeB, nodeC
+}
+
+// Initializes a new test cluster with three raft nodes
+// Changes the snapCount of these nodes for testing
+// After calling, must remember to call node.cleanup() on each test node
+func newSnapshotTestNode(ctx context.Context, snapCount uint64, t *testing.T) *testNode {
+	// Create an uninitialized raft service.
+	node := newTestNode(t)
+	node.service.snapCount = snapCount
+	node.service.nSnapCatchupEntries = snapCount
+
+	// Initialize node, creating a fresh cluster.
+	must(t, node.service.Init())
+
+	// Update the cluster to allow A, B and C's addresses.
+	_, err := node.service.Exec(ctx, set("/allowed/"+node.addr, "yes"))
+	must(t, err)
+	return node
 }
 
 // newTestNode creates a new local raft Service listening on a random

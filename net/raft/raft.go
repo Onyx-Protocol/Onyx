@@ -38,12 +38,7 @@ const (
 	electionTick      = 10
 	heartbeatTick     = 1
 	maxRaftReqSize    = 10e6 // 10MB
-	snapCount         = 10000
 	dummyWriteTimeout = 50 * time.Millisecond
-
-	// nSnapCatchupEntries must be <= snapCount because on restart
-	// the WAL will only load entries after the latest snapshot.
-	nSnapCatchupEntries uint64 = 10000
 )
 
 var (
@@ -116,6 +111,12 @@ type Service struct {
 
 	// Current log position, accessed only from runUpdates goroutine
 	snapIndex uint64
+
+	// Snapshot parameters
+	// nSnapCatchupEntries must be <= snapCount because on restart
+	// the WAL will only load entries after the latest snapshot.
+	snapCount           uint64
+	nSnapCatchupEntries uint64
 }
 
 // State provides access to the actual replicated data set. It must be
@@ -192,15 +193,17 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 		return nil, errors.Wrap(err, "advertised name does not match TLS cert")
 	}
 	sv := &Service{
-		dir:         dir,
-		laddr:       laddr,
-		mux:         http.NewServeMux(),
-		raftStorage: raft.NewMemoryStorage(),
-		state:       state,
-		rctxReq:     make(chan rctxReq),
-		wctxReq:     make(chan wctxReq),
-		client:      httpClient,
-		stop:        make(chan struct{}),
+		dir:                 dir,
+		laddr:               laddr,
+		mux:                 http.NewServeMux(),
+		raftStorage:         raft.NewMemoryStorage(),
+		state:               state,
+		rctxReq:             make(chan rctxReq),
+		wctxReq:             make(chan wctxReq),
+		client:              httpClient,
+		stop:                make(chan struct{}),
+		snapCount:           10000,
+		nSnapCatchupEntries: 10000,
 	}
 	sv.applyCond.L = &sv.applyMu
 
@@ -396,7 +399,7 @@ func (sv *Service) runUpdatesReady(rd raft.Ready, wal *wal.WAL, writers map[stri
 	// because some ConfChangeAddNode entries contain the address
 	// needed for subsequent messages.
 	sv.send(sv.processMessages(rd.Messages))
-	if lastEntryIndex > sv.snapIndex+snapCount {
+	if lastEntryIndex > sv.snapIndex+sv.snapCount {
 		sv.redo(func() error {
 			return sv.triggerSnapshot()
 		})
@@ -872,8 +875,8 @@ func (sv *Service) triggerSnapshot() error {
 	}
 
 	var compactIndex uint64 = 1
-	if snap.Metadata.Index > nSnapCatchupEntries {
-		compactIndex = snap.Metadata.Index - nSnapCatchupEntries
+	if snap.Metadata.Index > sv.nSnapCatchupEntries {
+		compactIndex = snap.Metadata.Index - sv.nSnapCatchupEntries
 	}
 	err = sv.raftStorage.Compact(compactIndex)
 	if err != nil {
