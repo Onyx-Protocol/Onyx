@@ -324,7 +324,7 @@ func loggingHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		ctx = log.AddPrefixkv(ctx, "path", req.URL.Path)
-		if userAgent := req.Header.Get("User-Agent"); userAgent != "" {
+		if userAgent := req.UserAgent(); userAgent != "" {
 			ctx = log.AddPrefixkv(ctx, "useragent", userAgent)
 		}
 		if coreID := req.Header.Get("Chain-Core-ID"); coreID != "" {
