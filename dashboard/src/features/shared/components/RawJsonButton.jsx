@@ -17,13 +17,12 @@ class RawJsonButton extends React.Component {
 }
 
 import { connect } from 'react-redux'
-import actions from 'actions'
+import appActions from 'features/app/actions'
 
 const mapDispatchToProps = ( dispatch ) => ({
-  showJsonModal: (body) => dispatch(actions.app.showModal(
+  showJsonModal: (body) => dispatch(appActions.showModal(
+    'Raw JSON',
     body,
-    actions.app.hideModal,
-    null,
     { wide: true }
   )),
 })

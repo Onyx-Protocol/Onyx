@@ -66,8 +66,8 @@ export default {
       }).then(tokenResp =>
         setPolicies(body, data.policies).then(grantResp => {
           dispatch(appActions.showModal(
-            <TokenCreateModal token={tokenResp.token}/>,
-            appActions.hideModal
+            'New access token created',
+            <TokenCreateModal token={tokenResp.token}/>
           ))
 
           dispatch({ type: 'CREATED_TOKEN_WITH_GRANT', grantResp })

@@ -1,6 +1,5 @@
 const actions = {
-  showModal: (body, accept, cancel, options = {}) => ({type: 'SHOW_MODAL', payload: { body, accept, cancel, options }}),
-  hideModal: { type: 'HIDE_MODAL' },
+  showModal: (title, body, options = {}) => ({type: 'SHOW_MODAL', payload: { title, body, options }}),
   toggleDropdown: { type: 'TOGGLE_DROPDOWN' },
   closeDropdown: (dispatch, getState) => {
     if (getState().app.dropdownState === 'open') {

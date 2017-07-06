@@ -1,7 +1,6 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import styles from './Modal.scss'
-import actions from 'actions'
 
 class Modal extends React.Component {
   render() {
@@ -9,27 +8,25 @@ class Modal extends React.Component {
       dispatch,
       isShowing,
       body,
-      acceptAction,
-      cancelAction
     } = this.props
 
     if (!isShowing) return null
 
-    const accept = () => {
-      dispatch(acceptAction)
-      dispatch(actions.app.hideModal)
-    }
-    const cancel = cancelAction ? () => dispatch(cancelAction) : null
-    const backdropAction = cancel || accept
+    const close = () => dispatch({ type: 'HIDE_MODAL' })
 
     return(
       <div className={styles.main}>
-        <div className={styles.backdrop} onClick={backdropAction}></div>
-        <div className={`${this.props.options.wide && styles.wide} ${styles.content}`}>
-          {body}
+        <div className={styles.backdrop} onClick={close}></div>
+        <div className={`${this.props.options.wide && styles.wide} ${styles.modal}`}>
+          {this.props.title && <div className={styles.title}>
+            <span>{this.props.title}</span>
 
-          <button className={`btn btn-${this.props.options.danger ? 'danger' : 'primary'} ${styles.accept}`} onClick={accept}>OK</button>
-          {cancel && <button className={`btn btn-link ${styles.cancel}`} onClick={cancel}>Cancel</button>}
+            <button type='button' className='close' onClick={close}>
+              <span>&times;</span>
+            </button>
+          </div>}
+
+          <div className={styles.content}>{body}</div>
         </div>
       </div>
     )
@@ -38,9 +35,8 @@ class Modal extends React.Component {
 
 const mapStateToProps = (state) => ({
   isShowing: state.app.modal.isShowing,
+  title: state.app.modal.title,
   body: state.app.modal.body,
-  acceptAction: state.app.modal.accept,
-  cancelAction: state.app.modal.cancel,
   options: state.app.modal.options,
 })
 
