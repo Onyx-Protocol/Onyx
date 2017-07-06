@@ -50,7 +50,7 @@ func main() {
 	ctx := context.Background()
 	client := &rpc.Client{
 		BaseURL:     *coredAddr,
-		Username:    userAgent,
+		ProcessID:   userAgent,
 		AccessToken: *coredAccessToken,
 	}
 

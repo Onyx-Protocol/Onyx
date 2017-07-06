@@ -34,7 +34,7 @@ var ErrWrongNetwork = errors.New("connected to a peer on a different network")
 type Client struct {
 	BaseURL      string
 	AccessToken  string
-	Username     string
+	ProcessID    string
 	Version      string
 	BlockchainID string
 	CoreID       string
@@ -46,7 +46,7 @@ type Client struct {
 
 func (c Client) userAgent() string {
 	return fmt.Sprintf("Chain; process=%s; version=%s; blockchainID=%s",
-		c.Username, c.Version, c.BlockchainID)
+		c.ProcessID, c.Version, c.BlockchainID)
 }
 
 // ErrStatusCode is an error returned when an rpc fails with a non-200
