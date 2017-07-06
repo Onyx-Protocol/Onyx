@@ -13,18 +13,24 @@ class TutorialHeader extends React.Component {
       )
     } else {
       return (
-        <div className={`${styles.main} ${this.props.showTutorial && styles.collapsed}`}>
-          <div className={styles.header}>
-            {this.props.currentStep.title}
-            <div className={styles.skip}>
-              {!this.props.showTutorial && <Link to={this.props.tutorial.route}>
-                Resume tutorial
-              </Link>}
-              {this.props.showTutorial &&
-              <a onClick={this.props.dismissTutorial}>{this.props.currentStep.dismiss || 'End tutorial'}</a>}
+        <div className={styles.container}>
+          <div className={`${styles.main} ${!this.props.showTutorial && styles.collapsed}`}>
+            <div className={styles.header}>
+              {this.props.currentStep.title}
+              <div className={styles.skip}>
+                {!this.props.showTutorial &&
+                  <Link to={this.props.tutorial.route}>
+                    Resume tutorial
+                  </Link>}
+
+                {this.props.showTutorial &&
+                  <a onClick={this.props.dismissTutorial}>
+                    {this.props.currentStep.dismiss || 'End tutorial'}
+                  </a>}
+              </div>
             </div>
+            {this.props.showTutorial && this.props.children}
           </div>
-          {this.props.showTutorial && this.props.children}
         </div>
       )
     }

@@ -31,7 +31,7 @@ class PageTitle extends React.Component {
             </ul>
           </div>
 
-          {Array.isArray(this.props.actions) && <ul className={styles.actions}>
+          {!this.props.hideActions && Array.isArray(this.props.actions) && <ul className={styles.actions}>
             {this.props.actions.map(item => <li key={item.key}>{item}</li>)}
           </ul>}
         </div>
@@ -75,6 +75,7 @@ const mapStateToProps = (state) => {
   return {
     breadcrumbs,
     flashMessages: state.app.flashMessages,
+    hideActions: state.routing.locationBeforeTransitions.pathname.includes(state.tutorial.route),
   }
 }
 

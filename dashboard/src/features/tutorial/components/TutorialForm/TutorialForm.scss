@@ -5,6 +5,7 @@
   .tutorialContainer {
     position: absolute;
     width: 300px;
+    right: $gutter-size;
     min-height: 100px;
     border: solid $highlight-tutorial 1px;
     background-color: $background-emphasis-color;
