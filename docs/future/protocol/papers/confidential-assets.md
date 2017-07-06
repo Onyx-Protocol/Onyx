@@ -124,21 +124,39 @@ denial of service attack is an acceptable tradeoff.
 
 **3.** When [Asset Range Proof](ca.md#asset-range-proof) contains more than one item in its ring signature, it is easy to see that each signature element could be seen as a binding signature with the rest of the ring acting as a Fiat-Shamir challenge:
 
-1. One-item ring signature uses the following hash function (note that challenge `e` is both inside and outside the hash function that uses discrete log P/G as a trapdoor):
+1. One-item ring signature uses the following hash function (note that the challenge `e` is both inside and outside the hash function that uses discrete log P/G as a trapdoor):
 
-        e = Hash(s·G - e·P)
+        e == Hash(s·G - e·P)
+
+    The equation is satisfied by first computing a Fiat-Shamir challenge `e` based on a random nonce:
+
+        e := Hash(nonce·G)
+
+    Then, a matching `s` is computed using knowledge of the discrete log `x == P/G`:
+
+        s := k + e·x
 
 2. Two-item ring signature, has a slightly more complex hash function, but the principle is the same. The same ring signature can be seen as one of two possible Sigma-protocols:
 
-        (a) e1 = Hash(s0·G - Hash(s1·G - e1·P1)·P0)
-        (b) e0 = Hash(s1·G - Hash(s0·G - e0·P0)·P1)
+        (a) e0 == Hash(s1·G - Hash(s0·G - e0·P0)·P1)
+        (b) e1 == Hash(s0·G - Hash(s1·G - e1·P1)·P0)
 
-3. In the example (a) above, the `s1` can be computed if discrete log P1/G is known to satisfy challenge `e1`, while the remaining value `s0` can be chosen freely (“forged”). Likewise for (b), but the s2has to be computed to satisfy challenge `e0`.
-4. Similarly for more items: due to symmetry, any one s-value must be computed, while the remaining s-values can be forged.
+3. In the example (a) above, `s0` can be computed if discrete log P0/G is known to satisfy challenge `e0`, while the remaining value `s1` can be chosen freely (“forged”). Likewise for (b), but the `s1` has to be computed to satisfy challenge `e1`.
 
-**4.** The above proves that at least one signature element is correctly computed, but does not prove that it is the only one. Indeed, in general case it is possible to create a ring signature over arbitrary public keys with several or even all s-values being computed using the corresponding private keys.
+        e0 := Hash(s1·G - Hash(nonce·G)·P1)
+        s0 := nonce + e0·x0
 
-In our case, a valid asset range proof proves equality of discrete logs for both halves of the difference between the target commitment and the previous commitment. Below we are demonstrating that it is not possible to have a pair of such discrete logs opening the target commitment to two different previous commitments:
+4. Similarly for more items: any one s-value must be computed, while the remaining s-values can be forged. A n-item ring signature equation with 0-th non-forged item:
+
+        e0 == Hash(s[n-1]·G - 
+                Hash(s[n-2]·G - 
+                    Hash(... - Hash(s0·G - e0·P0)...
+                )·P[n-2]
+              )·P[n-1])
+
+**4.** The above proves that at least one signature element is correctly computed, but does not prove that it is the only one. Indeed, for a general ring signature over a set of a public keys it is possible to compute several or all s-values using the corresponding private keys.
+
+In this application of ring signatures, a valid asset range proof proves equality of discrete logs for both halves of the difference between the target commitment and the previous commitment. Below we are demonstrating that it is not possible to have a pair of such discrete logs opening the target commitment to two different previous commitments:
 
 1. Let `(H,B)` be the target asset ID commitment and `(Hi,Bi)` the i-th previous asset commitment, where:
 
