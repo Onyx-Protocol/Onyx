@@ -49,7 +49,7 @@ the verifier being attacked.
 
 **Theorem D1:** In order to make the verifier perform `N` point decodings
 when mapping asset ID to a point, the expected number of decodings to be
-performed by the prover who enumerates arbitrary asset IDs is `2^N`.
+performed by the prover enumerating arbitrary asset IDs is `2^N`.
 
 **Proof:** The output of a hash function used by [Asset ID Point](ca.md#asset-id-point) 
 algorithm is a random 256-bit string, where the first 255 bits encode the y-coordinate and 
@@ -70,7 +70,7 @@ We will consider probabilities of failing checks #1 and #2 as negligible:
 
 Check #3 fails with probability 0.5 because only half of elements in a prime field are valid square roots.
 
-As a result, the probability of choosing an asset ID to cause N decoding failures in a row after M tries follows the binomial distribution. For probability above 0.5, M equals 2^N.∎
+As a result, the probability of choosing an asset ID to cause N decoding failures in a row after M tries follows the binomial distribution. For probability 0.5, M equals 2^N.∎
 
 **Discussion:** The alternative solution is to have creators of asset identifiers to choose an issuance
 program (that defines the asset ID) so that their asset ID always hashes to a valid point.
@@ -81,11 +81,21 @@ denial of service attack is an acceptable tradeoff.
 
 ### Theorem A1: asset commitment is perfectly binding
 
-**Theorem A1:** Asset ID commitment is perfectly binding for asset ID under the assumption of a second preimage-resistant hash function that maps asset ID to a curve point.
+**Theorem A1:** Asset ID commitment is perfectly binding for asset ID under the assumption that underlying hash functions are first and second preimage-resistant.
 
-**Proof:** First, we observe that [PointHash](ca.md#pointhash) function that maps asset ID to an [asset ID point](ca.md#asset-id-point) based on Keccak permutation is a perfectly binding commitment under the assumption that the underlying Keccak instance is second preimage-resistant (that is, probability of finding a different asset ID mapping to the same _asset ID point_ is negligible).
+**Proof sketch:**
 
-Next, an [Asset Range Proof](ca.md#asset-range-proof) that consists of one item proves that the given commitment perfectly commits to the same value as the previous asset commitment:
+1. Non-blinded asset ID commitment is perfectly binding.
+2. One-item range proof perfectly binds the blinded commitment to the same asset ID as a previous commitment.
+3. Multi-item range proof binds to asset ID in at least one of the previous commitments.
+4. Multi-item range proof binds to a unique asset ID.
+5. By induction, the sequence of (re)blinded commitments are perfectly binding to the original asset ID.
+
+**Proof:** 
+
+**1.** First, we observe that [PointHash](ca.md#pointhash) function that maps asset ID to an [asset ID point](ca.md#asset-id-point) based on Keccak permutation is a perfectly binding commitment under the assumption that the underlying Keccak instance is second preimage-resistant (that is, probability of finding a different asset ID mapping to the same _asset ID point_ is negligible). The non-blinded commitment is simply a pair of an _asset ID point_ with a [point at infinity](ca.md#zero-point).
+
+**2.** Next, an [Asset Range Proof](ca.md#asset-range-proof) that consists of one item proves that the given commitment perfectly commits to the same value as the previous asset commitment:
 
 1. Let `H1,B1` be the previous asset commitment, known to commit to a certain asset ID `a`:
 
@@ -110,23 +120,23 @@ Next, an [Asset Range Proof](ca.md#asset-range-proof) that consists of one item 
         s = R1/G + e·(H2 - H1)/G
         s = R2/J + e·(B2 - B1)/J
 
-6. The above equality must hold for any value of `e` because it is determined after `R1`, `R2`, `H1`, `H2`, `B1`, `B2` and due to preimage resistance of the hash function cannot be predicated before these points are fixed. Therefore, `R1/G` must equal `R2/J` and `(H2 - H1)/G` must equal `(B2 - B1)/J` as required.
+6. The above equality must hold for any value of `e` because it is determined after `R1`, `R2`, `H1`, `H2`, `B1`, `B2` and due to preimage resistance of the hash function cannot be predicted before these points are fixed. Therefore, `R1/G` must equal `R2/J` and `(H2 - H1)/G` must equal `(B2 - B1)/J`, therefore both `H2` and `B2` are proven to blind the `H1` and `B2` by the same secret factor `x`.
 
-When [Asset Range Proof](ca.md#asset-range-proof) contains more than one item in its ring signature, it is easy to see that each signature element could be seen as a binding signature with the rest of the ring acting as a Fiat-Shamir challenge:
+**3.** When [Asset Range Proof](ca.md#asset-range-proof) contains more than one item in its ring signature, it is easy to see that each signature element could be seen as a binding signature with the rest of the ring acting as a Fiat-Shamir challenge:
 
-1. One-item ring signature uses the following hash function (notice that challenge e is both inside and outside the hash function):
+1. One-item ring signature uses the following hash function (note that challenge `e` is both inside and outside the hash function that uses discrete log P/G as a trapdoor):
 
         e = Hash(s·G - e·P)
 
-2. Two-item ring signature, has a slightly more complex hash function, but with the same trapdoor:
+2. Two-item ring signature, has a slightly more complex hash function, but the principle is the same. The same ring signature can be seen as one of two possible Sigma-protocols:
 
         (a) e1 = Hash(s0·G - Hash(s1·G - e1·P1)·P0)
         (b) e0 = Hash(s1·G - Hash(s0·G - e0·P0)·P1)
 
-3. In the example (a) above, the s1 can be computed if discrete log P1/G is known, while the remaining value s0 can be chosen freely (“forged”).
+3. In the example (a) above, the `s1` can be computed if discrete log P1/G is known to satisfy challenge `e1`, while the remaining value `s0` can be chosen freely (“forged”). Likewise for (b), but the s2has to be computed to satisfy challenge `e0`.
 4. Similarly for more items: due to symmetry, any one s-value must be computed, while the remaining s-values can be forged.
 
-The above proves that at least one signature element is correctly computed, but does not prove that it’s the only one. Indeed, in general case it is possible to create a ring signature over arbitrary public keys with several or even all s-values being computed using the corresponding private keys.
+**4.** The above proves that at least one signature element is correctly computed, but does not prove that it is the only one. Indeed, in general case it is possible to create a ring signature over arbitrary public keys with several or even all s-values being computed using the corresponding private keys.
 
 In our case, a valid asset range proof proves equality of discrete logs for both halves of the difference between the target commitment and the previous commitment. Below we are demonstrating that it is not possible to have a pair of such discrete logs opening the target commitment to two different previous commitments:
 
@@ -147,7 +157,8 @@ In our case, a valid asset range proof proves equality of discrete logs for both
 
 4. From the equations above it follows, that both commitments must necessarily commit to the same asset ID `A1 == A2`.
 
-TBD: prove that a sequence of asset id commitments ultimately commits to the original asset ID since issuance
+**5.** Every confidential asset ID commitment starts with a non-confidential commitment (either at point of [issuance](ca.md#issuance-asset-range-proof) or [migration](txvm.md#migrate)) which is perfectly binding according to **(1)**. Since every re-blinded commitment and associated range proof maintain the binding, by induction, any subsequent asset ID commitment is perfectly binding to a correctly issued/upgraded asset ID.
+
 
 
 ### Theorem A2: asset commitment is computationally hiding
