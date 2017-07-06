@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/kr/secureheader"
-	"github.com/tecbot/gorocksdb"
 
 	"chain/core"
 	"chain/core/accesstoken"
@@ -131,9 +130,6 @@ func main() {
 	if *v {
 		return
 	}
-
-	// test invocation of rocksDB
-	gorocksdb.NewDefaultOptions()
 
 	fmt.Printf("\n")
 
