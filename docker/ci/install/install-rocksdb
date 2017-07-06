@@ -4,12 +4,9 @@ set -eo pipefail
 
 : ${GOPATH:?must be set}
 
-echo "Installing RocksDB"
-
-echo $CHAIN
-ls $CHAIN
-ROCKSDB="$CHAIN"/vendor/github.com/facebook/rocksdb
-
+# Install RocksDB
+git clone https://github.com/facebook/rocksdb $(go env GOPATH)/src/github.com/facebook/rocksdb
+cd $(go env GOPATH)/src/github.com/facebook/rocksdb
 cd $ROCKSDB
 make static_lib
 rm -f ROCKSDB/librocksdb.a
