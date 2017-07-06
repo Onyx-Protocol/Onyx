@@ -19,7 +19,7 @@ ENV CHAIN="/go/src/chain" \
 ADD install /usr/bin
 
 RUN yum -y update \
-    && yum install -y autoconf automake bash bzip2 cmake curl gcc gcc-c++ gcc48-c++ git libtool make openssl-devel ruby snappy-devel wget unzip zlib zlib-devel \
+    && yum install -y autoconf automake bash bzip2 bzip2-devel curl gcc gcc-c++ git libtool make openssl-devel snappy snappy-devel ruby tar wget unzip \
     && install-go && rm -f /usr/bin/install-go \
     && install-rocksdb \
     && install-node && rm -f /usr/bin/install-node \
