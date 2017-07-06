@@ -18,8 +18,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -268,6 +270,7 @@ func newRaft(c *Config) *raft {
 		panic(err.Error())
 	}
 	raftlog := newLog(c.Storage, c.Logger)
+	log.Println("c.Storage type - ", reflect.TypeOf(c.Storage))
 	hs, cs, err := c.Storage.InitialState()
 	if err != nil {
 		panic(err) // TODO(bdarnell)
@@ -517,6 +520,7 @@ func (r *raft) appendEntry(es ...pb.Entry) {
 		es[i].Index = li + 1 + uint64(i)
 	}
 	r.raftLog.append(es...)
+	log.Printf("rprs: %v, r.id: %d, r.raftLog %v", r.prs, r.id, r.raftLog)
 	r.prs[r.id].maybeUpdate(r.raftLog.lastIndex())
 	// Regardless of maybeCommit's return, our caller will call bcastAppend.
 	r.maybeCommit()
@@ -1192,7 +1196,9 @@ func (r *raft) delProgress(id uint64) {
 }
 
 func (r *raft) loadState(state pb.HardState) {
+	log.Printf(">>> loading state at state.Commit: %d and lastIndex: %d and r.raftLog: %+v", state.Commit, r.raftLog.lastIndex(), r.raftLog)
 	if state.Commit < r.raftLog.committed || state.Commit > r.raftLog.lastIndex() {
+		// tktk this is where the problem is coming from
 		r.logger.Panicf("%x state.commit %d is out of range [%d, %d]", r.id, state.Commit, r.raftLog.committed, r.raftLog.lastIndex())
 	}
 	r.raftLog.committed = state.Commit

@@ -146,6 +146,7 @@ func (ms *MemoryStorage) LastIndex() (uint64, error) {
 }
 
 func (ms *MemoryStorage) lastIndex() uint64 {
+	// log.Printf("last entry: memory storage entries: %+v", ms.ents)
 	return ms.ents[0].Index + uint64(len(ms.ents)) - 1
 }
 

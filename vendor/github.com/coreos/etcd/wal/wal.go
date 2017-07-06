@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -164,6 +165,7 @@ func Create(dirpath string, metadata []byte) (*WAL, error) {
 // the given snap. The WAL cannot be appended to before reading out all of its
 // previous records.
 func Open(dirpath string, snap walpb.Snapshot) (*WAL, error) {
+	log.Println("about to open the wal at", dirpath)
 	w, err := openAtIndex(dirpath, snap, true)
 	if err != nil {
 		return nil, err

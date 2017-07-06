@@ -222,6 +222,8 @@ func Start(laddr, dir string, httpClient *http.Client, state State) (*Service, e
 		return sv, nil
 	}
 
+	stdlog.Printf("WE HAVE A WAL %+v", sv.wal)
+
 	id, err := sv.readID(sv.dir)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -802,6 +804,7 @@ func (sv *Service) send(msgs []raftpb.Message) {
 // then replays WAL entries into the raft instance.
 // The returned WAL object is nil if no WAL is found.
 func (sv *Service) recover() (*wal.WAL, error) {
+	// no WAL here!
 	err := os.MkdirAll(sv.walDir(), 0777)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -812,6 +815,7 @@ func (sv *Service) recover() (*wal.WAL, error) {
 	if err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrap(err)
 	}
+	stdlog.Printf("snapFile %s %d", sv.snapFile(), len(snapData))
 	if err == nil {
 		err = decodeSnapshot(snapData, &raftSnap)
 		if err != nil {
@@ -819,9 +823,14 @@ func (sv *Service) recover() (*wal.WAL, error) {
 		}
 	}
 
+	// WAL somehow gets created in here?
+
 	if ents, err := ioutil.ReadDir(sv.walDir()); err == nil && len(ents) == 0 {
+		stdlog.Println("nothing here!!!!!!")
 		return nil, nil
 	}
+
+	stdlog.Printf("raftSnap %+v", raftSnap.Metadata)
 
 	wal, err := wal.Open(sv.walDir(), walpb.Snapshot{
 		Index: raftSnap.Metadata.Index,
