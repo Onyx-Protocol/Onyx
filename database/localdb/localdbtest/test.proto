@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package localdbtest;
+
+message TestItem {
+  string value = 1;
+}
