@@ -16,6 +16,7 @@ cored:
         code: |
           cp -a $WERCKER_SOURCE_DIR $CHAIN
           mv /usr/local/lib/librocksdb.a $CHAIN/vendor/github.com/facebook/rocksdb/
+          mkdir -p $CHAIN/vendor/github.com/google/snappy/build
           mv /usr/local/lib/libsnappy.a $CHAIN/vendor/github.com/google/snappy/build/
           DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" core-tests
     - script:
