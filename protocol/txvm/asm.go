@@ -43,7 +43,7 @@ var composite = map[string][]byte{
 // Notation:
 //    word  mnemonic
 //   12345  number
-//   "aa"x  hex data
+//   x"aa"  hex data
 //   [dup]  quoted program
 func Assemble(src string) ([]byte, error) {
 	tokens := tokenize(src)
@@ -91,16 +91,16 @@ func parseValue(tokens []token) ([]byte, int, error) {
 		v, _ := strconv.ParseInt(token.lit, 0, 64)
 		return pushInt64(v), 1, nil
 	case hexTok:
-		s := token.lit[1 : len(token.lit)-2] // remove " and "x
+		s := token.lit[2 : len(token.lit)-1] // remove x" and "
 		b, err := hex.DecodeString(s)
-		if err != nil || token.lit[len(token.lit)-2] != '"' || token.lit[len(token.lit)-1] != 'x' {
-			return nil, 0, errors.New("bad hex string " + token.lit)
+		if err != nil || token.lit[0] != 'x' || token.lit[1] != '"' || token.lit[len(token.lit)-1] != '"' {
+			return nil, 0, errors.New("bad hex literal " + token.lit)
 		}
 		return pushData(b), 1, nil
 	case stringTok:
 		s := token.lit[1 : len(token.lit)-1]
 		if token.lit[len(token.lit)-1] != '\'' {
-			return nil, 0, errors.New("bad text string " + token.lit)
+			return nil, 0, errors.New("bad text literal " + token.lit)
 		}
 		return pushData([]byte(s)), 1, nil
 	case progOpenTok:
@@ -198,7 +198,7 @@ func scan(src string) (typ int, lit string, n int) {
 		return eofTok, "", n
 	}
 	switch c := src[n]; {
-	case c == '"':
+	case c == 'x':
 		typ = hexTok
 		r = scanHex(src[n:])
 	case c == '\'':
@@ -225,6 +225,9 @@ func scan(src string) (typ int, lit string, n int) {
 	case 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z':
 		typ = mnemonicTok
 		r = scanWord(src[n:])
+	default:
+		typ = invalidTok
+		r = 1
 	}
 	lit = src[n : n+r]
 	n += r
@@ -255,7 +258,7 @@ func scanString(s string) int {
 }
 
 func scanHex(s string) int {
-	n := 1 + scanFunc(s[1:], isHex) + 2
+	n := 3 + scanFunc(s[2:], isHex)
 	if len(s) < n {
 		return len(s)
 	}
@@ -347,7 +350,7 @@ func Disassemble(prog []byte) string {
 				parts = append(parts, fmt.Sprintf("%d", int64(v)))
 				i += 1
 			} else {
-				parts = append(parts, fmt.Sprintf(`"%x"x`, inst.data))
+				parts = append(parts, fmt.Sprintf(`x"%x"`, inst.data))
 			}
 		} else if inst.opcode >= BaseInt {
 			parts = append(parts, fmt.Sprintf("%d", int(inst.opcode)-int(BaseInt)))

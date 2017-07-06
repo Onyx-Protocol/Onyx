@@ -39,10 +39,10 @@ func TestSpend(t *testing.T) {
 			'output',
 			{{
 				100,
-				"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100"x,
+				x"00112233445566778899aabbccddeeffffeeddccbbaa99887766554433221100",
 			}},
 			[1 verify],
-			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"x,
+			x"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 		} unlock
 		retire
 		summarize
@@ -60,7 +60,7 @@ func TestEntries(t *testing.T) {
 	tx, err := Assemble(`
 		{'nonce', [1 verify], 0, 10000} nonce
 		100 {'assetdefinition', [1 verify]} issue
-		"abba"x 3 id 2 maketuple encode annotate
+		x"abba" 3 id 2 maketuple encode annotate
 		45 split merge
 		retire
 		0 after
