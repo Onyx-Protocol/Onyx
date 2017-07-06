@@ -3,12 +3,26 @@
 }
 
 .alert {
-  padding: $gutter-size/2 $gutter-size+2px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+
+  padding: 0 $gutter-size+2px;
   border-bottom: 1px solid transparent;
 
   :global {
     .close {
-      padding-right: 10px;
+      width: 29px;
+      height: 29px;
+      border-radius: 29px;
+      border: 2px solid #000;
+
+      span {
+        margin-top: -2px;
+        display: block;
+        line-height: 0;
+        font-size: 27px;
+      }
     }
   }
 }
