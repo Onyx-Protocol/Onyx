@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -eo pipefail
+
+: ${GOPATH:?must be set}
+
+# cd "$GOPATH"/src/chain/vendor/github.com/facebook/rocksdb
+ls "$GOPATH"/src
+make static_lib
+
