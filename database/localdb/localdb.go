@@ -1,6 +1,9 @@
 package localdb
 
 import (
+	"chain/errors"
+
+	"github.com/golang/protobuf/proto"
 	"github.com/tecbot/gorocksdb"
 )
 
@@ -11,21 +14,26 @@ type DB struct {
 }
 
 // TODO(tessr): use 'Exec' instead of Put
-func (db *DB) Put(name string, value []byte) error {
+func (db *DB) Put(key string, value proto.Message) error {
+	encodedValue, err := proto.Marshal(value)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
 	// TODO(tessr): tune rocksdb. assess write options
 	wo := gorocksdb.NewDefaultWriteOptions()
-	return db.store.Put(wo, []byte(name), value)
+	return db.store.Put(wo, []byte(key), encodedValue)
 }
 
-func (db *DB) Get(name string) ([]byte, error) {
+func (db *DB) Get(key string, v proto.Message) error {
 	// TODO(tessr): tune rocksdb. assess read options
 	ro := gorocksdb.NewDefaultReadOptions()
-	slice, err := db.store.Get(ro, []byte(name))
+	slice, err := db.store.Get(ro, []byte(key))
 	defer slice.Free()
 	if err != nil {
-		return []byte{}, err
+		return errors.Wrap(err)
 	}
-	return slice.Data(), nil
+	return proto.Unmarshal(slice.Data(), v)
 }
 
 func Open(rocksDir string) (*DB, error) {

@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"chain/database/localdb/localdbtest"
 )
 
 func TestRestartDB(t *testing.T) {
@@ -20,7 +22,8 @@ func TestRestartDB(t *testing.T) {
 	}
 	defer ldb1.Close()
 
-	err = ldb1.Put("foo", []byte("bar"))
+	testItem := &localdbtest.TestItem{Value: "bar"}
+	err = ldb1.Put("foo", testItem)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,8 +37,13 @@ func TestRestartDB(t *testing.T) {
 	}
 	defer ldb2.Close()
 
-	value, err := ldb2.Get("foo")
-	if string(value) != "bar" {
-		t.Fatalf("expected value read to be 'bar', got %s", value)
+	resultItem := new(localdbtest.TestItem)
+	err = ldb2.Get("foo", resultItem)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resultItem.Value != "bar" {
+		t.Fatalf("expected value read to be 'bar', got %s", resultItem.Value)
 	}
 }
