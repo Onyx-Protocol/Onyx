@@ -156,6 +156,7 @@ There are several named types of tuples.
 1. `program`, a string
 2. `mintime`, an int64
 3. `maxtime`, an int64
+4. `genesisblockid`, a string
 
 #### Anchor
 
@@ -532,7 +533,7 @@ Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#reti
 
 ### Nonce
 
-Pops a [nonce](#nonce) tuple `nonce` from the data stack. Pushes `nonce` to the Nonce stack. Pushes an [anchor](#anchor) to the Anchor stack, with `value` equal to the [ID](#item-ids) of `nonce` . Pushes a [Maxtime](#maxtime) to the [Time Constraints stack] with `maxtime` equal to `nonce.maxtime`. Pushes a [Mintime](#mintime) to the [Time Constraints stack] with `mintime` equal to `nonce.mintime`. Executes `nonce.program`.
+Pops a [nonce](#nonce) tuple `nonce` from the data stack. Verify that `nonce.blockchainid` is equal to the blockchain ID. Pushes `nonce` to the Nonce stack. Pushes an [anchor](#anchor) to the Anchor stack, with `value` equal to the [ID](#item-ids) of `nonce` . Pushes a [Maxtime](#maxtime) to the [Time Constraints stack] with `maxtime` equal to `nonce.maxtime`. Pushes a [Mintime](#mintime) to the [Time Constraints stack] with `mintime` equal to `nonce.mintime`. Executes `nonce.program`.
 
 ### Reanchor
 
