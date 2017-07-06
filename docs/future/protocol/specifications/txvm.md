@@ -10,7 +10,7 @@ Under txvm, these functions are combined in such a way that an executable progra
 
 When the virtual machine executes a txvm program, it accumulates different types of data on different stacks. This data corresponds to the information exposed in earlier versions of the transaction data structure: inputs, outputs, time constraints, nonces, and so on. Under txvm, that information is _only_ available as a result of executing the program, and the program only completes without error if the transaction is well-formed (i.e., its inputs and outputs balance, prevout control programs are correctly satisfied, etc). No separate validation steps are required.
 
-The pieces of transaction information - the inputs, outputs, etc. - that are produced during txvm execution are also _consumed_ in order to produce the transaction ID, which is the sole output of a successful txvm program. To capture pieces of transaction information for purposes other than validation, txvm implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
+The pieces of transaction information - the inputs, outputs, etc. - that are produced during txvm execution are also _consumed_ in order to produce the transaction summary, which is the sole output of a successful txvm program. To capture pieces of transaction information for purposes other than validation, txvm implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
 ## Overview of Confidential Assets in TxVM
 
@@ -75,7 +75,8 @@ When tx is summarized, no unproven VCs must be left on the UVC-stack.
 
 The VM is initialized with all stacks empty.
 
-When the program counter is equal to the length of the program, execution is complete. The [Transaction ID stack](#transaction-id-stack) must have one item on it. Other than the Transaction ID stack, the anchor stack, the data stack, and the alt stack, all of the stacks must be empty.
+When the program counter is equal to the length of the program, execution is complete. The [Transaction 
+Summary stack](#transaction-id-stack) must have one item on it. Other than the Transaction Summary stack, the anchor stack, the data stack, and the alt stack, all of the stacks must be empty.
 
 # Stacks
 
@@ -265,10 +266,6 @@ Items on the Time Constraint stack are [Mintimes](#mintime) or [Maxtimes](#maxti
 ### Transaction Summary stack
 
 Items on the Transaction Summary stack are [Transaction Summaries](#transaction-summary).
-
-### Transaction ID stack
-
-Items on the Transaction ID stack are 32-byte strings.
 
 # Encoding formats
 
@@ -626,3 +623,41 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 ### Pushdata
 
 [TBD: use Keith's method for this]
+
+## Examples
+
+### In Ivy
+
+
+```
+condition CheckTxSig(pubKey: PublicKey, tx: Transaction, sig: Signature) {
+  verify checkSig(pubKey, tx.id, sig)
+}
+
+contract ControlProgram(pubKey: PublicKey) locks val: Value {
+  clause spend() {
+    defer CheckTxSig(pubKey)
+  }
+}
+```
+
+```
+{"contract", {{"assetid1...", 5}}, [["txvm" 12 inspect encode cat sha3 "pubkey1..." checksig verify] defer], "anchor..."} unlock
+{"contract", {{"assetid1...", 10}}, [["txvm" 12 inspect encode cat sha3 "pubkey2..." checksig verify] defer], "anchor..."} unlock
+{"contract", {{"assetid2...", 15}}, [["txvm" 12 inspect encode cat sha3 "pubkey3..." checksig verify] defer], "anchor..."} unlock
+{"contract", {{"assetid2...", 20}}, [["txvm" 12 inspect encode cat sha3 "pubkey4..." checksig verify] defer], "anchor..."} unlock
+merge
+2 :datastack roll
+2 :datastack roll
+merge
+6 split
+[["txvm" :txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] lock
+[["txvm" :txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] lock
+18 split
+[["txvm" :txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] lock
+[["txvm" :txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] lock
+"sig4..." satisfy
+"sig3..." satisfy
+"sig2..." satisfy
+"sig1..." satisfy
+```
