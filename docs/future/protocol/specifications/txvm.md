@@ -633,10 +633,13 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 condition CheckTxSig(pubKey: PublicKey, tx: Transaction, sig: Signature) {
   verify checkSig(pubKey, tx.id, sig)
 }
+```
 
-contract ControlProgram(pubKey: PublicKey) locks val: Value {
+```
+contract LockWithPublicKey(pubKey: PublicKey) locks val: Value {
   clause spend() {
-    defer CheckTxSig(pubKey)
+    await tx
+    verify checkSig(pubKey, tx.id, sig)
   }
 }
 ```
@@ -647,15 +650,15 @@ contract ControlProgram(pubKey: PublicKey) locks val: Value {
 {"contract", {{"assetid2...", 15}}, [["txvm" 12 inspect encode cat sha3 "pubkey3..." checksig verify] defer], "anchor..."} unlock
 {"contract", {{"assetid2...", 20}}, [["txvm" 12 inspect encode cat sha3 "pubkey4..." checksig verify] defer], "anchor..."} unlock
 merge
-2 :datastack roll
-2 :datastack roll
+2 valuestack roll
+2 valuestack roll
 merge
 6 split
-[["txvm" :txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] lock
-[["txvm" :txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] lock
+[["txvm" txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] lock
+[["txvm" txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] lock
 18 split
-[["txvm" :txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] lock
-[["txvm" :txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] lock
+[["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] lock
+[["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] lock
 "sig4..." satisfy
 "sig3..." satisfy
 "sig2..." satisfy
