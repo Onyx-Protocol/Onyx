@@ -178,10 +178,21 @@ In this application of ring signatures, a valid asset range proof proves equalit
 **5.** Every confidential asset ID commitment starts with a non-confidential commitment (either at point of [issuance](ca.md#issuance-asset-range-proof) or [migration](txvm.md#migrate)) which is perfectly binding according to **(1)**. Since every re-blinded commitment and associated range proof maintain the binding, by induction, any subsequent asset ID commitment is perfectly binding to a correctly issued/upgraded asset ID.
 
 
+### Theorem A2: issuance asset range proof is perfectly binding and computationally secure against unauthorized issuance
 
-### Theorem A2: asset commitment is computationally hiding
+Sketch:
 
-Sketch: 
+1. One-item IARP perfectly binds assetid to Y.
+2. Multi-item IARP binds to one of the candidates
+3. Multi-item IARP binds to only one of the candidates.
+
+### Theorem A3: asset commitment is computationally hiding
+
+Anonymity set of any asset commitment is limited to the set of asset IDs that appeared in the ancestor transactions. This is because blockchain design ensures that arbitrary asset identifiers do not appear in a transaction other than by explicit transfer or explicit issuance (which can be made confidential by employing an explicit set of asset ID candidates).
+
+**Theorem A3:** Within the anonymity set of all asset IDs that are explicitly issued or revealed in all ancestor transactions, an asset ID commitment within a given transaction is _computationally hiding_.
+
+
 
 Given H1,B1,H2,B2 determine if H2 is a blinded H1 with the same factor as B2 in respect to B1.
 In this proof we assume absence of the signature that proves the binding.
