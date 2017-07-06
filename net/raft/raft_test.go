@@ -272,15 +272,16 @@ func TestLeaderEviction(t *testing.T) {
 func TestSnapshot(t *testing.T) {
 	ctx := context.Background()
 
-	// Create new test cluster, triggers snapshot
+	// Create new one-node test cluster, triggers snapshot
 	node := newSnapshotTestNode(ctx, 2, t)
 	defer node.cleanup()
 
 	// Wait for snapshot to successfully write, times out after 2 seconds
+	timeout := time.After(2 * time.Second)
 loop:
 	for {
 		select {
-		case <-time.After(2 * time.Second):
+		case <-timeout:
 			t.Errorf("Timeout: snapshot file not saved")
 		default:
 			_, err := os.Stat(node.service.snapFile())
@@ -307,6 +308,51 @@ loop:
 		t.Errorf("Index: got %v, expected %v", raftSnap.Metadata.Index, index)
 	} else if !reflect.DeepEqual(data, raftSnap.Data) {
 		t.Errorf("Snapshot data does not match node state")
+	}
+}
+
+func TestRestartNodeFromSnapshot(t *testing.T) {
+	ctx := context.Background()
+
+	// Create new one-node test cluster, triggers snapshot
+	node := newSnapshotTestNode(ctx, 2, t)
+	defer node.cleanup()
+
+	laddr, dir, httpClient, state := node.addr, node.dir, node.service.client, node.state
+
+	// Wait for snapshot to successfully write, times out after 2 seconds
+	timeout := time.After(2 * time.Second)
+loop:
+	for {
+		select {
+		case <-timeout:
+			t.Errorf("Timeout: snapshot file not saved")
+		default:
+			_, err := os.Stat(node.service.snapFile())
+			if err == nil {
+				break loop
+			}
+		}
+	}
+
+	data, index, err := node.service.state.Snapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Restart node
+	node.service.Stop()
+	node.service, err = Start(laddr, dir, httpClient, state)
+
+	// Check successful restart
+	var restartData []byte
+	var restartIndex uint64
+	restartData, restartIndex, err = node.service.state.Snapshot()
+
+	if index != restartIndex {
+		t.Errorf("Index: got %v, expected %v", restartIndex, index)
+	} else if !reflect.DeepEqual(data, restartData) {
+		t.Errorf("Restarted node data does not match snapshot data")
 	}
 }
 
