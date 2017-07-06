@@ -24,8 +24,8 @@ If you are interested in contributing to this code base, please read our [issue]
   preferred directory
 * Postgres (we suggest [Postgres.app](http://postgresapp.com/)),
   along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
-* [protoc](https://github.com/google/protobuf#protocol-compiler-installation),
-  if you need to compile protos
+* [protoc](https://github.com/google/protobuf#protocol-compiler-installation) 3.1.0 and 
+  [protoc-gen-g](https://github.com/golang/protobuf/protoc-gen-go), if you need to compile protos
 * [CMake](https://cmake.org/) 3.4 or later, to compile RocksDB and its dependencies
 
 ### Environment
