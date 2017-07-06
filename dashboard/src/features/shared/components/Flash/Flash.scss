@@ -12,17 +12,7 @@
 
   :global {
     .close {
-      width: 29px;
-      height: 29px;
-      border-radius: 29px;
-      border: 2px solid #000;
-
-      span {
-        margin-top: -2px;
-        display: block;
-        line-height: 0;
-        font-size: 27px;
-      }
+      padding-right: 10px;
     }
   }
 }
