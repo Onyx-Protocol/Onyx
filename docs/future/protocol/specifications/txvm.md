@@ -625,5 +625,3 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 ### Pushdata
 
 [TBD: use Keith's method for this]
-
-
