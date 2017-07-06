@@ -212,12 +212,13 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 	return errors.Wrap(err)
 }
 
-// deleteGrantsByAccessToken is invoked after an access token is deleted, and the
-// related grants need to be deleted. It will delete a grant even if that grant is
-// protected.
-func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error {
+// deleteGrantsByAccessToken returns a sinkdb operation to delete all of the
+// grants associated with an access token. It will delete a grant even if that
+// grant is protected.
+func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) sinkdb.Op {
+	var ops []sinkdb.Op
 	for _, p := range Policies {
-		err := a.sdb.Exec(ctx, a.grants.Delete(ctx, p, func(g *authz.Grant) bool {
+		ops = append(ops, a.grants.Delete(ctx, p, func(g *authz.Grant) bool {
 			if g.GuardType != "access_token" {
 				return false
 			}
@@ -226,9 +227,6 @@ func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error
 			id, _ := data["id"].(string)
 			return id == token
 		}))
-		if err != nil {
-			return errors.Wrap(err)
-		}
 	}
-	return nil
+	return sinkdb.All(ops...)
 }

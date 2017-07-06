@@ -287,7 +287,7 @@ func TestDeleteGrantsByAccessToken(t *testing.T) {
 	}
 
 	// first check that we can delete a single grant
-	err = api.deleteGrantsByAccessToken(ctx, "test-token-1")
+	err = api.sdb.Exec(ctx, api.deleteGrantsByAccessToken(ctx, "test-token-1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestDeleteGrantsByAccessToken(t *testing.T) {
 	}
 
 	// next check on deleting an access token associates with multiple grants
-	err = api.deleteGrantsByAccessToken(ctx, "test-token-0")
+	err = api.sdb.Exec(ctx, api.deleteGrantsByAccessToken(ctx, "test-token-0"))
 	if err != nil {
 		t.Fatal(err)
 	}
