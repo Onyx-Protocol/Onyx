@@ -1,15 +1,19 @@
 package localdb
 
 import (
-	"chain/errors"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/tecbot/gorocksdb"
+
+	"chain/errors"
 )
 
 // DB provides access to a kv store.
 type DB struct {
-	store  *gorocksdb.DB
+	store *gorocksdb.DB
+
+	mu     sync.Mutex
 	closed bool
 }
 
@@ -29,10 +33,10 @@ func (db *DB) Get(key string, v proto.Message) error {
 	// TODO(tessr): tune rocksdb. assess read options
 	ro := gorocksdb.NewDefaultReadOptions()
 	slice, err := db.store.Get(ro, []byte(key))
-	defer slice.Free()
 	if err != nil {
 		return errors.Wrap(err)
 	}
+	defer slice.Free()
 	return proto.Unmarshal(slice.Data(), v)
 }
 
@@ -52,6 +56,8 @@ func Open(rocksDir string) (*DB, error) {
 }
 
 func (db *DB) Close() {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	if !db.closed {
 		db.store.Close()
 		db.closed = true
