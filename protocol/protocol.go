@@ -89,10 +89,10 @@ type Chain struct {
 	MaxIssuanceWindow time.Duration // only used by generators
 
 	state struct {
-		cond     sync.Cond // protects height, block, snapshot
-		height   uint64
-		block    *legacy.Block   // current only if leader
-		snapshot *state.Snapshot // current only if leader
+		cond     sync.Cond       // protects height, block, snapshot
+		height   uint64          // applied height
+		block    *legacy.Block   // latest applied block
+		snapshot *state.Snapshot // latest applied snapshot
 	}
 	store Store
 
@@ -130,7 +130,7 @@ func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, height
 		c.state.height = b.Height
 	}
 
-	// Note that c.height.n may still be zero here.
+	// Note that c.state.height may still be zero here.
 	go c.applyCommittedState(ctx, heights)
 
 	go func() {
