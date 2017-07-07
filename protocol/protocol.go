@@ -118,6 +118,7 @@ func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, height
 		},
 	}
 	c.state.cond.L = new(sync.Mutex)
+	c.state.snapshot = state.Empty()
 
 	var err error
 	c.state.height, err = store.Height(ctx)
@@ -180,12 +181,35 @@ func (c *Chain) State() (*legacy.Block, *state.Snapshot) {
 func (c *Chain) setState(b *legacy.Block, s *state.Snapshot) {
 	c.state.cond.L.Lock()
 	defer c.state.cond.L.Unlock()
+
+	// Multiple goroutines may attempt to set the state at the
+	// same time. If b is an older block than c.state, ignore it.
+	if b != nil && c.state.block != nil && b.Height <= c.state.block.Height {
+		return
+	}
+
 	c.state.block = b
 	c.state.snapshot = s
 	if b != nil && b.Height > c.state.height {
 		c.state.height = b.Height
 		c.state.cond.Broadcast()
 	}
+}
+
+func (c *Chain) setHeight(h uint64) {
+	// We update c.state.height from multiple places:
+	// setState and here, called by the Postgres LISTEN
+	// goroutine. setHeight must ignore heights less than
+	// the current height.
+
+	c.state.cond.L.Lock()
+	defer c.state.cond.L.Unlock()
+
+	if h <= c.state.height {
+		return
+	}
+	c.state.height = h
+	c.state.cond.Broadcast()
 }
 
 // BlockSoonWaiter returns a channel that
