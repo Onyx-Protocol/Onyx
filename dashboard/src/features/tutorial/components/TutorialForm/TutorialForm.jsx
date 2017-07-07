@@ -48,12 +48,9 @@ class TutorialForm extends React.Component {
                   }
                   title = contentLine['title'].replace('STRING', replacement['alias'])
                 }
-                let rows = [
-                  <tr key={`item-title-${i}`}>
-                    <td className={styles.listBullet}>{i+1}</td>
-                    <td>{title}</td>
-                  </tr>
-                ]
+                let bullet = <td className={styles.listBullet}>{i+1}</td>
+                let description = ''
+
                 if (contentLine['description']) {
                   let descriptionResult = []
                   contentLine['description'].forEach( (descriptionLine, j) => {
@@ -79,13 +76,17 @@ class TutorialForm extends React.Component {
                       descriptionResult.push(description)
                     }
                   })
-                  rows.push(<tr key={`item-description-${i}`} className={styles.listItemDescription}>
-                    <td></td>
-                    <td>{descriptionResult}</td>
-                  </tr>)
+
+                  description = <span className={styles.listItemDescription}>{descriptionResult}</span>
                 }
 
-                return <tbody key={`item-${i}`} className={styles.listItemGroup}>{rows}</tbody>
+                return <tr key={`item-${i}`}>
+                  {bullet}
+                  <td className={styles.listItemContent}>
+                    <span className={styles.listItemTitle}>{title}</span>
+                    {description}
+                  </td>
+                </tr>
               })}
             </table>
           </div>
