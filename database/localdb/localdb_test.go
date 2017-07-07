@@ -1,17 +1,16 @@
 package localdb
 
 import (
-	"io/ioutil"
-	"os"
 	"testing"
 )
 
 func TestRestartDB(t *testing.T) {
-	rocksDir, err := ioutil.TempDir("", "rocks_testdb")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(rocksDir)
+	t.Log("hi")
+	// rocksDir, err := ioutil.TempDir("", "rocks_testdb")
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// defer os.RemoveAll(rocksDir)
 
 	// // Create a new fresh db and write... something.
 	// ldb1, err := Open(rocksDir)
