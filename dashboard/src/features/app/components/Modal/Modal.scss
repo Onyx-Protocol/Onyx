@@ -21,10 +21,10 @@
   z-index: 1;
   margin: $gutter-size*2.5 auto;
   background: $background-color;
-  border: 1px solid $border-color;
+  border-bottom: 1px solid transparent;
   box-shadow: 0 0 50px 8px rgba(0,0,0,0.4);
   width: 500px;
-  max-width: 80%
+  max-width: 80%;
 }
 
 .title {
