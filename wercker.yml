@@ -1,4 +1,4 @@
-box: chaindev/ci:20170706
+box: chaindev/ci:20170707.test1
 # To update the docker image for this "box",
 # see $CHAIN/docker/ci.
 
