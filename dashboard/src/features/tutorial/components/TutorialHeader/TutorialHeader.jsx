@@ -12,9 +12,10 @@ class TutorialHeader extends React.Component {
         </div>
       )
     } else {
+      const collapsed = !this.props.showTutorial || this.props.currentStep.component == 'TutorialForm'
       return (
         <div className={styles.container}>
-          <div className={`${styles.main} ${!this.props.showTutorial && styles.collapsed}`}>
+          <div className={`${styles.main} ${collapsed && styles.collapsed}`}>
             <div className={styles.header}>
               {this.props.currentStep.title}
               <div className={styles.skip}>

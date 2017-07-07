@@ -58,14 +58,14 @@
   }
 
   .next {
-    background-color: $background-color;
-    background-image: url('images/chevron-blue.png');
+    background-color: $highlight-tutorial;
+    background-image: url('images/chevron-white.png');
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 5px 9px;
     border: 1px solid $highlight-tutorial;
     border-radius: 3px;
-    color: $highlight-tutorial;
+    color: $background-color;
     padding-right: 20px;
   }
 

@@ -29,10 +29,10 @@
     }
 
     .list {
-      margin: 25px;
+      margin: 25px 30px;
 
       .listItemContainer {
-        margin: 0;
+        // margin: 0;
 
         .listBullet {
           margin-right: 10px;
@@ -49,17 +49,21 @@
           color: #FFFFFF;
         }
 
-        .listItemGroup {
-          display: inline-block;
-          margin-bottom: 10px;
+        .listItemContent {
+          padding-bottom: 10px;
+          line-height: 18px;
+        }
+
+        tr:last-child .listItemContent {
+          padding: 0;
+        }
+
+        .listItemTitle {
+          display: block;
           font-size: 15px;
           font-weight: 500;
-          line-height: 18px;
           color: #20252D;
-
-          td {
-            padding-bottom: 5px;
-          }
+          padding-bottom: 5px;
         }
 
         .listItemDescription {
