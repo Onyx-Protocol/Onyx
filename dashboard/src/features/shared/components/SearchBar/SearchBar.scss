@@ -1,5 +1,5 @@
 .main {
-  padding: $gutter-size/2 $gutter-size;
+  margin: $gutter-size $gutter-size 0;
 }
 
 .search_field_full, .search_field_half, .sum_by_field {
@@ -80,6 +80,7 @@
 
 .queryTime {
   display: inline-block;
-  padding: 4px 20px;
-  opacity: 0.66
+  padding: 8px 20px 0;
+  opacity: 0.66;
+  line-height: 15px;
 }
