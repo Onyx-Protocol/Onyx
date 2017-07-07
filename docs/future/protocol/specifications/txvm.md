@@ -104,6 +104,12 @@ An immutable collection of items of any type.
 
 There are several named types of tuples.
 
+#### Value
+
+0. `type`, a string, "value"
+1. `amount`, an int64
+2. `assetID`, a string
+
 #### Value Commitment
 
 0. `type`, a string, "valuecommitment"
@@ -132,12 +138,6 @@ There are several named types of tuples.
 0. `type`, a string, "provenvalue"
 1. `valuecommitment`, a [value commitment](#value-commitment)
 2. `assetcommitment`, an [asset commitment](#asset-commitment)
-
-#### Value
-
-0. `type`, a string, "value"
-1. `amount`, an int64
-2. `assetID`, a string
 
 #### Contract
 
@@ -651,20 +651,20 @@ contract LockWithPublicKey(pubKey: PublicKey) locks val: Value {
 ### In TXVM
 
 ```
-{"contract", {{"assetid1...", 5}}, [["txvm" 12 inspect encode cat sha3 "pubkey1..." checksig verify] defer], "anchor..."} unlock
-{"contract", {{"assetid1...", 10}}, [["txvm" 12 inspect encode cat sha3 "pubkey2..." checksig verify] defer], "anchor..."} unlock
-{"contract", {{"assetid2...", 15}}, [["txvm" 12 inspect encode cat sha3 "pubkey3..." checksig verify] defer], "anchor..."} unlock
-{"contract", {{"assetid2...", 20}}, [["txvm" 12 inspect encode cat sha3 "pubkey4..." checksig verify] defer], "anchor..."} unlock
+{"contract", {{"value", 5, "assetid1..."}}, [["txvm" 12 inspect encode cat sha3 "pubkey1..." checksig verify] defer], "anchor..."} unlock
+{"contract", {{"value", 10, "assetid1..."}}, [["txvm" 12 inspect encode cat sha3 "pubkey2..." checksig verify] defer], "anchor..."} unlock
+{"contract", {{"value", 15, "assetid2..."}}, [["txvm" 12 inspect encode cat sha3 "pubkey3..." checksig verify] defer], "anchor..."} unlock
+{"contract", {{"value", 20, "assetid2..."}}, [["txvm" 12 inspect encode cat sha3 "pubkey4..." checksig verify] defer], "anchor..."} unlock
 merge
 2 valuestack roll
 2 valuestack roll
 merge
 6 split
-[["txvm" txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] lock
-[["txvm" txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] lock
+[["txvm" txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] 1 lock
+[["txvm" txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] 1 lock
 18 split
-[["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] lock
-[["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] lock
+[["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] 1 lock
+[["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] 1 lock
 summarize
 "sig4..." satisfy
 "sig3..." satisfy
