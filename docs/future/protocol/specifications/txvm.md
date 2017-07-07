@@ -626,23 +626,29 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 
 ## Examples
 
+The below example uses non-confidential values and ignores (for the moment) the anchor stack.
+
 ### In Ivy
 
-
 ```
-condition CheckTxSig(pubKey: PublicKey, tx: Transaction, sig: Signature) {
-  verify checkSig(pubKey, tx.id, sig)
+condition SigCheck(pubKey: PublicKey, tx: Transaction, sig: Signature) {
+  verify checkSig(pubKey, sha3(tx.id), sig)
+}
+
+function checkTxSig(pubKey: PublicKey, sig: Signature) {
+  defer SigCheck(pubKey)
 }
 ```
 
 ```
 contract LockWithPublicKey(pubKey: PublicKey) locks val: Value {
   clause spend() {
-    await tx
-    verify checkSig(pubKey, tx.id, sig)
+    checkTxSig(pubKey, tx.id, sig)
   }
 }
 ```
+
+### In TXVM
 
 ```
 {"contract", {{"assetid1...", 5}}, [["txvm" 12 inspect encode cat sha3 "pubkey1..." checksig verify] defer], "anchor..."} unlock
