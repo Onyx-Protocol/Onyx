@@ -125,7 +125,7 @@ func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, height
 		return nil, errors.Wrap(err, "looking up blockchain height")
 	}
 
-	// Note that c.height.n may still be zero here.
+	// Note that c.state.height may still be zero here.
 	if heights != nil {
 		go func() {
 			for h := range heights {
