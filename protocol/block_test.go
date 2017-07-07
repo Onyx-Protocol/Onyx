@@ -251,7 +251,7 @@ func TestCommitBlockIdempotence(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(concurrency)
 	for i := 0; i < concurrency; i++ {
-		go func(i int) {
+		go func() {
 			for j := 0; j < len(blocks); j++ {
 				err := c.CommitBlock(ctx, blocks[j])
 				if err != nil {
@@ -259,7 +259,7 @@ func TestCommitBlockIdempotence(t *testing.T) {
 				}
 			}
 			wg.Done()
-		}(i)
+		}()
 	}
 	wg.Wait()
 
