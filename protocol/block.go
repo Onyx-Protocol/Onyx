@@ -141,7 +141,8 @@ func (c *Chain) ValidateBlock(block, prev *legacy.Block) error {
 // ApplyValidBlock creates an updated snapshot without validating the
 // block.
 func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
-	newSnapshot := state.Copy(c.state.snapshot)
+	_, oldSnapshot := c.State()
+	newSnapshot := state.Copy(oldSnapshot)
 	err := newSnapshot.ApplyBlock(legacy.MapBlock(block))
 	if err != nil {
 		return nil, err
@@ -152,17 +153,15 @@ func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
 	return newSnapshot, nil
 }
 
-// CommitBlock commits a block to the blockchain. The block
+// CommitAppliedBlock commits a block to the blockchain. The block
 // must already have been applied with ApplyValidBlock or
-// ApplyNewBlock, which will have produced the new snapshot that's
+// GenerateBlock, which will have produced the new snapshot that's
 // required here.
 //
 // This function saves the block to the store and sometimes (not more
 // often than saveSnapshotFrequency) saves the state tree to the
 // store. New-block callbacks (via asynchronous block-processor pins)
 // are triggered.
-//
-// TODO(bobg): rename to CommitAppliedBlock for clarity (deferred from https://github.com/chain/chain/pull/788)
 func (c *Chain) CommitAppliedBlock(ctx context.Context, block *legacy.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
@@ -207,7 +206,7 @@ func (c *Chain) queueSnapshot(ctx context.Context, height uint64, timestamp time
 
 func (c *Chain) setHeight(h uint64) {
 	// We call setHeight from two places independently:
-	// CommitBlock and the Postgres LISTEN goroutine.
+	// CommitAppliedBlock and the Postgres LISTEN goroutine.
 	// This means we can get here twice for each block,
 	// and any of them might be arbitrarily delayed,
 	// which means h might be from the past.
