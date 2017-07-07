@@ -1,4 +1,4 @@
-box: chaindev/ci:20170621.1
+box: chaindev/ci:20170706
 # To update the docker image for this "box",
 # see $CHAIN/docker/ci.
 
@@ -15,6 +15,9 @@ cored:
         name: core tests
         code: |
           cp -a $WERCKER_SOURCE_DIR $CHAIN
+          mv /usr/local/lib/librocksdb.a $CHAIN/vendor/github.com/facebook/rocksdb/
+          mkdir -p $CHAIN/vendor/github.com/google/snappy/build
+          mv /usr/local/lib/libsnappy.a $CHAIN/vendor/github.com/google/snappy/build/
           DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" core-tests
     - script:
         name: gofmt

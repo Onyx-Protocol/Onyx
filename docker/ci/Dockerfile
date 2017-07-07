@@ -19,8 +19,9 @@ ENV CHAIN="/go/src/chain" \
 ADD install /usr/bin
 
 RUN yum -y update \
-    && yum install -y autoconf automake bash curl gcc gcc-c++ git libtool make openssl-devel ruby wget unzip \
+    && yum install -y autoconf automake bash bzip2 bzip2-devel curl gcc gcc-c++ git libtool make openssl-devel ruby tar wget unzip \
     && install-go && rm -f /usr/bin/install-go \
+    && install-rocksdb \
     && install-node && rm -f /usr/bin/install-node \
     && install-java && rm -f /usr/bin/install-java \
     && install-maven && rm -f /usr/bin/install-maven \
