@@ -13,7 +13,6 @@
 }
 
 .content {
-  border: solid $highlight-tutorial 1px;
   background: $background-emphasis-color;
   position: absolute;
   top: 10%;
@@ -30,7 +29,7 @@
     height: $title-height;
     display: flex;
     align-items: center;
-    font-size: 16px;
+    font-size: 20px;
     font-weight: bold;
     width: 100%;
   }

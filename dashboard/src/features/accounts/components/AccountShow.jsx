@@ -111,8 +111,8 @@ const mapDispatchToProps = ( dispatch ) => ({
   },
   createReceiver: (data) => dispatch(actions.account.createReceiver(data)),
   showReceiver: (body) => dispatch(actions.app.showModal(
+    'New account receiver created',
     body,
-    actions.app.hideModal
   ))
 })
 

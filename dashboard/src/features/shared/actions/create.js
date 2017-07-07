@@ -1,7 +1,6 @@
 import { chainClient } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
 import { push } from 'react-router-redux'
-import actions from 'actions'
 import uuid from 'uuid'
 
 export default function(type, options = {}) {
@@ -54,13 +53,6 @@ export default function(type, options = {}) {
         return promise.then(() => clientApi.create(data)
           .then((resp) => {
             dispatch(created(resp))
-
-            if (options.createModal) {
-              dispatch(actions.app.showModal(
-                options.createModal(resp),
-                actions.app.hideModal
-              ))
-            }
 
             let postCreatePath = listPath
             if (options.redirectToShow) {
