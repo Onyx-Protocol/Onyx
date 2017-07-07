@@ -38,7 +38,10 @@ to TXSIGHASH.
 
 New block sequence
 
-Every new block must be validated against the existing blockchain state. New blocks are validated by calling ValidateBlock. Blocks produced by GenerateBlock are already known to be valid.
+Every new block must be validated against the existing
+blockchain state. New blocks are validated by calling
+ValidateBlock. Blocks produced by GenerateBlock are already
+known to be valid.
 
 A new block goes through the sequence:
   - If not generated locally, the block is validated by
