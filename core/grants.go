@@ -206,7 +206,7 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 		Protected: x.Protected, // should always be false
 	}
 
-	err = a.sdb.Exec(ctx, a.grants.Delete(ctx, x.Policy, func(g *authz.Grant) bool {
+	err = a.sdb.Exec(ctx, a.grants.Delete(x.Policy, func(g *authz.Grant) bool {
 		return authz.EqualGrants(*g, toDelete)
 	}))
 	return errors.Wrap(err)
@@ -215,10 +215,10 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 // deleteGrantsByAccessToken returns a sinkdb operation to delete all of the
 // grants associated with an access token. It will delete a grant even if that
 // grant is protected.
-func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) sinkdb.Op {
+func (a *API) deleteGrantsByAccessToken(token string) sinkdb.Op {
 	var ops []sinkdb.Op
 	for _, p := range Policies {
-		ops = append(ops, a.grants.Delete(ctx, p, func(g *authz.Grant) bool {
+		ops = append(ops, a.grants.Delete(p, func(g *authz.Grant) bool {
 			if g.GuardType != "access_token" {
 				return false
 			}

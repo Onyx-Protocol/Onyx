@@ -76,11 +76,11 @@ func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
 }
 
 // Delete returns an Op to delete from policy all stored grants for which delete returns true.
-func (s *Store) Delete(ctx context.Context, policy string, delete func(*Grant) bool) sinkdb.Op {
+func (s *Store) Delete(policy string, delete func(*Grant) bool) sinkdb.Op {
 	key := s.keyPrefix + policy
 
 	var grantList GrantList
-	ver, err := s.sdb.Get(ctx, key, &grantList)
+	ver, err := s.sdb.GetStale(key, &grantList)
 	if err != nil || !ver.Exists() {
 		return sinkdb.Error(errors.Wrap(err)) // if !exists, errors.Wrap(err) is nil
 	}
