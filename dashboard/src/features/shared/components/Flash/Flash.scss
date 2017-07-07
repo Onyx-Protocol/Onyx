@@ -1,12 +1,9 @@
 .main {
-  margin-top: $gutter-size/2;
-}
-.alert {
   height: 54px;
   display: flex;
   align-items: center;
 
-  margin: $gutter-size/2 $gutter-size 0;
+  margin: $gutter-size $gutter-size 0;
   padding: 0 $gutter-size/2;
   border: 1px solid transparent;
 

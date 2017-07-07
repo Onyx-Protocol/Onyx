@@ -24,7 +24,7 @@ class Flash extends React.Component {
     Object.keys(this.props.messages).forEach(key => {
       const item = this.props.messages[key]
       messages.push(
-        <div className={`${styles.alert} ${styles[item.type]}`} key={key}>
+        <div className={`${styles.main} ${styles[item.type]}`} key={key}>
           <div className={styles.content}>
             {item.title && <div><strong>{item.title}</strong></div>}
             {item.message}
@@ -37,7 +37,7 @@ class Flash extends React.Component {
     })
 
     return (
-      <div className={styles.main}>
+      <div>
         {messages}
       </div>
     )
