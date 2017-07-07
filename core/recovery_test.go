@@ -228,6 +228,8 @@ func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.T
 		return err
 	}
 
+	// Because we're using store with an existing, populated db
+	// NewChain will recover the previous blockchain state.
 	c, err := protocol.NewChain(ctx, b1.Hash(), store, nil)
 	if err != nil {
 		return errors.Wrap(err)
@@ -251,11 +253,7 @@ func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.T
 	go accounts.ProcessBlocks(ctx)
 	go indexer.ProcessBlocks(ctx)
 
-	block, snapshot, err := c.Recover(ctx)
-	if err != nil {
-		return err
-	}
-
+	block, snapshot := c.State()
 	b, s, err := c.GenerateBlock(ctx, block, snapshot, timestamp, poolTxs)
 	if err != nil {
 		return err

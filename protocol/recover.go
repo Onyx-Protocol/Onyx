@@ -9,13 +9,13 @@ import (
 	"chain/protocol/state"
 )
 
-// Recover performs crash recovery, restoring the blockchain
+// recover performs crash recovery, restoring the blockchain
 // to a complete state. It returns the latest confirmed block
 // and the corresponding state snapshot.
 //
 // If the blockchain is empty (missing initial block), this function
 // returns a nil block and an empty snapshot.
-func (c *Chain) Recover(ctx context.Context) (*legacy.Block, *state.Snapshot, error) {
+func (c *Chain) recover(ctx context.Context) (*legacy.Block, *state.Snapshot, error) {
 	snapshot, snapshotHeight, err := c.store.LatestSnapshot(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting latest snapshot")
@@ -53,17 +53,6 @@ func (c *Chain) Recover(ctx context.Context) (*legacy.Block, *state.Snapshot, er
 		if b.AssetsMerkleRoot != snapshot.Tree.RootHash() {
 			return nil, nil, fmt.Errorf("block %d has state root %x; snapshot has root %x",
 				b.Height, b.AssetsMerkleRoot.Bytes(), snapshot.Tree.RootHash().Bytes())
-		}
-	}
-	if b != nil {
-		// All blocks before the latest one have been fully processed
-		// (saved in the db, callbacks invoked). The last one may have
-		// been too, but make sure just in case. Also "finalize" the last
-		// block (notifying other processes of the latest block height)
-		// and maybe persist the snapshot.
-		err = c.CommitAppliedBlock(ctx, b, snapshot)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "committing block")
 		}
 	}
 	return b, snapshot, nil

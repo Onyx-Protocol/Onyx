@@ -119,20 +119,19 @@ func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, height
 	}
 	c.state.cond.L = new(sync.Mutex)
 
-	var err error
-	c.state.height, err = store.Height(ctx)
+	b, s, err := c.recover(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "looking up blockchain height")
+		return nil, err
+	}
+
+	c.state.block = b
+	c.state.snapshot = s
+	if b != nil {
+		c.state.height = b.Height
 	}
 
 	// Note that c.height.n may still be zero here.
-	if heights != nil {
-		go func() {
-			for h := range heights {
-				c.setHeight(h)
-			}
-		}()
-	}
+	go c.applyCommittedState(ctx, heights)
 
 	go func() {
 		for {
@@ -180,12 +179,14 @@ func (c *Chain) State() (*legacy.Block, *state.Snapshot) {
 func (c *Chain) setState(b *legacy.Block, s *state.Snapshot) {
 	c.state.cond.L.Lock()
 	defer c.state.cond.L.Unlock()
+	if c.state.height >= b.Height {
+		return
+	}
+
 	c.state.block = b
 	c.state.snapshot = s
-	if b != nil && b.Height > c.state.height {
-		c.state.height = b.Height
-		c.state.cond.Broadcast()
-	}
+	c.state.height = b.Height
+	c.state.cond.Broadcast()
 }
 
 // BlockSoonWaiter returns a channel that

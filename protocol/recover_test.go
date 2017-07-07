@@ -39,14 +39,13 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 
 	ctx := context.Background()
 
+	// Since we're re-using store, NewChain will call recover and restore
+	// the previous blockchain state.
 	c2, err := NewChain(context.Background(), b.Hash(), store, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	block, snapshot, err := c2.Recover(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	block, snapshot := c2.State()
 	if block.Height != 1 {
 		t.Fatalf("block.Height = %d, want %d", block.Height, 1)
 	}

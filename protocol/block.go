@@ -141,7 +141,8 @@ func (c *Chain) ValidateBlock(block, prev *legacy.Block) error {
 // ApplyValidBlock creates an updated snapshot without validating the
 // block.
 func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
-	newSnapshot := state.Copy(c.state.snapshot)
+	_, oldSnapshot := c.State()
+	newSnapshot := state.Copy(oldSnapshot)
 	err := newSnapshot.ApplyBlock(legacy.MapBlock(block))
 	if err != nil {
 		return nil, err
@@ -152,7 +153,7 @@ func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
 	return newSnapshot, nil
 }
 
-// CommitBlock commits a block to the blockchain. The block
+// CommitAppliedBlock commits a block to the blockchain. The block
 // must already have been applied with ApplyValidBlock or
 // ApplyNewBlock, which will have produced the new snapshot that's
 // required here.
@@ -161,8 +162,6 @@ func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
 // often than saveSnapshotFrequency) saves the state tree to the
 // store. New-block callbacks (via asynchronous block-processor pins)
 // are triggered.
-//
-// TODO(bobg): rename to CommitAppliedBlock for clarity (deferred from https://github.com/chain/chain/pull/788)
 func (c *Chain) CommitAppliedBlock(ctx context.Context, block *legacy.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
@@ -175,20 +174,22 @@ func (c *Chain) CommitAppliedBlock(ctx context.Context, block *legacy.Block, sna
 		c.queueSnapshot(ctx, block.Height, block.Time(), snapshot)
 	}
 
+	// c.setState will update the local blockchain state and height.
+	// When c.store is a txdb.Store, and c has been initialized with a
+	// channel from txdb.ListenBlocks, then the below call to
+	// c.store.FinalizeBlock will have done a postgresql NOTIFY and
+	// that will wake up the applyCommittedState goroutine, which also
+	// calls setState. But duplicate calls with the same block/height are
+	// harmless; and the following call is required in the cases where
+	// it's not redundant. We call setState before FinalizeBlock to
+	// avoid applying the block twice within this process.
+	c.setState(block, snapshot)
+
 	err = c.store.FinalizeBlock(ctx, block.Height)
 	if err != nil {
 		return errors.Wrap(err, "finalizing block")
 	}
 
-	// c.setState will update the local blockchain state and height.
-	// When c.store is a txdb.Store, and c has been initialized with a
-	// channel from txdb.ListenBlocks, then the above call to
-	// c.store.FinalizeBlock will have done a postgresql NOTIFY and
-	// that will wake up the goroutine in NewChain, which also calls
-	// setHeight.  But duplicate calls with the same blockheight are
-	// harmless; and the following call is required in the cases where
-	// it's not redundant.
-	c.setState(block, snapshot)
 	return nil
 }
 
@@ -205,22 +206,47 @@ func (c *Chain) queueSnapshot(ctx context.Context, height uint64, timestamp time
 	}
 }
 
-func (c *Chain) setHeight(h uint64) {
-	// We call setHeight from two places independently:
-	// CommitBlock and the Postgres LISTEN goroutine.
-	// This means we can get here twice for each block,
-	// and any of them might be arbitrarily delayed,
-	// which means h might be from the past.
-	// Detect and discard these duplicate calls.
+// applyCommittedState reads state as it's committed and applies it to c.
+// It runs as a goroutine launched from NewChain. Only applyCommittedState
+// should update c.state.
+func (c *Chain) applyCommittedState(ctx context.Context, committedHeights <-chan uint64) {
+	committedHeight := c.Height()
+	for {
+		appliedHeight := c.Height()
 
-	c.state.cond.L.Lock()
-	defer c.state.cond.L.Unlock()
+		// If we know there's a committed but unapplied block, apply it.
+		if committedHeight > appliedHeight {
+			b, err := c.store.GetBlock(ctx, appliedHeight+1)
+			if err != nil {
+				// TODO(jackson): should this error be exposed via monitoring endpoints?
+				log.Error(ctx, err, "at", "retrieving committed block", "height", appliedHeight+1)
+				continue
+			}
+			s, err := c.ApplyValidBlock(b)
+			if err != nil {
+				// TODO(jackson): should this error be exposed via monitoring endpoints?
+				log.Error(ctx, err, "at", "applying committed blocks", "height", b.Height)
+				continue
+			}
+			c.setState(b, s)
 
-	if h <= c.state.height {
-		return
+			// NOTE(jackson): Once we're storing blockchain snapshots in localdb,
+			// we'll need to queue snapshots for storage here.
+			continue
+		}
+
+		// If we've reached here, we don't know of any committed blocks
+		// that haven't been applied to c's State. Wait for the next
+		// notification of a new committed block.
+		select {
+		case h := <-committedHeights:
+			if h > committedHeight {
+				committedHeight = h
+			}
+		case <-ctx.Done():
+			return
+		}
 	}
-	c.state.height = h
-	c.state.cond.Broadcast()
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_

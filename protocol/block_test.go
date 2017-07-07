@@ -53,10 +53,13 @@ func TestNoTimeTravel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c.setHeight(1)
-	c.setHeight(2)
+	var b1, b2 legacy.Block
+	b1.Height, b2.Height = 1, 2
 
-	c.setHeight(1) // don't go backward
+	c.setState(&b1, state.Empty())
+	c.setState(&b2, state.Empty())
+	c.setState(&b1, state.Empty()) // don't go backward
+
 	if c.state.height != 2 {
 		t.Fatalf("c.state.height = %d want 2", c.state.height)
 	}

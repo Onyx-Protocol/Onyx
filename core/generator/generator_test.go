@@ -95,10 +95,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 	g := New(c, []BlockSigner{testSigner{nil, pubkeys[0], privkeys[0]}}, nil)
 
 	ctx := context.Background()
-	tip, snapshot, err := c.Recover(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	tip, snapshot := c.State()
 
 	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now().Add(time.Minute), nil)
 	if err != nil {
@@ -128,10 +125,7 @@ func TestGetAndAddBlockSignaturesRace(t *testing.T) {
 	g := New(c, []BlockSigner{testSigner{nil, pubkey, privkey}}, nil)
 
 	ctx := context.Background()
-	tip, snapshot, err := c.Recover(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	tip, snapshot := c.State()
 	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now().Add(time.Minute), nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
