@@ -247,7 +247,7 @@ Argument:
 
 ### `add`
 
-Adds a tuple to a configuration option's set of values. The configuration option must be defined as a set. The number of value arguments provided must match the configuration option's tuple length. Add will error if a conflicting tuple already exists in the set. To overwrite the existing tuple, provide the `-u` flag.
+Adds a tuple to a configuration option's set of values. The configuration option must be defined as a set. The number of value arguments provided must match the configuration option's tuple length. `add` will error if a conflicting tuple already exists in the set. To overwrite the existing tuple, provide the `-u` flag.
 
 ```
 corectl add [key] [value]...
@@ -255,7 +255,7 @@ corectl add [key] [value]...
 
 Flags:
 
-* **-u**: Overwrite the existing tuple if it conflicts.
+* **-u**: Overwrites the existing tuple if it conflicts.
 
 Arguments:
 
@@ -265,7 +265,7 @@ Arguments:
 
 ### `rm`
 
-Remove a tuple from a configuration option's set of values. The configuration option must be defined as a set. The number of value arguments provided must much the configuration option's tuple length.
+Removes a tuple from a configuration option's set of values. The configuration option must be defined as a set. The number of value arguments provided must much the configuration option's tuple length.
 
 ```
 corectl rm [key] [value]...
