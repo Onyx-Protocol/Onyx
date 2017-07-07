@@ -64,7 +64,7 @@ const mapStateToProps = (state) => {
       if (!match.skipBreadcrumb) {
         breadcrumbs.push({
           name: match.name || humanize(component),
-          path: currentPath.join('/')
+          path: `/${currentPath.join('/')}`
         })
       }
     }
