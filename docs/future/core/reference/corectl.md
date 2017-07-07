@@ -57,6 +57,9 @@ CORE_URL=https://cored.example.com:9999 corectl create-token ...
 * [grant](#grant)
 * [revoke](#revoke)
 * [allow-address](#allow-address)
+* [get](#get)
+* [add](#add)
+* [rm](#rm)
 * [wait](#wait)
 
 ### `init`
@@ -227,6 +230,52 @@ corectl allow-address [address]
 Argument:
 
 * **address**: The listen address, in `host:port` format, to be added to the allowed members list.
+
+
+### `get`
+
+Retrieves the current value of a configuration option.
+
+```
+corectl get [key]
+```
+
+Argument:
+
+* **key**: The configuration option to retrieve.
+
+
+### `add`
+
+Adds a tuple to a configuration option's set of values. The configuration option must be defined as a set. The number of value arguments provided must match the configuration option's tuple length. `add` will error if a conflicting tuple already exists in the set. To overwrite the existing tuple, provide the `-u` flag.
+
+```
+corectl add [key] [value]...
+```
+
+Flags:
+
+* **-u**: Overwrites the existing tuple if it conflicts.
+
+Arguments:
+
+* **key**: The configuration option to modify.
+* **value**: One or more values forming a single tuple to add to the set.
+
+
+### `rm`
+
+Removes a tuple from a configuration option's set of values. The configuration option must be defined as a set. The number of value arguments provided must much the configuration option's tuple length.
+
+```
+corectl rm [key] [value]...
+```
+
+Arguments:
+
+* **key**: The configuration option to modify.
+* **value**: One or more values forming a single tuple to remove from the set.
+
 
 ### `wait`
 
