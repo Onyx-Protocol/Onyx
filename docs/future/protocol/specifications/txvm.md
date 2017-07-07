@@ -643,7 +643,7 @@ function checkTxSig(pubKey: PublicKey, sig: Signature) {
 ```
 contract LockWithPublicKey(pubKey: PublicKey) locks val: Value {
   clause spend() {
-    checkTxSig(pubKey, tx.id, sig)
+    checkTxSig(pubKey)
   }
 }
 ```
@@ -665,6 +665,7 @@ merge
 18 split
 [["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] lock
 [["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] lock
+summarize
 "sig4..." satisfy
 "sig3..." satisfy
 "sig2..." satisfy
