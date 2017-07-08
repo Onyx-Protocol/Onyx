@@ -522,11 +522,29 @@ Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` f
 
 ### Lock
 
-Pops a number `n` from the data stack. Pops `n` [values](#value), `values`, from the Value stack. Pops a [Program](#program) `program` from the data stack. Pops an [anchor](#anchor) from the Anchor stack. Pushes a [Contract](#contract) to the Output stack with a tuple of the `values` as the `values`, `program` as the `program`, and the ID of `anchor` as the `anchor`.
+Pops a number `n` from the data stack. Pops `n` items of type [Value](#Value) or [Proven Value](#proven-value), `values`, from the Value stack. Pops a [Program](#program) `program` from the data stack. Pops an [anchor](#anchor) from the Anchor stack. Pushes a [Contract](#contract) to the Output stack with a tuple of the `values` as the `values`, `program` as the `program`, and the ID of `anchor` as the `anchor`.
 
 ### Retire
 
-Pops a [Value](#value) `value` from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack. (TBD: only proven values!)
+Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack. (TBD: only proven values!)
+
+### MergeConfidential
+
+Pops two items of type [Proven Value](#proven-value), [Unproven Value](#unproven-value), or [Raw Value](#raw-value) `value1` and `value2` from the [Value stack](#value-stack).
+
+Pushes a [Raw Value](#unproven-value) with `valuecommitment` equal to `value1.valuecommitment + value2.valuecommitment` to the Value stack.
+
+### SplitConfidential
+
+Pops an item `value` of type [Proven Value](#proven-value), [Unproven Value](#unproven-value), or [Raw Value](#raw-value) from the Value stack. Pops a [Value Commitment](#value-commitment) `newvaluecommitment` from the Value stack. Pushes a [Raw Value](#raw-value) with `valuecommitment` equal to `newvaluecommitment` and asset commitment `value.assetcommitment`, then pushes a [Raw Value](#raw-value) with `valuecommitment` equal to `value.valuecommitment - newvaluecommitment`.
+
+### ProveAssetCommitment
+
+TBD
+
+### ProveValue
+
+TBD
 
 ### Nonce
 
