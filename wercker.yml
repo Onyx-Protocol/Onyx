@@ -15,6 +15,8 @@ cored:
         name: core tests
         code: |
           cp -a $WERCKER_SOURCE_DIR $CHAIN
+          whoami
+          ls -al /usr/local/lib
           mv /usr/local/lib/librocksdb.a $CHAIN/vendor/github.com/facebook/rocksdb/
           mkdir -p $CHAIN/vendor/github.com/google/snappy/build
           mv /usr/local/lib/libsnappy.a $CHAIN/vendor/github.com/google/snappy/build/
