@@ -406,7 +406,7 @@ See [Transaction template](#transaction-template) for the data structure descrip
 Process:
 
 1. Send transaction template to Core to decrypt and verify [signing instructions](#signing-instructions):
-    1. If `excess` factor in the MUX entry is non-zero:
+    1. If `excess` factor is non-zero:
         1. If the transaction ID is not fixed yet and the current party has at least one output in it:
             * `excess` is added to the value commitment and value range proof is re-created.
         2. Otherwise, `excess` is transformed into an "excess commitment" with signature and added to the MUX entry in the transaction.
@@ -932,17 +932,14 @@ Transaction template contains transaction entries and additional data that helps
         finalized: false, // set to true after first `client.transactions.sign()` call
         balanced:  false, // set when no placeholder inputs/outputs left
         signed:    false, // set when all signatures and proofs are provided
-        entries: [
+        excess_factor: "0f0eda17b9f1e...", // 32-byte scalar
+        actions: [
             {
                 type:    "txheader",
                 version:  2,  // core protocol version
                 mintime:  X,
                 maxtime:  Y,
                 txid:     "0fa8127a9fe8d89b12..." // only added after the first `client.transactions.sign()` call
-            },
-            {
-                type: "mux2",
-                excess_factor: "0f0eda17b9f1e...", // 32-byte scalar
             },
             {
                 type: "input2",
@@ -982,16 +979,13 @@ Transaction template contains transaction entries and additional data that helps
                 id: <payload-id>,
                 private: ENCRYPTED{
                     version: 2, // version of the transaction template
-                    entries: [
+                    excess_factor: "0f0eda17b9f1e...", // 32-byte scalar
+                    actions: [
                         {
                             type:    "txheader",
                             version:  2,  // core protocol version
                             mintime:  X,
                             maxtime:  Y,
-                        },
-                        {
-                            type: "mux2",
-                            excess_factor: "0f0eda17b9f1e...", // 32-byte scalar
                         },
                         {
                             type: "input2",
@@ -1021,6 +1015,8 @@ Transaction template contains transaction entries and additional data that helps
 
 
 ### Signing instructions
+
+**WARNING: the txvm significantly alters how programs behave. E.g. signatures are appended, but clause-selection happens in the middle of txvm structure.**
 
 Signing instructions is a structured representation of data necessary for creation of valid _arguments_ to be used in blockchain data structures such as block headers, transaction inputs, issuance entries and issuance choices.
 
@@ -1715,7 +1711,8 @@ Should be an opaque type to hide versioned content inside for future-proofing.
           - finalized
           - balanced
           - signed
-          - entries
+          - excess_factor
+          - actions
           - payloads
         properties:
           version:
@@ -1732,7 +1729,10 @@ Should be an opaque type to hide versioned content inside for future-proofing.
           signed:
             type: boolean
             description: Whether the transaction is fully signed and can be published.
-          entries:
+          excess_factor:
+            type: string
+            description: Hex-encoded excess scalar (default value is 0).
+          actions:
             type: array
             items:
               $ref: '#/definitions/TransactionTemplateEntry'
@@ -1747,12 +1747,10 @@ Should be an opaque type to hide versioned content inside for future-proofing.
           does not allow for polymorphic types, the individual properties are not listed here.
           Please refer to the definitions of:
           TxHeaderTemplate,
-          Mux1Template,
           Issuance1Template,
           Input1Template,
           Output1Template,
           Retirement1Template,
-          Mux2Template,
           Issuance2Template,
           Input2Template,
           Output2Template,
@@ -1822,37 +1820,6 @@ Should be an opaque type to hide versioned content inside for future-proofing.
           txid:
             type: string
             description: Optional transaction ID in hex which is available if the template is finalized.
-
-      Mux1Template:
-        type: object
-        required:
-          - type
-        properties:
-          type:
-            type: string
-            description: Type of the entry (required to be `mux1`).
-            enum:
-              - mux1
-          program:
-            type: string
-            description: The raw hex of the control program.
-
-      Mux2Template:
-        type: object
-        required:
-          - type
-        properties:
-          type:
-            type: string
-            description: Type of the entry (required to be `mux2`).
-            enum:
-              - mux2
-          program:
-            type: string
-            description: The raw hex of the control program.
-          excess_factor:
-            type: string
-            description: The raw excess scalar to be turned into excess commitment.
       
       Issuance1Template:
         type: object
