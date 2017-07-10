@@ -12,65 +12,6 @@ When the virtual machine executes a txvm program, it accumulates different types
 
 The pieces of transaction information - the inputs, outputs, etc. - that are produced during txvm execution are also _consumed_ in order to produce the transaction summary, which is the sole output of a successful txvm program. To capture pieces of transaction information for purposes other than validation, txvm implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
-## Overview of Confidential Assets in TxVM
-
-All values are represented as commitments by default. Perfect binding is ensured by a combination of asset ID commitment (AC, 2 points) and a value commitment (VC, 2 points).
-
-Non-blinded commitments are done using zero blinding factors with "non-confidential range proofs":
-
-* Non-confidential ARP contains simply an asset ID. Verifier converts asset ID to asset point A, which is then wrapped in a commitment `AC=(A,O)`.
-* Non-confidential VRP contains simply an amount. Verifier multiplies amount by AC: `VC = amount*AC = (amount*A, O)`.
-
-TxVM has 4 stacks for managing value flow:
-
-* IC-stack: issuance candidates
-* PAC-stack: Proven asset commitments
-* PVC-stack: Proven value commitments
-* UVC-stack: Unproven value commitments
-
-When an input is unlocked, its AC and VC are pushed to the PAC- and PVC-stacks respectively.
-
-When issuance is performed, the AC and VC are proven using IARP and VRP and placed to the PAC- and PVC-stacks respectively.
-
-Note: issuance candiates, and issued AC and VC should be prepared up-front (with deferred predicates on the condition stack) so that IARP and issuance programs can sign the entire tx or introspect these values. 
-
-**Merge** of proven value commitments does not require a proof.
-
-**Split** takes a proven value commitment from PVC-stack (VC0), a VC from data stack (VC1), a VRP for VC1 and outputs VC2 to UVC.
-
-**ProveAssetRange** takes an AC’ from data stack, a ARP that references ACs on PAC-stack. If ARP is valid in respect to prove ACs, the AC' is pushed to PAC-stack.
-
-**ProveValueRange** takes VC from UVC-stack, AC from PAC-stack, VRP, verifies VRP and pushes VC unmodified to PVC-stack. VRP can be non-confidential.
-
-**ProveAsset** pops AC, asset ID and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes asset ID to the data stack.
-
-**ProveValue** pops VC, AC, amount and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes amount to the data stack.
-
-**Issue** pops from data stack:
-
-* AC
-* VC
-* iarp-condition
-* list of candidate tuples (asset definition, issuance pubkey)
-* IARP
-* VRP
-
-Verifies IARP using issuance pubkeys and signing over (AC,VC,iarp-condition)
-
-Verifies VRP over (AC,VC,iarp-condition).
-
-Pushes:
-
-* AC and VC to PAC-stack and PVC-stack respectively. 
-* `iarp-condition` to condition stack. 
-* each `(assetdefinition, issuance pubkey)` to IC-stack.
-* each `assetdefinition.issuanceprogram` to condition stack.
-
-IC-stack is necessary so that `issuanceprogram` can verify that the correct issuance key is used.
-
-When tx is summarized, no unproven VCs must be left on the UVC-stack.
-
-
 # VM Execution
 
 The VM is initialized with all stacks empty.
@@ -122,16 +63,18 @@ There are several named types of tuples.
 1. `assetcommitment`, a [point](#point)
 2. `blindingcommitment`, a [point](#point)
 
-#### Raw Value
+#### Asset Range Proof
 
-0. `type`, a string, "rawvalue"
-1. `valuecommitment`, a [value commitment](#value-commitment)
+TBD
+
+#### Value Range Proof
+
+TBD
 
 #### Unproven Value
 
 0. `type`, a string, "unprovenvalue"
 1. `valuecommitment`, a [value commitment](#value-commitment)
-2. `assetcommitment`, an [asset commitment](#asset-commitment)
 
 #### Proven Value
 
@@ -142,7 +85,7 @@ There are several named types of tuples.
 #### Contract
 
 0. `type`, a string, "contract"
-1. `values`, a tuple of [value commitments](#value-commitment)
+1. `values`, a tuple of either [values](#values) or [proven values](#proven-values)
 2. `program`, a [Program](#program)
 3. `anchor`, a string
 
@@ -184,7 +127,7 @@ There are several named types of tuples.
 0. `type`, a string, "afterconstraint"
 1. `mintime`, an int64
 
-### Annotation stack
+### Annotation
 
 0. `type`, a string, "annotation"
 1. `data`, a string
@@ -224,7 +167,7 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 8. Retirement stack
 9. Time Constraint stack
 10. Annotation stack
-11. Asset commitment stack
+11. Asset Commitment stack
 12. Transaction summary stack
 
 ## Data stack
@@ -262,6 +205,10 @@ Items on the Condition stack are [Programs](#program).
 ### Time Constraint stack
 
 Items on the Time Constraint stack are [Mintimes](#mintime) or [Maxtimes](#maxtime).
+
+### Asset Commitment stack
+
+Items on the Time Constraint stack are [Asset Commitments](#asset-commitment).
 
 ### Transaction Summary stack
 
@@ -504,6 +451,8 @@ Pops a condition from the Condition stack and executes it.
 
 Pops a tuple `input` of type [Contract](#contract) from the data stack. Pushes it to the Input stack.
 
+For each `value` in `input.values`, if `value` is a [Proven Value](#proven-value), push `value.assetcommitment` to the Asset commitment stack. 
+
 Pushes each of the `values` in `input` to the Value stack, and pushes an [anchor](#anchor) to the Anchor stack with `value` equal to `input.anchor`. 
 
 Executes `input.program`.
@@ -526,25 +475,37 @@ Pops a number `n` from the data stack. Pops `n` items of type [Value](#Value) or
 
 ### Retire
 
-Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack. (TBD: only proven values!)
+Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack.
 
 ### MergeConfidential
 
-Pops two items of type [Proven Value](#proven-value), [Unproven Value](#unproven-value), or [Raw Value](#raw-value) `value1` and `value2` from the [Value stack](#value-stack).
+Pops two items of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `value1` and `value2` from the [Value stack](#value-stack).
 
-Pushes a [Raw Value](#unproven-value) with `valuecommitment` equal to `value1.valuecommitment + value2.valuecommitment` to the Value stack.
+Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value1.valuecommitment + value2.valuecommitment` to the Value stack.
 
 ### SplitConfidential
 
-Pops an item `value` of type [Proven Value](#proven-value), [Unproven Value](#unproven-value), or [Raw Value](#raw-value) from the Value stack. Pops a [Value Commitment](#value-commitment) `newvaluecommitment` from the Value stack. Pushes a [Raw Value](#raw-value) with `valuecommitment` equal to `newvaluecommitment` and asset commitment `value.assetcommitment`, then pushes a [Raw Value](#raw-value) with `valuecommitment` equal to `value.valuecommitment - newvaluecommitment`.
+Pops an item `value` of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) from the Value stack. Pops a [Value Commitment](#value-commitment) `newvaluecommitment` from the Value stack. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `newvaluecommitment`, then pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value.valuecommitment - newvaluecommitment`.
 
 ### ProveAssetCommitment
 
-TBD
+Pops an item `assetrangeproof` of type [Asset Range Proof](#asset-range-proof). Pops an item `assetcommitment` from the data stack of type [Asset Commitment](#asset-commitment).
+
+Verifies `assetrangeproof` with ` assetcommitment` as the asset commitment, and with the current Asset Commitment stack as the candidates. (TBD: LINK THIS, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.)
+
+Pushes an `assetcommitment` to the Asset Commitment stack.
+
+(TBD: ANY OF THIS? **ProveAsset** pops AC, asset ID and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes asset ID to the data stack.)
 
 ### ProveValue
 
-TBD
+Pops an item `valuerangeproof` of type [Value Range Proof](#value-range-proof) from the data stack. Pops an item `value` of type [Unproven Value](#unproven-value) from the Value stack. Pops an item `assetcommitment` from the Asset Commitment stack. 
+
+Verifies `valuerangeproof` with ` value.valuecommitment` as the value commitment, and `assetcommitment` as the asset commitment. (TBD: LINK THIS, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.)
+
+Pushes a [Proven Value](#proven-value) to the Value stack with `value.valuecommitment` as the `valuecommitment` and `assetcommitment` as the asset commitment.
+
+(TBD: ANY OF THIS? **ProveValue** pops VC, AC, amount and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes amount to the data stack.)
 
 ### Nonce
 
@@ -592,19 +553,29 @@ Pops an integer `stackid` from the data stack, representing a [stack identifier]
 
 ### IssueCA
 
-TBD
+(WIP. TBD: REVIEW AND REWRITE THIS)
 
-### ProveRange
+Pops from data stack:
 
-TBD
+* AC
+* VC
+* iarp-condition
+* list of candidate tuples (asset definition, issuance pubkey)
+* IARP
+* VRP
 
-### ProveValue
+Verifies IARP using issuance pubkeys and signing over (AC,VC,iarp-condition)
 
-TBD
+Verifies VRP over (AC,VC,iarp-condition).
 
-### ProveAsset
+Pushes:
 
-TBD
+* AC and VC to PAC-stack and PVC-stack respectively. 
+* `iarp-condition` to condition stack. 
+* each `(assetdefinition, issuance pubkey)` to IC-stack.
+* each `assetdefinition.issuanceprogram` to condition stack.
+
+IC-stack is necessary so that `issuanceprogram` can verify that the correct issuance key is used.
 
 ### Blind
 
