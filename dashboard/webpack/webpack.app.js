@@ -6,6 +6,7 @@
 var webpack = require('webpack')
 var getConfig = require('hjs-webpack')
 var path = require('path')
+let LicenseWebpackPlugin = require('license-webpack-plugin')
 
 // Set base path to JS and CSS files when
 // required by other files
@@ -114,6 +115,11 @@ config.plugins.push(new webpack.DefinePlugin({
   'process.env.PROXY_API_HOST': JSON.stringify(process.env.PROXY_API_HOST),
   'process.env.TESTNET_INFO_URL': JSON.stringify(process.env.TESTNET_INFO_URL),
   'process.env.TESTNET_GENERATOR_URL': JSON.stringify(process.env.TESTNET_GENERATOR_URL),
+}))
+
+config.plugins.push(new LicenseWebpackPlugin({
+  pattern: /^.*$/,
+  includeUndefined: true,
 }))
 
 // Enable babel-polyfill
