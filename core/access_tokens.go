@@ -93,7 +93,7 @@ func (a *API) deleteAccessToken(ctx context.Context, x struct{ ID string }) erro
 		return err
 	}
 
-	err = a.sdb.Exec(ctx, a.deleteGrantsByAccessToken(ctx, x.ID))
+	err = a.sdb.Exec(ctx, a.deleteGrantsByAccessToken(x.ID))
 	if err != nil {
 		// well, technically we did delete the access token, so don't return the error
 		// TODO(tessr): make this whole operation atomic, such that we either delete
