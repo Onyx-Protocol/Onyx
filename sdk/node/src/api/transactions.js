@@ -303,6 +303,18 @@ const transactionsAPI = (client) => {
    * @param {TransactionBuilder} builder
    */
 
+  // TODO: implement finalize
+  const finalize = (template, cb) => shared.tryCallback(
+    Promise.resolve(template),
+    cb
+  )
+
+  // TODO: implement finalizeBatch
+  const finalizeBatch = (templates, cb) => shared.tryCallback(
+    Promise.resolve(new shared.BatchResponse(templates)),
+    cb
+  )
+
   return {
     /**
      * Get one page of transactions matching the specified query.
@@ -391,7 +403,8 @@ const transactionsAPI = (client) => {
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Object} Transaction template with all possible signatures added.
      */
-    sign: (template, cb) => client.signer.sign(template, cb),
+    sign: (template, cb) => finalize(template)
+      .then(finalized => client.signer.sign(finalized, cb)),
 
     /**
      * signBatch - Sign a batch of transactions.
@@ -401,7 +414,18 @@ const transactionsAPI = (client) => {
      * @returns {BatchResponse} Tranasaction templates with all possible signatures
      *                         added, as well as errors.
      */
-    signBatch: (templates, cb) => client.signer.signBatch(templates, cb),
+    signBatch: (templates, cb) => finalizeBatch(templates)
+      .then(finalized => client.signer.signBatch(finalized.successes, cb)),
+
+    /**
+     * finalize - Finalize a single transaction
+     */
+    finalize,
+
+    /**
+     * finalizeBatch - Finalize a batch of transactions
+     */
+    finalizeBatch,
 
     /**
      * Submit a signed transaction to the blockchain.
