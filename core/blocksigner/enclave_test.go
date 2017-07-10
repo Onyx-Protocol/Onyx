@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"chain/core/rpc"
 	"chain/crypto/ed25519"
@@ -19,7 +18,7 @@ func TestEnclaveClient(t *testing.T) {
 
 	// Create two test servers. One that always times out, the other
 	// that will immediately return a correct signature.
-	sv1 := httptest.NewServer(timeoutHandler(enclaveTimeout + time.Second))
+	sv1 := httptest.NewServer(timeoutHandler())
 	defer sv1.Close()
 	sv2 := httptest.NewServer(fakeEnclavedHandler(t, "access-token-2", fakeSignature))
 	defer sv2.Close()
@@ -45,9 +44,8 @@ func TestEnclaveClient(t *testing.T) {
 	}
 }
 
-func timeoutHandler(sleep time.Duration) http.Handler {
+func timeoutHandler() http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		time.Sleep(sleep)
 		rw.Header().Set("Content-Type", "application/json; charset=utf-8")
 		rw.WriteHeader(http.StatusRequestTimeout)
 		json.NewEncoder(rw).Encode("Request timed out.")

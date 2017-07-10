@@ -2,19 +2,14 @@ package blocksigner
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"chain/core/rpc"
 	"chain/crypto/ed25519"
 	"chain/encoding/json"
+	"chain/log"
 	"chain/protocol/bc/legacy"
 )
-
-// enclaveTimeout is the time to wait for an HSM's response to a
-// sign-block request before moving on to the next HSM. Because
-// blocks are expected to be generated every second, one second
-// retireving a signature would be a very high latency.
-const enclaveTimeout = time.Second
 
 // EnclaveClient implements the Signer interface by calling
 // Chain Enclave to sign blocks.
@@ -33,25 +28,40 @@ type signRequestBody struct {
 func (ec EnclaveClient) Sign(ctx context.Context, pk ed25519.PublicKey, bh *legacy.BlockHeader) ([]byte, error) {
 	body := signRequestBody{Block: bh, Pub: json.HexBytes(pk[:])}
 
-	// make a copy of the base rpc client on the stack so we
-	// can modify it with the HSM URLs and access tokens
-	client := ec.BaseClient
-
 	// grab the latest set of hsms from the configuration
 	hsmURLs := ec.URLs()
 
-	var signature []byte
-	var err error
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	ch := make(chan result, len(hsmURLs))
 	for _, tup := range hsmURLs {
+		// make a copy of the base rpc client on the stack so we
+		// can modify it with the URL and access token
+		client := ec.BaseClient
 		client.BaseURL = tup[0]
 		client.AccessToken = tup[1]
 
-		callCtx, cancel := context.WithTimeout(ctx, enclaveTimeout)
-		err = client.Call(callCtx, "/sign-block", body, &signature)
-		cancel()
-		if err == nil {
-			return signature, nil
+		go func(client rpc.Client) {
+			var signature []byte
+			err := client.Call(ctx, "/sign-block", body, &signature)
+			ch <- result{signature: signature, err: err}
+		}(client)
+	}
+
+	var err error
+	for i := 0; i < len(hsmURLs); i++ {
+		res := <-ch
+		if res.err == nil {
+			return res.signature, nil
 		}
+		err = res.err
+		log.Error(ctx, err, fmt.Sprintf("Unable to sign block at height %d with enclave %s", bh.Height, hsmURLs[i][0]))
 	}
 	return nil, err
+}
+
+type result struct {
+	err       error
+	signature []byte
 }
