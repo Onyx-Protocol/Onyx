@@ -277,7 +277,8 @@ func AuthHandler(handler http.Handler, sdb *sinkdb.DB, accessTokens *accesstoken
 		// TODO(tessr): check that this path exists; return early if this path isn't legit
 		req, err := authenticator.Authenticate(req)
 		if err != nil {
-			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
+			err = errors.Sub(errNotAuthenticated, err)
+			errorFormatter.Write(req.Context(), rw, err)
 			return
 		}
 
