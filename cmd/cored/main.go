@@ -34,7 +34,6 @@ import (
 	"chain/database/pg"
 	"chain/database/sinkdb"
 	"chain/database/sqlutil"
-	"chain/encoding/json"
 	"chain/env"
 	"chain/errors"
 	"chain/generated/rev"
@@ -47,7 +46,6 @@ import (
 	"chain/net/raft"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/bc/legacy"
 )
 
 const (
@@ -400,17 +398,20 @@ func launchConfiguredCore(ctx context.Context, sdb *sinkdb.DB, db *sql.DB, conf 
 func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c *protocol.Chain, processID string, httpClient *http.Client) (*blocksigner.BlockSigner, error) {
 	var hsm blocksigner.Signer
 	if conf.BlockHsmUrl != "" {
-		// TODO(ameets): potential option to take only a password when configuring
-		//  and convert to an access token string here for BlockHSMAccessToken
-		hsm = &remoteHSM{Client: &rpc.Client{
-			BaseURL:      conf.BlockHsmUrl,
-			AccessToken:  conf.BlockHsmAccessToken,
-			ProcessID:    processID,
-			CoreID:       conf.Id,
-			Version:      version,
-			BlockchainID: conf.BlockchainId.String(),
-			Client:       httpClient,
-		}}
+		hsm = &blocksigner.EnclaveClient{
+			URLs: func() [][]string {
+				// TODO(ameets): potential option to take only a password when configuring
+				//  and convert to an access token string here for BlockHSMAccessToken
+				return [][]string{{conf.BlockHsmUrl, conf.BlockHsmAccessToken}}
+			},
+			BaseClient: rpc.Client{
+				ProcessID:    processID,
+				CoreID:       conf.Id,
+				Version:      version,
+				BlockchainID: conf.BlockchainId.String(),
+				Client:       httpClient,
+			},
+		}
 	} else {
 		var err error
 		hsm, err = mockHSM(db)
@@ -421,20 +422,6 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 	blockPub := ed25519.PublicKey(conf.BlockPub)
 	s := blocksigner.New(blockPub, hsm, db, c)
 	return s, nil
-}
-
-// remoteHSM is a client wrapper for an hsm that is used as a blocksigner.Signer
-type remoteHSM struct {
-	Client *rpc.Client
-}
-
-func (h *remoteHSM) Sign(ctx context.Context, pk ed25519.PublicKey, bh *legacy.BlockHeader) (signature []byte, err error) {
-	body := struct {
-		Block *legacy.BlockHeader `json:"block"`
-		Pub   json.HexBytes       `json:"pubkey"`
-	}{bh, json.HexBytes(pk[:])}
-	err = h.Client.Call(ctx, "/sign-block", body, &signature)
-	return
 }
 
 func remoteSignerInfo(ctx context.Context, processID, blockchainID string, conf *config.Config, httpClient *http.Client) (a []*remoteSigner) {
