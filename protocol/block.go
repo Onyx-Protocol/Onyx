@@ -27,10 +27,6 @@ var (
 	// ErrBadBlock is returned when a block is invalid.
 	ErrBadBlock = errors.New("invalid block")
 
-	// ErrStaleState is returned when the Chain does not have a current
-	// blockchain state.
-	ErrStaleState = errors.New("stale blockchain state")
-
 	// ErrBadStateRoot is returned when the computed assets merkle root
 	// disagrees with the one declared in a block header.
 	ErrBadStateRoot = errors.New("invalid state merkle root")
