@@ -1,3 +1,7 @@
+<!---
+This document discusses the design of the federated consensus protocol used by the Chain Protocol: its goals, use cases, threat models, and areas for future improvement.
+-->
+
 # Federated Consensus
 
 * [Introduction](#introduction)
@@ -14,7 +18,7 @@
 
 In this guide we discuss the design of the federated consensus protocol used by the Chain Protocol: its goals, use cases, threat models, and areas for future improvement.
 
-Federated consensus is a mechanism ensuring that all participants in a network agree on a single transaction log. This prevents different versions of the ledger being shown to different participants — thus preventing “double-spending” of assets — as well preventing history from being edited. While the blockchain validation rules specify _whether_ a given blockchain is valid, the consensus protocol makes sure there is _only one_ valid blockchain on a given network. 
+Federated consensus is a mechanism ensuring that all participants in a network agree on a single transaction log. This prevents different versions of the ledger being shown to different participants — thus preventing “double-spending” of assets — as well preventing history from being edited. While the blockchain validation rules specify _whether_ a given blockchain is valid, the consensus protocol makes sure there is _only one_ valid blockchain on a given network.
 
 This consensus protocol is designed to be practically useful under a certain set of requirements and assumptions commonly encountered in permissioned blockchain networks. The Chain Protocol is capable of supporting alternative consensus protocols.
 
@@ -33,7 +37,7 @@ The consensus protocol presented here uses relatively simple consensus programs,
 
 ## Federated consensus program
 
-Under the federated consensus protocol, blocks are considered accepted once they have been signed by a specified quorum of *block signers*. This is implemented using a consensus program that checks an “M-of-N multisignature” rule, where N is the number of block signers, and M is the number of signatures required for a block to be accepted. 
+Under the federated consensus protocol, blocks are considered accepted once they have been signed by a specified quorum of *block signers*. This is implemented using a consensus program that checks an “M-of-N multisignature” rule, where N is the number of block signers, and M is the number of signatures required for a block to be accepted.
 
 The program specifies the public keys of each of the N block signers. The signatures are passed in the arguments. The program checks the signatures against the prespecified public keys to confirm that they are valid signatures of the hash of the new block. New blocks may reuse the same consensus program or change it to a new one (as when members join and leave the federation) as long as a quorum of block signers approves the change.
 
@@ -73,11 +77,11 @@ An attempt to fork the blockchain by signing multiple blocks can be detected and
 
 Another potentially desirable safety guarantee is the assurance that, if a block header's consensus program is satisfied, there is a corresponding valid blockchain history — i.e., no transaction is unbalanced and all programmed conditions are satisfied. This guarantee is assured as long as no more than `N - M` block signers are faulty.
 
-This latter guarantee is useful for clients that do not have full visibility into the blockchain, instead using _compact proofs_ to check some transaction or piece of state against the block headers. Network participants that have visibility into entire blocks and has seen the entire history of the blockchain — or which trust some other party which does have such visibility — have no need to trust block signers for this particular guarantee. 
+This latter guarantee is useful for clients that do not have full visibility into the blockchain, instead using _compact proofs_ to check some transaction or piece of state against the block headers. Network participants that have visibility into entire blocks and has seen the entire history of the blockchain — or which trust some other party which does have such visibility — have no need to trust block signers for this particular guarantee.
 
 ## Liveness guarantees
 
-Liveness is guaranteed as long as: 
+Liveness is guaranteed as long as:
 
 * The generator is not faulty, and
 * No more than `N - M` block signers are faulty
@@ -100,9 +104,6 @@ The block generator may enforce local “policies” to filter out non-compliant
 
 ## Future improvements
 
-Future versions of the Chain Protocol may move further in the direction of full Byzantine-fault-tolerance, such as by supporting leader rotation or multi-phase commitment. Protocols such as [PBFT](http://pmg.csail.mit.edu/papers/osdi99.pdf) and [Tendermint](https://atrium.lib.uoguelph.ca/xmlui/bitstream/handle/10214/9769/Buchman_Ethan_201606_MAsc.pdf?sequence=7) show promise in this area. 
+Future versions of the Chain Protocol may move further in the direction of full Byzantine-fault-tolerance, such as by supporting leader rotation or multi-phase commitment. Protocols such as [PBFT](http://pmg.csail.mit.edu/papers/osdi99.pdf) and [Tendermint](https://atrium.lib.uoguelph.ca/xmlui/bitstream/handle/10214/9769/Buchman_Ethan_201606_MAsc.pdf?sequence=7) show promise in this area.
 
-Future protocols may also include specifications of fraud proofs and gossip protocols to allow network participants to more easily detect and report problems in the network, such as forks or signatures on invalid blocks. 
-
-
-
+Future protocols may also include specifications of fraud proofs and gossip protocols to allow network participants to more easily detect and report problems in the network, such as forks or signatures on invalid blocks.

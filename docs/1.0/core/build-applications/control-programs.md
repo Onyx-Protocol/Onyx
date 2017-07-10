@@ -1,3 +1,7 @@
+<!---
+A control program is the mechanism that secures asset units on a blockchain. When you first issue units of an asset, you issue them into a control program. When you spend units of an asset, you spend them from an existing control program to a new control program. When you retire units of an asset, you spend them from an existing control program to a special retirement control program that can never be spent.
+-->
+
 # Control Programs
 
 ## Introduction

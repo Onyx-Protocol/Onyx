@@ -1,3 +1,7 @@
+<!---
+An asset is a type of value that can be issued on a blockchain. All units of a given asset are fungible.
+-->
+
 # Assets
 
 ## Introduction

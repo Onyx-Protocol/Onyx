@@ -1,3 +1,7 @@
+<!---
+Instructions to download Java, Node.js, and Ruby Chain Core SDKs.
+-->
+
 # Download Chain Core SDKs
 
 Client libraries for Chain Core are available for the following platforms:

@@ -102,6 +102,10 @@
   </div>
   <div id="doc-wrapper" tabindex="0">
     <article id="doc-content" class="{{.Filename}}">
+      <form id="search" action="/docs/1.0/search-results">
+        <input id="search-field" type="text" name="q" value="" placeholder="Search documentation">
+        <input type="submit" value="Search" id="search-submit"/>
+      </form>
       <div id='version-alert' class='alert'>
         <p>
           <strong>Legacy documentation</strong>:
@@ -146,8 +150,6 @@
     }) ;
     return true;
   }
-
-
 </script>
 
 </body>

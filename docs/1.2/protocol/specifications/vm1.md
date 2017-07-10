@@ -1,3 +1,7 @@
+<!---
+The Chain Protocol uses a bytecode language to express short programs used to authenticate blockchain activity.
+-->
+
 # Virtual Machine Specification
 
 * [Introduction](#introduction)

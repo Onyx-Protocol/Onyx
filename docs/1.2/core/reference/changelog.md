@@ -1,3 +1,7 @@
+<!---
+This changelog covers updates to cored, the Chain Core server binary.
+-->
+
 # Changelog
 
 This changelog covers updates to cored, the Chain Core server binary.

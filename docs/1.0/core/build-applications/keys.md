@@ -1,3 +1,7 @@
+<!---
+Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of assets.
+-->
+
 # Keys
 
 ## Introduction

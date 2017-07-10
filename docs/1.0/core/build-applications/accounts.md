@@ -1,3 +1,7 @@
+<!---
+An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs.
+-->
+
 # Accounts
 
 ## Introduction

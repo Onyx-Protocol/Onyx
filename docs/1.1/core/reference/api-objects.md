@@ -1,3 +1,7 @@
+<!---
+An overview of the Asset, Account, Transaction, and Unspent Output API objects.
+-->
+
 # API Objects
 
 * [Asset](#asset)

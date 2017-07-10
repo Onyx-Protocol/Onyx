@@ -1,3 +1,7 @@
+<!---
+Data structures in the Chain Core API are represented as key-value JSON objects. This includes local objects, such as accounts and keys, and global objects, such as transactions and assets. To retrieve data, you perform a query with optional parameters. By default, each query returns a time-ordered list of objects beginning with the most recent.
+-->
+
 # Queries
 
 ## Introduction

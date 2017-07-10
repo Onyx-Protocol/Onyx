@@ -1,3 +1,7 @@
+<!---
+This guide will walk you through the basic functions of the blockchain operators: creating a new blockchain, creating blocks, permissioning the network, and adding/removing blockchain operators.
+-->
+
 # Operating a blockchain
 
 ## Introduction

@@ -1,3 +1,7 @@
+<!---
+This is the technical specification for the Chain Protocol.
+-->
+
 # Chain Protocol specification
 
 ## Introduction

@@ -1,3 +1,7 @@
+<!---
+This tutorial shows you how to use the Ivy Playground, a new feature of Chain Core that lets you explore Ivy, Chain’s high-level contract language.
+-->
+
 # Ivy Playground Tutorial
 
 This tutorial shows you how to use the Ivy Playground, a new feature of Chain Core that lets you explore Ivy, Chain’s high-level contract language. For fuller details on the syntax and semantics of Ivy, see [the Ivy documentation](docs). **This is an early preview of Ivy provided for experimentation only. Not for production use.**

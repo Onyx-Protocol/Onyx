@@ -1,3 +1,7 @@
+<!---
+Batch operations are an advanced feature of the Chain Core API that allow you to bundle many similar operations into a single API call. Not only does this reduce network overhead, it also allows Chain Core to process the operations in your request in parallel.
+-->
+
 # Batch Operations
 
 ## Overview

@@ -1,3 +1,7 @@
+<!---
+This document covers the extensibility features and versioning semantics of Chain Protocol that facilitate safe evolution of the protocol rules.
+-->
+
 # Blockchain Extensibility
 
 * [Introduction](#introduction)
@@ -25,9 +29,9 @@ This document covers the extensibility features and versioning semantics of Chai
 
 ## Hard forks and soft forks
 
-There are two ways to upgrade a blockchain network. These are conventionally known as *hard forks* and *soft forks*. 
+There are two ways to upgrade a blockchain network. These are conventionally known as *hard forks* and *soft forks*.
 
-[sidenote] 
+[sidenote]
 
 See [BIP 99](https://github.com/bitcoin/bips/blob/master/bip-0099.mediawiki) for some background on the Bitcoin community's approach to hard and soft forks.
 
@@ -94,7 +98,7 @@ Together, the first and the second approaches allow implementing a tick-tock upg
 
 ## Extension points
 
-Chain Protocol defines four main areas of extensibility: 
+Chain Protocol defines four main areas of extensibility:
 
 1. Blocks
 2. Transactions
@@ -136,7 +140,7 @@ Input Witness     | Additional witness data may be appended to the string in one
 
 ### Program extension points
 
-Transaction programs have five extension points within the output and issuance programs. 
+Transaction programs have five extension points within the output and issuance programs.
 
 Block programs are not versioned and can be upgraded only via additional block commitment elements.
 
@@ -184,13 +188,13 @@ Issuers may continue to recognize older assets, offer a trusted exchange of old 
 
 ## Consensus upgrades
 
-Consensus protocol is mostly separated from the blockchain validation rules as it allows block signers to agree on a single tip block that they need to sign. Block header has an extensible “block commitment” field that allows addition of new rules supporting changes to the consensus protocol. 
+Consensus protocol is mostly separated from the blockchain validation rules as it allows block signers to agree on a single tip block that they need to sign. Block header has an extensible “block commitment” field that allows addition of new rules supporting changes to the consensus protocol.
 
-Extra care must be taken about upgrading the VM used for consensus programs. While control and issuance programs used in transactions have a VM version associated with them, blocks intentionally designed without explicit versioning. When non-upgraded nodes have to evaluate a program with an unknown VM version, they skip the evaluation and instead defer to block signers to decide if transaction is valid. In case of a block consensus program, there is no “higher authority” to defer to. If the new consensus protocol requires a new feature in the VM, block commitment and block witness fields must be extended with a new consensus program and its arguments to be evaluated *in addition* to the old VM and old consensus program. 
+Extra care must be taken about upgrading the VM used for consensus programs. While control and issuance programs used in transactions have a VM version associated with them, blocks intentionally designed without explicit versioning. When non-upgraded nodes have to evaluate a program with an unknown VM version, they skip the evaluation and instead defer to block signers to decide if transaction is valid. In case of a block consensus program, there is no “higher authority” to defer to. If the new consensus protocol requires a new feature in the VM, block commitment and block witness fields must be extended with a new consensus program and its arguments to be evaluated *in addition* to the old VM and old consensus program.
 
 [sidenote]
 
-Block signers should not optimize performance changing old consensus program to `OP_1` (always succeeds) because it will immediately open non-upgraded nodes to a vulnerability: anyone would be able to fork the blockchain for them and make it look perfectly valid. 
+Block signers should not optimize performance changing old consensus program to `OP_1` (always succeeds) because it will immediately open non-upgraded nodes to a vulnerability: anyone would be able to fork the blockchain for them and make it look perfectly valid.
 
 In some cases, block signers might want to change the old consensus program to `OP_FAIL` in case the old VM has an unavoidable security problem and it is safer to cause non-upgraded nodes to stop entirely and not accept any new blocks until they upgrade. Such update will become a _safe hard fork_ since the original chain will be prohibited from growing further.
 
@@ -245,5 +249,3 @@ The two cases above demonstrated how some specific parts of the transaction stru
 ## Conclusion
 
 The Chain Protocol includes a versioning scheme that facilitates network-wide upgrades. The scheme enables introduction of new features and improvements in a safe and compatible manner, providing meaningful security both for the network nodes and clients that rely on compact proofs instead of full blockchain validation.
-
-

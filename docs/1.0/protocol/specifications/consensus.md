@@ -1,3 +1,7 @@
+<!---
+The present version of the protocol uses federated consensus mechanism based on a single block generator (elected out of band) and a group of block signers.
+-->
+
 # Federated Consensus Protocol
 
 * [Introduction](#introduction)
@@ -247,7 +251,3 @@ See also the note in the [Make Block](#make-block) algorithm.
 Note: “local policy” in this section gives the generator the ability to exclude
 a transaction for any reason. For example, it might apply a fixed size limit
 to every block, and stop adding transactions once it reaches that size.
-
-
-
-

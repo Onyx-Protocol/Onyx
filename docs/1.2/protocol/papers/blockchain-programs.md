@@ -1,3 +1,7 @@
+<!---
+This document discusses design and use cases for custom programs on the blockchain.
+-->
+
 # Blockchain Programs
 
 * [Introduction](#introduction)

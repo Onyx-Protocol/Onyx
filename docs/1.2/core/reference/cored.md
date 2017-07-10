@@ -1,3 +1,7 @@
+<!---
+cored command usage information.
+-->
+
 # cored Command
 
 Command `cored` provides the Chain Core daemon and API server.

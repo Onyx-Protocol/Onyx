@@ -1,3 +1,7 @@
+<!---
+Ivy is Chain’s high-level language for expressing contracts, programs that protect value on a blockchain.
+-->
+
 # The Ivy Language
 
 ## Introduction

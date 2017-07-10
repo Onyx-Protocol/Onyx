@@ -1,3 +1,7 @@
+<!---
+This guide will walk you through the basic functions of Chain Core.
+-->
+
 # 5-Minute Guide
 
 ## Overview

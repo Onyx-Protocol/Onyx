@@ -1,3 +1,7 @@
+<!---
+This guide demonstrates how to use the Chain Core API to create complex transactions.
+-->
+
 # Multiparty Trades
 
 ## Overview

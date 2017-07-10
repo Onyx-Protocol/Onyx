@@ -1,3 +1,7 @@
+<!---
+This document describes the serialization format for the blockchain data structures used in the Chain Protocol.
+-->
+
 # Data Model Specification
 
 * [Introduction](#introduction)
@@ -529,6 +533,3 @@ Note that the resulting merkle patricia tree may not be balanced; however, its s
 * [LEB128] [Little-Endian Base-128 Encoding](https://developers.google.com/protocol-buffers/docs/encoding)
 * [CFRG1] [Edwards-curve Digital Signature Algorithm (EdDSA) draft-irtf-cfrg-eddsa-05](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)
 * [RFC 6962](https://tools.ietf.org/html/rfc6962#section-2.1)
-
-
-
