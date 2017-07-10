@@ -131,7 +131,7 @@ To deploy an updated dashboard to production:
 
 ## Generating NOTICE content
 
-The `NOTICE` file documents licenses for software packages that make it into our binary distribution of Chain Core. To generate this file, we use the process documented below:
+The `NOTICE` file documents licenses for software packages that may be included in our binary distribution of Chain Core. To generate this file, we use the process documented below:
 
 1. For the basis of the `NOTICE` file, we use a Webpack plugin called [license-webpack-plugin](https://www.npmjs.com/package/license-webpack-plugin). This causes an artifact called `public/3rdpartylicenses.txt` to be generated during production builds. It contains a list of modules that ultimately make it into the final Webpack bundle, alongside the license type and any license file content in those modules, including copyright information.
 2. We append the Facebook supplemental patent grant and list any Facebook dependencies, such as `react`, `react-dom`, and `prop-types`.
