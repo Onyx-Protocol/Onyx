@@ -42,6 +42,21 @@ func TestAssemble(t *testing.T) {
 	}
 }
 
+func TestAssemble2(t *testing.T) {
+	// A simple tx that sends 5 units of asset 0000... from one account to another
+	src := `{'contract', {{5, x"0000000000000000000000000000000000000000000000000000000000000000"}}, {'program', ['txvm' inputstack inspect encode cat sha3 encode ['txvm' summarystack inspect encode cat sha3 1 datastack roll cat sha3 x"1111111111111111111111111111111111111111111111111111111111111111" checksig verify] cat 'program' 1 datastack roll 2 maketuple defer]}, x"2222222222222222222222222222222222222222222222222222222222222222"} unlock
+{'program', ['txvm' inputstack inspect encode cat sha3 encode ['txvm' summarystack inspect encode cat sha3 1 datastack roll cat sha3 x"3333333333333333333333333333333333333333333333333333333333333333" checksig verify] cat 'program' 1 datastack roll 2 maketuple defer]} 1 lock
+summarize
+x"44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444" satisfy`
+	prog, err := Assemble(src)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("%d bytes: %x", len(prog), prog)
+	src2 := Disassemble(prog)
+	t.Log(src2)
+}
+
 func TestDisassemble(t *testing.T) {
 	for _, test := range asmValid[:len(asmValid)-3] {
 		src := Disassemble(test.prog)

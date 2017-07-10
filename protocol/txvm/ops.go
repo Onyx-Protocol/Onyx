@@ -33,6 +33,7 @@ var ops = [NumOp]func(*vm){
 	Dup:     opDup,
 	ToAlt:   opToAlt,
 	FromAlt: opFromAlt,
+	Inspect: opInspect,
 
 	Equal: opEqual,
 	Not:   opNot,
@@ -174,6 +175,12 @@ func opToAlt(vm *vm) {
 
 func opFromAlt(vm *vm) {
 	vm.data.Push(vm.alt.Pop())
+}
+
+func opInspect(vm *vm) {
+	t := vm.data.PopInt64()
+	s := getStack(vm, t)
+	vm.data.Push(s.Peek())
 }
 
 type intBinOp func(x, y int64) (int64, bool)

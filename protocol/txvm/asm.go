@@ -73,6 +73,8 @@ func parseStatement(tokens []token) ([]byte, int, error) {
 			p = append(p, opcode)
 		} else if seq, ok := composite[token.lit]; ok {
 			p = append(p, seq...)
+		} else if stackNum, ok := stackNames[token.lit]; ok {
+			p = append(p, pushInt64(stackNum)...)
 		} else {
 			return nil, 0, errors.New("bad mnemonic " + token.lit)
 		}

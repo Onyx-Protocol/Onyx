@@ -21,6 +21,21 @@ const (
 	NumStacks           = 12
 )
 
+var stackNames = map[string]int64{
+	"datastack":           StackData,
+	"altstack":            StackAlt,
+	"inputstack":          StackInput,
+	"valuestack":          StackValue,
+	"outputstack":         StackOutput,
+	"condstack":           StackCond,
+	"noncestack":          StackNonce,
+	"anchorstack":         StackAnchor,
+	"retirementstack":     StackRetirement,
+	"timeconstraintstack": StackTimeConstraint,
+	"annotationstack":     StackAnnotation,
+	"summarystack":        StackSummary,
+}
+
 type Stack interface {
 	Len() int
 	Element(n int) Value
