@@ -66,10 +66,11 @@ func main() {
 
 func trace(_ byte, data []byte, vm txvm.VM) {
 	stack := vm.Stack(txvm.StackData)
-	for i := 0; i < stack.Len(); i++ {
+	n := stack.Len()
+	for i := 0; i < n; i++ {
 		// TODO(kr): format items better
 		// (prob "encode" the item, then disassemble the encoded bytes).
-		fmt.Fprintf(os.Stderr, "%x", stack.Element(i))
+		fmt.Fprintf(os.Stderr, "%x", stack.Element(n-i-1))
 		fmt.Fprint(os.Stderr, " ")
 	}
 	fmt.Fprintln(os.Stderr, ".", txvm.Disassemble(data[vm.PC():]))
