@@ -64,7 +64,7 @@ func main() {
 	fmt.Print(txid)
 }
 
-func trace(_ byte, data []byte, vm txvm.VM) {
+func trace(_ byte, prog []byte, vm txvm.VM) {
 	stack := vm.Stack(txvm.StackData)
 	n := stack.Len()
 	for i := 0; i < n; i++ {
@@ -73,6 +73,6 @@ func trace(_ byte, data []byte, vm txvm.VM) {
 		fmt.Fprintf(os.Stderr, "%x", stack.Element(n-i-1))
 		fmt.Fprint(os.Stderr, " ")
 	}
-	fmt.Fprintln(os.Stderr, ".", txvm.Disassemble(data[vm.PC():]))
+	fmt.Fprintln(os.Stderr, ".", txvm.Disassemble(prog[vm.PC():]))
 	// TOOD(kr): print changes to other stacks (or full stack contents?)
 }
