@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"chain/metrics"
-	"chain/net/http/reqid"
 )
 
 var (
@@ -52,7 +51,9 @@ var (
 
 func coreCounter(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		countCore(reqid.CoreIDFromContext(req.Context()))
+		if coreID := req.Header.Get("Chain-Core-ID"); coreID != "" {
+			countCore(coreID)
+		}
 		h.ServeHTTP(w, req)
 	})
 }

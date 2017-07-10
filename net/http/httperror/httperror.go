@@ -11,7 +11,6 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/httpjson"
-	"chain/net/http/reqid"
 )
 
 func init() {
@@ -101,7 +100,6 @@ func (f Formatter) Log(ctx context.Context, err error) {
 	keyvals := []interface{}{
 		"status", resp.HTTPStatus,
 		"chaincode", resp.ChainCode,
-		"path", reqid.PathFromContext(ctx),
 		log.KeyError, errorMessage,
 	}
 	if resp.HTTPStatus == 500 {

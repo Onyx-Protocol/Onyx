@@ -23,11 +23,6 @@ const (
 	// unexported; clients use NewSubContext and FromSubContext
 	// instead of using this key directly.
 	subReqIDKey
-	// coreIDKey is the key for Chain-Core-ID request header field values.
-	// It is only for statistics; don't use it for authorization.
-	coreIDKey
-	// pathKey is the key for the request path being handled.
-	pathKey
 )
 
 // New generates a random request ID.
@@ -64,20 +59,6 @@ func FromContext(ctx context.Context) string {
 	return reqID
 }
 
-// CoreIDFromContext returns the Chain-Core-ID stored in ctx,
-// or the empty string.
-func CoreIDFromContext(ctx context.Context) string {
-	id, _ := ctx.Value(coreIDKey).(string)
-	return id
-}
-
-// PathFromContext returns the HTTP path stored in ctx,
-// or the empty string.
-func PathFromContext(ctx context.Context) string {
-	path, _ := ctx.Value(pathKey).(string)
-	return path
-}
-
 // NewSubContext returns a new Context that carries subreqid
 // It also adds a log prefix to print the sub-request ID using
 // package chain/log.
@@ -100,11 +81,6 @@ func Handler(handler http.Handler) http.Handler {
 		// TODO(kr): take half of request ID from the client
 		id := New()
 		ctx = NewContext(ctx, id)
-		ctx = context.WithValue(ctx, pathKey, req.URL.Path)
-		if coreID := req.Header.Get("Chain-Core-ID"); coreID != "" {
-			ctx = context.WithValue(ctx, coreIDKey, coreID)
-			ctx = log.AddPrefixkv(ctx, "coreid", coreID)
-		}
 
 		defer func() {
 			if err := recover(); err != nil {
