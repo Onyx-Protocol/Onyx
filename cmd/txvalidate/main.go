@@ -27,7 +27,7 @@ Flags:
 `
 
 var (
-	flagT = flag.Bool("t", false, "trace execution")
+	flagT = flag.Bool("t", false, "print execution trace")
 )
 
 func main() {
