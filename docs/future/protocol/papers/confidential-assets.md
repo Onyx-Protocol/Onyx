@@ -79,7 +79,7 @@ the blockchains deployed before the extension to _Confidential Assets_.
 We consider that to preserve asset ID compatibility at the risk of an infeasible 
 denial of service attack is an acceptable tradeoff.
 
-### Theorem A1: asset commitment is perfectly binding
+### Theorem A1: asset ID commitment is perfectly binding
 
 **Theorem A1:** Asset ID commitment is perfectly binding for asset ID under the assumption that underlying hash functions are first and second preimage-resistant.
 
@@ -175,10 +175,10 @@ In this application of ring signatures, a valid asset range proof proves equalit
 
 4. From the equations above it follows, that both commitments must necessarily commit to the same asset ID `A1 == A2`.
 
-**5.** Every confidential asset ID commitment starts with a non-confidential commitment (either at point of [issuance](ca.md#issuance-asset-range-proof) or [migration](txvm.md#migrate)) which is perfectly binding according to **(1)**. Since every re-blinded commitment and associated range proof maintain the binding, by induction, any subsequent asset ID commitment is perfectly binding to a correctly issued/upgraded asset ID.
+**5.** Every confidential asset ID commitment that starts with a non-confidential commitment (either at a point of non-confidential [issuance](ca.md#non-confidential-issuance-asset-range-proof) or [migration](txvm.md#migrate)) which is perfectly binding according to **(1)**. Since every (re)blinded commitment and associated range proof maintain the binding, by induction, any subsequent asset ID commitment is perfectly binding to a correctly issued/upgraded asset ID. Binding property of a confidential issuance range proof are covered by the theorem **A2** below.
 
 
-### Theorem A2: issuance asset range proof is perfectly binding and computationally secure against unauthorized issuance
+### Theorem A2: issuance asset range proof is perfectly binding
 
 Sketch:
 
@@ -186,7 +186,17 @@ Sketch:
 2. Multi-item IARP binds to one of the candidates
 3. Multi-item IARP binds to only one of the candidates.
 
-### Theorem A3: asset commitment is computationally hiding
+
+### Theorem A3: issuance asset range proof is computationally secure against unauthorized issuance
+
+Sketch:
+
+1. One-item IARP perfectly binds assetid to Y.
+2. Multi-item IARP binds to one of the candidates
+3. Multi-item IARP binds to only one of the candidates.
+
+
+### Theorem A4: asset ID commitment is computationally hiding
 
 Anonymity set of any asset commitment is limited to the set of asset IDs that appeared in the ancestor transactions. This is because blockchain design ensures that arbitrary asset identifiers do not appear in a transaction other than by explicit transfer or explicit issuance (which can be made confidential by employing an explicit set of asset ID candidates).
 
@@ -220,7 +230,7 @@ Neither ECDLP nor DDH are tractable for Ed25519.
 
 
 
-
+-------
 
 
 
