@@ -27,7 +27,7 @@ Flags:
 `
 
 var (
-	flagT = flag.Bool("t", false, "print execution trace")
+	flagT = flag.Bool("t", false, "print execution trace to stderr")
 )
 
 func main() {
@@ -69,9 +69,9 @@ func trace(_ byte, data []byte, vm txvm.VM) {
 	for i := 0; i < stack.Len(); i++ {
 		// TODO(kr): format items better
 		// (prob "encode" the item, then disassemble the encoded bytes).
-		fmt.Printf("%x", stack.Element(i))
-		fmt.Print(" ")
+		fmt.Fprintf(os.Stderr, "%x", stack.Element(i))
+		fmt.Fprint(os.Stderr, " ")
 	}
-	fmt.Println(".", txvm.Disassemble(data[vm.PC():]))
+	fmt.Fprintln(os.Stderr, ".", txvm.Disassemble(data[vm.PC():]))
 	// TOOD(kr): print changes to other stacks (or full stack contents?)
 }
