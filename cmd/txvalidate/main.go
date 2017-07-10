@@ -61,7 +61,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "invalid tx:", err)
 		os.Exit(1)
 	}
-	fmt.Println(txid)
+	fmt.Print(txid)
 }
 
 func trace(_ byte, data []byte, vm txvm.VM) {
