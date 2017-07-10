@@ -2,7 +2,31 @@
 
 set -eo pipefail
 
-# Installing RocksDB and Snappy
+# Installing RocksDB
 cd /usr/local/lib
-wget -q https://s3-us-west-1.amazonaws.com/chain-build/librocksdb.a
-wget -q https://s3-us-west-1.amazonaws.com/chain-build/libsnappy.a
+curl -O https://s3.amazonaws.com/chain-ci/librocksdb.a
+
+# Install snappy dependencies:
+# Installing GCC 4.8
+# (if you get the `unrecognized command line option -std=c++11`)
+wget -O /etc/yum.repos.d/devtools-2.repo https://people.centos.org/tru/devtools-2/devtools-2.repo
+yum -y install devtoolset-2-binutils devtoolset-2-gcc devtoolset-2-gcc-c++
+source /opt/rh/devtoolset-2/enable
+
+# Installing Cmake3.4
+wget http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+rpm -Uvh epel-release*rpm
+yum -y install cmake3
+# May have to remove old cmake and symlink the new version
+yum remove cmake
+ln -s /usr/bin/cmake3 /usr/bin/cmake
+
+# When running Cmake gives CXX not found / broken error
+yum -y install gcc-c++
+
+# Snappy
+git clone https://github.com/chain/chain $(go env GOPATH)/src/chain
+cd $(go env GOPATH)/src/chain/vendor/github.com/google/snappy && mkdir -p build && cd build
+cmake ../ && make
+
+cp $(go env GOPATH)/src/chain/vendor/github.com/google/snappy/build/libsnappy.a /usr/local/lib/.
