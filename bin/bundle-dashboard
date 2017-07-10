@@ -2,6 +2,7 @@
 rm -rf $CHAIN/dashboard/node_modules/chain-sdk
 npm --prefix $CHAIN/dashboard install
 npm --prefix $CHAIN/dashboard run build
+rm -f $CHAIN/dashboard/public/3rdpartylicenses.txt # Don't need this for the bundle itself.
 go install chain/cmd/gobundle
 mkdir -p $CHAIN/generated/dashboard
 gobundle -package dashboard $CHAIN/dashboard/public > $CHAIN/generated/dashboard/dashboard.go
