@@ -552,7 +552,7 @@ Pops a [nonce](#nonce) tuple `nonce` from the data stack. Verify that `nonce.blo
 
 ### Reanchor
 
-Pops an [anchor](#anchor) `anchor` from the Anchor stack. Pushes a new anchor, with `value` set to the [ID](#item-ids) of `anchor`.
+Pops an [anchor](#anchor) `a1` from the Anchor stack. Pushes a new anchor `a2`, with `a2.value` set to the [ID](#item-ids) of `a1`.
 
 ### Issue
 
