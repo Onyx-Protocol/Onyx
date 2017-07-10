@@ -3,6 +3,8 @@ package protocol
 import (
 	"context"
 	"encoding/hex"
+	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -208,6 +210,65 @@ func TestValidateBlockForSig(t *testing.T) {
 	err = c.ValidateBlockForSig(ctx, initialBlock)
 	if err != nil {
 		t.Error("unexpected error ", err)
+	}
+}
+
+func TestCommitBlockIdempotence(t *testing.T) {
+	const numOfBlocks = 10
+	const concurrency = 5
+	ctx := context.Background()
+
+	now := time.Now()
+	c, b1 := newTestChain(t, now)
+
+	var blocks []*legacy.Block
+	b, s := b1, state.Empty()
+	for i := 0; i < numOfBlocks; i++ {
+		tx, _, _ := issue(t, nil, nil, 1)
+		newBlock, newSnapshot, err := c.GenerateBlock(ctx, b, s, now.Add(time.Duration(i+1)*time.Second), []*legacy.Tx{tx})
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+		err = c.CommitAppliedBlock(ctx, newBlock, newSnapshot)
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+		blocks = append(blocks, newBlock)
+		b, s = newBlock, newSnapshot
+	}
+	wantBlock, wantSnapshot := b, s
+
+	// Create a fresh Chain for the same blockchain / initial hash.
+	c, err := NewChain(ctx, b1.Hash(), memstore.New(), nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	c.MaxIssuanceWindow = 48 * time.Hour
+	c.setState(b1, state.Empty())
+
+	// Apply all of the blocks concurrently in separate goroutines
+	// using CommitBlock. They should all succeed.
+	var wg sync.WaitGroup
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			for j := 0; j < len(blocks); j++ {
+				err := c.CommitBlock(ctx, blocks[j])
+				if err != nil {
+					testutil.FatalErr(t, err)
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	gotBlock, gotSnapshot := c.State()
+	if !reflect.DeepEqual(gotBlock, wantBlock) {
+		t.Errorf("got block %#v, want %#v", gotBlock, wantBlock)
+	}
+	if !reflect.DeepEqual(gotSnapshot, wantSnapshot) {
+		t.Errorf("got block %#v, want %#v", gotSnapshot, wantSnapshot)
 	}
 }
 

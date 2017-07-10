@@ -118,9 +118,8 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot 
 	return b, newSnapshot, nil
 }
 
-// ValidateBlock validates an incoming block in advance of applying it
-// to a snapshot (with ApplyValidBlock) and committing it to the
-// blockchain (with CommitAppliedBlock).
+// ValidateBlock validates an incoming block in advance of committing
+// it to the blockchain (with CommitBlock).
 func (c *Chain) ValidateBlock(block, prev *legacy.Block) error {
 	blockEnts := legacy.MapBlock(block)
 	prevEnts := legacy.MapBlock(prev)
@@ -134,57 +133,72 @@ func (c *Chain) ValidateBlock(block, prev *legacy.Block) error {
 	return errors.Sub(ErrBadBlock, err)
 }
 
-// ApplyValidBlock creates an updated snapshot without validating the
-// block.
-func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
-	_, oldSnapshot := c.State()
-	newSnapshot := state.Copy(oldSnapshot)
-	err := newSnapshot.ApplyBlock(legacy.MapBlock(block))
-	if err != nil {
-		return nil, err
-	}
-	if block.AssetsMerkleRoot != newSnapshot.Tree.RootHash() {
-		return nil, ErrBadStateRoot
-	}
-	return newSnapshot, nil
-}
-
-// CommitAppliedBlock commits a block to the blockchain. The block
-// must already have been applied with ApplyValidBlock or
-// GenerateBlock, which will have produced the new snapshot that's
-// required here.
-//
-// This function saves the block to the store and sometimes (not more
-// often than saveSnapshotFrequency) saves the state tree to the
-// store. New-block callbacks (via asynchronous block-processor pins)
-// are triggered.
+// CommitAppliedBlock takes a block, commits it to persistent storage and
+// sets c's state. Unlike CommitBlock, it accepts an already applied
+// snapshot. CommitAppliedBlock is idempotent.
 func (c *Chain) CommitAppliedBlock(ctx context.Context, block *legacy.Block, snapshot *state.Snapshot) error {
-	// SaveBlock is the linearization point. Once the block is committed
-	// to persistent storage, the block has been applied and everything
-	// else can be derived from that block.
 	err := c.store.SaveBlock(ctx, block)
 	if err != nil {
 		return errors.Wrap(err, "storing block")
 	}
+	curBlock, _ := c.State()
+
+	// CommitAppliedBlock needs to be idempotent. If block's height is less than or
+	// equal to c's current block, then it was already applied. Because
+	// SaveBlock didn't error with a conflict, we know it's not a different
+	// block at the same height.
+	if curBlock != nil && block.Height <= curBlock.Height {
+		return nil
+	}
+	return c.finalizeCommitBlock(ctx, block, snapshot)
+}
+
+// CommitBlock takes a block, commits it to persistent storage and applies
+// it to c. CommitBlock is idempotent. A duplicate call with a previously
+// committed block will succeed.
+func (c *Chain) CommitBlock(ctx context.Context, block *legacy.Block) error {
+	err := c.store.SaveBlock(ctx, block)
+	if err != nil {
+		return errors.Wrap(err, "storing block")
+	}
+	curBlock, curSnapshot := c.State()
+
+	// CommitBlock needs to be idempotent. If block's height is less than or
+	// equal to c's current block, then it was already applied. Because
+	// SaveBlock didn't error with a conflict, we know it's not a different
+	// block at the same height.
+	if curBlock != nil && block.Height <= curBlock.Height {
+		return nil
+	}
+
+	snapshot := state.Copy(curSnapshot)
+	err = snapshot.ApplyBlock(legacy.MapBlock(block))
+	if err != nil {
+		return err
+	}
+	if block.AssetsMerkleRoot != snapshot.Tree.RootHash() {
+		return ErrBadStateRoot
+	}
+	return c.finalizeCommitBlock(ctx, block, snapshot)
+}
+
+func (c *Chain) finalizeCommitBlock(ctx context.Context, block *legacy.Block, snapshot *state.Snapshot) error {
+	// Save the blockchain state tree snapshot to persistent storage
+	// if we haven't done it recently.
 	if block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
 		c.queueSnapshot(ctx, block.Height, block.Time(), snapshot)
 	}
 
-	err = c.store.FinalizeBlock(ctx, block.Height)
-	if err != nil {
-		return errors.Wrap(err, "finalizing block")
-	}
-
-	// c.setState will update the local blockchain state and height.
-	// When c.store is a txdb.Store, and c has been initialized with a
-	// channel from txdb.ListenBlocks, then the above call to
-	// c.store.FinalizeBlock will have done a postgresql NOTIFY and
-	// that will wake up the goroutine in NewChain, which also calls
-	// setHeight.  But duplicate calls with the same blockheight are
-	// harmless; and the following call is required in the cases where
-	// it's not redundant.
+	// setState will update c's current block and snapshot, or no-op
+	// if another goroutine has already updated the state.
 	c.setState(block, snapshot)
-	return nil
+
+	// The below FinalizeBlock will notify other cored processes that
+	// the a new block has been committed. It may result in a duplicate
+	// attempt to update c's height but setState and setHeight safely
+	// ignore duplicate heights.
+	err := c.store.FinalizeBlock(ctx, block.Height)
+	return errors.Wrap(err, "finalizing block")
 }
 
 func (c *Chain) queueSnapshot(ctx context.Context, height uint64, timestamp time.Time, s *state.Snapshot) {
@@ -198,24 +212,6 @@ func (c *Chain) queueSnapshot(ctx context.Context, height uint64, timestamp time
 		log.Printf(ctx, "snapshot storage is taking too long; last queued at %s",
 			c.lastQueuedSnapshot)
 	}
-}
-
-func (c *Chain) setHeight(h uint64) {
-	// We call setHeight from two places independently:
-	// CommitAppliedBlock and the Postgres LISTEN goroutine.
-	// This means we can get here twice for each block,
-	// and any of them might be arbitrarily delayed,
-	// which means h might be from the past.
-	// Detect and discard these duplicate calls.
-
-	c.state.cond.L.Lock()
-	defer c.state.cond.L.Unlock()
-
-	if h <= c.state.height {
-		return
-	}
-	c.state.height = h
-	c.state.cond.Broadcast()
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_

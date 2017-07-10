@@ -161,11 +161,7 @@ func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot
 	if err != nil {
 		return errors.Wrap(err, "validating fetched block")
 	}
-	snap, err := c.ApplyValidBlock(block)
-	if err != nil {
-		return errors.Wrap(err, "applying fetched block")
-	}
-	err = c.CommitAppliedBlock(ctx, block, snap)
+	err = c.CommitBlock(ctx, block)
 	return errors.Wrap(err, "committing block")
 }
 

@@ -15,7 +15,7 @@ other nodes and putting them into blocks.
 
 To add a new block to the blockchain, call GenerateBlock,
 sign the block (possibly collecting signatures from other
-parties), and call CommitBlock.
+parties), and call CommitAppliedBlock.
 
 Signer
 
@@ -36,7 +36,44 @@ transaction has been either confirmed or rejected. Note
 that transactions may be malleable if there's no commitment
 to TXSIGHASH.
 
-To ingest a block, call ValidateBlock and CommitBlock.
+New block sequence
+
+Every new block must be validated against the existing
+blockchain state. New blocks are validated by calling
+ValidateBlock. Blocks produced by GenerateBlock are already
+known to be valid.
+
+A new block goes through the sequence:
+  - If not generated locally, the block is validated by
+    calling ValidateBlock.
+  - The new block is committed to the Chain's Store through
+    its SaveBlock method. This is the linearization point.
+    Once a block is saved to the Store, it's committed and
+    can be recovered after a crash.
+  - The Chain's in-memory representation of the blockchain
+    state is updated. If the block was remotely-generated,
+    the Chain must apply the new block to its current state
+    to retrieve the new state. If the block was generated
+    locally, the resulting state is already known and does
+    not need to be recalculated.
+  - Other cored processes are notified of the new block
+    through Store.FinalizeBlock.
+
+Committing a block
+
+As a consumer of the package, there are two ways to
+commit a new block: CommitBlock and CommitAppliedBlock.
+
+When generating new blocks, GenerateBlock will return
+the resulting state snapshot with the new block. To
+ingest a block with a known resulting state snapshot,
+call CommitAppliedBlock.
+
+When ingesting remotely-generated blocks, the state after
+the block must be calculated by taking the Chain's
+current state and applying the new block. To ingest a
+block without a known resulting state snapshot, call
+CommitBlock.
 */
 package protocol
 
@@ -118,6 +155,7 @@ func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, height
 		},
 	}
 	c.state.cond.L = new(sync.Mutex)
+	c.state.snapshot = state.Empty()
 
 	var err error
 	c.state.height, err = store.Height(ctx)
@@ -180,12 +218,35 @@ func (c *Chain) State() (*legacy.Block, *state.Snapshot) {
 func (c *Chain) setState(b *legacy.Block, s *state.Snapshot) {
 	c.state.cond.L.Lock()
 	defer c.state.cond.L.Unlock()
+
+	// Multiple goroutines may attempt to set the state at the
+	// same time. If b is an older block than c.state, ignore it.
+	if b != nil && c.state.block != nil && b.Height <= c.state.block.Height {
+		return
+	}
+
 	c.state.block = b
 	c.state.snapshot = s
 	if b != nil && b.Height > c.state.height {
 		c.state.height = b.Height
 		c.state.cond.Broadcast()
 	}
+}
+
+func (c *Chain) setHeight(h uint64) {
+	// We update c.state.height from multiple places:
+	// setState and here, called by the Postgres LISTEN
+	// goroutine. setHeight must ignore heights less than
+	// the current height.
+
+	c.state.cond.L.Lock()
+	defer c.state.cond.L.Unlock()
+
+	if h <= c.state.height {
+		return
+	}
+	c.state.height = h
+	c.state.cond.Broadcast()
 }
 
 // BlockSoonWaiter returns a channel that
