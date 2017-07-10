@@ -9,5 +9,5 @@ source /opt/rh/devtoolset-2/enable
 
 # Installing RocksDB and Snappy
 cd /usr/local/lib
-wget -q https://s3-us-west-1.amazonaws.com/chain-build/librocksdb.a
-wget -q https://s3-us-west-1.amazonaws.com/chain-build/libsnappy.a
+wget -q https://s3.amazonaws.com/chain-ci/librocksdb.a
+wget -q https://s3.amazonaws.com/chain-ci/libsnappy.a
