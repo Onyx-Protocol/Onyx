@@ -42,11 +42,11 @@ func (ec EnclaveClient) Sign(ctx context.Context, pk ed25519.PublicKey, bh *lega
 		client.BaseURL = tup[0]
 		client.AccessToken = tup[1]
 
-		go func(client rpc.Client) {
+		go func() {
 			var signature []byte
 			err := client.Call(ctx, "/sign-block", body, &signature)
 			ch <- result{signature: signature, err: err}
-		}(client)
+		}()
 	}
 
 	var err error
