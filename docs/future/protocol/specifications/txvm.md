@@ -495,8 +495,6 @@ Verifies `assetrangeproof` with ` assetcommitment` as the asset commitment, and 
 
 Pushes an `assetcommitment` to the Asset Commitment stack.
 
-(TBD: ANY OF THIS? **ProveAsset** pops AC, asset ID and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes asset ID to the data stack.)
-
 ### ProveValue
 
 Pops an item `valuerangeproof` of type [Value Range Proof](#value-range-proof) from the data stack. Pops an item `value` of type [Unproven Value](#unproven-value) from the Value stack. Pops an item `assetcommitment` from the Asset Commitment stack. 
@@ -505,7 +503,31 @@ Verifies `valuerangeproof` with ` value.valuecommitment` as the value commitment
 
 Pushes a [Proven Value](#proven-value) to the Value stack with `value.valuecommitment` as the `valuecommitment` and `assetcommitment` as the asset commitment.
 
-(TBD: ANY OF THIS? **ProveValue** pops VC, AC, amount and signature from the data stack. If signature is an empty string, treats blinding factor as zero (useful for public contracts), otherwise verifies the signature as NIZKP for blinding factor (useful for in-HSM contracts). Pushes amount to the data stack.)
+### IssueCA
+
+(WIP. TBD: REVIEW AND REWRITE THIS; MAYBE SPLIT INTO MULTIPLE OPCODES)
+
+Pops from data stack:
+
+* AC
+* VC
+* iarp-condition
+* list of candidate tuples (asset definition, issuance pubkey)
+* IARP
+* VRP
+
+Verifies IARP using issuance pubkeys and signing over (AC,VC,iarp-condition)
+
+Verifies VRP over (AC,VC,iarp-condition).
+
+Pushes:
+
+* AC and VC to PAC-stack and PVC-stack respectively. 
+* `iarp-condition` to condition stack. 
+* each `(assetdefinition, issuance pubkey)` to IC-stack.
+* each `assetdefinition.issuanceprogram` to condition stack.
+
+IC-stack is necessary so that `issuanceprogram` can verify that the correct issuance key is used.
 
 ### Nonce
 
@@ -550,32 +572,6 @@ Executes `newprogram`.
 Fails if the extension flag is not set. (TBD: clarify)
 
 Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Pops an item, `extension`, from the data stack. On the stack identified by `stackid`, pops a tuple and pushes a copy of that tuple with one additional field added, containing `extension`.
-
-### IssueCA
-
-(WIP. TBD: REVIEW AND REWRITE THIS)
-
-Pops from data stack:
-
-* AC
-* VC
-* iarp-condition
-* list of candidate tuples (asset definition, issuance pubkey)
-* IARP
-* VRP
-
-Verifies IARP using issuance pubkeys and signing over (AC,VC,iarp-condition)
-
-Verifies VRP over (AC,VC,iarp-condition).
-
-Pushes:
-
-* AC and VC to PAC-stack and PVC-stack respectively. 
-* `iarp-condition` to condition stack. 
-* each `(assetdefinition, issuance pubkey)` to IC-stack.
-* each `assetdefinition.issuanceprogram` to condition stack.
-
-IC-stack is necessary so that `issuanceprogram` can verify that the correct issuance key is used.
 
 ### Blind
 
