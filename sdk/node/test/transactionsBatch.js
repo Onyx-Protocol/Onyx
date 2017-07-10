@@ -8,7 +8,7 @@ const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const expect = chai.expect
 
-import { client, createAccount, createAsset, signer } from './testHelpers'
+import { client, createAccount, createAsset } from './testHelpers'
 
 describe('Transaction batch', () => {
   let buildBatchResponse, signedBatchResponse, submittedBatchResponse = {}
@@ -76,7 +76,7 @@ describe('Transaction batch', () => {
       }]))
     .then(buildBatch => {
       buildBatchResponse = buildBatch
-      return signer.signBatch(buildBatch.successes)
+      return client.transactions.signBatch(buildBatch.successes)
     })
     .then(signedBatch => {
       signedBatchResponse = signedBatch
@@ -130,7 +130,7 @@ describe('Transaction batch', () => {
     })
 
     it('Batch transaction sign', (done) => {
-      signer.signBatch(
+      client.transactions.signBatch(
         [], // intentionally blank
         () => done() // intentionally ignore errors
       )

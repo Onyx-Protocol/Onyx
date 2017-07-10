@@ -1,7 +1,6 @@
 const chain = require('../dist/index.js')
 const uuid = require('uuid')
 const client = new chain.Client()
-const signer = new chain.HsmSigner()
 
 const balanceByAssetAlias = (balances) => {
   let res = {}
@@ -17,7 +16,7 @@ const balanceByAssetAlias = (balances) => {
 const createAccount = (account = 'account') => {
   return client.mockHsm.keys.create()
     .then((key) => {
-      signer.addKey(key, client.mockHsm.signerConnection)
+      client.signer.addKey(key, client.mockHsm.signerConnection)
       return client.accounts.create({
         alias: `${account}-${uuid.v4()}`,
         rootXpubs: [key.xpub],
@@ -29,7 +28,7 @@ const createAccount = (account = 'account') => {
 const createAsset = (asset = 'asset') => {
   return client.mockHsm.keys.create()
     .then((key) => {
-      signer.addKey(key, client.mockHsm.signerConnection)
+      client.signer.addKey(key, client.mockHsm.signerConnection)
       return client.assets.create({
         alias: `${asset}-${uuid.v4()}`,
         rootXpubs: [key.xpub],
@@ -40,9 +39,8 @@ const createAsset = (asset = 'asset') => {
 
 const buildSignSubmit = (buildFunc, optClient, optSigner) => {
   const c = optClient || client
-  const s = optSigner || signer
   return c.transactions.build(buildFunc)
-    .then(tpl => s.sign(tpl))
+    .then(tpl => c.transactions.sign(tpl))
     .then(tpl => c.transactions.submit(tpl))
 }
 
@@ -51,6 +49,5 @@ module.exports = {
   client,
   createAccount,
   createAsset,
-  signer,
   buildSignSubmit,
 }

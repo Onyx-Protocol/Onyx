@@ -8,7 +8,7 @@ const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const expect = chai.expect
 
-import { client, createAccount, createAsset, signer } from './testHelpers'
+import { client, createAccount, createAsset } from './testHelpers'
 
 describe('Receiver', () => {
 
@@ -76,7 +76,7 @@ describe('Receiver', () => {
           amount: 1,
         })
       })
-    .then((issuance) => signer.sign(issuance))
+    .then((issuance) => client.transactions.sign(issuance))
     .then((signed) => client.transactions.submit(signed))
     .then((tx) => expect(tx.id).not.to.be.empty)
     })

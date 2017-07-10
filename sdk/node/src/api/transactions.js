@@ -385,6 +385,25 @@ const transactionsAPI = (client) => {
     },
 
     /**
+     * sign - Sign a single transaction.
+     *
+     * @param {Object} template - A single transaction template.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Object} Transaction template with all possible signatures added.
+     */
+    sign: (template, cb) => client.signer.sign(template, cb),
+
+    /**
+     * signBatch - Sign a batch of transactions.
+     *
+     * @param {Array<Object>} templates Array of transaction templates.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {BatchResponse} Tranasaction templates with all possible signatures
+     *                         added, as well as errors.
+     */
+    signBatch: (templates, cb) => client.signer.signBatch(templates, cb),
+
+    /**
      * Submit a signed transaction to the blockchain.
      *
      * @param {Object} signed - A fully signed transaction template.
