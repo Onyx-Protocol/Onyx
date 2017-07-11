@@ -4,6 +4,7 @@
 package localdb
 
 import (
+	"bytes"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -23,6 +24,35 @@ type DB struct {
 var errDBClosed = errors.New("database is closed")
 
 // Put writes protocol buffer values to the database, at the provided key.
+type dirPrefixTransform struct{}
+
+// TODO(vniu): how do we handle src not being in domain?
+func (d dirPrefixTransform) Transform(src []byte) []byte {
+	if !d.InDomain(src) {
+		// Probably replace with some error
+		return nil
+	}
+	index := bytes.LastIndex(src, []byte("/"))
+	// Potentially change this to not just the first, but to
+	// prefix everything but the last section before the "/"
+	return src[:index]
+}
+
+func (d dirPrefixTransform) InDomain(src []byte) bool {
+	return bytes.Contains(src, []byte("/"))
+}
+
+// TODO(vniu): should we have some specific requirement? like a "/"
+// at beginning or end
+func (d dirPrefixTransform) InRange(src []byte) bool {
+	return true
+}
+
+func (d dirPrefixTransform) Name() string {
+	return "chain.DirectoryPrefix"
+}
+
+// TODO(tessr): use 'Exec' instead of Put
 func (db *DB) Put(key string, value proto.Message) error {
 	// TODO(tessr): use 'Exec' instead of Put
 
