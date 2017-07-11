@@ -181,6 +181,14 @@ func (a *API) configure(ctx context.Context, req configureRequest) error {
 			return errors.WithDetailf(config.ErrConfigOp, "Unknown config operation %q.", update.Op)
 		}
 	}
+
+	// If the old way of configuring a single HSM is used,
+	// transparently update the config options.
+	if req.Config.BlockHsmUrl != "" {
+		tup := []string{req.Config.BlockHsmUrl, req.Config.BlockHsmAccessToken}
+		ops = append(ops, a.options.Add("enclave", tup))
+	}
+
 	err := a.sdb.Exec(ctx, ops...)
 	if err != nil {
 		return err

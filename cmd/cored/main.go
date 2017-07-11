@@ -262,6 +262,10 @@ func main() {
 	if err != nil && errors.Root(err) != raft.ErrUninitialized {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
+	confOpts, err := core.Config(ctx, db, sdb)
+	if err != nil {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+	}
 
 	// Initialize internode rpc clients.
 	hostname, err := os.Hostname()
@@ -281,13 +285,13 @@ func main() {
 
 	var h http.Handler
 	if conf != nil {
-		h = launchConfiguredCore(ctx, sdb, db, conf, processID, httpClient, core.UseTLS(tlsConfig))
+		h = launchConfiguredCore(ctx, confOpts, sdb, db, conf, processID, httpClient, core.UseTLS(tlsConfig))
 	} else {
 		var opts []core.RunOption
 		opts = append(opts, core.UseTLS(tlsConfig))
 		opts = append(opts, enableMockHSM(db)...)
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, sdb, *listenAddr, opts...)
+		h = core.RunUnconfigured(ctx, confOpts, db, sdb, *listenAddr, opts...)
 
 		go func() {
 			for {
@@ -323,7 +327,7 @@ func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
 	return ln, c, nil
 }
 
-func launchConfiguredCore(ctx context.Context, sdb *sinkdb.DB, db *sql.DB, conf *config.Config, processID string, httpClient *http.Client, opts ...core.RunOption) http.Handler {
+func launchConfiguredCore(ctx context.Context, confOpts *config.Options, sdb *sinkdb.DB, db *sql.DB, conf *config.Config, processID string, httpClient *http.Client, opts ...core.RunOption) http.Handler {
 	// Initialize the protocol.Chain.
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
@@ -348,10 +352,7 @@ func launchConfiguredCore(ctx context.Context, sdb *sinkdb.DB, db *sql.DB, conf 
 	}
 	// If the Core is configured as a block signer, add the sign-block RPC handler.
 	if conf.IsSigner {
-		localSigner, err = initializeLocalSigner(ctx, conf, db, c, processID, httpClient)
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-		}
+		localSigner = initializeLocalSigner(ctx, confOpts, conf, db, c, processID, httpClient)
 		opts = append(opts, core.BlockSigner(localSigner.ValidateAndSignBlock))
 	}
 
@@ -388,22 +389,20 @@ func launchConfiguredCore(ctx context.Context, sdb *sinkdb.DB, db *sql.DB, conf 
 
 	// Start up the Core. This will start up the various Core subsystems,
 	// and begin leader election.
-	api, err := core.Run(ctx, conf, db, *dbURL, sdb, c, store, *listenAddr, opts...)
+	api, err := core.Run(ctx, confOpts, conf, db, *dbURL, sdb, c, store, *listenAddr, opts...)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	return api
 }
 
-func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c *protocol.Chain, processID string, httpClient *http.Client) (*blocksigner.BlockSigner, error) {
+func initializeLocalSigner(ctx context.Context, confOpts *config.Options, conf *config.Config, db pg.DB, c *protocol.Chain, processID string, httpClient *http.Client) *blocksigner.BlockSigner {
 	var hsm blocksigner.Signer
-	if conf.BlockHsmUrl != "" {
+	hsm = mockHSM(db)
+
+	if hsm == nil {
 		hsm = &blocksigner.EnclaveClient{
-			URLs: func() [][]string {
-				// TODO(ameets): potential option to take only a password when configuring
-				//  and convert to an access token string here for BlockHSMAccessToken
-				return [][]string{{conf.BlockHsmUrl, conf.BlockHsmAccessToken}}
-			},
+			URLs: confOpts.ListFunc("enclave"),
 			BaseClient: rpc.Client{
 				ProcessID:    processID,
 				CoreID:       conf.Id,
@@ -412,16 +411,10 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 				Client:       httpClient,
 			},
 		}
-	} else {
-		var err error
-		hsm, err = mockHSM(db)
-		if err != nil {
-			return nil, err
-		}
 	}
 	blockPub := ed25519.PublicKey(conf.BlockPub)
 	s := blocksigner.New(blockPub, hsm, db, c)
-	return s, nil
+	return s
 }
 
 func remoteSignerInfo(ctx context.Context, processID, blockchainID string, conf *config.Config, httpClient *http.Client) (a []*remoteSigner) {

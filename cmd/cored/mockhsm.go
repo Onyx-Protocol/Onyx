@@ -18,6 +18,6 @@ func enableMockHSM(db pg.DB) []core.RunOption {
 	return []core.RunOption{core.MockHSM(mockhsm.New(db))}
 }
 
-func mockHSM(db pg.DB) (blocksigner.Signer, error) {
-	return mockhsm.New(db), nil
+func mockHSM(db pg.DB) blocksigner.Signer {
+	return mockhsm.New(db)
 }

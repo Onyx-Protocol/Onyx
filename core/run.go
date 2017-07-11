@@ -121,13 +121,13 @@ func RateLimit(keyFn func(*http.Request) string, burst, perSecond int) RunOption
 // used for Chain Core Developer Edition to expose the configuration UI
 // in the dashboard. API authentication still applies to an unconfigured
 // Chain Core.
-func RunUnconfigured(ctx context.Context, db pg.DB, sdb *sinkdb.DB, routableAddress string, opts ...RunOption) *API {
+func RunUnconfigured(ctx context.Context, confOpts *config.Options, db pg.DB, sdb *sinkdb.DB, routableAddress string, opts ...RunOption) *API {
 	a := &API{
 		db:           db,
 		sdb:          sdb,
 		accessTokens: &accesstoken.CredentialStore{DB: db},
 		grants:       authz.NewStore(sdb, GrantPrefix),
-		options:      config.New(sdb),
+		options:      confOpts,
 		mux:          http.NewServeMux(),
 		addr:         routableAddress,
 	}
@@ -150,6 +150,7 @@ func RunUnconfigured(ctx context.Context, db pg.DB, sdb *sinkdb.DB, routableAddr
 // required.
 func Run(
 	ctx context.Context,
+	confOpts *config.Options,
 	conf *config.Config,
 	db pg.DB,
 	dbURL string,
@@ -186,7 +187,7 @@ func Run(
 		accessTokens: &accesstoken.CredentialStore{DB: db},
 		grants:       authz.NewStore(sdb, GrantPrefix),
 		config:       conf,
-		options:      config.New(sdb),
+		options:      confOpts,
 		db:           db,
 		sdb:          sdb,
 		mux:          http.NewServeMux(),

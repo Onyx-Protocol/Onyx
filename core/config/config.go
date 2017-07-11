@@ -225,10 +225,6 @@ func Configure(ctx context.Context, db pg.DB, sdb *sinkdb.DB, httpClient *http.C
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
-		err = checkBlockHSMURL(c.BlockHsmUrl)
-		if err != nil {
-			return err
-		}
 		if len(c.BlockPub) == 0 {
 			blockPub, err = getOrCreateDevKey(ctx, db, c)
 			if err != nil {
