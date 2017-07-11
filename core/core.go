@@ -25,7 +25,7 @@ var (
 	errAlreadyConfigured = errors.New("core is already configured; must reset first")
 	errUnconfigured      = errors.New("core is not configured")
 	errNoMockHSM         = errors.New("core is not configured with a mockhsm")
-	errMulticoreMockHSM  = errors.New("starting multi-core process with mockhsm")
+	errMockHSM           = errors.New("starting core with mockhsm: should only be used in development")
 	errNoReset           = errors.New("core is not configured with reset capabilities")
 	errBadBlockPub       = errors.New("supplied block pub key is invalid")
 	errNoClientTokens    = errors.New("cannot enable client auth without client access tokens")
@@ -242,7 +242,7 @@ func (a *API) initCluster(ctx context.Context) error {
 		return err
 	}
 	if config.BuildConfig.MockHSM {
-		log.Printkv(ctx, "warning", errMulticoreMockHSM)
+		log.Printkv(ctx, "warning", errMockHSM)
 	}
 
 	// TODO(jackson): make adding this process's address
@@ -267,7 +267,7 @@ func (a *API) joinCluster(ctx context.Context, x struct {
 	}
 
 	if config.BuildConfig.MockHSM {
-		log.Printkv(ctx, "warning", errMulticoreMockHSM)
+		log.Printkv(ctx, "warning", errMockHSM)
 	}
 	// The cluster we joined might already be configured. Exec self
 	// to restart cored and attempt to load the config.
