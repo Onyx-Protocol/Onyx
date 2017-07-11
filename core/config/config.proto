@@ -11,8 +11,8 @@ message Config {
 	bc.Hash blockchain_id = 4;
 	string generator_url = 5;
 	string generator_access_token = 6;
-	string block_hsm_url = 7;
-	string block_hsm_access_token = 8;
+	string block_hsm_url = 7 [deprecated=true];
+	string block_hsm_access_token = 8 [deprecated=true];
 	uint64 configured_at = 9;
 	bytes block_pub = 10;
 	repeated BlockSigner signers = 11;
