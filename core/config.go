@@ -23,6 +23,9 @@ func Config(sdb *sinkdb.DB) *config.Options {
 			return errors.WithDetailf(err, "Provided URL is invalid: %s", err.Error())
 		}
 		tup[0] = normalized
+		if !strings.Contains(tup[1], ":") {
+			return errors.WithDetailf(err, "Access token must be of the form <username>:<password>.")
+		}
 		return nil
 	}
 
