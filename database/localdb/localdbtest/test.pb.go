@@ -37,6 +37,13 @@ func (m *TestItem) String() string            { return proto.CompactTextString(m
 func (*TestItem) ProtoMessage()               {}
 func (*TestItem) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *TestItem) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*TestItem)(nil), "localdbtest.TestItem")
 }
