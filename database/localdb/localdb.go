@@ -57,7 +57,7 @@ func Open(dataDir string) (*DB, error) {
 	opts.SetCreateIfMissing(true)
 	rocks, err := gorocksdb.OpenDb(opts, dataDir)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	return &DB{store: rocks}, nil
