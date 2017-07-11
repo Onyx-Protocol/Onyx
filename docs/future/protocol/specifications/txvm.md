@@ -471,11 +471,11 @@ Pops a condition from the Condition stack and executes it.
 
 Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
 
-Constructs a tuple `input` of type [Contract](#contract), with `program` equal to `command.program`. Pushes `input` to the Input stack.
-
-Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `input.anchor`. Pushes `anchor` to the Anchor stack. 
+Constructs a tuple `input` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Pushes `input` to the Input stack.
 
 If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset commitment stack.
+
+Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `input.anchor`. Pushes `anchor` to the Anchor stack. 
 
 Pushes `value` to the Value stack.
 
@@ -483,9 +483,9 @@ Pushes `value` to the Value stack.
 
 Pops a [Contract](#contract) `output` from the Output stack. Peeks at the top [Command](#command) `command` on the Command stack. If `output.program` is not equal to `command.program`, fail execution.
 
-Pushes `output.anchor` to the Anchor stack. 
-
 If `output.value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset commitment stack.
+
+Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `output.anchor`. Pushes `anchor` to the Anchor stack. 
 
 Pushes `output.value` to the Value stack.
 
