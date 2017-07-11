@@ -5,6 +5,12 @@ import { reduxForm } from 'redux-form'
 import actions from 'features/accessControl/actions'
 
 class NewToken extends React.Component {
+  isNotValid(fields) {
+    if (fields.guardData.id.value.trim() == ''){
+      return true
+    }
+    return false
+  }
   render() {
     const {
       fields: { guardData, policies },
@@ -15,6 +21,7 @@ class NewToken extends React.Component {
 
     return(
       <FormContainer
+        disabled={this.isNotValid(this.props.fields)}
         error={error}
         label='New access token'
         onSubmit={handleSubmit(this.props.submitForm)}
@@ -53,15 +60,6 @@ export default BaseNew.connect(
       'guardData.id',
     ].concat(
       policyOptions.map(p => `policies.${p.value}`)
-    ),
-    validate: values => {
-      const errors = {}
-
-      if (!values.guardData.id) {
-        errors.guardData = {id: 'Token name is required'}
-      }
-
-      return errors
-    }
+    )
   })(NewToken)
 )
