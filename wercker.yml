@@ -1,4 +1,4 @@
-box: chaindev/ci:20170706
+box: chaindev/ci:20170710
 # To update the docker image for this "box",
 # see $CHAIN/docker/ci.
 
@@ -15,6 +15,7 @@ cored:
         name: core tests
         code: |
           cp -a $WERCKER_SOURCE_DIR $CHAIN
+          source /opt/rh/devtoolset-2/enable
           mv /usr/local/lib/librocksdb.a $CHAIN/vendor/github.com/facebook/rocksdb/
           mkdir -p $CHAIN/vendor/github.com/google/snappy/build
           mv /usr/local/lib/libsnappy.a $CHAIN/vendor/github.com/google/snappy/build/
