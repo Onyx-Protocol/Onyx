@@ -75,7 +75,7 @@ const mapStateToProps = (state) => {
   return {
     breadcrumbs,
     flashMessages: state.app.flashMessages,
-    hideActions: state.routing.locationBeforeTransitions.pathname.includes(state.tutorial.route),
+    hideActions: state.tutorial.isShowing && state.routing.locationBeforeTransitions.pathname.includes(state.tutorial.route),
   }
 }
 

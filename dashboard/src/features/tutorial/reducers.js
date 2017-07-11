@@ -15,12 +15,12 @@ export const isShowing = (state = process.env.NODE_ENV != 'test', action) => {
   return state
 }
 
-export const route = (currentStep) => (state = 'transactions', action) => {
+export const route = (currentStep) => (state = '/', action) => {
   if (action.type == 'TUTORIAL_NEXT_STEP') return action.route
   if (action.type == 'UPDATE_TUTORIAL' && currentStep.objectType == action.object) {
     return action.object + 's'
   }
-  if (action.type == 'DISMISS_TUTORIAL') return 'transactions'
+  if (action.type == 'DISMISS_TUTORIAL') return '/'
   return state
 }
 
