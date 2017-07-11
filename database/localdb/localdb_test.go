@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"chain/database/localdb/localdbtest"
+	"chain/database/localdb/internal/localdbtest"
 )
 
 func TestRestartDB(t *testing.T) {
