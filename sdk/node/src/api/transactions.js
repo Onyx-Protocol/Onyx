@@ -415,6 +415,7 @@ const transactionsAPI = (client) => {
      *                         added, as well as errors.
      */
     signBatch: (templates, cb) => finalizeBatch(templates)
+      // TODO: merge batch errors from finalizeBatch
       .then(finalized => client.signer.signBatch(finalized.successes, cb)),
 
     /**
