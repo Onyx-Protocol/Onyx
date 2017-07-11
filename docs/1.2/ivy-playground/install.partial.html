@@ -1,127 +1,128 @@
-<div class="alert force-version-alert" style="display: block;">
-  <p>
-    The downloads on this page contain a <b>special release</b> of Chain Core Developer Edition that includes the <b>Ivy Playground</b>.
-  </p>
-</div>
 
-<div class="option-container">
-  <h1>Install Chain Core with Ivy Playground</h1>
-  <h2>Choose operating system</h2>
-  <ul id="download-options" class="tab">
-    <li class="download-option" id="download-option-mac">
-      <a href="javascript:void(0)" class="tablinks active" onclick="track('select-os','mac');selectOSTab(event.currentTarget, 'mac')">
-        <div class="os-icon os-icon-mac"></div>
-        <h3 data-no-anchor="">Mac</h3>
-      </a>
-    </li>
-    <li class="download-option" id="download-option-windows">
-      <a href="javascript:void(0)" class="tablinks" onclick="track('select-os','windows');selectOSTab(event.currentTarget, 'windows')">
-        <div class="os-icon os-icon-windows"></div>
-        <h3 data-no-anchor="">Windows</h3>
-      </a>
-    </li>
-    <li class="download-option" id="download-option-linux">
-      <a href="javascript:void(0)" class="tablinks" onclick="selectOSTab(event.currentTarget, 'linux')">
-        <div class="os-icon os-icon-linux"></div>
-        <h3 data-no-anchor="">Linux</h3>
-      </a>
-    </li>
-  </ul>
+      <div class="alert force-version-alert" style="display: block;">
+        <p>
+          The downloads on this page contain a <b>special release</b> of Chain Core Developer Edition that includes the <b>Ivy Playground</b>.
+        </p>
+      </div>
 
-  <div id="mac" class="tabcontent" style="display: block;">
-    <h2>Download Mac app</h2>
-    <p>Download and run the <strong>Chain Core app</strong>.</p>
+      <div class="option-container">
+        <h1>Install Chain Core with Ivy Playground</h1>
+        <h2>Choose operating system</h2>
+        <ul id="download-options" class="tab">
+          <li class="download-option" id="download-option-mac">
+            <a href="javascript:void(0)" class="tablinks active" onclick="track('select-os','mac');selectOSTab(event.currentTarget, 'mac')">
+              <div class="os-icon os-icon-mac"></div>
+              <h3 data-no-anchor="">Mac</h3>
+            </a>
+          </li>
+          <li class="download-option" id="download-option-windows">
+            <a href="javascript:void(0)" class="tablinks" onclick="track('select-os','windows');selectOSTab(event.currentTarget, 'windows')">
+              <div class="os-icon os-icon-windows"></div>
+              <h3 data-no-anchor="">Windows</h3>
+            </a>
+          </li>
+          <li class="download-option" id="download-option-linux">
+            <a href="javascript:void(0)" class="tablinks" onclick="selectOSTab(event.currentTarget, 'linux')">
+              <div class="os-icon os-icon-linux"></div>
+              <h3 data-no-anchor="">Linux</h3>
+            </a>
+          </li>
+        </ul>
 
-    <p>
-      <a href="https://download.chain.com/mac/Chain_Core_Ivy.zip" onclick="track('download-app','mac')" class="downloadBtn btn success">
-        Download App
-        <img src="/docs/common/images/download-icon.png" class="btn-icon icon-download">
-      </a>
-    </p>
+        <div id="mac" class="tabcontent" style="display: block;">
+          <h2>Download Mac app</h2>
+          <p>Download and run the <strong>Chain Core app</strong>.</p>
 
-  </div>
+          <p>
+            <a href="https://download.chain.com/mac/Chain_Core_Ivy.zip" onclick="track('download-app','mac')" class="downloadBtn btn success">
+              Download App
+              <img src="/docs/common/images/download-icon.png" class="btn-icon icon-download">
+            </a>
+          </p>
+
+        </div>
 
 
-  <div id="windows" class="tabcontent">
-    <h2>Download Windows installer</h2>
-    <p>Download and run the <strong>Chain Core installer</strong>. After installation, open the <strong>Start menu</strong> and run <strong>Chain Core</strong>.</p>
+        <div id="windows" class="tabcontent">
+          <h2>Download Windows installer</h2>
+          <p>Download and run the <strong>Chain Core installer</strong>. After installation, open the <strong>Start menu</strong> and run <strong>Chain Core</strong>.</p>
 
-    <p>
-      <a href="https://download.chain.com/windows/Chain_Core_Ivy.exe" onclick="track('download-app','windows')" class="downloadBtn btn success">
-        Download Installer
-        <img src="/docs/common/images/download-icon.png" class="btn-icon icon-download">
-      </a>
-    </p>
+          <p>
+            <a href="https://download.chain.com/windows/Chain_Core_Ivy.exe" onclick="track('download-app','windows')" class="downloadBtn btn success">
+              Download Installer
+              <img src="/docs/common/images/download-icon.png" class="btn-icon icon-download">
+            </a>
+          </p>
 
-    <hr class="separator-line">
-    <span class="separator-tag">or</span>
+          <hr class="separator-line">
+          <span class="separator-tag">or</span>
 
-    <h2>Install with Docker</h2>
+          <h2>Install with Docker</h2>
 
-    <p>Install <a href="https://www.docker.com/products/docker#/windows">Docker for Windows</a> and run the following command. Docker will automatically download and run Chain Core.</p>
+          <p>Install <a href="https://www.docker.com/products/docker#/windows">Docker for Windows</a> and run the following command. Docker will automatically download and run Chain Core.</p>
 
-    <p>Running Chain Core in a Docker container requires API and Dashboard authentication. Once the Chain Core container has been initialized, a client access token will be displayed in the console. You can use this access token to authenticate to the API and Dashboard.</p>
+          <p>Running Chain Core in a Docker container requires API and Dashboard authentication. Once the Chain Core container has been initialized, a client access token will be displayed in the console. You can use this access token to authenticate to the API and Dashboard.</p>
 
-    <h3>Create a container from the latest Docker image</h3>
-    <pre>
-      <code class="language-bash">docker create -t -p 1999:1999 chaincore/developer:ivy-latest</code>
-    </pre>
+          <h3>Create a container from the latest Docker image</h3>
+          <pre>
+            <code class="language-bash">docker create -t -p 1999:1999 chaincore/developer:ivy-latest</code>
+          </pre>
 
-    <h3>Run your container</h3>
-    <p>Copy the container ID returned from the last command. You can use this to start
-      or stop this container at a future date.</p>
-    <pre>
-      <code class="language-bash">docker start -i &lt;CONTAINER_ID&gt;</code>
-    </pre>
-    <p>(Don't forget to also copy your client token the first time you
-      start your container).</p>
+          <h3>Run your container</h3>
+          <p>Copy the container ID returned from the last command. You can use this to start
+            or stop this container at a future date.</p>
+          <pre>
+            <code class="language-bash">docker start -i &lt;CONTAINER_ID&gt;</code>
+          </pre>
+          <p>(Don't forget to also copy your client token the first time you
+            start your container).</p>
 
-    <h3>Visit dashboard</h3>
-    <pre>
-      <code class="language-bash">open http://localhost:1999</code>
-    </pre>
+          <h3>Visit dashboard</h3>
+          <pre>
+            <code class="language-bash">open http://localhost:1999</code>
+          </pre>
 
-    <h3>Configure port forwarding (Windows 7, 8, 8.1)</h3>
+          <h3>Configure port forwarding (Windows 7, 8, 8.1)</h3>
 
-    <p>Systems running Windows 7, 8, or 8.1 are unable to run the latest version of Docker (Docker for Windows).
-      Instead, these systems run Docker Toolbox, which utilizes VirtualBox. Therefore, in order to access the
-      Chain
-      Core container through localhost, you must first configure VirtualBox port forwarding to properly route the
-      requests.
-    <p><strong>If you are running the latest version of Docker on Windows 10, you can skip this step.</strong></p>
-    <p>
-      <video src="/docs/common/images/vitualbox-config.mov" controls width=100%></video>
-    </p>
+          <p>Systems running Windows 7, 8, or 8.1 are unable to run the latest version of Docker (Docker for Windows).
+            Instead, these systems run Docker Toolbox, which utilizes VirtualBox. Therefore, in order to access the
+            Chain
+            Core container through localhost, you must first configure VirtualBox port forwarding to properly route the
+            requests.
+          <p><strong>If you are running the latest version of Docker on Windows 10, you can skip this step.</strong></p>
+          <p>
+            <video src="/docs/common/images/vitualbox-config.mov" controls width=100%></video>
+          </p>
 
-  </div>
+        </div>
 
-  <div id="linux" class="tabcontent">
-    <h2>Install with Docker</h2>
+        <div id="linux" class="tabcontent">
+          <h2>Install with Docker</h2>
 
-    <p>Install <a href="https://www.docker.com/products/docker#/linux">Docker for Linux</a> and run the following command. Docker will automatically download and run Chain Core.</p>
+          <p>Install <a href="https://www.docker.com/products/docker#/linux">Docker for Linux</a> and run the following command. Docker will automatically download and run Chain Core.</p>
 
-    <p>Running Chain Core in a Docker container requires API and Dashboard authentication. Once the Chain Core container has been initialized, a client access token will be displayed in the console. You can use this access token to authenticate to the API and Dashboard.</p>
+          <p>Running Chain Core in a Docker container requires API and Dashboard authentication. Once the Chain Core container has been initialized, a client access token will be displayed in the console. You can use this access token to authenticate to the API and Dashboard.</p>
 
-    <h3>Create a container from the latest Docker image</h3>
-    <pre>
-      <code class="language-bash">docker create -t -p 1999:1999 chaincore/developer:ivy-latest</code>
-    </pre>
+          <h3>Create a container from the latest Docker image</h3>
+          <pre>
+            <code class="language-bash">docker create -t -p 1999:1999 chaincore/developer:ivy-latest</code>
+          </pre>
 
-    <h3>Run your container</h3>
-    <p>Copy the container ID returned from the last command. You can use this to start
-      or stop this container at a future date.</p>
-    <pre>
-      <code class="language-bash">docker start -i &lt;CONTAINER_ID&gt;</code>
-    </pre>
-    <p>(Don't forget to also copy your client token the first time you
-      start your container).</p>
-      
-    <h3>Visit dashboard</h3>
-    <pre>
-      <code class="language-bash">open http://localhost:1999</code>
-    </pre>
-  </div>
-</div>
+          <h3>Run your container</h3>
+          <p>Copy the container ID returned from the last command. You can use this to start
+            or stop this container at a future date.</p>
+          <pre>
+            <code class="language-bash">docker start -i &lt;CONTAINER_ID&gt;</code>
+          </pre>
+          <p>(Don't forget to also copy your client token the first time you
+            start your container).</p>
+
+          <h3>Visit dashboard</h3>
+          <pre>
+            <code class="language-bash">open http://localhost:1999</code>
+          </pre>
+        </div>
+      </div>
 
 <div id="downloadModal" class="modal md-modal md-effect-1">
   <div class="modal-content">
