@@ -3,7 +3,6 @@ package blocksigner
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"chain/core/rpc"
 	"chain/crypto/ed25519"
@@ -42,12 +41,6 @@ func (ec EnclaveClient) Sign(ctx context.Context, pk ed25519.PublicKey, bh *lega
 		client := ec.BaseClient
 		client.BaseURL = tup[0]
 		client.AccessToken = tup[1]
-
-		// If the provided access token is just a password with no
-		// user, use a default basic auth username of 'chaincore'.
-		if !strings.Contains(client.AccessToken, ":") {
-			client.AccessToken = "chaincore:" + client.AccessToken
-		}
 
 		go func() {
 			var signature []byte
