@@ -418,16 +418,6 @@ const transactionsAPI = (client) => {
       .then(finalized => client.signer.signBatch(finalized.successes, cb)),
 
     /**
-     * finalize - Finalize a single transaction
-     */
-    finalize,
-
-    /**
-     * finalizeBatch - Finalize a batch of transactions
-     */
-    finalizeBatch,
-
-    /**
      * Submit a signed transaction to the blockchain.
      *
      * @param {Object} signed - A fully signed transaction template.
