@@ -26,10 +26,10 @@ func Config(sdb *sinkdb.DB) *config.Options {
 		return nil
 	}
 
-	// enclaves defines a set of (URL, access token) tuples to be used
+	// enclave defines a set of (URL, access token) tuples to be used
 	// for the local block signer. Tuple equality is defined on the
 	// the URL, not the access token.
-	opts.DefineSet("enclaves", 2, cleanEnclaveTuple, equalFirst)
+	opts.DefineSet("enclave", 2, cleanEnclaveTuple, equalFirst)
 
 	return opts
 }

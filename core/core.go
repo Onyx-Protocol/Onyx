@@ -186,7 +186,7 @@ func (a *API) configure(ctx context.Context, req configureRequest) error {
 	// transparently update the config options.
 	if req.Config.BlockHsmUrl != "" {
 		tup := []string{req.Config.BlockHsmUrl, req.Config.BlockHsmAccessToken}
-		ops = append(ops, a.options.Add("enclaves", tup))
+		ops = append(ops, a.options.Add("enclave", tup))
 	}
 
 	err := a.sdb.Exec(ctx, ops...)

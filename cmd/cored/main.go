@@ -400,7 +400,7 @@ func initializeLocalSigner(ctx context.Context, confOpts *config.Options, conf *
 
 	if hsm == nil {
 		hsm = &blocksigner.EnclaveClient{
-			URLs: confOpts.ListFunc("enclaves"),
+			URLs: confOpts.ListFunc("enclave"),
 			BaseClient: rpc.Client{
 				ProcessID:    processID,
 				CoreID:       conf.Id,
