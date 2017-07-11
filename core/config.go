@@ -3,6 +3,7 @@ package core
 import (
 	"net"
 	"net/url"
+	"path"
 	"strings"
 
 	"chain/core/config"
@@ -41,6 +42,7 @@ func normalizeURL(urlstr string) (string, error) {
 		return "", err
 	}
 
+	u.Path = path.Clean(u.Path)
 	// Lowercase case-insensitive portions
 	u.Scheme = strings.ToLower(u.Scheme)
 	u.Host = strings.ToLower(u.Host)
@@ -62,11 +64,6 @@ func normalizeURL(urlstr string) (string, error) {
 			// port 443 is already the default port for https
 			u.Host = host
 		}
-	}
-
-	// Remove trailing slash on path
-	if strings.HasSuffix(u.Path, "/") {
-		u.Path = u.Path[:len(u.Path)-1]
 	}
 	return u.String(), nil
 }
