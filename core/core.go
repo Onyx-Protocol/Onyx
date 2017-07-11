@@ -240,6 +240,9 @@ func (a *API) initCluster(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if config.BuildConfig.MockHSM {
+		log.Printkv(ctx, "warning", "this core uses a mockhsm. mockhsm data does not sync across coreds")
+	}
 
 	// TODO(jackson): make adding this process's address
 	// atomic with initializing the cluster
@@ -262,6 +265,9 @@ func (a *API) joinCluster(ctx context.Context, x struct {
 		return err
 	}
 
+	if config.BuildConfig.MockHSM {
+		log.Printkv(ctx, "warning", "this core uses a mockhsm. mockhsm data does not sync across coreds")
+	}
 	// The cluster we joined might already be configured. Exec self
 	// to restart cored and attempt to load the config.
 	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
