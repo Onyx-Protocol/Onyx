@@ -8,7 +8,7 @@ const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 const expect = chai.expect
 
-const { balanceByAssetAlias, client, createAccount, createAsset, signer } = require('./testHelpers')
+const { balanceByAssetAlias, client, createAccount, createAsset } = require('./testHelpers')
 
 describe('Transaction', () => {
 
@@ -48,7 +48,7 @@ describe('Transaction', () => {
           amount: 200
         })
       }))
-      .then((issuance) => signer.sign(issuance))
+      .then((issuance) => client.transactions.sign(issuance))
       .then((signed) => client.transactions.submit(signed))
     })
 
@@ -99,7 +99,7 @@ describe('Transaction', () => {
           amount: 200
         })
       }))
-      .then((issuance) => signer.sign(issuance))
+      .then((issuance) => client.transactions.sign(issuance))
       .then((signed) => client.transactions.submit(signed))
       .then(() => client.transactions.build(builder => {
         builder.spendFromAccount({
@@ -115,7 +115,7 @@ describe('Transaction', () => {
       }))
       .then((swapProposal) => {
         swapProposal.allowAdditionalActions = true
-        return signer.sign(swapProposal)
+        return client.transactions.sign(swapProposal)
       })
       .then((swapProposal) =>
         client.transactions.build(builder => {
@@ -131,7 +131,7 @@ describe('Transaction', () => {
             amount: 10
           })
         }))
-        .then((swapTx) => signer.sign(swapTx))
+        .then((swapTx) => client.transactions.sign(swapTx))
         .then((signed) => client.transactions.submit(signed))
     })
 
@@ -181,7 +181,7 @@ describe('Transaction', () => {
         })
       })
     )
-    .then(issuance => signer.sign(issuance))
+    .then(issuance => client.transactions.sign(issuance))
     .then(signed => expect(client.transactions.submit(signed)).to.be.rejectedWith('CH735'))
   })
 
@@ -203,7 +203,7 @@ describe('Transaction', () => {
           })
         })
       ).then(txtpl =>
-        signer.sign(txtpl)
+        client.transactions.sign(txtpl)
       ).then(signed =>
         client.transactions.submit(signed)
       ).then(tx =>

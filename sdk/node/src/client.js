@@ -5,6 +5,7 @@ const accountsAPI = require('./api/accounts')
 const assetsAPI = require('./api/assets')
 const balancesAPI = require('./api/balances')
 const configAPI = require('./api/config')
+const hsmSigner = require('./api/hsmSigner')
 const mockHsmKeysAPI = require('./api/mockHsmKeys')
 const transactionsAPI = require('./api/transactions')
 const transactionFeedsAPI = require('./api/transactionFeeds')
@@ -41,6 +42,7 @@ class Client {
     }
     opts.url = opts.url || 'http://localhost:1999'
     this.connection = new Connection(opts.url, opts.accessToken, opts.agent)
+    this.signer = new hsmSigner()
 
     /**
      * API actions for access tokens
