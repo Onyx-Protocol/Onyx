@@ -68,6 +68,8 @@ var commands = map[string]*command{
 	"get":                  {get},
 	"add":                  {add},
 	"rm":                   {rm},
+	"set":                  {set},
+	"unset":                {unset},
 	"wait":                 {wait},
 }
 
@@ -452,6 +454,43 @@ func rm(client *rpc.Client, args []string) {
 				"op":    "rm",
 				"key":   args[0],
 				"tuple": args[1:],
+			},
+		},
+	}
+	err := client.Call(context.Background(), "/configure", req, nil)
+	dieOnRPCError(err)
+}
+
+func set(client *rpc.Client, args []string) {
+	const usage = "usage: corectl set [key] [value]..."
+	if len(args) < 2 {
+		fatalln(usage)
+	}
+
+	req := map[string]interface{}{
+		"updates": []interface{}{
+			map[string]interface{}{
+				"op":    "set",
+				"key":   args[0],
+				"tuple": args[1:],
+			},
+		},
+	}
+	err := client.Call(context.Background(), "/configure", req, nil)
+	dieOnRPCError(err)
+}
+
+func unset(client *rpc.Client, args []string) {
+	const usage = "usage: corectl unset [key]"
+	if len(args) != 1 {
+		fatalln(usage)
+	}
+
+	req := map[string]interface{}{
+		"updates": []interface{}{
+			map[string]interface{}{
+				"op":  "unset",
+				"key": args[0],
 			},
 		},
 	}
