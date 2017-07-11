@@ -680,20 +680,20 @@ contract LockWithPublicKey(pubKey: PublicKey) locks val: Value {
 ### In TXVM
 
 ```
-{"contract", {{"value", 5, "assetid1..."}}, [["txvm" 12 inspect encode cat sha3 "pubkey1..." checksig verify] defer], "anchor..."} unlock
-{"contract", {{"value", 10, "assetid1..."}}, [["txvm" 12 inspect encode cat sha3 "pubkey2..." checksig verify] defer], "anchor..."} unlock
-{"contract", {{"value", 15, "assetid2..."}}, [["txvm" 12 inspect encode cat sha3 "pubkey3..." checksig verify] defer], "anchor..."} unlock
-{"contract", {{"value", 20, "assetid2..."}}, [["txvm" 12 inspect encode cat sha3 "pubkey4..." checksig verify] defer], "anchor..."} unlock
+{"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} [unlock ["txvm" 13 inspect encode cat sha3 "pubkey1..." checksig verify] defer] command
+{"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} [unlock ["txvm" 13 inspect encode cat sha3 "pubkey2..." checksig verify] defer] command
+{"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} [unlock ["txvm" 13 inspect encode cat sha3 "pubkey3..." checksig verify] defer] command
+{"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} [unlock ["txvm" 13 inspect encode cat sha3 "pubkey4..." checksig verify] defer] command
 merge
 2 valuestack roll
 2 valuestack roll
 merge
 6 split
-[["txvm" txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] 1 lock
-[["txvm" txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] 1 lock
+[unlock ["txvm" txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] 1 lock
+[unlock ["txvm" txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] 1 lock
 18 split
-[["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] 1 lock
-[["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] 1 lock
+[unlock ["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] 1 lock
+[unlock ["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] 1 lock
 summarize
 "sig4..." satisfy
 "sig3..." satisfy
