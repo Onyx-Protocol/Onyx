@@ -24,8 +24,6 @@ export const unauthedClient = () => new chainSdk.Client({
   url: apiHost
 })
 
-export const chainSigner = () => new chainSdk.HsmSigner()
-
 // react-router history object
 export const history = useRouterHistory(createHistory)({
   basename: basename

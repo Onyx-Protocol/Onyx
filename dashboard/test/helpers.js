@@ -1,16 +1,21 @@
 const chain = require('chain-sdk')
-const client = new chain.Client()
 
 const sleep = (ms) => new Promise(resolve => {
   setTimeout(() => resolve(), ms)
 })
 
-const resetCore = () => expect(
-  client.config.reset()
-    .then(() => ensureConfigured())
-).to.be.fulfilled
+const resetCore = () => {
+  const client = new chain.Client()
+
+  return expect(
+    client.config.reset()
+      .then(() => ensureConfigured())
+  ).to.be.fulfilled
+}
 
 const ensureConfigured = () => {
+  const client = new chain.Client()
+
   const doConfig = () => client.config.info()
     .then((info) => {
       if (info.isConfigured) {
@@ -25,9 +30,13 @@ const ensureConfigured = () => {
   return expect(doConfig()).to.be.fulfilled
 }
 
-const setUpObjects = (signer) => {
+const setUpObjects = (client) => {
   let keyResults, assetResults, accountResults
   let key
+
+  if (client == undefined) {
+    client = new chain.Client()
+  }
 
   return expect(Promise.all([
     client.mockHsm.keys.query({aliases: ['testkey']}),
@@ -55,7 +64,7 @@ const setUpObjects = (signer) => {
     }
 
     return keyPromise
-  }).then(() => signer.addKey(key, client.mockHsm.signerConnection))
+  }).then(() => client.signer.addKey(key, client.mockHsm.signerConnection))
   .then(() => {
     const createPromises = []
 
@@ -66,12 +75,12 @@ const setUpObjects = (signer) => {
   })
 }
 
-const issueTransaction = (signer) => expect(
+const issueTransaction = (client) => expect(
   client.transactions.build((builder) => {
     builder.issue({ assetAlias: 'gold', amount: 100 })
     builder.controlWithAccount({ accountAlias: 'alice', assetAlias: 'gold', amount: 100 })
   })
-  .then(tpl => signer.sign(tpl))
+  .then(tpl => client.transactions.sign(tpl))
   .then(tpl => client.transactions.submit(tpl))
 ).to.be.fulfilled
 

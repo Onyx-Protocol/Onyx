@@ -1,5 +1,5 @@
 import uuid from 'uuid'
-import { chainClient, chainSigner } from 'utility/environment'
+import { chainClient } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
 import { push } from 'react-router-redux'
 import { baseCreateActions, baseListActions } from 'features/shared/actions'
@@ -70,7 +70,9 @@ function getTemplateXpubs(tpl) {
 }
 
 form.submitForm = (formParams) => function(dispatch) {
-  const buildPromise = chainClient().transactions.build(builder => {
+  const client = chainClient()
+
+  const buildPromise = client.transactions.build(builder => {
     const processed = preprocessTransaction(formParams)
 
     builder.actions = processed.actions
@@ -82,14 +84,12 @@ form.submitForm = (formParams) => function(dispatch) {
   if (formParams.submitAction == 'submit') {
     return buildPromise
       .then(tpl => {
-        const signer = chainSigner()
-
         getTemplateXpubs(tpl).forEach(key => {
-          signer.addKey(key, chainClient().mockHsm.signerConnection)
+          client.signer.addKey(key, client.mockHsm.signerConnection)
         })
 
-        return signer.sign(tpl)
-      }).then(signed => chainClient().transactions.submit(signed))
+        return client.transactions.sign(tpl)
+      }).then(signed => client.transactions.submit(signed))
       .then(resp => {
         dispatch(form.created())
         dispatch(push({
@@ -104,13 +104,11 @@ form.submitForm = (formParams) => function(dispatch) {
   // submitAction == 'generate'
   return buildPromise
     .then(tpl => {
-      const signer = chainSigner()
-
       getTemplateXpubs(tpl).forEach(key => {
-        signer.addKey(key, chainClient().mockHsm.signerConnection)
+        client.signer.addKey(key, client.mockHsm.signerConnection)
       })
 
-      return signer.sign({...tpl, allowAdditionalActions: true})
+      return client.transactions.sign({...tpl, allowAdditionalActions: true})
     })
     .then(signed => {
       const id = uuid.v4()
