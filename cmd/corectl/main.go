@@ -114,8 +114,6 @@ func configGenerator(client *rpc.Client, args []string) {
 	var flags flag.FlagSet
 	maxIssuanceWindow := flags.Duration("w", 24*time.Hour, "the maximum issuance window `duration` for this generator")
 	flagK := flags.String("k", "", "local `pubkey` for signing blocks")
-	flagHSMURL := flags.String("hsm-url", "", "hsm `url` for signing blocks (mockhsm if empty)")
-	flagHSMToken := flags.String("hsm-token", "", "hsm `access-token` for connecting to hsm")
 
 	flags.Usage = func() {
 		fmt.Println(usage)
@@ -124,16 +122,6 @@ func configGenerator(client *rpc.Client, args []string) {
 	}
 	flags.Parse(args)
 	args = flags.Args()
-
-	// not a blocksigner
-	if *flagK == "" && *flagHSMURL != "" {
-		fatalln("error: flag -hsm-url has no effect without -k")
-	}
-
-	// TODO(ameets): update when switching to x.509 authorization
-	if (*flagHSMURL == "") != (*flagHSMToken == "") {
-		fatalln("error: flags -hsm-url and -hsm-token must be given together")
-	}
 
 	if len(args) == 0 {
 		if *flagK != "" {
@@ -179,8 +167,6 @@ func configGenerator(client *rpc.Client, args []string) {
 		MaxIssuanceWindowMs: bc.DurationMillis(*maxIssuanceWindow),
 		IsSigner:            *flagK != "",
 		BlockPub:            blockPub,
-		BlockHsmUrl:         *flagHSMURL,
-		BlockHsmAccessToken: *flagHSMToken,
 	}
 
 	err = client.Call(context.Background(), "/configure", conf, nil)
@@ -250,8 +236,6 @@ func configNongenerator(client *rpc.Client, args []string) {
 	var flags flag.FlagSet
 	flagT := flags.String("t", "", "generator access `token`")
 	flagK := flags.String("k", "", "local `pubkey` for signing blocks")
-	flagHSMURL := flags.String("hsm-url", "", "hsm `url` for signing blocks (mockhsm if empty)")
-	flagHSMToken := flags.String("hsm-token", "", "hsm `access-token` for connecting to hsm")
 
 	flags.Usage = func() {
 		fmt.Println(usage)
@@ -262,16 +246,6 @@ func configNongenerator(client *rpc.Client, args []string) {
 	args = flags.Args()
 	if len(args) < 2 {
 		fatalln(usage)
-	}
-
-	// not a blocksigner
-	if *flagK == "" && *flagHSMURL != "" {
-		fatalln("error: flag -hsm-url has no effect without -k")
-	}
-
-	// TODO(ameets): update when switching to x.509 authorization
-	if (*flagHSMURL == "") != (*flagHSMToken == "") {
-		fatalln("error: flags -hsm-url and -hsm-token must be given together")
 	}
 
 	var blockchainID bc.Hash
@@ -294,8 +268,6 @@ func configNongenerator(client *rpc.Client, args []string) {
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
 	conf.BlockPub = blockPub
-	conf.BlockHsmUrl = *flagHSMURL
-	conf.BlockHsmAccessToken = *flagHSMToken
 
 	client.BlockchainID = blockchainID.String()
 	err = client.Call(context.Background(), "/configure", conf, nil)

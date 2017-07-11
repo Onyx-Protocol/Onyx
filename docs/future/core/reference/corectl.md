@@ -101,8 +101,6 @@ Flags:
 * **-k \<pubkey>**: Local pubkey for signing blocks; indicates that this core
 will be a signer. If **-k** is not given, the core will be a participant (not a generator or a signer).
 * **-w \<duration>**: The maximum issuance window duration for this generator (default 24h0m0s).
-* **-hsm-url \<url>**: HSM url for signing blocks (MockHSM if empty).
-* **-hsm-token \<access-token>**:  HSM access-token for connecting to HSM.
 
 Arguments:
 
@@ -130,8 +128,6 @@ Flags:
  will be a signer. If **-k** is not given, the core will be a participant (not a generator or a signer).
  * **-t \<token>**: Authentication token with access to the network API provided
 by the generator.
- * **-hsm-url \<url>**: HSM url for signing blocks (MockHSM if empty).
- * **-hsm-token \<access-token>**:  HSM access-token for connecting to HSM.
 
 Arguments:
 
