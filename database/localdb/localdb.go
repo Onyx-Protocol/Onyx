@@ -26,7 +26,10 @@ var errDBClosed = errors.New("database is closed")
 func (db *DB) Put(key string, value proto.Message) error {
 	// TODO(tessr): use 'Exec' instead of Put
 
-	if db.closed {
+	db.mu.Lock()
+	closed := db.closed
+	db.mu.Unlock()
+	if closed {
 		return errDBClosed
 	}
 
@@ -43,7 +46,10 @@ func (db *DB) Put(key string, value proto.Message) error {
 // Get fetches the data associated with the provided key and
 // unmarshals it into the provided protocol buffer.
 func (db *DB) Get(key string, v proto.Message) error {
-	if db.closed {
+	db.mu.Lock()
+	closed := db.closed
+	db.mu.Unlock()
+	if closed {
 		return errDBClosed
 	}
 
