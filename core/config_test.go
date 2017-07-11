@@ -20,8 +20,8 @@ func TestNormalizeURL(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if normalized != want {
-				t.Errorf("normalizeURL(%q) = %q, want %s", u, normalized, want)
+			if normalized.String() != want {
+				t.Errorf("normalizeURL(%q) = %q, want %s", u, normalized.String(), want)
 			}
 		})
 	}

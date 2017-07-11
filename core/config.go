@@ -27,7 +27,10 @@ func Config(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*config.Options, err
 		if err != nil {
 			return errors.WithDetailf(err, "Provided URL is invalid: %s", err.Error())
 		}
-		tup[0] = normalized
+		if normalized.Scheme != "https" {
+			return errors.WithDetailf(err, "Enclave URL must use https.")
+		}
+		tup[0] = normalized.String()
 		if !strings.Contains(tup[1], ":") {
 			return errors.WithDetailf(err, "Access token must be of the form <username>:<password>.")
 		}
@@ -61,10 +64,10 @@ func Config(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*config.Options, err
 
 // normalizeURL performs some low-hanging best-effort normalization
 // of the provided URL. See RFC3986, Section 6.
-func normalizeURL(urlstr string) (string, error) {
+func normalizeURL(urlstr string) (*url.URL, error) {
 	u, err := url.Parse(urlstr)
 	if err != nil {
-		return "", err
+		return u, err
 	}
 
 	// Lowercase case-insensitive portions
@@ -93,5 +96,5 @@ func normalizeURL(urlstr string) (string, error) {
 	// Clean the path
 	u.Path = path.Clean("/" + u.Path)
 
-	return u.String(), nil
+	return u, nil
 }
