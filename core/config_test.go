@@ -21,7 +21,7 @@ func TestNormalizeURL(t *testing.T) {
 				t.Fatal(err)
 			}
 			if normalized != want {
-				t.Errorf("got %s, want %s", normalized, want)
+				t.Errorf("normalizeURL(%q) = %q, want %s", u, normalized, want)
 			}
 		})
 	}
