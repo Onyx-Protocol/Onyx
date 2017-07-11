@@ -1,15 +1,10 @@
-const chain = require('chain-sdk')
 const uuid = require('uuid')
-
-let signer
 
 describe('accounts', () => {
   describe('list view', () => {
     before(() => {
-      signer = new chain.HsmSigner()
-
       return expect(testHelpers.ensureConfigured()).to.be.fulfilled
-        .then(() => expect(testHelpers.setUpObjects(signer)).to.be.fulfilled)
+        .then(() => expect(testHelpers.setUpObjects()).to.be.fulfilled)
         .then(() => browser.url('/accounts'))
     })
 

@@ -1,15 +1,15 @@
 const chain = require('chain-sdk')
 
-let signer
+let client
 
 describe('tranasctions', () => {
   describe('list view', () => {
     before(() => {
-      signer = new chain.HsmSigner()
+      client = new chain.Client()
 
       return expect(testHelpers.ensureConfigured()).to.be.fulfilled
-        .then(() => expect(testHelpers.setUpObjects(signer)).to.be.fulfilled)
-        .then(() => expect(testHelpers.issueTransaction(signer)).to.be.fulfilled)
+        .then(() => expect(testHelpers.setUpObjects(client)).to.be.fulfilled)
+        .then(() => expect(testHelpers.issueTransaction(client)).to.be.fulfilled)
         .then(() => browser.url('/transactions'))
     })
 
