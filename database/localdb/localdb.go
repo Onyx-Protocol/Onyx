@@ -1,3 +1,6 @@
+// Package localdb provides an interface for storing local data.
+// Data stored in localdb is not synchronized to any other cored
+// processes.
 package localdb
 
 import (
@@ -17,8 +20,9 @@ type DB struct {
 	closed bool
 }
 
-// TODO(tessr): use 'Exec' instead of Put
+// Put writes protocol buffer values to the database, at the provided key.
 func (db *DB) Put(key string, value proto.Message) error {
+	// TODO(tessr): use 'Exec' instead of Put
 	encodedValue, err := proto.Marshal(value)
 	if err != nil {
 		return errors.Wrap(err)
@@ -29,6 +33,8 @@ func (db *DB) Put(key string, value proto.Message) error {
 	return db.store.Put(wo, []byte(key), encodedValue)
 }
 
+// Get fetches the data associated with the provided key and
+// unmarshals it into the provided protocol buffer.
 func (db *DB) Get(key string, v proto.Message) error {
 	// TODO(tessr): tune rocksdb. assess read options
 	ro := gorocksdb.NewDefaultReadOptions()
@@ -40,14 +46,16 @@ func (db *DB) Get(key string, v proto.Message) error {
 	return proto.Unmarshal(slice.Data(), v)
 }
 
-func Open(rocksDir string) (*DB, error) {
+// Open opens a new localDB, using the provided dataDir as
+// the data directory for RocksDB.
+func Open(dataDir string) (*DB, error) {
 	// TODO(tessr): tune rocksdb. assess all these options
 	bbto := gorocksdb.NewDefaultBlockBasedTableOptions()
 	bbto.SetBlockCache(gorocksdb.NewLRUCache(3 << 30))
 	opts := gorocksdb.NewDefaultOptions()
 	opts.SetBlockBasedTableFactory(bbto)
 	opts.SetCreateIfMissing(true)
-	rocks, err := gorocksdb.OpenDb(opts, rocksDir)
+	rocks, err := gorocksdb.OpenDb(opts, dataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +63,8 @@ func Open(rocksDir string) (*DB, error) {
 	return &DB{store: rocks}, nil
 }
 
+// Close closes the database. The database must be opened
+// again before it will accept reads or writes.
 func (db *DB) Close() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
