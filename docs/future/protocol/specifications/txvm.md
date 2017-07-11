@@ -469,16 +469,15 @@ Pops a condition from the Condition stack and executes it.
 
 ### Unlock 
 
-Pops a tuple `values` containing items of type [Value](#value) and/or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
+Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
 
 Constructs a tuple `input` of type [Contract](#contract), with `program` equal to `command.program`. Pushes `input` to the Input stack.
 
 Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `input.anchor`. Pushes `anchor` to the Anchor stack. 
 
-For each `value` in `values`:
+If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset commitment stack.
 
-  1. If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset commitment stack.
-  2. Pushes `value` to the Value stack.
+Pushes `value` to the Value stack.
 
 ### UnlockOutput
 
@@ -486,10 +485,9 @@ Pops a [Contract](#contract) `output` from the Output stack. Peeks at the top [C
 
 Pushes `output.anchor` to the Anchor stack. 
 
-For each `value` in `values`:
+If `output.value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset commitment stack.
 
-  1. If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset commitment stack.
-  2. Pushes `value` to the Value stack.
+Pushes `output.value` to the Value stack.
 
 ### Merge
 
@@ -501,11 +499,11 @@ Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` f
 
 ### Lock
 
-Pops a number `n` from the data stack. Pops `n` items of type [Value](#Value) or [Proven Value](#proven-value), `values`, from the Value stack. Pops a [Program](#program) `program` from the data stack. Pops an [anchor](#anchor) `anchor` from the Anchor stack. 
+Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Value stack. Pops a [Program](#program) `program` from the data stack. Pops an [anchor](#anchor) `anchor` from the Anchor stack. 
 
-Pushes a [Contract](#contract) to the Output stack with a tuple of the `values` as the `values`, `program` as the `program`, and the ID of `anchor` as the `anchor`. 
+Pushes a [Contract](#contract) to the Output stack with `value` as the `value`, `program` as the `program`, and the ID of `anchor` as the `anchor`. 
 
-Constructs an [Anchor](#anchor) `newanchor` with `value` set to the ID of `anchor`. Pushes `newanchor` to the Anchor stack.
+Constructs an [Anchor](#anchor) `newanchor` with its `value` set to the ID of `anchor`. Pushes `newanchor` to the Anchor stack.
 
 ### Retire
 
@@ -689,11 +687,11 @@ merge
 2 valuestack roll
 merge
 6 split
-[unlock ["txvm" txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] 1 lock
-[unlock ["txvm" txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] 1 lock
+[unlock ["txvm" txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] lock
+[unlock ["txvm" txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] lock
 18 split
-[unlock ["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] 1 lock
-[unlock ["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] 1 lock
+[unlock ["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] lock
+[unlock ["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] lock
 summarize
 "sig4..." satisfy
 "sig3..." satisfy
