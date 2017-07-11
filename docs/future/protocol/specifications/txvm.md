@@ -457,7 +457,7 @@ Pops a string, `data`, from the data stack. Pushes an [annotation](#annotation) 
 
 ### Command
 
-Pops a [Command](#command) `command` from the data stack and pushes it to the Command stack. Executes `command.program`. Pops a [Command](#command) from the Command stack.
+Pops a string `program` from the data stack. Constructs a tuple `command` of type [Command](#command) with `program` equal to `program`. Pushes `command` to the Command stack. Executes `command.program`. Pops a [Command](#command) from the Command stack.
 
 ### Defer
 
