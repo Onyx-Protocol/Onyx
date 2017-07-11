@@ -117,10 +117,12 @@ config.plugins.push(new webpack.DefinePlugin({
   'process.env.TESTNET_GENERATOR_URL': JSON.stringify(process.env.TESTNET_GENERATOR_URL),
 }))
 
-config.plugins.push(new LicenseWebpackPlugin({
-  pattern: /^.*$/,
-  includeUndefined: true,
-}))
+if (process.env.NODE_ENV == 'production') {
+  config.plugins.push(new LicenseWebpackPlugin({
+    pattern: /^.*$/,
+    includeUndefined: true,
+  }))
+}
 
 // Enable babel-polyfill
 // NOTE: to properly function, 'babel-polyfill' must be the first
