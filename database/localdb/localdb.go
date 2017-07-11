@@ -20,9 +20,16 @@ type DB struct {
 	closed bool
 }
 
+var errDBClosed = errors.New("database is closed")
+
 // Put writes protocol buffer values to the database, at the provided key.
 func (db *DB) Put(key string, value proto.Message) error {
 	// TODO(tessr): use 'Exec' instead of Put
+
+	if db.closed {
+		return errDBClosed
+	}
+
 	encodedValue, err := proto.Marshal(value)
 	if err != nil {
 		return errors.Wrap(err)
@@ -36,6 +43,10 @@ func (db *DB) Put(key string, value proto.Message) error {
 // Get fetches the data associated with the provided key and
 // unmarshals it into the provided protocol buffer.
 func (db *DB) Get(key string, v proto.Message) error {
+	if db.closed {
+		return errDBClosed
+	}
+
 	// TODO(tessr): tune rocksdb. assess read options
 	ro := gorocksdb.NewDefaultReadOptions()
 	slice, err := db.store.Get(ro, []byte(key))
