@@ -42,8 +42,15 @@ npm run lint src
 #### Tests
 
 The Chain Core Dashboard has a series of integration tests that can be run
-against a running core. First, start Chain Core and Dashboard on their default
-ports of 1999 and 3000 respective. Then, start tests with the command:
+against a running core. First, start a local instance of Chain Core.
+
+Start Dashboard in test mode at port 3000 with the following command:
+
+```
+NODE_ENV=test npm start
+```
+
+Run tests against the running Dashboard with the command:
 
 ```
 npm test
