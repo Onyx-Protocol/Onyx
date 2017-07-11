@@ -122,6 +122,12 @@ TBD
 0. `type`, a string, "beforeconstraint"
 1. `maxtime`, an int64
 
+#### Issuance Candidate
+
+0. `type`, a string, "issuancecandidate"
+1. `assetID`, a string
+2. `issuanceKey`, a [Public Key](#public-key)
+
 #### Mintime
 
 0. `type`, a string, "afterconstraint"
@@ -131,6 +137,15 @@ TBD
 
 0. `type`, a string, "annotation"
 1. `data`, a string
+
+### Operation
+
+0. `type`, a string, "operation"
+1. `script`, a string
+
+### Operate
+
+Pops a string `script` from the data stack. Pushes an Operation to the Operation stack. Executes `script`. Pops an Operation from the Operation stack.
 
 #### Transaction Summary
 
@@ -503,6 +518,12 @@ Verifies `valuerangeproof` with ` value.valuecommitment` as the value commitment
 
 Pushes a [Proven Value](#proven-value) to the Value stack with `value.valuecommitment` as the `valuecommitment` and `assetcommitment` as the asset commitment.
 
+### IssuanceCandidate
+
+Pops a Public Key `issuancekey` from the data stack. Peeks at the top item on the control stack, `issuanceprogram`. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `issuanceprogram`.
+
+Pushes an [Issuance Candidate](#issuance-candidate) with `assetid` of `assetid` and `issuancekey` of `issuancekey`.
+
 ### IssueCA
 
 (WIP. TBD: REVIEW AND REWRITE THIS; MAYBE SPLIT INTO MULTIPLE OPCODES)
@@ -539,6 +560,8 @@ Pops an [anchor](#anchor) `a1` from the Anchor stack. Pushes a new anchor `a2`, 
 
 ### Issue
 
+Pops an int64 `amount` from the data stack. Peeks at the top item on the control stack, `issuanceprogram`. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `issuanceprogram`. Pushes a [value](#value) with amount `amount` and assetID `assetID`.
+ 
 Pops an [asset definition](#asset-definition) tuple `assetdefinition` from the data stack, and pops an int64, `amount`, from the data stack. Computes the [ID](#item-ids) `assetid` of `assetdefinition`. Pushes a [value](#value) with amount `amount` and assetID `assetID`. Executes `assetdefinition.issuanceprogram`. (TBD: confidential issuance etc).
 
 ### Before
