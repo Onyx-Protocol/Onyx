@@ -182,8 +182,6 @@ func main() {
 		}
 	}
 
-	confOpts := core.Config(sdb)
-
 	driver := pg.NewDriver()
 	if *logQueries {
 		driver = sqlutil.LogDriver(driver)
@@ -262,6 +260,10 @@ func main() {
 
 	conf, err := config.Load(ctx, db, sdb)
 	if err != nil && errors.Root(err) != raft.ErrUninitialized {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+	}
+	confOpts, err := core.Config(ctx, db, sdb)
+	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
