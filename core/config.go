@@ -3,7 +3,6 @@ package core
 import (
 	"net"
 	"net/url"
-	"path"
 	"strings"
 
 	"chain/core/config"
@@ -45,7 +44,6 @@ func normalizeURL(urlstr string) (string, error) {
 		return "", err
 	}
 
-	u.Path = path.Clean(u.Path)
 	// Lowercase case-insensitive portions
 	u.Scheme = strings.ToLower(u.Scheme)
 	u.Host = strings.ToLower(u.Host)
@@ -68,5 +66,9 @@ func normalizeURL(urlstr string) (string, error) {
 			u.Host = host
 		}
 	}
+
+	// Remove trailing slash on path
+	u.Path = strings.TrimSuffix(u.Path, "/")
+
 	return u.String(), nil
 }
