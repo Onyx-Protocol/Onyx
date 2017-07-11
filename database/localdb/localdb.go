@@ -30,7 +30,7 @@ func (db *DB) Put(key string, value proto.Message) error {
 	closed := db.closed
 	db.mu.Unlock()
 	if closed {
-		return errDBClosed
+		return errors.Wrap(errDBClosed)
 	}
 
 	encodedValue, err := proto.Marshal(value)
@@ -40,7 +40,8 @@ func (db *DB) Put(key string, value proto.Message) error {
 
 	// TODO(tessr): tune rocksdb. assess write options
 	wo := gorocksdb.NewDefaultWriteOptions()
-	return db.store.Put(wo, []byte(key), encodedValue)
+	err = db.store.Put(wo, []byte(key), encodedValue)
+	return errors.Wrap(err)
 }
 
 // Get fetches the data associated with the provided key and
@@ -50,7 +51,7 @@ func (db *DB) Get(key string, v proto.Message) error {
 	closed := db.closed
 	db.mu.Unlock()
 	if closed {
-		return errDBClosed
+		return errors.Wrap(errDBClosed)
 	}
 
 	// TODO(tessr): tune rocksdb. assess read options
@@ -60,7 +61,8 @@ func (db *DB) Get(key string, v proto.Message) error {
 		return errors.Wrap(err)
 	}
 	defer slice.Free()
-	return proto.Unmarshal(slice.Data(), v)
+	err = proto.Unmarshal(slice.Data(), v)
+	return errors.Wrap(err)
 }
 
 // Open opens a new localDB, using the provided dataDir as
