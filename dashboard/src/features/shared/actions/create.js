@@ -7,6 +7,8 @@ export default function(type, options = {}) {
   const listPath = options.listPath || `/${type}s`
   const createPath = options.createPath || `${listPath}/create`
   const created = (param) => ({ type: `CREATED_${type.toUpperCase()}`, param })
+  const receivedKeys = (param) => ({ type: 'RECEIVED_MOCKHSM_ITEMS', param })
+  let keyList = []
 
   return {
     showCreate: push(createPath),
@@ -40,6 +42,7 @@ export default function(type, options = {}) {
 
                 return chainClient().mockHsm.keys.create({alias})
               }).then(newKey => {
+                keyList.push(newKey)
                 data.rootXpubs.push(newKey.xpub)
               })
           } else if (key.value) {
@@ -53,6 +56,8 @@ export default function(type, options = {}) {
         return promise.then(() => clientApi.create(data)
           .then((resp) => {
             dispatch(created(resp))
+
+            dispatch(receivedKeys({ items: keyList }))
 
             let postCreatePath = listPath
             if (options.redirectToShow) {
