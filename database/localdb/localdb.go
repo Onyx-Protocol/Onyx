@@ -12,7 +12,8 @@ import (
 	"chain/errors"
 )
 
-// DB provides access to a kv store.
+// DB provides access to a kv store. It is safe
+// to access this database concurrently.
 type DB struct {
 	store *gorocksdb.DB
 
