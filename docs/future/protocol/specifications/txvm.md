@@ -16,7 +16,7 @@ The pieces of transaction information - the inputs, outputs, etc. - that are pro
 
 The VM is initialized with all stacks empty.
 
-When the program counter is equal to the length of the program, execution is complete. The top item of the [Result stack](#result) must be a [Transaction ID](#transaction-id). The anchor stack must not be empty. Other than the Result stack, the anchor stack, the data stack, and the alt stack, all of the stacks must be empty.
+When the program counter is equal to the length of the program, execution is complete. The top item of the [Effect stack](#Effect) must be a [Transaction ID](#transaction-id). Other than the Effect stack, the Entry stack, the data stack, and the alt stack, all of the stacks must be empty.
 
 # Stacks
 
@@ -80,6 +80,12 @@ TBD
 0. `type`, a string, "provenvalue"
 1. `valuecommitment`, a [value commitment](#value-commitment)
 2. `assetcommitment`, an [asset commitment](#asset-commitment)
+
+## Record type
+
+0. `type`, a string, "record"
+1. `commandprogram`, a string
+2. `data`, an item
 
 #### Input
 
@@ -160,7 +166,7 @@ TBD
 #### Transaction Summary
 
 0. `type`, a string, "transactionSummary"
-1. `resultids`, a tuple of items
+1. `effectids`, a tuple of items
 
 #### Transaction ID
 
@@ -184,12 +190,9 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 
 0. Data stack
 1. Alt stack
-2. Value stack
-3. Anchor stack
-4. Condition stack
-5. Asset Commitment stack
-6. Command stack
-7. Result stack
+2. Entry stack
+3. Command stack
+4. Effect stack
 
 ## Data stack
 
@@ -199,25 +202,13 @@ Items on the data stack can be int64s, strings, or tuples.
 
 Items on the alt stack have the same types as items on the data stack. The alt stack starts out empty. Items can be moved from the data stack to the alt stack with the [toaltstack](#toaltstack) instruction, and from the alt stack to the data stack with the [fromaltstack](#fromaltstack).
 
-### Value stack
+### Entry stack
 
-Items on the Value stack are [Values](#value).
+Items on the Entry stack are [Values](#value)
 
-### Anchor stack
+### Effect stack
 
-Items on the Anchor stack are [Anchors](#anchor).
-
-### Condition stack
-
-Items on the Condition stack are [Programs](#program).
-
-### Asset Commitment stack
-
-Items on the Asset Commitment stack are [Asset Commitments](#asset-commitment).
-
-### Result stack
-
-Items on the Result stack are tuples.
+Items on the Effect stack are [Inputs](#input), [Outputs](#output), [Reads](#read), [Nonces](#nonce), [Retirements](#retirement).
 
 # Encoding formats
 
@@ -262,7 +253,7 @@ Pops an integer `destination`, then a boolean `cond` from the data stack. If `co
 
 ### Roll
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops another integer `n` from the data stack. Fails if `stackid` refers to the Command stack or the Result stack. 
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops another integer `n` from the data stack. Fails if `stackid` refers to the Command stack or the Effect stack. 
 
 On the stack identified by `stackid`, moves the `n`th item from the top from its current position to the top of the stack.
 
@@ -270,13 +261,13 @@ Fails if `stackid` does not correspond to a valid stack, or if the stack has few
 
 ### Bury
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack or the Result stack. 
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack or the Effect stack. 
 
 On the stack identified by `stackid`, moves the top item and inserts it at the `n`th-from-top position.
 
 ### Reverse
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack or the Result stack. On the stack identified by `stackid`, pops the top `n` items and inserts them back to the same stack in reverse order.
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack or the Effect stack. On the stack identified by `stackid`, removes the top `n` items and inserts them back into the same stack in reverse order.
 
 ### Depth
 
@@ -303,10 +294,6 @@ Pops a string or tuple `val` from the data stack. If `val` is a tuple, pushes th
 ### Drop
 
 Drops an item from the data stack.
-
-### Dup
-	
-Pops the top item from the data stack, and pushes two copies of that item to the data stack.
 
 ### ToAlt
 
@@ -442,87 +429,113 @@ Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed255
 
 Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed25519 curve points](#ed25519-curve-points), performs an elliptic curve scalar multiplication `i*a`, encodes the result as a string, and pushes it to the data stack. Fails if `a` is not a valid curve point.
 
-## Entry operations
+## Annotation operations
 
 ### Annotate
 
-Pops a string, `data`, from the data stack. Pushes an [Annotation](#annotation) with `data` of `data` to the Result stack.
+Pops a string, `data`, from the data stack. Pushes an [Annotation](#annotation) with `data` of `data` to the Effect stack.
+
+## Command operations
 
 ### Command
 
 Pops a string `program` from the data stack. Constructs a tuple `command` of type [Command](#command) with `program` equal to `program`. Pushes `command` to the Command stack. Executes `command.program`. Pops a [Command](#command) from the Command stack.
 
+## Condition operations
+
 ### Defer
 
-Pops a [Program](#program) from the data stack and pushes it to the Condition stack.
+Pops a [Program](#program) from the data stack and pushes it to the Entry stack.
 
 ### Satisfy
 
-Pops a condition from the Condition stack and executes it using [command](#command).
+Pops a condition from the Entry stack and executes it using [command](#command).
+
+## Record operations
+
+### Create
+
+Pops an item, `data`, from the data stack. Peeks at the top item on the Command stack,`command`. Pushes a Record to the Entry stack with `commandprogram` equal to `command.program` and `data` equal to `data`.
+
+### Delete
+
+Pops a Record, `record`, from the Record stack. Peeks at the top item on the Command stack,`command`. If `record.commandprogram` is not equal to `command.program`, fails execution.
+
+### Complete
+
+Peeks at the top item on the Record stack, `record`, and the top item on the Command stack, `command` If `record.commandprogram` is not equal to `command.program`. fails execution. Moves `record` to the Effect stack.
+
+## Contract operations
 
 ### Unlock 
 
 Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
 
-Constructs a tuple `input` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-ids) `contractid` of `input`. Pushes an [Input](#input) to the Result stack with `contractid` equal to `contractid`.
+Constructs a tuple `input` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-ids) `contractid` of `input`. Pushes an [Input](#input) to the Effect stack with `contractid` equal to `contractid`.
 
-If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset Commitment stack.
+If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Entry stack.
 
-Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `input.anchor`. Pushes `anchor` to the Anchor stack. 
+Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `input.anchor`. Pushes `anchor` to the Entry stack. 
 
-Pushes `value` to the Value stack.
+Pushes `value` to the Entry stack.
 
 ### Read
 
 Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
 
-Constructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-ids) `contractid` of `input`. Pushes a [Read](#read) to the Result stack with `contractid` equal to `contractid`.
-
-### Merge
-
-Pops two [Values](#value) from the Value stack. If their asset IDs are different, execution fails. Pushes a new [Value](#value) to the Value stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
-
-### Split
-
-Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` from the data stack. If `newamount` is greater than or equal to `value.amount`, fail execution. Pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`, then pushes a new Value with amount `newamount` and assetID `value.assetID`.
+Constructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-ids) `contractid` of `input`. Pushes a [Read](#read) to the Effect stack with `contractid` equal to `contractid`.
 
 ### Lock
 
-Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Value stack. Pops a [Program](#program) `program` from the data stack. Pops an [anchor](#anchor) `anchor` from the Anchor stack. 
+Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Entry stack. Pops an [anchor](#anchor) `anchor` from the Entry stack. Peeks at the top [Command](#command) `command` on the Command stack.
 
-Creates a tuple `contract` of type [Contract](#contract) with `value` as the `value`, `program` as the `program`, and the [ID](#item-id) of `anchor` as the `anchor`. Computes the [ID](#item-id) `contractid` of `contract`.
+CConstructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-id) `contractid` of `contract`. Pushes an [Output](#output) to the Effect stack with `contractid` equal to `contractid`.
 
-Pushes an [Output](#output) to the Result stack with `contractid` equal to `contractid`.
+## Value operations
+
+### Issue
+
+Pops an int64 `amount` from the data stack. Peeks at the top item on the Command stack, `command`. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `command.program`. Pushes a [value](#value) with amount `amount` and assetID `assetID`.
+
+### Merge
+
+Pops two [Values](#value) from the Entry stack. If their asset IDs are different, execution fails. Pushes a new [Value](#value) to the Entry stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
+
+### Split
+
+Pops a [Value](#value) `value` from the Entry stack. Pops an int64 `newamount` from the data stack. If `newamount` is greater than or equal to `value.amount`, fail execution. Pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`, then pushes a new Value with amount `newamount` and assetID `value.assetID`.
 
 ### Retire
 
-Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Value stack. Pushes a [Retirement](#retirement) to the Result stack with `value` equal to `value`.
+Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Entry stack. Pushes a [Retirement](#retirement) to the Effect stack with `value` equal to `value`.
+
+## Confidential value operations
 
 ### MergeConfidential
 
-Pops two items of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `value1` and `value2` from the [Value stack](#value-stack).
+Pops two items of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `value1` and `value2` from the [Entry stack](#value-stack).
 
-Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value1.valuecommitment + value2.valuecommitment` to the Value stack.
+Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value1.valuecommitment + value2.valuecommitment` to the Entry stack.
 
 ### SplitConfidential
 
-Pops an item `value` of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) from the Value stack. Pops a [Value Commitment](#value-commitment) `newvaluecommitment` from the Value stack. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `newvaluecommitment`, then pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value.valuecommitment - newvaluecommitment`.
+Pops an item `value` of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) from the Entry stack. Pops a [Value Commitment](#value-commitment) `newvaluecommitment` from the Entry stack. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `newvaluecommitment`, then pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value.valuecommitment - newvaluecommitment`.
 
 ### ProveAssetCommitment
 
-Pops an item `assetrangeproof` of type [Asset Range Proof](#asset-range-proof). Pops an item `assetcommitment` from the data stack of type [Asset Commitment](#asset-commitment).
+Pops an item `assetrangeproof` of type [Asset Range Proof](#asset-range-proof). Pops an item `assetcommitment` from the data stack of type [Asset Commitment](#asset-commitment). Pops an item 
 
-Verifies `assetrangeproof` with ` assetcommitment` as the asset commitment, and with the current Asset Commitment stack as the candidates. (TBD: LINK THIS, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.)
+Verifies `assetrangeproof` with ` assetcommitment` as the asset commitment. (TBD: LINK THIS, ADD CANDIDATES, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.)
 
-Pushes an `assetcommitment` to the Asset Commitment stack.
+Pushes an `assetcommitment` to the Entry stack.
 
 ### ProveValue
 
-Pops an item `valuerangeproof` of type [Value Range Proof](#value-range-proof) from the data stack. Pops an item `value` of type [Unproven Value](#unproven-value) from the Value stack. Pops an item `assetcommitment` from the Asset Commitment stack. 
+Pops an item `valuerangeproof` of type [Value Range Proof](#value-range-proof) from the data stack. Pops an item `value` of type [Unproven Value](#unproven-value) from the Entry stack. Pops an item of type [Asset Commitment](#asset-commitment) `assetcommitment` from the Entry
 
 Verifies `valuerangeproof` with ` value.valuecommitment` as the value commitment, and `assetcommitment` as the asset commitment. (TBD: LINK THIS, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.)
 
-Pushes a [Proven Value](#proven-value) to the Value stack with `value.valuecommitment` as the `valuecommitment` and `assetcommitment` as the asset commitment.
+Pushes a [Proven Value](#proven-value) to the Entry stack with `value.valuecommitment` as the `valuecommitment` and `assetcommitment` as the asset commitment.
 
 ### IssuanceCandidate
 
@@ -556,45 +569,49 @@ Pushes:
 
 IC-stack is necessary so that `issuanceprogram` can verify that the correct issuance key is used.
 
+## Anchor operations
+
 ### Nonce
 
 Pops an int64 `min` from the data stack. Pops an int64 `max` from the data stack. Pops a string `blockchainid` Peeks at the top item on the Command stack, `command`.
 
-Verifies that `blockchainid` is equal to the blockchain ID. Constructs a [Nonce](#nonce) `nonce` with `program` equal to `command.program`, `min` equal to `min`, and `max` equal to `max`. Pushes `nonce` to the Result stack. Pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-ids) of `nonce`. Pushes a [Mintime](#mintime) to the Result stack with `mintime` equal to `mintime`. Pushes a [Maxtime](#maxtime) to the Result stack with `maxtime` equal to `nonce.maxtime`.
+Verifies that `blockchainid` is equal to the blockchain ID. Constructs a [Nonce](#nonce) `nonce` with `program` equal to `command.program`, `min` equal to `min`, and `max` equal to `max`. Pushes `nonce` to the Effect stack. Pushes an [anchor](#anchor) to the Entry stack with `value` equal to the [ID](#item-ids) of `nonce`. Pushes a [Mintime](#mintime) to the Effect stack with `mintime` equal to `mintime`. Pushes a [Maxtime](#maxtime) to the Effect stack with `maxtime` equal to `nonce.maxtime`.
 
 ### Reanchor
 
-Pops an [anchor](#anchor) `anchor` from the Anchor stack. Compute the [ID](#item-ids) of `anchor`, `anchorid`. Pushes a new anchor `newanchor`, with `newanchor.value` set to `anchorid`.
+Pops an [anchor](#anchor) `anchor` from the Entry stack. Compute the [ID](#item-ids) of `anchor`, `anchorid`. Pushes a new anchor `newanchor`, with `newanchor.value` set to `anchorid`.
 
 ### Splitanchor
 
-Pops an [anchor](#anchor) `anchor` from the Anchor stack. Compute the [ID](#item-ids) of `anchor`, `anchorid`. Pushes a new anchor `newanchor01`, with `newanchor.value` set to `sha3("01" ++ anchorid)`. Pushes a new anchor `newanchor00`, with `newanchor.value` set to `sha3("00" ++ anchorid)`.
+Pops an [anchor](#anchor) `anchor` from the Entry stack. Compute the [ID](#item-ids) of `anchor`, `anchorid`. Pushes a new anchor `newanchor01`, with `newanchor.value` set to `sha3("01" ++ anchorid)`. Pushes a new anchor `newanchor00`, with `newanchor.value` set to `sha3("00" ++ anchorid)`.
 
-### Issue
+### Anchortransaction
 
-Pops an int64 `amount` from the data stack. Peeks at the top item on the Command stack, `command`. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `command.program`. Pushes a [value](#value) with amount `amount` and assetID `assetID`.
- 
+Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
+
+## Mintime and Maxtime operations
+
 ### Before
 
-Pops an int64 `max` from the stack. Pushes a [Maxtime](#maxtime) to the [Result stack](#result-stack) with `maxtime` equal to `max`.
+Pops an int64 `max` from the data stack. Pushes a [Maxtime](#maxtime) to the [Effect stack](#Effect-stack) with `maxtime` equal to `max`.
 
 ### After
 
-Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Result stack](#result-stack) with `mintime` equal to `min`.
+Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Effect stack](#Effect-stack) with `mintime` equal to `min`.
 
 ### Summarize
 
-Computes the ID of each item on the Result stack. Creates a tuple of those IDs (with the first item first), `resultids`. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `resultids` equal to `resultids`. Computes the [ID](#item-id) `txid` of `summary`. Creates a tuple of type [Transaction ID](#transaction-id) on the Result stack with `transactionid` equal to `transactionid`.
+Computes the ID of each item on the Effect stack. Creates a tuple of those IDs (with the first item first), `effectids`. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effectids` equal to `effectids`. Computes the [ID](#item-id) `txid` of `summary`. Creates a tuple of type [Transaction ID](#transaction-id) on the Effect stack with `transactionid` equal to `transactionid`.
 
 ### Migrate
 
 (TBD: update)
 
-Pops a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Pushes it to the Result stack. Pushes an [anchor](#anchor) to the Anchor stack with `value` set to the old-style ID (TBD) of `legacy`.
+Pops a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Pushes it to the Effect stack. Pushes an [anchor](#anchor) to the Entry stack with `value` set to the old-style ID (TBD) of `legacy`.
 
 [TBD: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.]
 
-Pushes a [Value](#value) with amount `legacy.amount` and asset ID `legacy.assetID` to the Value stack.
+Pushes a [Value](#value) with amount `legacy.amount` and asset ID `legacy.assetID` to the Entry stack.
 
 Executes `newprogram`.
 
@@ -646,21 +663,23 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 
 ### Normal transaction
 
+TODO: fix now that Value, Anchor, and Condition stacks are merged
+
 ```
-{"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} [unlock ["txvm" 13 peek encode cat sha3 "pubkey1..." checksig verify] defer] command
-{"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} [unlock ["txvm" 13 peek encode cat sha3 "pubkey2..." checksig verify] defer] command
-{"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} [unlock ["txvm" 13 peek encode cat sha3 "pubkey3..." checksig verify] defer] command
-{"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} [unlock ["txvm" 13 peek encode cat sha3 "pubkey4..." checksig verify] defer] command
+{"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey1..." checksig verify] defer] command
+{"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey2..." checksig verify] defer] command
+{"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey3..." checksig verify] defer] command
+{"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey4..." checksig verify] defer] command
 merge
 2 valuestack roll
 2 valuestack roll
 merge
 6 split
-[unlock ["txvm" txstack peek encode cat sha3 "pubkey5..." checksig verify] defer] lock
-[unlock ["txvm" txstack peek encode cat sha3 "pubkey6..." checksig verify] defer] lock
+[jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey5..." checksig verify] defer] lock
+[jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey6..." checksig verify] defer] lock
 18 split
-[unlock ["txvm" txstack peek encode cat sha3 "pubkey7..." checksig verify] defer] lock
-[unlock ["txvm" txstack peek encode cat sha3 "pubkey8..." checksig verify] defer] lock
+[jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey7..." checksig verify] defer] lock
+[jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey8..." checksig verify] defer] lock
 summarize
 "sig4..." satisfy
 "sig3..." satisfy
@@ -671,7 +690,7 @@ summarize
 ### Multi-asset contract
 
 ```
-// 5 of assetID1 and 10 of assetID2 are on the Value stack
+// 5 of assetID1 and 10 of assetID2 are on the Entry stack
 [{"anchor", "anchorvalue1..."}] {"value", 5, "assetid1..."} unlock {"anchor", "anchorvalue2..."} {"value", 10, "assetid2..."} unlock ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] dup lock lock
 ```
 
