@@ -16,7 +16,7 @@ The pieces of transaction information - the inputs, outputs, etc. - that are pro
 
 The VM is initialized with all stacks empty.
 
-When the program counter is equal to the length of the program, execution is complete. The top item of the [Effect stack](#Effect) must be a [Transaction ID](#transaction-id). Other than the Effect stack, the Entry stack, the data stack, and the alt stack, all of the stacks must be empty.
+When the program counter is equal to the length of the program, execution is complete. The top item of the [Effect stack](#Effect) must be a [Transaction ID](#transaction-id), and there must be no other Transaction IDs in the Effect stack. There must be at least one [anchor](#anchor) in the Effect stack. The Entry stack must be empty.
 
 # Stacks
 
