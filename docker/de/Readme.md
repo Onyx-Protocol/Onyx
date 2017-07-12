@@ -16,22 +16,16 @@ $ sh bin/build-docker-de
 
 >**Note:** The `--name` flag allows you to name the container and refer to that name in subsequent commands.
 
+First create a new container with the name `chaincore`:
+
 ```sh
-$ docker run -p 1999:1999 --name chaincore chaincore/developer
+$ docker create -p 1999:1999 --name chaincore chaincore/developer
 ```
 
-Chain Core stores data in three locations: a data directory, a separate Postgres database, and a log directory. To persist the data, create directories on your development machine and mount them to the container on `docker run`:
+Start your new container:
 
 ```sh
-$ mkdir -p /path/to/store/datadir
-$ mkdir -p /path/to/store/postgres
-$ mkdir -p path/to/store/logs
-$ docker run -p 1999:1999 \
-    -v /path/to/store/datadir:/root/.chaincore \
-    -v /path/to/store/postgres:/var/lib/postgresql/data \
-    -v /path/to/store/logs:/var/log/chain \
-    --name chaincore \
-    chaincore/developer
+$ docker start -i chaincore
 ```
 
 #### Access core
@@ -45,6 +39,22 @@ $ docker stop chaincore
 ```
 
 ## Other features
+
+#### Persist data outside of Docker
+
+Chain Core stores data in three locations: a data directory, a separate Postgres database, and a log directory. To persist the data outside the container, create directories on your development machine and mount them to the container on `docker run`:
+
+```sh
+$ mkdir -p /path/to/store/datadir
+$ mkdir -p /path/to/store/postgres
+$ mkdir -p path/to/store/logs
+$ docker run -p 1999:1999 \
+    -v /path/to/store/datadir:/root/.chaincore \
+    -v /path/to/store/postgres:/var/lib/postgresql/data \
+    -v /path/to/store/logs:/var/log/chain \
+    --name chaincore \
+    chaincore/developer
+```
 
 #### Save an image
 
@@ -101,4 +111,3 @@ Then check the logs:
 $ tail /var/log/chain/init.log     # init logs
 $ tail /var/log/chain/cored.log    # cored logs
 ```
-
