@@ -11,6 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/database/sinkdb"
 	"chain/errors"
+	"chain/net/raft"
 )
 
 // Config provides access to Chain Core configuration options
@@ -44,9 +45,12 @@ func Config(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*config.Options, err
 
 	// migrate any old-style existing configuration options
 	monolith, err := config.Load(ctx, db, sdb)
-	if err != nil {
+	if errors.Root(err) == raft.ErrUninitialized {
+		return opts, nil
+	} else if err != nil {
 		return nil, err
 	}
+
 	if monolith != nil {
 		var ops []sinkdb.Op
 		if monolith.BlockHsmUrl != "" {
@@ -58,7 +62,6 @@ func Config(ctx context.Context, db pg.DB, sdb *sinkdb.DB) (*config.Options, err
 			return nil, errors.Wrap(err, "migrating config options")
 		}
 	}
-
 	return opts, nil
 }
 
