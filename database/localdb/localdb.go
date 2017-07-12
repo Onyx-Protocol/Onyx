@@ -40,6 +40,7 @@ func (db *DB) Put(key string, value proto.Message) error {
 
 	// TODO(tessr): tune rocksdb. assess write options
 	wo := gorocksdb.NewDefaultWriteOptions()
+	wo.SetSync(true)
 	err = db.store.Put(wo, []byte(key), encodedValue)
 	return errors.Wrap(err)
 }
