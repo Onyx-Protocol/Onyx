@@ -125,12 +125,12 @@ TBD
 
 #### Maxtime
 
-0. `type`, a string, "beforeconstraint"
+0. `type`, a string, "maxtime"
 1. `maxtime`, an int64
 
 #### Mintime
 
-0. `type`, a string, "afterconstraint"
+0. `type`, a string, "mintime"
 1. `mintime`, an int64
 
 ### Annotation
@@ -465,7 +465,7 @@ Pops a [Program](#program) from the data stack and pushes it to the Condition st
 
 ### Satisfy
 
-Pops a condition from the Condition stack and executes it.
+Pops a condition from the Condition stack and executes it using [command](#command).
 
 ### Unlock 
 
@@ -488,6 +488,12 @@ If `output.value` is a [Proven Value](#proven-value), pushes `value.assetcommitm
 Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `output.anchor`. Pushes `anchor` to the Anchor stack. 
 
 Pushes `output.value` to the Value stack.
+
+### Read
+
+Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
+
+Constructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Pushes `input` to the Read stack.
 
 ### Merge
 
@@ -653,48 +659,63 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 
 ## Examples
 
-The below example uses non-confidential values and ignores (for the moment) the anchor stack.
-
-### In Ivy
+### Normal transaction
 
 ```
-condition SigCheck(pubKey: PublicKey, tx: Transaction, sig: Signature) {
-  verify checkSig(pubKey, sha3(tx.id), sig)
-}
-
-function checkTxSig(pubKey: PublicKey, sig: Signature) {
-  defer SigCheck(pubKey)
-}
-```
-
-```
-contract LockWithPublicKey(pubKey: PublicKey) locks val: Value {
-  clause spend() {
-    checkTxSig(pubKey)
-  }
-}
-```
-
-### In TXVM
-
-```
-{"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} [unlock ["txvm" 13 inspect encode cat sha3 "pubkey1..." checksig verify] defer] command
-{"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} [unlock ["txvm" 13 inspect encode cat sha3 "pubkey2..." checksig verify] defer] command
-{"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} [unlock ["txvm" 13 inspect encode cat sha3 "pubkey3..." checksig verify] defer] command
-{"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} [unlock ["txvm" 13 inspect encode cat sha3 "pubkey4..." checksig verify] defer] command
+{"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} [unlock ["txvm" 13 peek encode cat sha3 "pubkey1..." checksig verify] defer] command
+{"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} [unlock ["txvm" 13 peek encode cat sha3 "pubkey2..." checksig verify] defer] command
+{"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} [unlock ["txvm" 13 peek encode cat sha3 "pubkey3..." checksig verify] defer] command
+{"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} [unlock ["txvm" 13 peek encode cat sha3 "pubkey4..." checksig verify] defer] command
 merge
 2 valuestack roll
 2 valuestack roll
 merge
 6 split
-[unlock ["txvm" txstack inspect encode cat sha3 "pubkey5..." checksig verify] defer] lock
-[unlock ["txvm" txstack inspect encode cat sha3 "pubkey6..." checksig verify] defer] lock
+[unlock ["txvm" txstack peek encode cat sha3 "pubkey5..." checksig verify] defer] lock
+[unlock ["txvm" txstack peek encode cat sha3 "pubkey6..." checksig verify] defer] lock
 18 split
-[unlock ["txvm" txstack inspect encode cat sha3 "pubkey7..." checksig verify] defer] lock
-[unlock ["txvm" txstack inspect encode cat sha3 "pubkey8..." checksig verify] defer] lock
+[unlock ["txvm" txstack peek encode cat sha3 "pubkey7..." checksig verify] defer] lock
+[unlock ["txvm" txstack peek encode cat sha3 "pubkey8..." checksig verify] defer] lock
 summarize
 "sig4..." satisfy
 "sig3..." satisfy
 "sig2..." satisfy
 "sig1..." satisfy
+```
+
+### Multi-asset contract
+
+```
+// 5 of assetID1 and 10 of assetID2 are on the Value stack
+[{"anchor", "anchorvalue1..."}] {"value", 5, "assetid1..."} unlock {"anchor", "anchorvalue2..."} {"value", 10, "assetid2..."} unlock ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] dup lock lock
+```
+
+### Issuance program signing transaction:
+
+```
+[issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer]
+```
+
+Usage (to issue 5 units):
+
+```
+5 [issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] command
+```
+
+### Issuance program signing anchor:
+
+```
+[0 anchorstack peek]
+```
+
+
+### Maximally flexible issuance program
+
+[nonce amount [issue ] command
+```
+
+Maximally flexible issuance program:
+
+```
+[nonc]
 ```
