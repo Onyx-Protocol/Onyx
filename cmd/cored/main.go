@@ -263,7 +263,7 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	confOpts, err := core.Config(ctx, db, sdb)
-	if err != nil && errors.Root(err) != raft.ErrUninitialized {
+	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
