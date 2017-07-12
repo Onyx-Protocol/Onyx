@@ -16,8 +16,7 @@ The pieces of transaction information - the inputs, outputs, etc. - that are pro
 
 The VM is initialized with all stacks empty.
 
-When the program counter is equal to the length of the program, execution is complete. The [Transaction 
-Summary stack](#transaction-id-stack) must have one item on it. Other than the Transaction Summary stack, the anchor stack, the data stack, and the alt stack, all of the stacks must be empty.
+When the program counter is equal to the length of the program, execution is complete. The top item of the [Result stack](#result) must be a [Transaction ID](#transaction-id). The anchor stack must not be empty. Other than the Result stack, the anchor stack, the data stack, and the alt stack, all of the stacks must be empty.
 
 # Stacks
 
@@ -82,6 +81,21 @@ TBD
 1. `valuecommitment`, a [value commitment](#value-commitment)
 2. `assetcommitment`, an [asset commitment](#asset-commitment)
 
+#### Input
+
+0. `type`, a string, "input"
+1. `contractid`, a string
+
+#### Output
+
+0. `type`, a string, "output"
+1. `contractid`, a string
+
+#### Read
+
+0. `type`, a string, "read"
+1. `contractid`, a string
+
 #### Contract
 
 0. `type`, a string, "contract"
@@ -145,12 +159,13 @@ TBD
 
 #### Transaction Summary
 
-0. `type`, an int64
-1. `inputs`, a tuple of [contracts](#contract)
-2. `outputs`, a tuple of [contracts](#contract)
-3. `retirements`, a tuple of [retirements](#retirement)
-4. `nonces`, a tuple of [nonces](#nonces)
-5. `annotations`, a tuple of [annotations](#annotation)
+0. `type`, a string, "transactionSummary"
+1. `resultids`, a tuple of items
+
+#### Transaction ID
+
+0. `type`, a string, "transactionID"
+1. `transactionid`, a string
 
 ### Legacy Output
 
@@ -169,18 +184,12 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 
 0. Data stack
 1. Alt stack
-2. Input stack
-3. Value stack
-4. Output stack
-5. Condition stack
-6. Nonce stack
-7. Anchor stack
-8. Retirement stack
-9. Time Constraint stack
-10. Annotation stack
-11. Asset Commitment stack
-12. Command stack
-13. Transaction summary stack
+2. Value stack
+3. Anchor stack
+4. Condition stack
+5. Asset Commitment stack
+6. Command stack
+7. Result stack
 
 ## Data stack
 
@@ -190,41 +199,25 @@ Items on the data stack can be int64s, strings, or tuples.
 
 Items on the alt stack have the same types as items on the data stack. The alt stack starts out empty. Items can be moved from the data stack to the alt stack with the [toaltstack](#toaltstack) instruction, and from the alt stack to the data stack with the [fromaltstack](#fromaltstack).
 
-### Input stack
-
-Items on the Input stack are [Contracts](#contract) or [Legacy Outputs](#legacy-output).
-
 ### Value stack
 
 Items on the Value stack are [Values](#value).
 
-### Output stack
-
-Items on the Output stack are [Contracts](#contract).
-
-### Nonce stack
-
-Items on the Nonce stack are [Nonces](#nonce).
-
 ### Anchor stack
 
-Items on the anchor stack are [Anchors](#anchor).
+Items on the Anchor stack are [Anchors](#anchor).
 
 ### Condition stack
 
 Items on the Condition stack are [Programs](#program).
 
-### Time Constraint stack
-
-Items on the Time Constraint stack are [Mintimes](#mintime) or [Maxtimes](#maxtime).
-
 ### Asset Commitment stack
 
-Items on the Time Constraint stack are [Asset Commitments](#asset-commitment).
+Items on the Asset Commitment stack are [Asset Commitments](#asset-commitment).
 
-### Transaction Summary stack
+### Result stack
 
-Items on the Transaction Summary stack are [Transaction Summaries](#transaction-summary).
+Items on the Result stack are tuples.
 
 # Encoding formats
 
@@ -269,7 +262,7 @@ Pops an integer `destination`, then a boolean `cond` from the data stack. If `co
 
 ### Roll
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops another integer `n` from the data stack. Fails if `stackid` refers to the Command stack. 
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops another integer `n` from the data stack. Fails if `stackid` refers to the Command stack or the Result stack. 
 
 On the stack identified by `stackid`, moves the `n`th item from the top from its current position to the top of the stack.
 
@@ -277,13 +270,13 @@ Fails if `stackid` does not correspond to a valid stack, or if the stack has few
 
 ### Bury
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack. 
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack or the Result stack. 
 
 On the stack identified by `stackid`, moves the top item and inserts it at the `n`th-from-top position.
 
 ### Reverse
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. On the stack identified by `stackid`, pops the top `n` items and inserts them back to the same stack in reverse order.
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack or the Result stack. On the stack identified by `stackid`, pops the top `n` items and inserts them back to the same stack in reverse order.
 
 ### Depth
 
@@ -325,7 +318,7 @@ Pops an item from the alt stack and pushes it to the data stack.
 
 ## Tuple operations 
 
-### MakeTuple
+### Tuple
 
 Pops an integer `len` from the data stack. Pops `len` items from the data stack and creates a tuple of length `len` on the data stack.
 
@@ -453,7 +446,7 @@ Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed2
 
 ### Annotate
 
-Pops a string, `data`, from the data stack. Pushes an [annotation](#annotation) with `data` of `data` to the Annotation stack.
+Pops a string, `data`, from the data stack. Pushes an [Annotation](#annotation) with `data` of `data` to the Result stack.
 
 ### Command
 
@@ -471,29 +464,19 @@ Pops a condition from the Condition stack and executes it using [command](#comma
 
 Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
 
-Constructs a tuple `input` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Pushes `input` to the Input stack.
+Constructs a tuple `input` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-ids) `contractid` of `input`. Pushes an [Input](#input) to the Result stack with `contractid` equal to `contractid`.
 
-If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset commitment stack.
+If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset Commitment stack.
 
 Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `input.anchor`. Pushes `anchor` to the Anchor stack. 
 
 Pushes `value` to the Value stack.
 
-### UnlockOutput
-
-Pops a [Contract](#contract) `output` from the Output stack. Peeks at the top [Command](#command) `command` on the Command stack. If `output.program` is not equal to `command.program`, fail execution.
-
-If `output.value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Asset commitment stack.
-
-Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `output.anchor`. Pushes `anchor` to the Anchor stack. 
-
-Pushes `output.value` to the Value stack.
-
 ### Read
 
 Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
 
-Constructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Pushes `input` to the Read stack.
+Constructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-ids) `contractid` of `input`. Pushes a [Read](#read) to the Result stack with `contractid` equal to `contractid`.
 
 ### Merge
 
@@ -507,13 +490,13 @@ Pops a [Value](#value) `value` from the Value stack. Pops an int64 `newamount` f
 
 Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Value stack. Pops a [Program](#program) `program` from the data stack. Pops an [anchor](#anchor) `anchor` from the Anchor stack. 
 
-Pushes a [Contract](#contract) to the Output stack with `value` as the `value`, `program` as the `program`, and the ID of `anchor` as the `anchor`. 
+Creates a tuple `contract` of type [Contract](#contract) with `value` as the `value`, `program` as the `program`, and the [ID](#item-id) of `anchor` as the `anchor`. Computes the [ID](#item-id) `contractid` of `contract`.
 
-Constructs an [Anchor](#anchor) `newanchor` with its `value` set to the ID of `anchor`. Pushes `newanchor` to the Anchor stack.
+Pushes an [Output](#output) to the Result stack with `contractid` equal to `contractid`.
 
 ### Retire
 
-Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Value stack. Pushes a [Retirement](#retirement) to the Retirement stack with `value` equal to `value`.
+Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Value stack. Pushes a [Retirement](#retirement) to the Result stack with `value` equal to `value`.
 
 ### MergeConfidential
 
@@ -577,11 +560,15 @@ IC-stack is necessary so that `issuanceprogram` can verify that the correct issu
 
 Pops an int64 `min` from the data stack. Pops an int64 `max` from the data stack. Pops a string `blockchainid` Peeks at the top item on the Command stack, `command`.
 
-Verifies that `blockchainid` is equal to the blockchain ID. Constructs a [Nonce](#nonce) `nonce` with `program` equal to `command.program`, `min` equal to `min`, and `max` equal to `max`. Pushes `nonce` to the Nonce stack. Pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-ids) of `nonce`. Pushes a [Mintime](#mintime) to the Time Constraint stack with `mintime` equal to `mintime`. Pushes a [Maxtime](#maxtime) to the Time Constraint stack with `maxtime` equal to `nonce.maxtime`.
+Verifies that `blockchainid` is equal to the blockchain ID. Constructs a [Nonce](#nonce) `nonce` with `program` equal to `command.program`, `min` equal to `min`, and `max` equal to `max`. Pushes `nonce` to the Result stack. Pushes an [anchor](#anchor) to the Anchor stack with `value` equal to the [ID](#item-ids) of `nonce`. Pushes a [Mintime](#mintime) to the Result stack with `mintime` equal to `mintime`. Pushes a [Maxtime](#maxtime) to the Result stack with `maxtime` equal to `nonce.maxtime`.
 
 ### Reanchor
 
-Pops an [anchor](#anchor) `a1` from the Anchor stack. Pushes a new anchor `a2`, with `a2.value` set to the [ID](#item-ids) of `a1`.
+Pops an [anchor](#anchor) `anchor` from the Anchor stack. Compute the [ID](#item-ids) of `anchor`, `anchorid`. Pushes a new anchor `newanchor`, with `newanchor.value` set to `anchorid`.
+
+### Splitanchor
+
+Pops an [anchor](#anchor) `anchor` from the Anchor stack. Compute the [ID](#item-ids) of `anchor`, `anchorid`. Pushes a new anchor `newanchor01`, with `newanchor.value` set to `sha3("01" ++ anchorid)`. Pushes a new anchor `newanchor00`, with `newanchor.value` set to `sha3("00" ++ anchorid)`.
 
 ### Issue
 
@@ -589,25 +576,21 @@ Pops an int64 `amount` from the data stack. Peeks at the top item on the Command
  
 ### Before
 
-Pops an int64 `max` from the stack. Pushes a [Maxtime](#maxtime) to the [Time Constraint stack](#time-constraint-stack) with `maxtime` equal to `max`.
+Pops an int64 `max` from the stack. Pushes a [Maxtime](#maxtime) to the [Result stack](#result-stack) with `maxtime` equal to `max`.
 
 ### After
 
-Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Time Constraint stack](#time-constraint-stack) with `mintime` equal to `min`.
+Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Result stack](#result-stack) with `mintime` equal to `min`.
 
 ### Summarize
 
-Fails if the [Transaction Summary stack](#transaction-summary-stack) is not empty.
-
-Pops all items from the Input stack and creates a tuple of them (with the top item first), `inputs`. Pops all items from the Output stack and creates a tuple of them, `outputs`. Pops all items from the Nonce stack and creates a tuple of them, `nonces`. Pops all items from the Retirement stack and creates a tuple of them, `retirements`. Pops all items from the Time Constraint stack and creates a tuple of them, `timeconstraints`. Pops all items from the Annotation stack and creates a tuple of them, `annotations`.
-
-Creates a [transaction summary](#transaction-summary) `summary` with `inputs`, `outputs`, `nonces`, `retirements`, `timeconstraints`, and `annotations`, and pushes it to the Transaction Summary stack.
+Computes the ID of each item on the Result stack. Creates a tuple of those IDs (with the first item first), `resultids`. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `resultids` equal to `resultids`. Computes the [ID](#item-id) `txid` of `summary`. Creates a tuple of type [Transaction ID](#transaction-id) on the Result stack with `transactionid` equal to `transactionid`.
 
 ### Migrate
 
 (TBD: update)
 
-Pops a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Pushes it to the `inputs` stack. Pushes an [anchor](#anchor) to the Anchor stack with `value` set to the old-style ID (TBD) of `legacy`.
+Pops a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Pushes it to the Result stack. Pushes an [anchor](#anchor) to the Anchor stack with `value` set to the old-style ID (TBD) of `legacy`.
 
 [TBD: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.]
 
@@ -619,7 +602,9 @@ Executes `newprogram`.
 
 Fails if the extension flag is not set. (TBD: clarify)
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Pops an item, `extension`, from the data stack. On the stack identified by `stackid`, pops a tuple and pushes a copy of that tuple with one additional field added, containing `extension`.
+Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Pops an integer `depth` from the data stack. Pops an item, `extension`, from the data stack. On the stack identified by `stackid`, takes the `n`th tuple and replaces it with a copy of that tuple with one additional field added, containing `extension`.
+
+(TBD: be precise about how cost accounting works for this. Do we even still need this and in what form?)
 
 ### Blind
 
