@@ -24,7 +24,7 @@ If you are interested in contributing to this code base, please read our [issue]
   preferred directory
 * Postgres (we suggest [Postgres.app](http://postgresapp.com/)),
   along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
-* [protoc](https://github.com/google/protobuf#protocol-compiler-installation) 3.1.0 and 
+* [protoc](https://github.com/google/protobuf#protocol-compiler-installation) 3.1.0 and
   [protoc-gen-g](https://github.com/golang/protobuf/protoc-gen-go), if you need to compile protos
 * [CMake](https://cmake.org/) 3.4 or later, to compile RocksDB and its dependencies
 
@@ -143,6 +143,18 @@ $ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
 (Note: don’t put a trailing slash (`/`) on these paths.
 It can change the behavior of cp and put the files
 in the wrong place.)
+
+Since this is a publicy-available open source project, there are some copyright
+issues to keep in mind:
+
+1. Don't vendor packages that are licensed under any flavor of the GPL.
+2. Remember to duplicate legal notices, including licenses, patent grants, and
+   copyrights. These usually sit at the top level of a Git repository, in files
+   named `LICENSE`, `NOTICE`, `PATENTS`, or `COPYING`. Repositories sometimes
+   have several of these files. If you're vendoring an entire Git repository,
+   you won't have to do anything special. However, if you're vendoring a
+   subdirectory of a Git repository only, **please also remember to copy any
+   license information** that sits at the top level of the repository.
 
 In your commit message, include the commit hash of the upstream repo
 for the dependency. (You can find this with `git rev-parse HEAD` in
