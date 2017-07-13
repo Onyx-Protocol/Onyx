@@ -274,7 +274,7 @@ TODO: suggestion - specify runlimit in the transaction structure. Consume that l
 
 ### Fail
 
-Halts VM execution, returning false.
+Halts VM execution, returning `false`.
 
 ### PC
 
@@ -282,7 +282,12 @@ Pushes the current program counter (after incrementing for this instruction) to 
 
 ### JumpIf
 
-Pops an integer `destination`, then a boolean `cond` from the data stack. If `cond` is false, do nothing. If `cond` is true, set program counter to `destination`. Fail if `destination` is negative, if `destination` is greater than the length of the current program.
+1. Pops an integer `destination` from the data stack.
+2. Pops a boolean `cond` from the data stack. 
+3. If `cond` is false, do nothing. 
+4. If `cond` is true, set program counter to `destination`. 
+5. Fail if `destination` is negative.
+6. Fail if `destination` is greater than the length of the current program.
 
 ## Stack operations 
 
@@ -290,29 +295,40 @@ General stack operations intentionally do not allow adding or removing arbitrary
 
 ### Roll
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops another integer `n` from the data stack. Fails if `stackid` refers to the Command stack or the Effect stack. 
-
-On the stack identified by `stackid`, moves the `n`th item from the top from its current position to the top of the stack.
+1. Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks).
+2. Pops another integer `n` from the data stack. 
+3. Fails if `stackid` is not Data stack, Alt stack or Entry stack.
+4. On the stack identified by `stackid`, moves the `n`th item from the top from its current position to the top of the stack.
 
 Fails if `stackid` does not correspond to a valid stack, or if the stack has fewer than `n + 1` items.
 
 ### Bury
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack or the Effect stack. 
-
-On the stack identified by `stackid`, moves the top item and inserts it at the `n`th-from-top position.
+1. Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks).
+2. Pops a number `n` from the data stack.
+3. Fails if `stackid` is not Data stack, Alt stack or Entry stack.
+4. On the stack identified by `stackid` moves the top item and inserts it at the `n`th-from-top position.
 
 ### Reverse
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks), and pops a number `n` from the data stack. Fails if `stackid` refers to the Command stack or the Effect stack. On the stack identified by `stackid`, removes the top `n` items and inserts them back into the same stack in reverse order.
+1. Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks).
+2. Pops a number `n` from the data stack. 
+3. Fails if `stackid` is not Data stack, Alt stack or Entry stack.
+4. On the stack identified by `stackid`: 
+  1. Removes the top `n` items.
+  2. Inserts them back in reverse order.
 
 ### Depth
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Counts the number of items on the stack identified by `stackid`, and pushes it to the data stack.
+1. Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). 
+2. Counts the number of items on the stack identified by `stackid`.
+3. Pushes that count to the data stack.
 
 ### Peek
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Pops an integer `n` from the data stack. Looks at the `n`th item of the stack identified by `stackid`, and pushes a copy of it to the data stack.
+1. Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). 
+2. Pops an integer `n` from the data stack. 
+3. Looks at the `n`th item of the stack identified by `stackid`, and pushes a copy of it to the data stack.
 
 ## Data stack operations
 
@@ -775,17 +791,17 @@ TODO: fix now that Value, Anchor, and Condition stacks are merged
         {"anchor", "anchorvalue2..."}
         {"value",  10, "assetid2..."}
       unlock
-      ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer
+      ["txvm" txstack peek encode cat sha3 "pubkey..." checksig verify] defer
     ] dup lock lock
 
 
 ### Issuance program signing transaction:
 
-    [issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer]
+    [issue ["txvm" txstack peek encode cat sha3 "pubkey..." checksig verify] defer]
 
 Usage (to issue 5 units):
 
-    <sig> 5 [issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] command
+    <sig> 5 [issue ["txvm" txstack peek encode cat sha3 "pubkey..." checksig verify] defer] command
 
 
 ### Issuance program signing anchor:
