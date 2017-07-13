@@ -186,9 +186,6 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 
 ## Stack identifiers
 
-TBD: starting with 0 here can cause off-by-one errors - when formatted in markdown the list will start with 1.
-I suggest starting with 1 to avoid this, or use a table with a column for indices.
-
 0. Data stack
 1. Alt stack
 2. Entry stack
@@ -671,7 +668,7 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 
 ### Small integers
 
-[Descriptions of opcodes that push the numbers 0-32 to the stack.]
+TODO: Descriptions of opcodes that push the numbers 0-32 to the stack.
 
 ### Pushdata
 
