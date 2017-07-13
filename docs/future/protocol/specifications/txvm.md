@@ -263,6 +263,9 @@ The VM is initialized with a set runlimit. Each instruction reduces that number.
 4. Each `checksig` and `pointmul` instruction costs `1024`. [TBD: estimate the actual cost of these instruction relative to the other instructions].
 5. Each `roll`, `bury`, or `reverse` instruction costs `n`, where `n` is the `n` argument to that operation.
 
+TODO: suggestion - specify runlimit in the transaction structure. Consume that limit from the one declared in the block. Federation chooses appropriate limit and signs over it, preventing DoS (because tx ID is computed only via execution of txvm).
+
+
 # Operations
 
 ## Control flow operations
