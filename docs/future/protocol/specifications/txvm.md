@@ -73,12 +73,14 @@ There are several named types of tuples.
 #### Value Commitment
 
 0. `type`, a string, "valuecommitment"
-1. `rawvaluecommitment`, a raw [value commitment](ca.md#value-commitment) as described in [CA](ca.md) specification.
+1. `valuepoint`, first half of [value commitment](ca.md#value-commitment) as described in [CA](ca.md) specification.
+2. `blindingpoint`, second half of [value commitment](ca.md#value-commitment) as described in [CA](ca.md) specification.
 
 #### Asset Commitment
 
 0. `type`, a string, "assetcommitment"
-1. `rawassetcommitment`, a raw [asset ID commitment](ca.md#asset-id-commitment) as described in [CA](ca.md) specification.
+1. `assetpoint`, first half of [asset ID commitment](ca.md#asset-id-commitment) as described in [CA](ca.md) specification.
+2. `blindingpoint`, second half of [asset ID commitment](ca.md#asset-id-commitment) as described in [CA](ca.md) specification.
 
 #### Asset Range Proof
 
@@ -454,15 +456,15 @@ TODO: Should we switch order of `pubKey` and `msg`?
 
 ### PointAdd
 
-Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#ed25519-curve-points), performs an elliptic curve addition `a + b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
+Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#point), performs an elliptic curve addition `a + b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
 
 ### PointSub
 
-Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#ed25519-curve-points), performs an elliptic curve subtraction `a - b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
+Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#point), performs an elliptic curve subtraction `a - b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
 
 ### PointMul
 
-Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed25519 curve points](#ed25519-curve-points), performs an elliptic curve scalar multiplication `i*a`, encodes the result as a string, and pushes it to the data stack. Fails if `a` is not a valid curve point.
+Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed25519 curve points](#point), performs an elliptic curve scalar multiplication `i*a`, encodes the result as a string, and pushes it to the data stack. Fails if `a` is not a valid curve point.
 
 ## Annotation operations
 
@@ -478,7 +480,9 @@ Pops a string, `data`, from the data stack. Pushes an [Annotation](#annotation) 
 2. Constructs a tuple `command` of type [Command](#command) with `program` equal to `program`. 
 3. Pushes `command` to the Command stack. 
 4. Executes `command.program`. 
-5. Pops a [Command](#command) from the Command stack.
+5. Pops a [Command](#command) from the Command stack. 
+
+Note: when step 5 is reached, all nested commands are already executed and popped, so the top item on the Command stack is the one that just finished executing.
 
 ## Condition operations
 
