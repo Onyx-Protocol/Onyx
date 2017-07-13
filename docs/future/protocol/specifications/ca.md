@@ -151,9 +151,13 @@ Scalars are encoded as little-endian 32-byte integers.
 A point is a two-dimensional point on [edwards25519](#elliptic-curve).
 Points are encoded according to [RFC8032](https://tools.ietf.org/html/rfc8032).
 
+Decoding fails for point that does not belong to a curve. No checks are performed for whether the point belongs to the main subgroup.
+
 #### Point Pair
 
 A vector of two elliptic curve [points](#point). Point pair is encoded as 64-byte string composed of 32-byte encodings of each point.
+
+Decoding fails if either of two points is not a valid curve point.
 
 #### Point operations
 
