@@ -18,8 +18,3 @@ func (r *repo) git(arg ...string) ([]byte, error) {
 	cmd.Stderr = os.Stderr
 	return cmd.Output()
 }
-
-func (r *repo) hasCommit(id string) bool {
-	_, err := r.git("cat-file", "-e", id+"^{commit}")
-	return err == nil
-}

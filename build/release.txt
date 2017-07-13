@@ -1,0 +1,5 @@
+sdk-java	1.1	9285cea5fc	na	Forbidden Planet
+sdk-java	1.1.1	7d07f23865	na	Breakfast At Tiffany’s
+sdk-java	1.1.2	563cbb78a0	na	Raiders of the Lost Ark
+sdk-java	1.1.3	da39a3ee5e	na	Attack of the Killer Tomatoes
+chain-enclave	1.1.3	86f7e437fa	e9d71f5ee7	Fantastic Voyage
