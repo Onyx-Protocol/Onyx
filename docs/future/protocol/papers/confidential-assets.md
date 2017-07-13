@@ -91,15 +91,15 @@ denial of service attack is an acceptable tradeoff.
 4. Multi-item range proof binds to a unique asset ID.
 5. By induction, the sequence of (re)blinded commitments are perfectly binding to the original asset ID.
 
-**Proof:** 
+**Proof:**
 
 **1.** First, we observe that [PointHash](ca.md#pointhash) function that maps asset ID to an [asset ID point](ca.md#asset-id-point) based on Keccak permutation is a perfectly binding commitment under the assumption that the underlying Keccak instance is second preimage-resistant (that is, probability of finding a different asset ID mapping to the same _asset ID point_ is negligible). The non-blinded commitment is simply a pair of an _asset ID point_ with a [point at infinity](ca.md#zero-point).
 
 **2.** Next, an [Asset Range Proof](ca.md#asset-range-proof) that consists of one item proves that the given commitment perfectly commits to the same value as the previous asset commitment:
 
-1. Let `H1,B1` be the previous asset commitment, known to commit to a certain asset ID `a`:
+1. Let `H1,B1` be the previous asset commitment, known to commit to a certain asset ID point `A`:
 
-        H1 = a + b·G
+        H1 = A + b·G
         B1 = b·J
         
 2. The asset range proof for `H2,B2` aims to prove the following for an unknown blinding factor `x`:
@@ -114,7 +114,7 @@ denial of service attack is an acceptable tradeoff.
     3. Compute `R2 = s·J - e·(B2 - B1)`.
     4. Compute `e' = Hash(R1||R2||H1||B1||H2||B2)`.
     5. Verify `e' == e`.
-4. Lets use notation `A/B` to mean discrete log of `A` in respect to `B`.
+4. Lets use notation `X/Y` to mean discrete log of `X` in respect to `Y`.
 5. Lets factor out `s` from definitions of R1 and R2:
 
         s = R1/G + e·(H2 - H1)/G
@@ -126,17 +126,17 @@ denial of service attack is an acceptable tradeoff.
 
 1. One-item ring signature uses the following hash function (note that the challenge `e` is both inside and outside the hash function that uses discrete log P/G as a trapdoor):
 
-        e == Hash(s·G - e·P)
+        e == Hash(s·G - e·P || s·J - e·Q)
 
     The equation is satisfied by first computing a Fiat-Shamir challenge `e` based on a random nonce:
 
-        e := Hash(nonce·G)
+        e := Hash(nonce·G || nonce·J)
 
-    Then, a matching `s` is computed using knowledge of the discrete log `x == P/G`:
+    Then, a matching `s` is computed using knowledge of the discrete log `x == P/G == Q/J`:
 
-        s := k + e·x
+        s := nonce + e·x
 
-2. Two-item ring signature, has a slightly more complex hash function, but the principle is the same. The same ring signature can be seen as one of two possible Sigma-protocols:
+2. Two-item ring signature, has a slightly more complex hash function, but the principle is the same. For brevity, but without loss of generality, we omit the portion of the protocol involving `Q` and `J`. The same ring signature can be seen as one of two possible Sigma-protocols:
 
         (a) e0 == Hash(s1·G - Hash(s0·G - e0·P0)·P1)
         (b) e1 == Hash(s0·G - Hash(s1·G - e1·P1)·P0)
@@ -175,16 +175,46 @@ In this application of ring signatures, a valid asset range proof proves equalit
 
 4. From the equations above it follows, that both commitments must necessarily commit to the same asset ID `A1 == A2`.
 
-**5.** Every confidential asset ID commitment that starts with a non-confidential commitment (either at a point of non-confidential [issuance](ca.md#non-confidential-issuance-asset-range-proof) or [migration](txvm.md#migrate)) which is perfectly binding according to **(1)**. Since every (re)blinded commitment and associated range proof maintain the binding, by induction, any subsequent asset ID commitment is perfectly binding to a correctly issued/upgraded asset ID. Binding property of a confidential issuance range proof are covered by the theorem **A2** below.
+**5.** Every confidential asset ID commitment that starts with a non-confidential commitment (either at a point of non-confidential [issuance](ca.md#non-confidential-issuance-asset-range-proof) or [migration](txvm.md#migrate)) which is perfectly binding according to **(1)**. Since every (re)blinded commitment and associated range proof maintain the binding, by induction, any subsequent asset ID commitment is perfectly binding to a correctly issued/upgraded asset ID. Binding property of the confidential issuance range proof is covered by the theorem **A2** below.
 
 
 ### Theorem A2: issuance asset range proof is perfectly binding
 
-Sketch:
+**Theorem A1:** [Issuance asset range proof](#ca.md#issuance-asset-range-proof) perfectly binds asset ID commitment to asset ID and associated issuance key under the assumption that underlying hash functions are first and second preimage-resistant.
 
-1. One-item IARP perfectly binds assetid to Y.
-2. Multi-item IARP binds to one of the candidates
+**Proof sketch:**
+
+1. One-item IARP perfectly binds asset ID to the associated issuance key.
+2. Multi-item IARP binds to one of the candidates.
 3. Multi-item IARP binds to only one of the candidates.
+
+**Proof:**
+
+**0.** Per theorem A1, [asset ID point](ca.md#asset-id-point) perfectly binds asset ID.
+
+**1.** Then, an [IARP](ca.md#issuance-asset-range-proof) that consists of one item proves that the given commitment perfectly commits to the given asset ID point and associated issuance key:
+
+1. Let `A` be the asset ID point, and `Y` be the associated issuance public key.
+2. Let `M` be the pseudo-randomly generated point unique to a given issuance.
+3. Let `T` be the “tracing point”.
+2. The IARP for asset ID commitment `H,B` aims to prove the following for an unknown blinding factor `x` and unknown issuance private key `y`:
+    
+        H = A + x·G
+        B = x·J
+        T = y·M
+
+    In other words, discrete logs `H-A/G` and `B/J` must be equal. Also, discrete log `T/M` must equal the issuance private key associated with asset ID `A`.
+3. The verification procedure is:
+    1. Receive scalars `e`, `s`, and points `H1`, `H2`, `B1`, `B2`.
+    2. Compute `R1 = s·G - e·(H2 - H1)`.
+    3. Compute `R2 = s·J - e·(B2 - B1)`.
+    4. Compute `e' = Hash(R1||R2||H1||B1||H2||B2)`.
+    5. Verify `e' == e`.
+4. Lets use notation `A/B` to mean discrete log of `A` in respect to `B`.
+5. Lets factor out `s` from definitions of R1 and R2:
+
+        s = R1/G + e·(H2 - H1)/G
+        s = R2/J + e·(B2 - B1)/J
 
 
 ### Theorem A3: issuance asset range proof is computationally secure against unauthorized issuance
