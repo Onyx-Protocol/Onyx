@@ -592,7 +592,20 @@ TBD: LINK THIS, ADD CANDIDATES, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.
 
 Pushes an `assetcommitment` to the Entry stack.
 
-### ProveValue
+### Blind
+
+TBD: does it mean simply converting plain value to a commitment? Maybe it's simpler to do that implicitly 
+
+
+### ProveAssetID
+
+TBD: proves specific value for a 
+
+### ProveAmount
+
+TBD: proves specific value for a 
+
+### ProveValueRange
 
 Pops an item `valuerangeproof` of type [Value Range Proof](#value-range-proof) from the data stack. Pops an item `value` of type [Unproven Value](#unproven-value) from the Entry stack. Pops an item of type [Asset Commitment](#asset-commitment) `assetcommitment` from the Entry
 
@@ -604,37 +617,23 @@ Pushes a [Proven Value](#proven-value) to the Entry stack with `value.valuecommi
 
 ### IssuanceCandidate
 
-Pops a Public Key `issuancekey` from the data stack. Peeks at the top item on the Command stack, `command`. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `command.program`.
-
-Pushes an [Issuance Candidate](#issuance-candidate) with `assetid` of `assetid` and `issuancekey` of `issuancekey`.
+1. Pops a Public Key `issuancekey` from the data stack. 
+2. Peeks at the top item on the Command stack, `command`. 
+3. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `command.program`.
+4. Pushes an [Issuance Candidate](#issuance-candidate) to Entry stack with the `assetid` and `issuancekey`.
 
 TBD: this is incompatible with existing asset IDs. We need either support for legacy asset definitions, or another opcode `LegacyIssuanceCandidate` to create ICs from legacy asset ids.
 
-### IssueCA
+### ConfidentialIssue
 
-(WIP. TBD: REVIEW AND REWRITE THIS; MAYBE SPLIT INTO MULTIPLE OPCODES)
+1. Pops from data stack (in order):
+  * asset commitment
+  * program (signed by IARP)
+  * confidential IARP with `n` ring signature items
+2. Pops `n` [Issuance Candidate](#issuance-candidate) items from Entry stack (`n` is the number of items in ring signature).
+3. Verifies IARP using `ac`, issuance candidates and a program as an IARP’s message.
+4. Executes `program` with [command](#command) instruction.
 
-Pops from data stack:
-
-* AC
-* VC
-* iarp-condition
-* list of candidate tuples (asset definition, issuance pubkey)
-* IARP
-* VRP
-
-Verifies IARP using issuance pubkeys and signing over (AC,VC,iarp-condition)
-
-Verifies VRP over (AC,VC,iarp-condition).
-
-Pushes:
-
-* AC and VC to PAC-stack and PVC-stack respectively. 
-* `iarp-condition` to condition stack. 
-* each `(assetdefinition, issuance pubkey)` to IC-stack.
-* each `assetdefinition.issuanceprogram` to condition stack.
-
-IC-stack is necessary so that `issuanceprogram` can verify that the correct issuance key is used.
 
 ## Anchor operations
 
@@ -666,6 +665,8 @@ Pops an int64 `max` from the data stack. Pushes a [Maxtime](#maxtime) to the [Ef
 
 Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Effect stack](#Effect-stack) with `mintime` equal to `min`.
 
+## Conversion operations
+
 ### Summarize
 
 Computes the ID of each item on the Effect stack. Creates a tuple of those IDs (with the first item first), `effectids`. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effectids` equal to `effectids`. Computes the [ID](#item-id) `txid` of `summary`. Creates a tuple of type [Transaction ID](#transaction-id) on the Effect stack with `transactionid` equal to `transactionid`.
@@ -690,9 +691,6 @@ Pops an integer `stackid` from the data stack, representing a [stack identifier]
 
 (TBD: be precise about how cost accounting works for this. Do we even still need this and in what form?)
 
-### Blind
-
-TBD
 
 ## Extension opcodes
 
@@ -786,7 +784,7 @@ TODO: fix now that Value, Anchor, and Condition stacks are merged
 
 Usage (to issue 5 units):
 
-    5 [issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] command
+    <sig> 5 [issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] command
 
 
 ### Issuance program signing anchor:
