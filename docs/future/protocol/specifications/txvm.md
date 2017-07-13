@@ -599,11 +599,12 @@ TBD: does it mean simply converting plain value to a commitment? Maybe it's simp
 
 ### ProveAssetID
 
-TBD: proves specific value for a 
+TBD: proves specific asset ID
 
 ### ProveAmount
 
-TBD: proves specific value for a 
+TBD: proves specific amount
+
 
 ### ProveValueRange
 
