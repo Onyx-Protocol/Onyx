@@ -1,9 +1,40 @@
 package release
 
 import (
+	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"chain/errors"
 )
+
+var number = regexp.MustCompile(`^([1-9][0-9]*|0)$`)
+
+// CheckVersion returns nil if v is a valid version string,
+// and a descriptive error otherwise.
+func CheckVersion(v string) error {
+	part := strings.SplitN(v, "rc", 2)
+
+	if vseg := strings.Split(part[0], "."); len(vseg) > 3 {
+		return errors.Wrap(fmt.Errorf("bad version string %s: too many segments", v))
+	} else {
+		for _, seg := range vseg {
+			if !number.MatchString(seg) {
+				return errors.Wrap(fmt.Errorf("bad version string %s: bad number %s", v, seg))
+			}
+		}
+	}
+
+	if len(part) == 2 && !number.MatchString(part[1]) {
+		return errors.Wrap(fmt.Errorf("bad version string %s: bad rc number %s", v, part[1]))
+	}
+
+	if strings.HasSuffix(v, ".0") {
+		return errors.Wrap(fmt.Errorf("bad version string %s: has '.0' suffix", v))
+	}
+	return nil
+}
 
 // Less returns whether version string a is considered "less than" b.
 // Both a and b must be a valid version or the empty string,
@@ -49,22 +80,22 @@ func decodevseg(s string) int {
 	return n<<16 | rc
 }
 
-// Prev returns the "previous" version string from v,
+// Previous returns the "previous" version string from v,
 // or the empty string if there is no previous version
 // (such as for version 1).
 // If v is not a valid version, the return value is undefined.
 // Examples:
-//   Prev("2")      == "1"
-//   Prev("2.1")    == "2"
-//   Prev("2.2")    == "2.1"
-//   Prev("2.5rc1") == "2.4"
-//   Prev("2.5rc5") == "2.4"
-//   Prev("2.5")    == "2.4"
-//   Prev("2.5.2")  == "2.5.1"
-//   Prev("1.0.1")  == "1"
-//   Prev("1")      == ""
-// Less(Prev(v), v) returns true for any valid version v.
-func Prev(v string) string {
+//   Previous("2")      == "1"
+//   Previous("2.1")    == "2"
+//   Previous("2.2")    == "2.1"
+//   Previous("2.5rc1") == "2.4"
+//   Previous("2.5rc5") == "2.4"
+//   Previous("2.5")    == "2.4"
+//   Previous("2.5.2")  == "2.5.1"
+//   Previous("1.0.1")  == "1"
+//   Previous("1")      == ""
+// Less(Previous(v), v) returns true for any valid version v.
+func Previous(v string) string {
 	if i := strings.Index(v, "rc"); i >= 0 {
 		v = v[:i]
 	}

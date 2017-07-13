@@ -2,6 +2,31 @@ package release
 
 import "testing"
 
+func TestCheckVersion(t *testing.T) {
+	cases := []struct {
+		s  string
+		ok bool
+	}{
+		{"", false},
+		{"1", true},
+		{"x", false},
+		{"1.0", false},
+		{"1.1", true},
+		{"1.01", false},
+		{"1.1rc1", true},
+		{"1.1rc1.1", false},
+		{"1.1.1", true},
+		{"1.1.1.1", false},
+	}
+
+	for _, test := range cases {
+		gotOk := CheckVersion(test.s) == nil
+		if gotOk != test.ok {
+			t.Errorf("CheckVersion(%q) error is %v, want %v", test.s, gotOk, test.ok)
+		}
+	}
+}
+
 func TestLess(t *testing.T) {
 	cases := [][]string{
 		{"", "1"},
@@ -33,28 +58,32 @@ func TestLess(t *testing.T) {
 	}
 }
 
-func TestPrevver(t *testing.T) {
+func TestPrevious(t *testing.T) {
 	cases := []struct{ v, p string }{
+		{"0.0.1", ""},
+		{"0.0.2", "0.0.1"},
+		{"0.1", ""},
+		{"0.2", "0.1"},
 		{"1", ""},
+		{"1.0.1", "1"},
 		{"1.2", "1.1"},
+		{"2rc1", "1"},
+		{"2rc5", "1"},
 		{"2", "1"},
 		{"2.1", "2"},
 		{"2.5", "2.4"},
 		{"2.5.1", "2.5"},
 		{"2.5.2", "2.5.1"},
-		{"2rc1", "1"},
-		{"2rc5", "1"},
-		{"1.0.1", "1"},
 	}
 
 	for _, test := range cases {
-		g := Prev(test.v)
+		g := Previous(test.v)
 		if g != test.p {
-			t.Errorf("Prev(%q) = %q, want %q", test.v, g, test.p)
+			t.Errorf("Previous(%q) = %q, want %q", test.v, g, test.p)
 			continue
 		}
 		if !Less(g, test.v) {
-			t.Errorf("Prev(%q) = %q >= %q, want <", test.v, g, test.v)
+			t.Errorf("Previous(%q) = %q >= %q, want <", test.v, g, test.v)
 		}
 	}
 }
