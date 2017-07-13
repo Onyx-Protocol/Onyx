@@ -31,13 +31,32 @@ describe('accounts', () => {
 
     it('can create a new account', () => {
       const alias = 'test-account-' + uuid.v4()
+      browser.waitForVisible('.ItemList button')
+      browser.scroll('.ItemList button')
       browser.click('.ItemList button')
       browser.setValue('input[name=alias]', alias)
+      browser.scroll('.FormContainer input[type=radio][value=generate]')
       browser.click('.FormContainer input[type=radio][value=generate]')
+      browser.scroll('.FormContainer button')
       browser.click('.FormContainer button')
       browser.waitForVisible('.AccountShow')
       browser.getText('.AccountShow').should.contain('Created account. Create another?')
       browser.getText('.AccountShow').should.contain(alias)
+    })
+  })
+
+  describe('creating receivers', () => {
+    before(() => expect(testHelpers.ensureConfigured()).to.be.fulfilled
+      .then(() => testHelpers.createAccount('receiver-test'))
+      .then((account) => browser.url('/accounts/' + account.id))
+    )
+
+    it('can create a new receiver', () => {
+      browser.waitForVisible('.AccountShow')
+      browser.scroll('button=Create receiver')
+      browser.click('button=Create receiver')
+      browser.waitForVisible('.ReceiverModal')
+      browser.getText('.ReceiverModal').should.contain('Copy this one-time use receiver to use in a transaction')
     })
   })
 })
