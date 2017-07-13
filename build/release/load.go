@@ -25,8 +25,8 @@ func load() {
 
 var (
 	fields  = regexp.MustCompile(`\s+`)
-	prodpat = regexp.MustCompile(`[0-9A-Za-z-]+`)
-	vsegpat = regexp.MustCompile(`[1-9][0-9]*(rc[1-9][0-9]*)?`)
+	prodpat = regexp.MustCompile(`^[0-9A-Za-z-]+$`)
+	vsegpat = regexp.MustCompile(`^([1-9][0-9]*|0)(rc([1-9][0-9]*|0))?$`)
 )
 
 func parse(r io.Reader) (tab []*Definition, err error) {
@@ -64,6 +64,9 @@ func parse(r io.Reader) (tab []*Definition, err error) {
 					return nil, errors.Wrap(fmt.Errorf("bad version string: %s %s", d.Product, d.Version))
 				}
 			}
+		}
+		if strings.HasSuffix(d.Version, ".0") {
+			return nil, errors.Wrap(fmt.Errorf("bad version string (0 suffix): %s %s", d.Product, d.Version))
 		}
 
 		tab = append(tab, d)

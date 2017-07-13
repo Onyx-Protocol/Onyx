@@ -61,6 +61,7 @@ func decodevseg(s string) int {
 //   Prev("2.5rc5") == "2.4"
 //   Prev("2.5")    == "2.4"
 //   Prev("2.5.2")  == "2.5.1"
+//   Prev("1.0.1")  == "1"
 //   Prev("1")      == ""
 // Less(Prev(v), v) returns true for any valid version v.
 func Prev(v string) string {
@@ -73,6 +74,9 @@ func Prev(v string) string {
 	} else {
 		n, _ := strconv.Atoi(segs[len(segs)-1])
 		segs[len(segs)-1] = strconv.Itoa(n - 1)
+	}
+	for len(segs) > 0 && segs[len(segs)-1] == "0" {
+		segs = segs[:len(segs)-1]
 	}
 
 	return strings.Join(segs, ".")

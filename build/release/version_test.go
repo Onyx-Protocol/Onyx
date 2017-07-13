@@ -44,12 +44,17 @@ func TestPrevver(t *testing.T) {
 		{"2.5.2", "2.5.1"},
 		{"2rc1", "1"},
 		{"2rc5", "1"},
+		{"1.0.1", "1"},
 	}
 
 	for _, test := range cases {
 		g := Prev(test.v)
 		if g != test.p {
 			t.Errorf("Prev(%q) = %q, want %q", test.v, g, test.p)
+			continue
+		}
+		if !Less(g, test.v) {
+			t.Errorf("Prev(%q) = %q >= %q, want <", test.v, g, test.v)
 		}
 	}
 }
