@@ -18,6 +18,26 @@ The VM is initialized with all stacks empty.
 
 When the program counter is equal to the length of the program, execution is complete. The top item of the [Effect stack](#Effect) must be a [Transaction ID](#transaction-id), and there must be no other Transaction IDs in the Effect stack. There must be at least one [anchor](#anchor) in the Effect stack. The Entry stack must be empty.
 
+# Transaction version
+
+TBD: how transaction version is specified and how `extension` flag is set.
+
+Sketch:
+
+1. New txvm txs will have version 2 to avoid confusion with txv1 (they have incompatible format, but still). 
+2. Version 1 is prohibited in txvm.
+3. Tx version can be unknown (>2) only if allowed by outer context (e.g. block version is unknown)
+4. If tx version is unknown (>2) extension flag is set to true to allow NOPs and extends.
+
+TBD: should we specify txversion inside the bytecode or in the container? E.g. we could have "transaction" tuple:
+
+    {
+      type:    "tx", 
+      version: 2, 
+      program: "...txvm bytecode..."
+    }
+
+
 # Stacks
 
 ## Types
@@ -191,7 +211,6 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 2. Entry stack
 3. Command stack
 4. Effect stack
-5. Issuance candidates stack
 
 ## Data stack
 
@@ -514,15 +533,24 @@ Constructs a tuple `contract` of type [Contract](#contract), with `program` equa
 
 ### Issue
 
-Pops an int64 `amount` from the data stack. Peeks at the top item on the Command stack, `command`. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `command.program`. Pushes a [value](#value) with amount `amount` and assetID `assetID`.
+1. Pops an int64 `amount` from the data stack. 
+2. Peeks at the top item on the Command stack, `command`. 
+3. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `command.program`. 
+4. Pushes a [value](#value) with amount `amount` and assetID `assetID` to Entry stack.
 
 ### Merge
 
-Pops two [Values](#value) from the Entry stack. If their asset IDs are different, execution fails. Pushes a new [Value](#value) to the Entry stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
+1. Pops two [Values](#value) from the Entry stack. 
+2. If their asset IDs are different, execution fails. 
+3. Pushes a new [Value](#value) to the Entry stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
 
 ### Split
 
-Pops a [Value](#value) `value` from the Entry stack. Pops an int64 `newamount` from the data stack. If `newamount` is greater than or equal to `value.amount`, fail execution. Pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`, then pushes a new Value with amount `newamount` and assetID `value.assetID`.
+1. Pops a [Value](#value) `value` from the Entry stack. 
+2. Pops an int64 `newamount` from the data stack. 
+3. If `newamount` is greater than or equal to `value.amount`, fail execution. 
+4. Pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`.
+5. Pushes a new Value with amount `newamount` and assetID `value.assetID`.
 
 ### Retire
 
@@ -664,6 +692,8 @@ Have no effect when executed.
 
 ### Reserved
 
+TODO: do we really need reserved opcodes? All NOPs are prohibited w/o "extensible" flag turned on (that is for unknown tx versions).
+
 Causes the VM to halt and fail.
 
 ## Encoding opcodes
@@ -672,11 +702,21 @@ Causes the VM to halt and fail.
 
 Pops an item from the data stack. Pushes a string to the data stack which, if executed, would push that item to the data stack.
 
-Strings are encoded as a [Pushdata](#Pushdata) instruction which would push that string to the data stack. Integers greater than or equal to 0 and less than or equal to 32 are encoded as the appropriate [small integer](#small-integer) opcode. Other integers are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint), followed by an [int64](#int64) instruction. Tuples are encoded as a sequence of [Pushdata](#Pushdata) instructions that would push each of the items in the tuple in reverse order, followed by the instruction given by `encode(len)` where `len` is the length of the tuple, followed by the [tuple](#tuple).
+* **Strings** are encoded as a [Pushdata](#Pushdata) instruction which would push that string to the data stack. 
+* **Integers** in range 0..32 (inclusive) are encoded as the appropriate [small integer](#small-integer) opcode. 
+* **Other integers** (above 32 or negative) are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint), followed by an [int64](#int64) instruction. 
+* **Tuples** are encoded as a sequence of [Pushdata](#Pushdata) instructions that would push each of the items in the tuple in reverse order, followed by the instruction given by `encode(len)` where `len` is the length of the tuple, followed by the [tuple](#tuple).
 
 ### Int64
 
-Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and pushes the result to the data stack as an Int64. Fails execution if `a` is not a valid varint encoding of an integer, or if the decoded `a` is greater than or equal to `2^63`.
+1. Pops a string `a` from the stack,
+2. decodes it as a [signed varint](#varint),
+3. pushes the result to the data stack as an Int64.
+
+Fails execution when:
+
+* `a` is not a valid varint encoding of an integer, 
+* or the decoded `a` is greater than or equal to `2^63`.
 
 ### Small integers
 
