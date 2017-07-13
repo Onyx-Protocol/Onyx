@@ -289,6 +289,16 @@ Pushes the current program counter (after incrementing for this instruction) to 
 5. Fail if `destination` is negative.
 6. Fail if `destination` is greater than the length of the current program.
 
+Note 1: normally the program using `jumpif` is written as `<cond> <destination> jumpif`, but for brevity a slightly different syntax is used in the human-readable code:
+
+    <cond> jumpif:$<destination>
+
+where `<destination>` is a name of a label somewhere in the program. The label itself is marked as `$<label>` among the instructions. Example:
+
+    <cond> jumpif:$xyz  ... $xyz ...
+
+Note 2: unconditional jump can be implemented with `1 jumpif:$<destination>`.
+
 ## Stack operations 
 
 General stack operations intentionally do not allow adding or removing arbitrary items. Only data stack and altstack allow arbitrary manipulations (see [Data stack operations](#data-stack-operations)), other stacks employ specific validation rules for adding or removing individual elements.
@@ -759,20 +769,20 @@ TODO: Descriptions of opcodes that push the numbers 0-32 to the stack.
 
 TODO: fix now that Value, Anchor, and Condition stacks are merged
 
-    {"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey1..." checksig verify] defer] command
-    {"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey2..." checksig verify] defer] command
-    {"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey3..." checksig verify] defer] command
-    {"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey4..." checksig verify] defer] command
+    {"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} 1 [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey1..." checksig verify] defer] command
+    {"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} 1 [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey2..." checksig verify] defer] command
+    {"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} 1 [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey3..." checksig verify] defer] command
+    {"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} 1 [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey4..." checksig verify] defer] command
     merge
     2 valuestack roll
     2 valuestack roll
     merge
     6 split
-    [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey5..." checksig verify] defer] lock
-    [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey6..." checksig verify] defer] lock
+    [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey5..." checksig verify] defer] lock
+    [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey6..." checksig verify] defer] lock
     18 split
-    [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey7..." checksig verify] defer] lock
-    [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey8..." checksig verify] defer] lock
+    [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey7..." checksig verify] defer] lock
+    [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey8..." checksig verify] defer] lock
     summarize
     "sig4..." satisfy
     "sig3..." satisfy
