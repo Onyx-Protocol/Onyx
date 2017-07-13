@@ -481,13 +481,17 @@ Pops a string, `data`, from the data stack. Pushes an [Annotation](#annotation) 
 
 ### Defer
 
-Pops a [Program](#program) from the data stack and pushes it to the Entry stack.
+1. Pops a [Program](#program) from the data stack. 
+2. Pushes it to the Entry stack.
 
 TODO: seems like `opcommand` should be `opdefer;opsatisfy`. We have too many entities here - programs on data stack, programs on entry stack and programs in the command stack.
 
 ### Satisfy
 
-Pops a condition from the Entry stack and executes it using [command](#command).
+TBD: name "satisfy" no longer aligned with "conditions" because we now have "programs". Maybe rename to it `run`?
+
+1. Pops a [Program](#program) from the Entry stack 
+2. Executes it using [command](#command) operation.
 
 ## Record operations
 
@@ -513,7 +517,7 @@ Constructs a tuple `input` of type [Contract](#contract), with `program` equal t
 
 If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Entry stack.
 
-Constructs a tuple `anchor` of type [Anchor](#anchor) with `value` equal to `input.anchor`. Pushes `anchor` to the Entry stack. 
+Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to `input.anchor`. Pushes `a` to the Entry stack. 
 
 Pushes `value` to the Entry stack.
 
@@ -554,15 +558,16 @@ Constructs a tuple `contract` of type [Contract](#contract), with `program` equa
 
 ### Retire
 
-Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Entry stack. Pushes a [Retirement](#retirement) to the Effect stack with `value` equal to `value`.
+1. Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Entry stack. 
+2. Pushes a [Retirement](#retirement) `r` to the Effect stack with `r.value` set to `value`.
 
 ## Confidential value operations
 
 ### MergeConfidential
 
-FIXME: VULNERABILITY: merging unprovable and proven values allows creating provable value. We should allow merging only proven values.
+FIXME: VULNERABILITY: merging unprovable and proven values allows creating provable value. We should allow merging only proven or plain values from Entry stack.
 
-Pops two items of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `value1` and `value2` from the [Entry stack](#value-stack).
+Pops two items of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `value1` and `value2` from the [Entry stack](#entry-stack).
 
 Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value1.valuecommitment + value2.valuecommitment` to the Entry stack.
 
