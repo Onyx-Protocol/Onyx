@@ -53,14 +53,12 @@ There are several named types of tuples.
 #### Value Commitment
 
 0. `type`, a string, "valuecommitment"
-1. `amountcommitment`, a [point](#point)
-2. `blindingcommitment`, a [point](#point)
+1. `rawvaluecommitment`, a raw [value commitment](ca.md#value-commitment) as described in [CA](ca.md) specification.
 
 #### Asset Commitment
 
 0. `type`, a string, "assetcommitment"
-1. `assetcommitment`, a [point](#point)
-2. `blindingcommitment`, a [point](#point)
+1. `rawassetcommitment`, a raw [asset ID commitment](ca.md#asset-id-commitment) as described in [CA](ca.md) specification.
 
 #### Asset Range Proof
 
@@ -188,11 +186,15 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 
 ## Stack identifiers
 
+TBD: starting with 0 here can cause off-by-one errors - when formatted in markdown the list will start with 1.
+I suggest starting with 1 to avoid this, or use a table with a column for indices.
+
 0. Data stack
 1. Alt stack
 2. Entry stack
 3. Command stack
 4. Effect stack
+5. Issuance candidates stack
 
 ## Data stack
 
@@ -210,6 +212,10 @@ Items on the Entry stack are [Values](#value)
 
 Items on the Effect stack are [Inputs](#input), [Outputs](#output), [Reads](#read), [Nonces](#nonce), [Retirements](#retirement).
 
+### Issuance candidates stack
+
+Items on the Issuance candidates stack are [Issuance Candidates](#issuance-candidates).
+
 # Encoding formats
 
 ## Varint
@@ -218,7 +224,11 @@ TODO: Describe rules for encoding and decoding unsigned varints.
 
 ## Point
 
-TODO: Describe rules for Ed25519 curve point encoding (including checks that should be done when decoding.)
+See [Point](ca.md#point) definition in Confidential Assets specification.
+
+## Point Pair
+
+See [Point Pair](ca.md#point-pair) definition in Confidential Assets specification.
 
 # Runlimit
 
@@ -513,6 +523,8 @@ Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Entry s
 
 ### MergeConfidential
 
+FIXME: VULNERABILITY: merging unprovable and proven values allows creating provable value. We should allow merging only proven values.
+
 Pops two items of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `value1` and `value2` from the [Entry stack](#value-stack).
 
 Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value1.valuecommitment + value2.valuecommitment` to the Entry stack.
@@ -525,7 +537,9 @@ Pops an item `value` of type [Proven Value](#proven-value) or [Unproven Value](#
 
 Pops an item `assetrangeproof` of type [Asset Range Proof](#asset-range-proof). Pops an item `assetcommitment` from the data stack of type [Asset Commitment](#asset-commitment). Pops an item 
 
-Verifies `assetrangeproof` with ` assetcommitment` as the asset commitment. (TBD: LINK THIS, ADD CANDIDATES, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.)
+Verifies `assetrangeproof` with ` assetcommitment` as the asset commitment. 
+
+TBD: LINK THIS, ADD CANDIDATES, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.
 
 Pushes an `assetcommitment` to the Entry stack.
 
@@ -533,7 +547,9 @@ Pushes an `assetcommitment` to the Entry stack.
 
 Pops an item `valuerangeproof` of type [Value Range Proof](#value-range-proof) from the data stack. Pops an item `value` of type [Unproven Value](#unproven-value) from the Entry stack. Pops an item of type [Asset Commitment](#asset-commitment) `assetcommitment` from the Entry
 
-Verifies `valuerangeproof` with ` value.valuecommitment` as the value commitment, and `assetcommitment` as the asset commitment. (TBD: LINK THIS, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.)
+Verifies `valuerangeproof` with ` value.valuecommitment` as the value commitment, and `assetcommitment` as the asset commitment. 
+
+TBD: LINK THIS, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.
 
 Pushes a [Proven Value](#proven-value) to the Entry stack with `value.valuecommitment` as the `valuecommitment` and `assetcommitment` as the asset commitment.
 
@@ -542,6 +558,8 @@ Pushes a [Proven Value](#proven-value) to the Entry stack with `value.valuecommi
 Pops a Public Key `issuancekey` from the data stack. Peeks at the top item on the Command stack, `command`. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `command.program`.
 
 Pushes an [Issuance Candidate](#issuance-candidate) with `assetid` of `assetid` and `issuancekey` of `issuancekey`.
+
+TBD: this is incompatible with existing asset IDs. We need either support for legacy asset definitions, or another opcode `LegacyIssuanceCandidate` to create ICs from legacy asset ids.
 
 ### IssueCA
 
@@ -665,61 +683,60 @@ Pops a string `a` from the stack, decodes it as a [signed varint](#varint), and 
 
 TODO: fix now that Value, Anchor, and Condition stacks are merged
 
-```
-{"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey1..." checksig verify] defer] command
-{"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey2..." checksig verify] defer] command
-{"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey3..." checksig verify] defer] command
-{"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey4..." checksig verify] defer] command
-merge
-2 valuestack roll
-2 valuestack roll
-merge
-6 split
-[jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey5..." checksig verify] defer] lock
-[jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey6..." checksig verify] defer] lock
-18 split
-[jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey7..." checksig verify] defer] lock
-[jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey8..." checksig verify] defer] lock
-summarize
-"sig4..." satisfy
-"sig3..." satisfy
-"sig2..." satisfy
-"sig1..." satisfy
-```
+    {"anchor", "anchorvalue1..."} {{"value", 5, "assetid1..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey1..." checksig verify] defer] command
+    {"anchor", "anchorvalue2..."} {{"value", 10, "assetid1..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey2..." checksig verify] defer] command
+    {"anchor", "anchorvalue3..."} {{"value", 15, "assetid2..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey3..." checksig verify] defer] command
+    {"anchor", "anchorvalue4..."} {{"value", 20, "assetid2..."}} 1 [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" 13 peek encode cat sha3 "pubkey4..." checksig verify] defer] command
+    merge
+    2 valuestack roll
+    2 valuestack roll
+    merge
+    6 split
+    [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey5..." checksig verify] defer] lock
+    [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey6..." checksig verify] defer] lock
+    18 split
+    [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey7..." checksig verify] defer] lock
+    [jumpif:$unlock lock jump:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey8..." checksig verify] defer] lock
+    summarize
+    "sig4..." satisfy
+    "sig3..." satisfy
+    "sig2..." satisfy
+    "sig1..." satisfy
+
 
 ### Multi-asset contract
 
-```
-// 5 of assetID1 and 10 of assetID2 are on the Entry stack
-[{"anchor", "anchorvalue1..."}] {"value", 5, "assetid1..."} unlock {"anchor", "anchorvalue2..."} {"value", 10, "assetid2..."} unlock ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] dup lock lock
-```
+
+    // 5 of assetID1 and 10 of assetID2 are on the Entry stack
+    [
+        {"anchor", "anchorvalue1..."}
+        {"value",  5, "assetid1..."}
+      unlock
+        {"anchor", "anchorvalue2..."}
+        {"value",  10, "assetid2..."}
+      unlock
+      ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer
+    ] dup lock lock
+
 
 ### Issuance program signing transaction:
 
-```
-[issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer]
-```
+    [issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer]
 
 Usage (to issue 5 units):
 
-```
-5 [issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] command
-```
+    5 [issue ["txvm" txstack inspect encode cat sha3 "pubkey..." checksig verify] defer] command
+
 
 ### Issuance program signing anchor:
 
-```
-[0 anchorstack peek]
-```
+    [0 anchorstack peek]
 
 
 ### Maximally flexible issuance program
 
-[nonce amount [issue ] command
-```
+    [nonce amount [issue ] command
 
 Maximally flexible issuance program:
 
-```
-[nonc]
-```
+    [nonce]
