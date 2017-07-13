@@ -203,7 +203,11 @@ Items on the alt stack have the same types as items on the data stack. The alt s
 
 ### Entry stack
 
-Items on the Entry stack are [Values](#value)
+Items on the Entry stack are [Values](#value).
+
+### Command stack
+
+Items on the Command stack are [Commands](#command).
 
 ### Effect stack
 
@@ -257,6 +261,8 @@ Pushes the current program counter (after incrementing for this instruction) to 
 Pops an integer `destination`, then a boolean `cond` from the data stack. If `cond` is false, do nothing. If `cond` is true, set program counter to `destination`. Fail if `destination` is negative, if `destination` is greater than the length of the current program.
 
 ## Stack operations 
+
+General stack operations intentionally do not allow adding or removing arbitrary items. Only data stack and altstack allow arbitrary manipulations (see [Data stack operations](#data-stack-operations)), other stacks employ specific validation rules for adding or removing individual elements.
 
 ### Roll
 
@@ -446,13 +452,19 @@ Pops a string, `data`, from the data stack. Pushes an [Annotation](#annotation) 
 
 ### Command
 
-Pops a string `program` from the data stack. Constructs a tuple `command` of type [Command](#command) with `program` equal to `program`. Pushes `command` to the Command stack. Executes `command.program`. Pops a [Command](#command) from the Command stack.
+1. Pops a string `program` from the data stack. 
+2. Constructs a tuple `command` of type [Command](#command) with `program` equal to `program`. 
+3. Pushes `command` to the Command stack. 
+4. Executes `command.program`. 
+5. Pops a [Command](#command) from the Command stack.
 
 ## Condition operations
 
 ### Defer
 
 Pops a [Program](#program) from the data stack and pushes it to the Entry stack.
+
+TODO: seems like `opcommand` should be `opdefer;opsatisfy`. We have too many entities here - programs on data stack, programs on entry stack and programs in the command stack.
 
 ### Satisfy
 
@@ -496,7 +508,7 @@ Constructs a tuple `contract` of type [Contract](#contract), with `program` equa
 
 Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Entry stack. Pops an [anchor](#anchor) `anchor` from the Entry stack. Peeks at the top [Command](#command) `command` on the Command stack.
 
-CConstructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-id) `contractid` of `contract`. Pushes an [Output](#output) to the Effect stack with `contractid` equal to `contractid`.
+Constructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-id) `contractid` of `contract`. Pushes an [Output](#output) to the Effect stack with `contractid` equal to `contractid`.
 
 ## Value operations
 
