@@ -719,11 +719,13 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 3. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `command.program`. 
 4. Pushes a [value](#value) with amount `amount` and assetID `assetID` to Entry stack.
 
+
 ### Merge
 
 1. Pops two [Values](#value) from the Entry stack. 
 2. If their asset IDs are different, execution fails. 
 3. Pushes a new [Value](#value) to the Entry stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
+
 
 ### Split
 
@@ -733,6 +735,7 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 4. Pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`.
 5. Pushes a new Value with amount `newamount` and assetID `value.assetID`.
 
+
 ### Retire
 
 1. Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Entry stack. 
@@ -741,17 +744,21 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 
 ### MergeConfidential
 
+Note: merging unprovable and proven values allows creating provable value due to an overflow in a finite subgroup. Therefore only proven or raw values can be merged.
 
+1. Pops two items of type [Value](#value) or [Proven Value](#proven-value) `a` and `b` from the [Entry stack](#entry-stack).
+2. Converts each item of type [Value](#value) (if any) to the [Proven Value](#proven-value) with a corresponding [non-blinded value commitment](ca.md#create-nonblinded-value-commitment) based on plaintext `amount` and `assetID`.
+3. Computes new [Proven Value](#proven-value) `c` with `valuecommitment` equal to `a.valuecommitment + b.valuecommitment`.
+4. Pushes proven value `c` to the Entry stack.
 
-FIXME: VULNERABILITY: merging unprovable and proven values allows creating provable value. We should allow merging only proven or plain values from Entry stack.
-
-Pops two items of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `value1` and `value2` from the [Entry stack](#entry-stack).
-
-Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value1.valuecommitment + value2.valuecommitment` to the Entry stack.
 
 ### SplitConfidential
 
-Pops an item `value` of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) from the Entry stack. Pops a [Value Commitment](#value-commitment) `newvaluecommitment` from the Entry stack. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `newvaluecommitment`, then pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value.valuecommitment - newvaluecommitment`.
+1. Pops an item `value` of type [Value](#value), [Proven Value](#proven-value) or [Unproven Value](#unproven-value) from the Entry stack. 
+2. Pops a [Value Commitment](#value-commitment) `vc` from the Entry stack. 
+3. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `vc`.
+4. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value.valuecommitment - vc`.
+
 
 ### ProveAssetCommitment
 
@@ -987,7 +994,7 @@ TODO: fix now that Value, Anchor, and Condition stacks are merged
         {"value",  10, "assetid2..."}
       unlock
       ["txvm" txstack peek encode cat sha3 "pubkey..." checksig verify] defer
-    ] dup lock lock
+    ] 0 datastack peek lock lock
 
 
 ### Issuance program signing transaction:
