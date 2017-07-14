@@ -2,6 +2,14 @@
 
 This is the specification for txvm, which combines a representation for blockchain transactions with the rules for ensuring their validity.
 
+* [Motivation](#motivation)
+* [VM execution](#vm-execution)
+* [Types](#types)
+* [Encoding](#encoding)
+* [Stacks](#stacks)
+* [Instructions](#instructions)
+* [Examples](#examples)
+
 ## Motivation
 
 Earlier versions of Chain Core represented transactions with a static data structure, exposing the pieces of information needed to test the transaction’s validity. A separate set of validation rules could be applied to that information to get a true/false result.
@@ -12,13 +20,14 @@ When the virtual machine executes a txvm program, it accumulates different types
 
 The pieces of transaction information - the inputs, outputs, etc. - that are produced during txvm execution are also _consumed_ in order to produce the transaction summary, which is the sole output of a successful txvm program. To capture pieces of transaction information for purposes other than validation, txvm implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
-# VM Execution
+
+## VM Execution
 
 The VM is initialized with all stacks empty.
 
 When the program counter is equal to the length of the program, execution is complete. The top item of the [Effect stack](#Effect) must be a [Transaction ID](#transaction-id), and there must be no other Transaction IDs in the Effect stack. There must be at least one [anchor](#anchor) in the Effect stack. The Entry stack must be empty.
 
-# Transaction version
+### Transaction version
 
 TBD: how transaction version is specified and how `extension` flag is set.
 
@@ -37,8 +46,23 @@ TBD: should we specify txversion inside the bytecode or in the container? E.g. w
       program: "...txvm bytecode..."
     }
 
+### Runlimit
 
-# Stacks
+The VM is initialized with a set runlimit. Each instruction reduces that number. If the runlimit goes below zero while the program counter is less than the length of the program, execution fails.
+
+1. Each instruction costs `1`.
+2. Each instruction that pushes an item to the data stack, including as the result of an operation (such as `add`, `cat`, `merge`, `field`, and `untuple`), costs an amount based on the type and size of that data:
+  1. Each string that is pushed to the stack costs `1 + len`, where `len` is the length of that string in bytes.
+  2. Each number that is pushed to the stack costs `1`.
+  3. Each tuple that is pushed to the stack costs `1 + len`, where `len` is the length of that tuple.
+3. Each instruction that pushes an item to any stack other than the data or alt stack costs `256` for each item so pushed.
+4. Each `checksig` and `pointmul` instruction costs `1024`. [TBD: estimate the actual cost of these instruction relative to the other instructions].
+5. Each `roll`, `bury`, or `reverse` instruction costs `n`, where `n` is the `n` argument to that operation.
+
+TODO: suggestion - specify runlimit in the transaction structure. Consume that limit from the one declared in the block. Federation chooses appropriate limit and signs over it, preventing DoS (because tx ID is computed only via execution of txvm).
+
+
+
 
 ## Types
 
@@ -58,83 +82,87 @@ An integer between 2^-63 and 2^63 - 1.
 
 A bytestring with length between 0 and 2^31 - 1 bytes.
 
+### Item IDs
+
+The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` is the [encode](#encode) operation.
+
 ### Tuple
 
 An immutable collection of items of any type.
 
 There are several named types of tuples.
 
-#### Value
+### Value
 
 0. `type`, a string, "value"
 1. `amount`, an int64
 2. `assetID`, a string
 
-#### Value Commitment
+### Value Commitment
 
 0. `type`, a string, "valuecommitment"
 1. `valuepoint`, first half of [value commitment](ca.md#value-commitment) as described in [CA](ca.md) specification.
 2. `blindingpoint`, second half of [value commitment](ca.md#value-commitment) as described in [CA](ca.md) specification.
 
-#### Asset Commitment
+### Asset Commitment
 
 0. `type`, a string, "assetcommitment"
 1. `assetpoint`, first half of [asset ID commitment](ca.md#asset-id-commitment) as described in [CA](ca.md) specification.
 2. `blindingpoint`, second half of [asset ID commitment](ca.md#asset-id-commitment) as described in [CA](ca.md) specification.
 
-#### Asset Range Proof
+### Asset Range Proof
 
 TBD
 
-#### Value Range Proof
+### Value Range Proof
 
 TBD
 
-#### Unproven Value
+### Unproven Value
 
 0. `type`, a string, "unprovenvalue"
 1. `valuecommitment`, a [value commitment](#value-commitment)
 
-#### Proven Value
+### Proven Value
 
 0. `type`, a string, "provenvalue"
 1. `valuecommitment`, a [value commitment](#value-commitment)
 2. `assetcommitment`, an [asset commitment](#asset-commitment)
 
-## Record type
+### Record type
 
 0. `type`, a string, "record"
 1. `commandprogram`, a string
 2. `data`, an item
 
-#### Input
+### Input
 
 0. `type`, a string, "input"
 1. `contractid`, a string
 
-#### Output
+### Output
 
 0. `type`, a string, "output"
 1. `contractid`, a string
 
-#### Read
+### Read
 
 0. `type`, a string, "read"
 1. `contractid`, a string
 
-#### Contract
+### Contract
 
 0. `type`, a string, "contract"
 1. `values`, a tuple of either [values](#values) or [proven values](#proven-values)
 2. `program`, a [Program](#program)
 3. `anchor`, a string
 
-#### Program
+### Program
 
 0. `type`, a string, "program"
 1. `program`, a string
 
-#### Nonce
+### Nonce
 
 0. `type`, a string, "nonce"
 1. `program`, a string
@@ -142,33 +170,33 @@ TBD
 3. `maxtime`, an int64
 4. `genesisblockid`, a string
 
-#### Anchor
+### Anchor
 
 0. `type`, a string, "anchor"
 1. `value`, a string
 
-#### Retirement
+### Retirement
 
 0. `type`, a string, "retirement"
 1. `value`, a [value commitment](#value-commitment)
 
-#### Asset Definition
+### Asset Definition
 
 0. `type`, a string, "assetdefinition"
 1. `issuanceprogram`, a [Program](#program)
 
-#### Issuance Candidate
+### Issuance Candidate
 
 0. `type`, a string, "issuancecandidate"
 1. `assetID`, a string
 2. `issuanceKey`, a [Public Key](#public-key)
 
-#### Maxtime
+### Maxtime
 
 0. `type`, a string, "maxtime"
 1. `maxtime`, an int64
 
-#### Mintime
+### Mintime
 
 0. `type`, a string, "mintime"
 1. `mintime`, an int64
@@ -183,12 +211,12 @@ TBD
 0. `type`, a string, "command"
 1. `program`, a string
 
-#### Transaction Summary
+### Transaction Summary
 
 0. `type`, a string, "transactionSummary"
 1. `effectids`, a tuple of items
 
-#### Transaction ID
+### Transaction ID
 
 0. `type`, a string, "transactionID"
 1. `transactionid`, a string
@@ -202,11 +230,33 @@ TBD
 4. `program`, a string
 5. `data`, a string
 
-## Item IDs
 
-The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` is the [encode](#encode) operation.
+## Encoding
 
-## Stack identifiers
+### Varint
+
+TODO: Describe rules for encoding and decoding unsigned varints.
+
+### Point
+
+See [Point](ca.md#point) definition in Confidential Assets specification.
+
+### Point Pair
+
+See [Point Pair](ca.md#point-pair) definition in Confidential Assets specification.
+
+### Tuple Encoding
+
+Tuples are encoded using bytecode that produces such tuple on the data stack when executed. 
+
+See [encode](#encode) operation for details.
+
+
+
+
+## Stacks
+
+### Stack identifiers
 
 0. Data stack
 1. Alt stack
@@ -214,7 +264,7 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 3. Command stack
 4. Effect stack
 
-## Data stack
+### Data stack
 
 Items on the data stack can be int64s, strings, or tuples.
 
@@ -238,37 +288,12 @@ Items on the Effect stack are [Inputs](#input), [Outputs](#output), [Reads](#rea
 
 Items on the Issuance candidates stack are [Issuance Candidates](#issuance-candidates).
 
-# Encoding formats
-
-## Varint
-
-TODO: Describe rules for encoding and decoding unsigned varints.
-
-## Point
-
-See [Point](ca.md#point) definition in Confidential Assets specification.
-
-## Point Pair
-
-See [Point Pair](ca.md#point-pair) definition in Confidential Assets specification.
-
-# Runlimit
-
-The VM is initialized with a set runlimit. Each instruction reduces that number. If the runlimit goes below zero while the program counter is less than the length of the program, execution fails.
-
-1. Each instruction costs `1`.
-2. Each instruction that pushes an item to the data stack, including as the result of an operation (such as `add`, `cat`, `merge`, `field`, and `untuple`), costs an amount based on the type and size of that data:
-  1. Each string that is pushed to the stack costs `1 + len`, where `len` is the length of that string in bytes.
-  2. Each number that is pushed to the stack costs `1`.
-  3. Each tuple that is pushed to the stack costs `1 + len`, where `len` is the length of that tuple.
-3. Each instruction that pushes an item to any stack other than the data or alt stack costs `256` for each item so pushed.
-4. Each `checksig` and `pointmul` instruction costs `1024`. [TBD: estimate the actual cost of these instruction relative to the other instructions].
-5. Each `roll`, `bury`, or `reverse` instruction costs `n`, where `n` is the `n` argument to that operation.
-
-TODO: suggestion - specify runlimit in the transaction structure. Consume that limit from the one declared in the block. Federation chooses appropriate limit and signs over it, preventing DoS (because tx ID is computed only via execution of txvm).
 
 
-# Operations
+
+
+
+## Instructions
 
 ## Control flow operations
 
@@ -298,6 +323,7 @@ where `<destination>` is a name of a label somewhere in the program. The label i
     <cond> jumpif:$xyz  ... $xyz ...
 
 Note 2: unconditional jump can be implemented with `1 jumpif:$<destination>`.
+
 
 ## Stack operations 
 
@@ -340,19 +366,30 @@ Fails if `stackid` does not correspond to a valid stack, or if the stack has few
 2. Pops an integer `n` from the data stack. 
 3. Looks at the `n`th item of the stack identified by `stackid`, and pushes a copy of it to the data stack.
 
+
+
+
 ## Data stack operations
 
 ### Equal
 
-Pops two items `val1` and `val2` from the data stack. If they have different types, or if either is a tuple, fails execution. If they have the same type: if they are equal, pushes `true` to the stack; otherwise, pushes `false` to the stack.
+1. Pops two items `val1` and `val2` from the data stack. 
+2. If they have different types, or if either is a tuple, fails execution. 
+3. If they have the same type: 
+  1. if they are equal, pushes `true` to the stack; 
+  2. otherwise, pushes `false` to the stack.
 
 ### Type
 
-Looks at the top item on the data stack. Pushes a number to the stack corresponding to that item's [type](#type).
+1. Looks at the top item on the data stack. 
+2. Pushes a number to the stack corresponding to that item's [type](#type).
 
 ### Len
 
-Pops a string or tuple `val` from the data stack. If `val` is a tuple, pushes the number of fields in that tuple to the data stack. If `val` is a string, pushes the length of that string to the data stack. Fails if `val` is a number.
+1. Pops a string or tuple `val` from the data stack. 
+2. If `val` is a tuple, pushes the number of fields in that tuple to the data stack. 
+3. If `val` is a string, pushes the length of that string to the data stack. 
+4. Fails if `val` is a number.
 
 ### Drop
 
@@ -360,43 +397,62 @@ Drops an item from the data stack.
 
 ### ToAlt
 
-Pops an item from the data stack and pushes it to the alt stack.
+1. Pops an item from the data stack.
+2. Pushes it to the alt stack.
 
 ### FromAlt
 
-Pops an item from the alt stack and pushes it to the data stack.
+1. Pops an item from the alt stack.
+2. Pushes it to the data stack.
+
+
+
 
 ## Tuple operations 
 
 ### Tuple
 
-Pops an integer `len` from the data stack. Pops `len` items from the data stack and creates a tuple of length `len` on the data stack.
+1. Pops an integer `len` from the data stack. 
+2. Pops `len` items from the data stack.
+3. Creates a tuple with these items on the data stack.
 
 ### Untuple
 
-Pops a tuple `tuple` from the data stack. Pushes each of the fields in `tuple` to the stack in reverse order (so that the 0th item in the tuple ends up on top of the stack).
+1. Pops a tuple `tuple` from the data stack. 
+2. Pushes each of the fields in `tuple` to the stack in reverse order (so that the 0th item in the tuple ends up on top of the stack).
 
 ### Field
 
-Pops an integer `i` from the top of the data stack, and pops a tuple `tuple`. Pushes the item in the `i`th field of `tuple` to the top of the data stack.
+1. Pops an integer `i` from the top of the data stack.
+2. Pops a tuple `tuple`. 
+3. Pushes the item in the `i`th field of `tuple` to the top of the data stack.
+4. Fails if `i` is negative or greater than or equal to the number of fields in `tuple`.
 
-Fails if `i` is negative or greater than or equal to the number of fields in `tuple`.
+
 
 ## Boolean operations
 
 ### Not
 
-Pops a boolean `p` from the stack. If `p` is `true`, pushes `false`. If `p` is `false`, pushes `true`.
+1. Pops a boolean `p` from the stack. 
+2. If `p` is `true`, pushes `false`. 
+3. If `p` is `false`, pushes `true`.
 
 ### And
 
-Pops two booleans `p` and `q` from the stack. If both `p` and `q` are true, pushes `true`. Otherwise, pushes `false`.
+1. Pops two booleans `p` and `q` from the stack. 
+2. If both `p` and `q` are true, pushes `true`. 
+3. Otherwise, pushes `false`.
 
 ### Or
 
-Pops two booleans `p` and `q` from the stack. If both `p` and `q` are false, pushes `false`. Otherwise, pushes `true`.
+1. Pops two booleans `p` and `q` from the stack. 
+2. If both `p` and `q` are false, pushes `false`. 
+3. Otherwise, pushes `true`.
 
-## Math operations
+
+
+## Numeric operations
 
 ### Add
 
@@ -436,6 +492,8 @@ TODO: clarify behavior.
 
 Pops two numbers `a` and `b` from the stack. If `a` is greater than `b`, pushes `true` to the stack. Otherwise, pushes `false`.
 
+
+
 ## String operations
 
 ### Cat
@@ -460,15 +518,20 @@ Pops two strings `a` and `b` from the data stack. Fails if they do not have the 
 
 Pops two strings `a` and `b` from the data stack. Fails if they do not have the same length. Performs a "bitwise or" operation on `a` and `b` and pushes the result `a | b`.
 
+
 ### BitXor
 
 Pops two strings `a` and `b` from the data stack. Fails if they do not have the same length. Performs a "bitwise xor" operation on `a` and `b` and pushes the result `a ^ b`.
+
+
+
 
 ## Crypto operations
 
 ### SHA256
 
 Pops a string `a` from the data stack. Performs a Sha2-256 hash on it, and pushes the result `sha256(a)` to the data stack.
+
 
 ### SHA3
 
@@ -484,19 +547,26 @@ TODO: Should we switch order of `pubKey` and `msg`?
 
 Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#point), performs an elliptic curve addition `a + b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
 
+
 ### PointSub
 
 Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#point), performs an elliptic curve subtraction `a - b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
+
 
 ### PointMul
 
 Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed25519 curve points](#point), performs an elliptic curve scalar multiplication `i*a`, encodes the result as a string, and pushes it to the data stack. Fails if `a` is not a valid curve point.
 
+
+
 ## Annotation operations
 
 ### Annotate
 
-Pops a string, `data`, from the data stack. Pushes an [Annotation](#annotation) with `data` of `data` to the Effect stack.
+1. Pops a string, `data`, from the data stack. 
+2. Pushes an [Annotation](#annotation) with `data` of `data` to the Effect stack.
+
+
 
 ## Command operations
 
@@ -510,6 +580,8 @@ Pops a string, `data`, from the data stack. Pushes an [Annotation](#annotation) 
 
 Note: when step 5 is reached, all nested commands are already executed and popped, so the top item on the Command stack is the one that just finished executing.
 
+
+
 ## Condition operations
 
 ### Defer
@@ -519,6 +591,7 @@ Note: when step 5 is reached, all nested commands are already executed and poppe
 
 TODO: seems like `opcommand` should be `opdefer;opsatisfy`. We have too many entities here - programs on data stack, programs on entry stack and programs in the command stack.
 
+
 ### Satisfy
 
 TBD: name "satisfy" no longer aligned with "conditions" because we now have "programs". Maybe rename to it `run`?
@@ -526,45 +599,75 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 1. Pops a [Program](#program) from the Entry stack 
 2. Executes it using [command](#command) operation.
 
+
+
 ## Record operations
 
 ### Create
 
-Pops an item, `data`, from the data stack. Peeks at the top item on the Command stack,`command`. Pushes a Record to the Entry stack with `commandprogram` equal to `command.program` and `data` equal to `data`.
+1. Pops an item, `data`, from the data stack. 
+2. Peeks at the top item on the Command stack,`command`. 
+3. Pushes a [Record](#record) to the Entry stack with `commandprogram` equal to `command.program` and `data` equal to `data`.
+
 
 ### Delete
 
-Pops a Record, `record`, from the Record stack. Peeks at the top item on the Command stack,`command`. If `record.commandprogram` is not equal to `command.program`, fails execution.
+1. Pops a Record, `record`, from the Record stack. 
+2. Peeks at the top item on the Command stack,`command`. 
+3. If `record.commandprogram` is not equal to `command.program`, fails execution.
+
 
 ### Complete
 
-Peeks at the top item on the Record stack, `record`, and the top item on the Command stack, `command` If `record.commandprogram` is not equal to `command.program`. fails execution. Moves `record` to the Effect stack.
+1. Peeks at the top item on the Record stack, `record`.
+2. Peeks at the top item on the Command stack, `command`.
+3. If `record.commandprogram` is not equal to `command.program`, fails execution. 
+4. Moves `record` to the Effect stack.
+
+
 
 ## Contract operations
 
 ### Unlock 
 
-Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
-
-Constructs a tuple `input` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-ids) `contractid` of `input`. Pushes an [Input](#input) to the Effect stack with `contractid` equal to `contractid`.
-
-If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Entry stack.
-
-Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to `input.anchor`. Pushes `a` to the Entry stack. 
-
-Pushes `value` to the Entry stack.
+1. Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. 
+2. Pops an item of type [Anchor](#anchor) from the data stack. 
+3. Peeks at the top [Command](#command) `command` on the Command stack.
+4. Constructs a tuple `input` of type [Contract](#contract), with:
+  * `input.program` equal to `command.program`, 
+  * `input.anchor` equal to `anchor`,
+  * `input.value` equal to `value`. 
+5. Computes the [ID](#item-ids) `contractid` of `input`. 
+6. Pushes an [Input](#input) to the Effect stack with `contractid` equal to `contractid`.
+7. If `value` is a [Proven Value](#proven-value), pushes `value.assetcommitment` to the Entry stack.
+8. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to `input.anchor`. 
+9. Pushes `a` to the Entry stack. 
+10. Pushes `value` to the Entry stack.
 
 ### Read
 
-Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. Pops an item of type [Anchor](#anchor) from the data stack. Peeks at the top [Command](#command) `command` on the Command stack.
-
-Constructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-ids) `contractid` of `input`. Pushes a [Read](#read) to the Effect stack with `contractid` equal to `contractid`.
+1. Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the data stack. 
+2. Pops an item of type [Anchor](#anchor) from the data stack. 
+3. Peeks at the top [Command](#command) `command` on the Command stack.
+4. Constructs a tuple `contract` of type [Contract](#contract), with:
+  * `contract.program` equal to `command.program`, 
+  * `contract.anchor` equal to `anchor`, and 
+  * `contract.value` equal to `value`. 
+5. Computes the [ID](#item-ids) `contractid` of `input`. 
+6. Pushes a [Read](#read) to the Effect stack with `contractid` equal to `contractid`.
 
 ### Lock
 
-Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Entry stack. Pops an [anchor](#anchor) `anchor` from the Entry stack. Peeks at the top [Command](#command) `command` on the Command stack.
+1. Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Entry stack. 
+2. Pops an [anchor](#anchor) `anchor` from the Entry stack. 
+3. Peeks at the top [Command](#command) `command` on the Command stack.
+4. Constructs a tuple `contract` of type [Contract](#contract), with:
+  * `contract.program` equal to `command.program`, 
+  * `contract.anchor` equal to `anchor`, 
+  * `contract.value` equal to `value`. 
+5. Computes the [ID](#item-id) `contractid` of `contract`. 
+6. Pushes an [Output](#output) to the Effect stack with `contractid` equal to `contractid`.
 
-Constructs a tuple `contract` of type [Contract](#contract), with `program` equal to `command.program`, `anchor` equal to `anchor`, and `value` equal to `value`. Computes the [ID](#item-id) `contractid` of `contract`. Pushes an [Output](#output) to the Effect stack with `contractid` equal to `contractid`.
 
 ## Value operations
 
@@ -594,7 +697,6 @@ Constructs a tuple `contract` of type [Contract](#contract), with `program` equa
 1. Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Entry stack. 
 2. Pushes a [Retirement](#retirement) `r` to the Effect stack with `r.value` set to `value`.
 
-## Confidential value operations
 
 ### MergeConfidential
 
@@ -662,6 +764,8 @@ TBD: this is incompatible with existing asset IDs. We need either support for le
 4. Executes `program` with [command](#command) instruction.
 
 
+
+
 ## Anchor operations
 
 ### Nonce
@@ -682,7 +786,9 @@ Pops an [anchor](#anchor) `anchor` from the Entry stack. Compute the [ID](#item-
 
 Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
-## Mintime and Maxtime operations
+
+
+## Time operations
 
 ### Before
 
@@ -691,6 +797,8 @@ Pops an int64 `max` from the data stack. Pushes a [Maxtime](#maxtime) to the [Ef
 ### After
 
 Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Effect stack](#Effect-stack) with `mintime` equal to `min`.
+
+
 
 ## Conversion operations
 
@@ -733,6 +841,8 @@ TODO: do we really need reserved opcodes? All NOPs are prohibited w/o "extensibl
 
 Causes the VM to halt and fail.
 
+
+
 ## Encoding opcodes
 
 ### Encode
@@ -762,6 +872,9 @@ TODO: Descriptions of opcodes that push the numbers 0-32 to the stack.
 ### Pushdata
 
 [TBD: use Keith's method for this]
+
+
+
 
 ## Examples
 
