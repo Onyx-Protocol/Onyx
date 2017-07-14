@@ -3,7 +3,7 @@
 This is the specification for txvm, which combines a representation for blockchain transactions with the rules for ensuring their validity.
 
 * [Motivation](#motivation)
-* [VM execution](#vm-execution)
+* [TxVM operation](#txvm-operation)
 * [Types](#types)
 * [Encoding](#encoding)
 * [Stacks](#stacks)
@@ -21,11 +21,9 @@ When the virtual machine executes a txvm program, it accumulates different types
 The pieces of transaction information - the inputs, outputs, etc. - that are produced during txvm execution are also _consumed_ in order to produce the transaction summary, which is the sole output of a successful txvm program. To capture pieces of transaction information for purposes other than validation, txvm implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
 
-## VM Execution
+## TxVM operation
 
-The VM is initialized with all stacks empty.
-
-When the program counter is equal to the length of the program, execution is complete. The top item of the [Effect stack](#Effect) must be a [Transaction ID](#transaction-id), and there must be no other Transaction IDs in the Effect stack. There must be at least one [anchor](#anchor) in the Effect stack. The Entry stack must be empty.
+Validation of the transaction happens in a context of a validating a block of transactions. Large part of that validation is handled by the TxVM logic with a few validation rules outside of it.
 
 ### Transaction version
 
@@ -45,6 +43,24 @@ TBD: should we specify txversion inside the bytecode or in the container? E.g. w
       version: 2, 
       program: "...txvm bytecode..."
     }
+
+### VM Execution
+
+1. The VM is initialized with all stacks empty.
+2. TXVM bytecode is being executed.
+3. When the program counter is equal to the length of the program, execution is complete. 
+4. The top item of the [Effect stack](#Effect) must be a [Transaction ID](#transaction-id).
+5. There must be no other Transaction IDs in the Effect stack, otherwise execution fails.
+6. There must be at least one [anchor](#anchor) in the Effect stack. 
+7. The Entry stack must be empty.
+
+### Post-execution
+
+If execution and all the required checks do not fail, Effect stack is introspected and blockchain state is updated:
+
+1. For each [Input](#input), its `contractid` is removed from the UTXO set.
+2. For each [Output](#output), its `contractid` is added to the UTXO set.
+3. TBD: record nonce
 
 ### Runlimit
 
@@ -498,7 +514,7 @@ Pops two numbers `a` and `b` from the stack. If `a` is greater than `b`, pushes 
 
 ### Cat
 
-Pops two strings, `a`, then `b`, from the stack, concatenates them, and pushes the result, `a ++ b` to the stack.
+Pops two strings, `a`, then `b`, from the stack, concatenates them, and pushes the result, `a || b` to the stack.
 
 ### Slice
 
@@ -700,6 +716,8 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 
 ### MergeConfidential
 
+Since merging 
+
 FIXME: VULNERABILITY: merging unprovable and proven values allows creating provable value. We should allow merging only proven or plain values from Entry stack.
 
 Pops two items of type [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `value1` and `value2` from the [Entry stack](#entry-stack).
@@ -761,7 +779,7 @@ TBD: this is incompatible with existing asset IDs. We need either support for le
   * confidential IARP with `n` ring signature items
 2. Pops `n` [Issuance Candidate](#issuance-candidate) items from Entry stack (`n` is the number of items in ring signature).
 3. Verifies IARP using `ac`, issuance candidates and a program as an IARP’s message.
-4. Executes `program` with [command](#command) instruction.
+4. Executes `program` via [command](#command) instruction.
 
 
 
@@ -770,17 +788,31 @@ TBD: this is incompatible with existing asset IDs. We need either support for le
 
 ### Nonce
 
-Pops an int64 `min` from the data stack. Pops an int64 `max` from the data stack. Pops a string `blockchainid` Peeks at the top item on the Command stack, `command`.
-
-Verifies that `blockchainid` is equal to the blockchain ID. Constructs a [Nonce](#nonce) `nonce` with `program` equal to `command.program`, `min` equal to `min`, and `max` equal to `max`. Pushes `nonce` to the Effect stack. Pushes an [anchor](#anchor) to the Entry stack with `value` equal to the [ID](#item-ids) of `nonce`. Pushes a [Mintime](#mintime) to the Effect stack with `mintime` equal to `mintime`. Pushes a [Maxtime](#maxtime) to the Effect stack with `maxtime` equal to `nonce.maxtime`.
+1. Pops an int64 `min` from the data stack. 
+2. Pops an int64 `max` from the data stack. 
+3. Pops a string `blockchainid`.
+4. Peeks at the top item on the Command stack, `command`.
+5. Verifies that `blockchainid` is equal to the blockchain ID. 
+6. Constructs a [Nonce](#nonce) `nonce` with:
+  * `nonce.program` equal to `command.program`, 
+  * `nonce.mintime` equal to `min`, 
+  * `nonce.maxtime` equal to `max`. 
+7. Pushes `nonce` to the Effect stack. 
+8. Pushes an [anchor](#anchor) to the Entry stack with `value` equal to the [ID](#item-ids) of `nonce`. 
+9. Pushes a [Mintime](#mintime) to the Effect stack with `mintime` equal to `nonce.mintime`. 
+10. Pushes a [Maxtime](#maxtime) to the Effect stack with `maxtime` equal to `nonce.maxtime`.
 
 ### Reanchor
 
-Pops an [anchor](#anchor) `anchor` from the Entry stack. Compute the [ID](#item-ids) of `anchor`, `anchorid`. Pushes a new anchor `newanchor`, with `newanchor.value` set to `anchorid`.
+1. Pops an [anchor](#anchor) `anchor` from the Entry stack. 
+2. Compute the [ID](#item-ids) of `anchor`, `anchorid`. 
+3. Pushes a new anchor `newanchor`, with `newanchor.value` set to `anchorid`.
 
 ### Splitanchor
 
-Pops an [anchor](#anchor) `anchor` from the Entry stack. Compute the [ID](#item-ids) of `anchor`, `anchorid`. Pushes a new anchor `newanchor01`, with `newanchor.value` set to `sha3("01" ++ anchorid)`. Pushes a new anchor `newanchor00`, with `newanchor.value` set to `sha3("00" ++ anchorid)`.
+1. Pops an [anchor](#anchor) `anchor` from the Entry stack. 
+2. Compute the [ID](#item-ids) of `anchor`, `anchorid`. 
+3. Pushes a new anchor `newanchor01`, with `newanchor.value` set to `sha3("01" || anchorid)`. Pushes a new anchor `newanchor00`, with `newanchor.value` set to `sha3("00" || anchorid)`.
 
 ### Anchortransaction
 
@@ -792,11 +824,13 @@ Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
 ### Before
 
-Pops an int64 `max` from the data stack. Pushes a [Maxtime](#maxtime) to the [Effect stack](#Effect-stack) with `maxtime` equal to `max`.
+1. Pops an int64 `max` from the data stack.
+2. Pushes a [Maxtime](#maxtime) to the [Effect stack](#Effect-stack) with `maxtime` equal to `max`.
 
 ### After
 
-Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Effect stack](#Effect-stack) with `mintime` equal to `min`.
+1. Pops an int64 `min` from the stack.
+2. Pushes a [Mintime](#mintime) to the [Effect stack](#Effect-stack) with `mintime` equal to `min`.
 
 
 
@@ -804,7 +838,20 @@ Pops an int64 `min` from the stack. Pushes a [Mintime](#mintime) to the [Effect 
 
 ### Summarize
 
-Computes the ID of each item on the Effect stack. Creates a tuple of those IDs (with the first item first), `effectids`. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effectids` equal to `effectids`. Computes the [ID](#item-id) `txid` of `summary`. Creates a tuple of type [Transaction ID](#transaction-id) on the Effect stack with `transactionid` equal to `transactionid`.
+1. Computes the [ID](#item-ids) of each item on the Effect stack. 
+2. Creates a tuple of those IDs (with the first item first), `effectids`. 
+3. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effectids` equal to `effectids`. 
+4. Computes the [ID](#item-id) `txid` of `summary`. 
+5. Creates a tuple of type [Transaction ID](#transaction-id) on the Effect stack with `transactionid` equal to `transactionid`.
+
+TODO: why do we need Tx Summary intermediate structure? It's more efficient to simply hash all item IDs into txid, w/o going through wrapping into a struct and using `encode`.
+
+PROPOSAL: Alternative definition w/o Transaction Summary:
+
+1. Computes the [ID](#item-ids) of each item on the Effect stack. 
+2. Computes SHA3-256 hash `txid` of all IDs concatenated from top item on Effect stack to the bottom.
+3. Creates a tuple of type [Transaction ID](#transaction-id) on the Effect stack with `transactionid` set to `txid`.
+
 
 ### Migrate
 
