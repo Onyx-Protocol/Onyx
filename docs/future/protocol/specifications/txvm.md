@@ -750,8 +750,9 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 
 ### Retire
 
-1. Pops a [Value](#value) `value` or [Proven Value](#proven-value) from the Entry stack. 
-2. Pushes a [Retirement](#retirement) `r` to the Effect stack with `r.value` set to `value`.
+1. Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the Entry stack. 
+2. If `value` is a plaintext [Value](#value), compute a corresponding non-blinded value commitment.
+3. Pushes a [Retirement](#retirement) `r` to the Effect stack with `r.value` set to the value commitment.
 
 
 ### MergeConfidential
