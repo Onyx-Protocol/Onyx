@@ -4,6 +4,7 @@ This is the specification for txvm, which combines a representation for blockcha
 
 * [Motivation](#motivation)
 * [TxVM operation](#txvm-operation)
+* [Compatibility](#compatibility)
 * [Types](#types)
 * [Encoding](#encoding)
 * [Stacks](#stacks)
@@ -81,6 +82,24 @@ The VM is initialized with a set runlimit. Each instruction reduces that number.
 TODO: suggestion - specify runlimit in the transaction structure. Consume that limit from the one declared in the block. Federation chooses appropriate limit and signs over it, preventing DoS (because tx ID is computed only via execution of txvm).
 
 
+## Compatibility
+
+### Spending legacy outputs
+
+TBD: overview of the upgrade opcode
+
+### Issuance of legacy Asset ID
+
+TBD: Need compatibility layer to issue legacy asset IDs: specify the context for VM1 based on txvm tx.
+
+### Confidential issuance of legacy Asset IDs
+
+TBD: Need compatibility layer to use legacy asset IDs in the Issuance Candidates: also, specify necessary context for VM1 based on txvm tx.
+
+### Soft-fork and hard-fork upgrades to TxVM
+
+TBD: Need to specify how soft/hard fork upgrades are possible with NOPs and Extend opcode.
+
 
 
 ## Types
@@ -128,14 +147,6 @@ There are several named types of tuples.
 0. `type`, a string, "assetcommitment"
 1. `assetpoint`, first half of [asset ID commitment](ca.md#asset-id-commitment) as described in [CA](ca.md) specification.
 2. `blindingpoint`, second half of [asset ID commitment](ca.md#asset-id-commitment) as described in [CA](ca.md) specification.
-
-### Asset Range Proof
-
-TBD
-
-### Value Range Proof
-
-TBD
 
 ### Unproven Value
 
@@ -525,6 +536,8 @@ Pops two strings, `a`, then `b`, from the stack, concatenates them, and pushes t
 
 Pops two integers, `start`, then `end`, from the stack. Pops a string `str` from the stack. Pushes the string `str[start:end]` (with the first character being the one at index `start`, and the second character being the one at index `end`). Fails if `end` is less than `start`, if `start` is less than 0, or if `end` is greater than the length of `str`.
 
+
+
 ## Bitwise operations
 
 ### BitNot
@@ -619,9 +632,9 @@ TODO: Should we switch order of `pubKey` and `msg`?
 4. Executes `command.program`. 
 5. Pops a [Command](#command) from the Command stack. 
 
-Note: when step 5 is reached, all nested commands are already executed and popped, so the top item on the Command stack is the one that just finished executing.
+Note 1: when step 5 is reached, all nested commands are already executed and popped, so the top item on the Command stack is the one that just finished executing.
 
-
+Note 2: program can be an empty string; in such case, steps 2-5 can be omitted as they have no effect.
 
 ## Condition operations
 
@@ -631,7 +644,6 @@ Note: when step 5 is reached, all nested commands are already executed and poppe
 2. Pushes it to the Entry stack.
 
 TODO: seems like `opcommand` should be `opdefer;opsatisfy`. We have too many entities here - programs on data stack, programs on entry stack and programs in the command stack.
-
 
 ### Satisfy
 
@@ -699,14 +711,14 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 
 ### Lock
 
-1. Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Entry stack. 
-2. Pops an [anchor](#anchor) `anchor` from the Entry stack. 
+1. Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Entry stack.
+2. Pops an [anchor](#anchor) `anchor` from the Entry stack.
 3. Peeks at the top [Command](#command) `command` on the Command stack.
 4. Constructs a tuple `contract` of type [Contract](#contract), with:
-  * `contract.program` equal to `command.program`, 
-  * `contract.anchor` equal to `anchor`, 
-  * `contract.value` equal to `value`. 
-5. Computes the [ID](#item-id) `contractid` of `contract`. 
+  * `contract.program` equal to `command.program`,
+  * `contract.anchor` equal to `anchor`,
+  * `contract.value` equal to `value`.
+5. Computes the [ID](#item-id) `contractid` of `contract`.
 6. Pushes an [Output](#output) to the Effect stack with `contractid` equal to `contractid`.
 
 
@@ -744,12 +756,12 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 
 ### MergeConfidential
 
-Note: merging unprovable and proven values allows creating provable value due to an overflow in a finite subgroup. Therefore only proven or raw values can be merged.
-
-1. Pops two items of type [Value](#value) or [Proven Value](#proven-value) `a` and `b` from the [Entry stack](#entry-stack).
+1. Pops two items of type [Value](#value), [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `a` and `b` from the [Entry stack](#entry-stack).
 2. Converts each item of type [Value](#value) (if any) to the [Proven Value](#proven-value) with a corresponding [non-blinded value commitment](ca.md#create-nonblinded-value-commitment) based on plaintext `amount` and `assetID`.
-3. Computes new [Proven Value](#proven-value) `c` with `valuecommitment` equal to `a.valuecommitment + b.valuecommitment`.
-4. Pushes proven value `c` to the Entry stack.
+3. Computes new [Unproven Value](#proven-value) `c` with `valuecommitment` equal to `a.valuecommitment + b.valuecommitment`.
+4. Pushes unproven value `c` to the Entry stack.
+
+Note: merging two proven values may merge two distinct asset IDs producing an unprovable value which must be correctly split and range-proved.
 
 
 ### SplitConfidential
@@ -760,39 +772,66 @@ Note: merging unprovable and proven values allows creating provable value due to
 4. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value.valuecommitment - vc`.
 
 
-### ProveAssetCommitment
+### ProveAssetRange
 
-Pops an item `assetrangeproof` of type [Asset Range Proof](#asset-range-proof). Pops an item `assetcommitment` from the data stack of type [Asset Commitment](#asset-commitment). Pops an item 
+This opcode proves that a given [Asset Commitment](#asset-commitment) belongs to a set of verified asset commitments.
 
-Verifies `assetrangeproof` with ` assetcommitment` as the asset commitment. 
+1. Pops a string `ringsig` of `32*(n+1)` bytes from the data stack. 
+2. Pops string `program` from the data stack.
+3. Pops [Asset Commitment](#asset-commitment) `ac` from the data stack.
+4. Fail execution if the length of `ringsig` is less than 64 bytes, or not a whole number of 32 bytes.
+5. Calculates `n = len(ringsig)/32 - 1`.
+6. Peeks at `n` items `{prevac[i]}` of type [Asset Commitment](#asset-commitment) that should be located at the top of the Entry stack.
+7. Constructs a [Confidential Asset Range Proof](ca.md#confidential-asset-range-proof) and verifies it using:
+  * `ac` as a target asset ID commitment
+  * `n` `prevac[i]` as previous asset ID commitments
+  * `program` as the message signed by the range proof
+8. Fails execution if verification of ARP fails.
+9. Pushes asset commitment `ac` to the Entry stack.
+10. Executes `program` via [command](#command) instruction.
 
-TBD: LINK THIS, ADD CANDIDATES, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.
 
-Pushes an `assetcommitment` to the Entry stack.
+### DropAssetCommitment
 
-### Blind
+1. Pops an [Asset Commitment](#asset-commitment) `ac` from the Entry stack.
+2. Fails if top element is not an asset commitment.
 
-TBD: does it mean simply converting plain value to a commitment? Maybe it's simpler to do that implicitly 
+Note: in principle, proven asset ID commitments on Entry stack do not have to be specially consumed (like values), and the same commitments are reused in multiple ARPs. So to satisfy the requirement of a clean Entry stack and avoid unnecesary duplication of asset commitments, in the end of transaction, this opcode allows cleaning up all remaining asset commitments.
 
 
 ### ProveAssetID
 
-TBD: proves specific asset ID
+This opcode proves that a given cleartext asset ID is stored within a given [Asset Commitment](#asset-commitment).
+
+1. Pops string `assetproof` from the data stack.
+2. Pops string `program` from the data stack.
+3. Peeks at string `assetID` on the top the data stack.
+4. Peeks at [Asset Commitment](#asset-commitment) `ac` below `assetID` on the data stack.
+5. [Verifies](ca.md#validate-asset-id-proof) the `assetproof` with the given `assetID` and commitment `ac`.
+6. Executes `program` via [command](#command) instruction.
+
 
 ### ProveAmount
 
-TBD: proves specific amount
+1. Pops string `amountproof` from the data stack.
+2. Pops string `program` from the data stack.
+3. Peeks at integer `amount` on the top the data stack.
+4. Peeks at [Value Commitment](#value-commitment) `vc` below `amount` on the data stack.
+5. Peeks at [Asset Commitment](#asset-commitment) `ac` below `vc` on the data stack.
+6. [Verifies](ca.md#validate-amount-proof) the `amountproof` string with the given `amount` and commitments `vc` and `ac`.
+7. Executes `program` via [command](#command) instruction.
 
 
 ### ProveValueRange
 
-Pops an item `valuerangeproof` of type [Value Range Proof](#value-range-proof) from the data stack. Pops an item `value` of type [Unproven Value](#unproven-value) from the Entry stack. Pops an item of type [Asset Commitment](#asset-commitment) `assetcommitment` from the Entry
+1. Pops a string `valuerangeproof`.
+2. Pops string `program` from the data stack.
+3. Pops an item `value` of type [Unproven Value](#unproven-value) from the Entry stack.
+4. Peeks at [Asset Commitment](#asset-commitment) `ac` at the top of the Entry stack.
+5. Verifies `valuerangeproof` with the given `value.valuecommitment`, `ac.assetcommitment` and `program` as a custom message.
+6. Pushes a new [Proven Value](#proven-value) to the Entry stack with `newvalue.valuecommitment` set to `value.valuecommitment` and `newvalue.assetcommitment` set to the `ac.assetcommitment`.
+7. Executes `program` via [command](#command) instruction.
 
-Verifies `valuerangeproof` with ` value.valuecommitment` as the value commitment, and `assetcommitment` as the asset commitment. 
-
-TBD: LINK THIS, FIX TERMINOLOGY, AND ADD ANYTHING ELSE.
-
-Pushes a [Proven Value](#proven-value) to the Entry stack with `value.valuecommitment` as the `valuecommitment` and `assetcommitment` as the asset commitment.
 
 ### IssuanceCandidate
 
@@ -806,14 +845,17 @@ TBD: this is incompatible with existing asset IDs. We need either support for le
 ### ConfidentialIssue
 
 1. Pops from data stack (in order):
-  * asset commitment
-  * program (signed by IARP)
+  * [Value Commitment](#value-commitment) `vc`
+  * [Asset Commitment](#asset-commitment) `ac`
+  * string `program`
   * confidential IARP with `n` ring signature items
 2. Pops `n` [Issuance Candidate](#issuance-candidate) items from Entry stack (`n` is the number of items in ring signature).
-3. Verifies IARP using `ac`, issuance candidates and a program as an IARP’s message.
-4. Executes `program` via [command](#command) instruction.
+3. Verifies IARP using `ac`, `n` issuance candidates and a program as an IARP’s message.
+4. Pushes asset commitment `ac` to the Entry stack.
+5. Pushes new [Unproven Value](#unproven-value) with `valuecommitment` set to `vc` to the Entry stack.
+6. Executes `program` via [command](#command) instruction.
 
-
+Note: `ConfidentialIssue` authorized issuance of a certain asset commitment (within a given set of candidates) and a given value commitment. However, the value commitment must additionally be proven to be in range before it can be used. Program `program` allows issuer to commit to that value commitment, if needed.
 
 
 ## Anchor operations
