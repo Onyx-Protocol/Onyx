@@ -333,7 +333,7 @@ Pushes the current program counter (after incrementing for this instruction) to 
 5. Fail if `destination` is negative.
 6. Fail if `destination` is greater than the length of the current program.
 
-Note 1: normally the program using `jumpif` is written as `<cond> <destination> jumpif`, but for brevity a slightly different syntax is used in the human-readable code:
+Note 1: normally the program using `jumpif` would be written as `<cond> <destination> jumpif` in assembly, but for brevity a slightly different syntax is used:
 
     <cond> jumpif:$<destination>
 
@@ -341,7 +341,9 @@ where `<destination>` is a name of a label somewhere in the program. The label i
 
     <cond> jumpif:$xyz  ... $xyz ...
 
-Note 2: unconditional jump can be implemented with `1 jumpif:$<destination>`.
+Note 2: unconditional jump can be implemented with `jumpif` prefixed with "push 1" opcode: 
+
+    1 jumpif:$<destination>
 
 
 ## Stack operations 
@@ -549,32 +551,52 @@ Pops two strings `a` and `b` from the data stack. Fails if they do not have the 
 
 ### SHA256
 
-Pops a string `a` from the data stack. Performs a Sha2-256 hash on it, and pushes the result `sha256(a)` to the data stack.
+1. Pops a string `a` from the data stack. 
+2. Computes a SHA2-256 hash on it: `h = SHA2-256(a)`.
+3. Pushes the resulting string `h` to the data stack.
 
 
 ### SHA3
 
-Pops a string `a` from the data stack. Performs a Sha3-256 hash on it, and pushes the result `sha3-256(a)` to the data stack.
+1. Pops a string `a` from the data stack. 
+2. Computes a SHA3-256 hash on it: `h = SHA3-256(a)`.
+3. Pushes the resulting string `h` to the data stack.
+
 
 ### CheckSig
 
-Pops a string `pubKey`, a string `msg`, and a string `sig` from the data stack. Performs an Ed25519 signature check with `pubKey` as the public key, `msg` as the message, and `sig` as the signature. Pushes `true` to the data stack if the signature check succeeded, and `false` otherwise.
+1. Pops a string `pubKey`, a string `msg`, and a string `sig` from the data stack. 
+2. Performs an EdDSA (RFC8032) signature check with `pubKey` as the public key, `msg` as the message, and `sig` as the signature. 
+3. Pushes `true` to the data stack if the signature check succeeded, and `false` otherwise.
 
 TODO: Should we switch order of `pubKey` and `msg`?
 
+
 ### PointAdd
 
-Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#point), performs an elliptic curve addition `a + b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
+1. Pops two strings `A` and `B` from the data stack.
+2. Decodes each of them as [Ed25519 curve points](#point). 
+3. Performs an elliptic curve addition `C = A + B`.
+4. Encodes the resulting point `C` as a string, and pushes it to the data stack. 
+5. Fails if `A` and `B` are not valid curve points.
 
 
 ### PointSub
 
-Pops two strings `a` and `b` from the data stack, decodes each of them as [Ed25519 curve points](#point), performs an elliptic curve subtraction `a - b`, encodes the result as a string, and pushes it to the data stack. Fails if `a` and `b` are not valid curve points.
+1. Pops two strings `A` and `B` from the data stack.
+2. Decodes each of them as [Ed25519 curve points](#point). 
+3. Performs an elliptic curve subtraction `C = A - B`.
+4. Encodes the resulting point `C` as a string, and pushes it to the data stack. 
+5. Fails if `A` and `B` are not valid curve points.
 
 
 ### PointMul
 
-Pops an integer `i` and a string `a` from the data stack, decodes `a` as an [Ed25519 curve points](#point), performs an elliptic curve scalar multiplication `i*a`, encodes the result as a string, and pushes it to the data stack. Fails if `a` is not a valid curve point.
+1. Pops an integer `x` and a string `P` from the data stack.
+2. Decodes `P` as an [Ed25519 curve point](#point).
+3. Performs an elliptic curve scalar multiplication `x·P`.
+4. Encodes the result as a string, and pushes it to the data stack. 
+5. Fails if `P` is not a valid curve point.
 
 
 
@@ -719,7 +741,7 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 
 ### MergeConfidential
 
-Since merging 
+
 
 FIXME: VULNERABILITY: merging unprovable and proven values allows creating provable value. We should allow merging only proven or plain values from Entry stack.
 
