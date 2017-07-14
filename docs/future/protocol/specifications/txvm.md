@@ -60,7 +60,10 @@ If execution and all the required checks do not fail, Effect stack is introspect
 
 1. For each [Input](#input), its `contractid` is removed from the UTXO set.
 2. For each [Output](#output), its `contractid` is added to the UTXO set.
-3. TBD: record nonce
+3. Remove all outdated nonces from Nonce set (based on block's timestamp)
+4. For each [Nonce](#nonce), add it's ID to the Nonce set.
+5. TBD: records?
+
 
 ### Runlimit
 
