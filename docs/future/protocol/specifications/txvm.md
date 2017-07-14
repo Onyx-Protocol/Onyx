@@ -84,6 +84,8 @@ TODO: suggestion - specify runlimit in the transaction structure. Consume that l
 
 ## Compatibility
 
+TxVM transactions are not compatible with version 1 transactions. However, they allow interacting with pre-existing blockchain state: nonces, outputs and asset IDs.
+
 ### Spending legacy outputs
 
 TBD: overview of the upgrade opcode
@@ -930,7 +932,7 @@ PROPOSAL: Alternative definition w/o Transaction Summary:
 
 ### Migrate
 
-(TBD: update)
+TODO: we need to convert legacy output to `LegacyInput` so we can put it on the Effect stack and remove the corresponding outputid from UTXO set. And then unlock the value.
 
 Pops a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Pushes it to the Effect stack. Pushes an [anchor](#anchor) to the Entry stack with `value` set to the old-style ID (TBD) of `legacy`.
 
