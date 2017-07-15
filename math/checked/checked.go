@@ -82,6 +82,15 @@ func LshiftInt64(a, b int64) (result int64, ok bool) {
 	return a << uint(b), true
 }
 
+// RshiftInt64 returns a << b
+// with an integer overflow check.
+func RshiftInt64(a, b int64) (result int64, ok bool) {
+	if b < 0 {
+		return 0, false
+	}
+	return a >> uint64(b), true
+}
+
 // AddInt32 returns a + b
 // with an integer overflow check.
 func AddInt32(a, b int32) (sum int32, ok bool) {
