@@ -1,4 +1,5 @@
 const chain = require('chain-sdk')
+const uuid = require('uuid')
 
 const sleep = (ms) => new Promise(resolve => {
   setTimeout(() => resolve(), ms)
@@ -84,10 +85,25 @@ const issueTransaction = (client) => expect(
   .then(tpl => client.transactions.submit(tpl))
 ).to.be.fulfilled
 
+const createAccount = (name = 'account') => {
+  const client = new chain.Client()
+
+  return client.mockHsm.keys.create()
+    .then((key) => {
+      client.signer.addKey(key, client.mockHsm.signerConnection)
+      return client.accounts.create({
+        alias: `${name}-${uuid.v4()}`,
+        rootXpubs: [key.xpub],
+        quorum: 1
+      })
+    })
+}
+
 global.testHelpers = {
   sleep,
   resetCore,
   ensureConfigured,
   setUpObjects,
   issueTransaction,
+  createAccount,
 }

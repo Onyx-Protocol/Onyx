@@ -1,12 +1,12 @@
 import React from 'react'
 import {
   BaseShow,
-  CopyableBlock,
   KeyValueTable,
   PageContent,
   PageTitle,
   RawJsonButton,
 } from 'features/shared/components'
+import ReceiverModal from './ReceiverModal'
 import componentClassNames from 'utility/componentClassNames'
 
 class AccountShow extends BaseShow {
@@ -19,10 +19,7 @@ class AccountShow extends BaseShow {
   createReceiver() {
     this.props.createReceiver({
       accountId: this.props.item.id
-    }).then((receiver) => this.props.showReceiver(<div>
-      <p>Copy this one-time use receiver to use in a transaction:</p>
-      <CopyableBlock value={JSON.stringify(receiver, null, 1)} />
-    </div>))
+    }).then((rec) => this.props.showReceiver(<ReceiverModal receiver={rec}/>))
   }
 
   render() {

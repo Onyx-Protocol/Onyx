@@ -31,8 +31,11 @@ describe('mock hsm keys', () => {
 
     it('can create a new key', () => {
       const alias = 'test-key-' + uuid.v4()
+      browser.waitForVisible('.ItemList button')
+      browser.scroll('.ItemList button')
       browser.click('.ItemList button')
       browser.setValue('input[name=alias]', alias)
+      browser.scroll('.FormContainer button')
       browser.click('.FormContainer button')
       browser.waitForVisible('.ItemList')
       browser.getText('.ItemList').should.contain('Created key. Create another?')

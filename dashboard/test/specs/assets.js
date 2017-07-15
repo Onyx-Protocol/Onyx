@@ -31,9 +31,13 @@ describe('assets', () => {
 
     it('can create a new asset', () => {
       const alias = 'test-asset-' + uuid.v4()
+      browser.waitForVisible('.ItemList button')
+      browser.scroll('.ItemList button')
       browser.click('.ItemList button')
       browser.setValue('input[name=alias]', alias)
+      browser.scroll('.FormContainer input[type=radio][value=generate]')
       browser.click('.FormContainer input[type=radio][value=generate]')
+      browser.scroll('.FormContainer button')
       browser.click('.FormContainer button')
       browser.waitForVisible('.AssetShow')
       browser.getText('.AssetShow').should.contain('Created asset. Create another?')
