@@ -408,10 +408,11 @@ Fails if `stackid` does not correspond to a valid stack, or if the stack has few
 ### Equal
 
 1. Pops two items `val1` and `val2` from the data stack. 
-2. If they have different types, or if either is a tuple, fails execution. 
-3. If they have the same type: 
-  1. if they are equal, pushes `true` to the stack; 
-  2. otherwise, pushes `false` to the stack.
+2. If they have differing types, pushes `false` to the stack.
+3. If they have the same type:
+  1. if they are tuples, pushes `false` to the stack;
+  2. otherwise, if they are equal, pushes `true` to the stack;
+  3. otherwise, pushes `false` to the stack.
 
 ### Type
 
@@ -454,6 +455,7 @@ Drops an item from the data stack.
 
 1. Pops a tuple `tuple` from the data stack. 
 2. Pushes each of the fields in `tuple` to the stack in reverse order (so that the 0th item in the tuple ends up on top of the stack).
+3. Pushes `len`, the length of the tuple, to the data stack.
 
 ### Field
 
@@ -491,18 +493,22 @@ Drops an item from the data stack.
 ### Add
 
 Pops two integers `a` and `b` from the stack, adds them, and pushes their sum `a + b` to the stack.
+TODO: fail on overflow
 
 ### Sub
 
 Pops two integers `a` and `b` from the stack, subtracts the second frmo the first, and pushes their difference `a - b` to the stack.
+TODO: fail on overflow
 
 ### Mul
 
 Pops two integers `a` and `b` from the stack, multiplies them, and pushes their product `a * b` to the stack.
+TODO: fail on overflow
 
 ### Div
 
 Pops two integers `a` and `b` from the stack, divides them truncated toward 0, and pushes their quotient `a / b` to the stack.
+TODO: fail on overflow/divide-by-zero
 
 ### Mod
 
@@ -690,7 +696,7 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 3. Peeks at the top [Command](#command) `command` on the Command stack.
 4. Constructs a tuple `input` of type [Contract](#contract), with:
   * `input.program` equal to `command.program`, 
-  * `input.anchor` equal to `anchor`,
+  * `input.anchor` equal to `anchor.value`,
   * `input.value` equal to `value`. 
 5. Computes the [ID](#item-ids) `contractid` of `input`. 
 6. Pushes an [Input](#input) to the Effect stack with `contractid` equal to `contractid`.
@@ -706,7 +712,7 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 3. Peeks at the top [Command](#command) `command` on the Command stack.
 4. Constructs a tuple `contract` of type [Contract](#contract), with:
   * `contract.program` equal to `command.program`, 
-  * `contract.anchor` equal to `anchor`, and 
+  * `contract.anchor` equal to `anchor.value`, and 
   * `contract.value` equal to `value`. 
 5. Computes the [ID](#item-ids) `contractid` of `input`. 
 6. Pushes a [Read](#read) to the Effect stack with `contractid` equal to `contractid`.
@@ -746,7 +752,7 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 1. Pops a [Value](#value) `value` from the Entry stack. 
 2. Pops an int64 `newamount` from the data stack. 
 3. If `newamount` is greater than or equal to `value.amount`, fail execution. 
-4. Pushes a new Value with amount `newamount - value.amount` and assetID `value.assetID`.
+4. Pushes a new Value with amount `value.amount - newamount` and assetID `value.assetID`.
 5. Pushes a new Value with amount `newamount` and assetID `value.assetID`.
 
 
