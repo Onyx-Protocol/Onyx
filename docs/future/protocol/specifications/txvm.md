@@ -50,8 +50,8 @@ TBD: should we specify txversion inside the bytecode or in the container? E.g. w
 1. The VM is initialized with all stacks empty.
 2. TXVM bytecode is being executed.
 3. When the program counter is equal to the length of the program, execution is complete. 
-4. The top item of the [Effect stack](#Effect) must be a [Transaction ID](#transaction-id).
-5. There must be no other Transaction IDs in the Effect stack, otherwise execution fails.
+4. The top item of the [Effect stack](#Effect) must be a [Transaction Summary](#transaction-summary).
+5. There must be no other Transaction Summaries in the Effect stack, otherwise execution fails.
 6. There must be at least one [anchor](#anchor) in the Effect stack. 
 7. The Entry stack must be empty.
 
@@ -59,11 +59,12 @@ TBD: should we specify txversion inside the bytecode or in the container? E.g. w
 
 If execution and all the required checks do not fail, Effect stack is introspected and blockchain state is updated:
 
-1. For each [Input](#input), its `contractid` is removed from the UTXO set.
-2. For each [Output](#output), its `contractid` is added to the UTXO set.
-3. Remove all outdated nonces from Nonce set (based on block's timestamp)
-4. For each [Nonce](#nonce), add it's ID to the Nonce set.
-5. TBD: records?
+1. [Transaction ID](#transaction-id) is committed to the block as ID of the Transaction Summary.
+2. For each [Input](#input), its `contractid` is removed from the UTXO set.
+3. For each [Output](#output), its `contractid` is added to the UTXO set.
+4. Remove all outdated nonces from Nonce set (based on block's timestamp)
+5. For each [Nonce](#nonce), add it's ID to the Nonce set.
+6. TBD: records?
 
 
 ### Runlimit
@@ -125,6 +126,12 @@ A bytestring with length between 0 and 2^31 - 1 bytes.
 ### Item IDs
 
 The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` is the [encode](#encode) operation.
+
+### Transaction ID
+
+The ID of a [Transaction Summary](#transaction-summary) item:
+
+    SHA3-256("txvm" || encode(summary))
 
 ### Tuple
 
@@ -246,12 +253,7 @@ There are several named types of tuples.
 ### Transaction Summary
 
 0. `type`, a string, "transactionSummary"
-1. `effectids`, a tuple of items
-
-### Transaction ID
-
-0. `type`, a string, "transactionID"
-1. `transactionid`, a string
+1. `effecthash`, a 32-byte hash of all the effect entries
 
 ### Legacy Output
 
@@ -921,20 +923,14 @@ Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
 ### Summarize
 
-1. Computes the [ID](#item-ids) of each item on the Effect stack. 
-2. Creates a tuple of those IDs (with the first item first), `effectids`. 
-3. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effectids` equal to `effectids`. 
-4. Computes the [ID](#item-id) `txid` of `summary`. 
-5. Creates a tuple of type [Transaction ID](#transaction-id) on the Effect stack with `transactionid` equal to `transactionid`.
+1. Hashes encoded items on Effect stack from bottom to the top (see [Encode](#encode) instructions) using SHA3-256:
 
-TODO: why do we need Tx Summary intermediate structure? It's more efficient to simply hash all item IDs into txid, w/o going through wrapping into a struct and using `encode`.
+        h = SHA3-256(encode(item1) || encode(item2) || ... || encode(topitem))
 
-PROPOSAL: Alternative definition w/o Transaction Summary:
+2. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effecthash` equal to `h`. 
+3. Pushes `summary` to the Effect stack.
 
-1. Computes the [ID](#item-ids) of each item on the Effect stack. 
-2. Computes SHA3-256 hash `txid` of all IDs concatenated from top item on Effect stack to the bottom.
-3. Creates a tuple of type [Transaction ID](#transaction-id) on the Effect stack with `transactionid` set to `txid`.
-
+Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent to the hash of the items’ IDs, but avoid unnecessary memory and CPU overhead for multiple hash instances.
 
 ### Migrate
 
