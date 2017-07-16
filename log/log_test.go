@@ -224,7 +224,7 @@ func TestPrintkvStack(t *testing.T) {
 
 		// stack trace
 		"TestPrintkvStack\n",
-		"/go/",
+		"/go",
 	}
 
 	t.Logf("output:\n%s", got)
@@ -256,7 +256,7 @@ func TestError(t *testing.T) {
 
 		// stack trace
 		"TestError\n",
-		"/go/",
+		"/go",
 	}
 
 	t.Logf("output:\n%s", got)
