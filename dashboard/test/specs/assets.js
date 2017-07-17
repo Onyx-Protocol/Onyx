@@ -45,4 +45,18 @@ describe('assets', () => {
     })
   })
 
+  describe('showing Raw JSON', () => {
+    before(() => expect(testHelpers.ensureConfigured()).to.be.fulfilled
+      .then(() => testHelpers.createAsset('asset-JSON-test'))
+      .then((asset) => browser.url('/assets/' + asset.id))
+    )
+
+    it('can show Raw JSON of asset', () => {
+      browser.waitForVisible('.AssetShow')
+      browser.scroll('button=Raw JSON')
+      browser.click('button=Raw JSON')
+      browser.waitForVisible('.RawJsonModal')
+      browser.getText('.RawJsonModal').should.contain('asset_pubkey')
+    })
+  })
 })
