@@ -3,33 +3,33 @@ package txvm2
 import "bytes"
 
 func opIssue(vm *vm) {
-	amt := vm.popInt64()
-	cmd := vm.stacks[commandstack].peekCommand()
+	amt := vm.popInt64(datastack)
+	cmd := vm.peekTuple(commandstack, commandTuple)
 	assetDef := mkAssetDefinition(commandProgram(cmd))
 	assetID := getID(assetDef)
-	vm.stacks[entrystack].pushTuple(mkValue(amt, assetID))
+	vm.push(entrystack, mkValue(amt, assetID))
 }
 
 func opMerge(vm *vm) {
-	v1 := vm.stacks[entrystack].popValue()
-	v2 := vm.stacks[entrystack].popValue()
+	v1 := vm.popTuple(entrystack, valueTuple)
+	v2 := vm.popTuple(entrystack, valueTuple)
 	if !bytes.Equal(valueAssetID(v1), valueAssetID(v2)) {
 		panic(xxx)
 	}
-	vm.stacks[entrystack].pushTuple(mkValue(valueAmount(v1)+valueAmount(v2), valueAssetID(v1)))
+	vm.push(entrystack, mkValue(valueAmount(v1)+valueAmount(v2), valueAssetID(v1)))
 }
 
 func opSplit(vm *vm) {
-	val := vm.stacks[entrystack].popValue()
-	amt := vm.popInt64()
+	val := vm.popTuple(entrystack, valueTuple)
+	amt := vm.popInt64(datastack)
 	if amt >= valueAmount(val) {
 		panic(xxx)
 	}
-	vm.stacks[entrystack].pushTuple(mkValue(valueAmount(val)-amt, valueAssetID(val)))
-	vm.stacks[entrystack].pushTuple(mkValue(amt, valueAssetID(val)))
+	vm.push(entrystack, mkValue(valueAmount(val)-amt, valueAssetID(val)))
+	vm.push(entrystack, mkValue(amt, valueAssetID(val)))
 }
 
 func opRetire(vm *vm) {
-	val := vm.stacks[entrystack].popValue()
-	vm.stacks[effectstack].pushTuple(mkRetirement(val))
+	val := vm.popTuple(entrystack, valueTuple)
+	vm.push(effectstack, mkRetirement(val))
 }

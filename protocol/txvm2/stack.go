@@ -12,7 +12,7 @@ const (
 
 type stack []value
 
-func (s *stack) top() (value, bool) {
+func (s *stack) peek() (value, bool) {
 	if len(s) == 0 {
 		return nil, false
 	}
@@ -24,7 +24,7 @@ func (s *stack) push(v value) {
 }
 
 func (s *stack) pop() (value, bool) {
-	res, ok := s.top()
+	res, ok := s.peek()
 	if ok {
 		*s = s[:len(s)-1]
 	}

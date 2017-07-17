@@ -31,17 +31,17 @@ func opRightShift(vm *vm) {
 }
 
 func binary(vm *vm, f func(a, b int64) (int64, bool)) {
-	a := vm.popInt64()
-	b := vm.popInt64()
+	a := vm.popInt64(datastack)
+	b := vm.popInt64(datastack)
 	res, ok := f(a, b)
 	if !ok {
 		panic(xxx)
 	}
-	vm.pushInt64(res)
+	vm.push(datastack, vint64(res))
 }
 
 func opGreaterThan(vm *vm) {
-	a := vm.popInt64()
-	b := vm.popInt64()
-	vm.pushBool(a > b)
+	a := vm.popInt64(datastack)
+	b := vm.popInt64(datastack)
+	vm.pushBool(datastack, a > b)
 }

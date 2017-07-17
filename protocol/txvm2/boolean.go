@@ -1,18 +1,18 @@
 package txvm2
 
 func opNot(vm *vm) {
-	b := vm.popBool()
-	vm.pushBool(!b)
+	b := vm.popBool(datastack)
+	vm.pushBool(datastack, !b)
 }
 
 func opAnd(vm *vm) {
-	p := vm.popBool()
-	q := vm.popBool()
-	vm.pushBool(p && q)
+	p := vm.popBool(datastack)
+	q := vm.popBool(datastack)
+	vm.pushBool(datastack, p && q)
 }
 
 func opOr(vm *vm) {
-	p := vm.popBool()
-	q := vm.popBool()
-	vm.pushBool(p || q)
+	p := vm.popBool(datastack)
+	q := vm.popBool(datastack)
+	vm.pushBool(datastack, p || q)
 }

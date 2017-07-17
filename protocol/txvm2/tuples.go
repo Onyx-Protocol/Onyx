@@ -1,10 +1,10 @@
 package txvm2
 
 func opTuple(vm *vm) {
-	n := vm.popInt64()
+	n := vm.popInt64(datastack)
 	var vals []value
 	for n > 0 {
-		v := vm.pop()
+		v := vm.pop(datastack)
 		vals = append(vals, v)
 		n--
 	}
@@ -12,16 +12,24 @@ func opTuple(vm *vm) {
 }
 
 func opUntuple(vm *vm) {
-	t := vm.popTuple()
+	v := vm.pop(datastack)
+	t, ok := v.(tuple)
+	if !ok {
+		panic(xxx)
+	}
 	for i := len(t) - 1; i >= 0; i-- {
 		vm.push(t[i])
 	}
-	vm.pushInt64(len(t))
+	vm.push(vint64(len(t)))
 }
 
 func opField(vm *vm) {
 	n := vm.popInt64()
-	t := vm.popTuple()
+	v := vm.pop()
+	t, ok := v.(tuple)
+	if !ok {
+		panic(xxx)
+	}
 	if n < 0 {
 		panic(xxx)
 	}

@@ -1,7 +1,7 @@
 package txvm2
 
 func opAnnotate(vm *vm) {
-	d := vm.popString()
+	d := vm.popBytes(datastack)
 	a := mkAnnotation(d)
-	vm.stacks[effectstack].pushTuple(a)
+	vm.push(effectstack, a)
 }

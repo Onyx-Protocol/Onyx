@@ -1,13 +1,13 @@
 package txvm2
 
 func opCommand(vm *vm) {
-	prog := vm.popString()
+	prog := vm.popBytes(datastack)
 	doCommand(vm, prog)
 }
 
 func doCommand(vm *vm, prog []byte) {
 	cmd := mkCommand(prog)
-	vm.stacks[commandstack].pushTuple(cmd)
-	defer vm.stacks[commandstack].pop()
+	vm.push(commandstack, cmd)
+	defer vm.pop(commandstack)
 	exec(vm, prog)
 }

@@ -63,8 +63,8 @@ func opEqual(vm *vm) {
 		switch t1 {
 		case int64type:
 			res = v1.(vint64) == v2.(vint64)
-		case stringtype:
-			res = bytes.Equal(v1.(vstring), v2.(vstring))
+		case bytestype:
+			res = bytes.Equal(v1.(vbytes), v2.(vbytes))
 		}
 	}
 	vm.pushBool(res)
@@ -78,7 +78,7 @@ func opType(vm *vm) {
 func opLen(vm *vm) {
 	v := vm.pop()
 	switch v := v.(type) {
-	case vstring:
+	case vbytes:
 		vm.pushInt64(len(v))
 	case tuple:
 		vm.pushInt64(len(v))
@@ -92,14 +92,11 @@ func opDrop(vm *vm) {
 }
 
 func opToAlt(vm *vm) {
-	v := vm.pop()
-	vm.stacks[altstack].push(v)
+	v := vm.pop(datastack)
+	vm.push(altstack, v)
 }
 
 func opFromAlt(vm *vm) {
-	v, ok := vm.stacks[altstack].pop()
-	if !ok {
-		panic(xxx)
-	}
-	vm.push(v)
+	v := vm.pop(altstack)
+	vm.push(datastack, v)
 }

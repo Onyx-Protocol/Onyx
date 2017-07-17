@@ -3,34 +3,25 @@ package txvm2
 import "bytes"
 
 func opCreate(vm *vm) {
-	data := vm.pop()
-	cmd, ok := vm.stacks[commandstack].top()
-	if !ok {
-		panic(xxx)
-	}
-	rec := mkRecord(cmd[1], data)
-	vm.stacks[entrystack].pushTuple(rec)
+	data := vm.pop(datastack)
+	cmd := vm.peekTuple(commandstack, commandTuple)
+	rec := mkRecord(commandProgram(cmd), data)
+	vm.push(entrystack, rec)
 }
 
 func opDelete(vm *vm) {
-	rec := vm.stacks[recordstack].popRecord()
-	cmd, ok := vm.stacks[commandstack].top()
-	if !ok {
-		panic(xxx)
-	}
-	if !bytes.Equal(rec[1], cmd.(tuple)[1]) {
+	rec := vm.popTuple(recordstack, recordTuple)
+	cmd := vm.peekTuple(commandStack, commandTuple)
+	if !bytes.Equal(recordCommandProgram(rec), commandProgram(cmd)) {
 		panic(xxx)
 	}
 }
 
 func opComplete(vm *vm) {
-	rec := vm.stacks[recordstack].popRecord()
-	cmd, ok := vm.stacks[commandstack].top()
-	if !ok {
+	rec := vm.popTuple(recordstack, recordTuple)
+	cmd := vm.peekTuple(commandstack, commandTuple)
+	if !bytes.Equal(recordCommandProgram(rec), commandProgram(cmd)) {
 		panic(xxx)
 	}
-	if !bytes.Equal(rec[1], cmd.(tuple)[1]) {
-		panic(xxx)
-	}
-	vm.stacks[effectstack].pushTuple(rec)
+	vm.push(effectstack, rec)
 }

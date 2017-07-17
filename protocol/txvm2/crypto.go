@@ -9,22 +9,22 @@ import (
 )
 
 func opSHA256(vm *vm) {
-	a := vm.popString()
+	a := vm.popBytes()
 	h := sha256.New()
 	h.Write(a)
-	vm.pushString(vstring(h.Sum(nil)))
+	vm.push(vbytes(h.Sum(nil)))
 }
 
 func opSHA3(vm *vm) {
-	a := vm.popString()
+	a := vm.popBytes()
 	h := sha3.New256()
 	h.Write(a)
-	vm.pushString(vstring(h.Sum(nil)))
+	vm.push(vbytes(h.Sum(nil)))
 }
 
 func opCheckSig(vm *vm) {
-	pubkey := vm.popString()
-	msg := vm.popString()
-	sig := vm.popString()
+	pubkey := vm.popBytes()
+	msg := vm.popBytes()
+	sig := vm.popBytes()
 	vm.pushBool(ed25519.Verify(pubkey, msg, sig))
 }

@@ -36,7 +36,7 @@ func Validate(tx []byte, o ...option) ([32]byte, bool) {
 
 	var txid [32]byte
 
-	item, ok := vm.stacks[effectstack].top()
+	item, ok := vm.stacks[effectstack].peek()
 	if !ok {
 		return txid, false
 	}
@@ -68,32 +68,56 @@ func step(vm *vm) {
 	opcode, data, n := decodeInst(vm.prog[vm.pc:])
 	// xxx tracing
 	vm.pc += n
-	if isSmallIntOp(opcode) {
-		vm.stacks[datastack].pushInt64(int64(opcode - Op0))
-	} else {
-		// xxx range check
+	switch {
+	case isSmallIntOp(opcode):
+		vm.pushInt64(datastack, int64(opcode-Op0))
+	case opcode >= len(opFuncs):
+		panic(xxx)
+	default:
 		f := opFuncs[opcode]
+		if f == nil {
+			panic(xxx)
+		}
 		f(vm)
 	}
 }
 
-func (vm *vm) push(v value) {
-	vm.stacks[datastack].push(v)
+// stack access
+
+func (vm *vm) push(stacknum int, v value) {
+	vm.stacks[stacknum].push(v)
 }
 
-func (vm *vm) pop() value {
-	res, ok := vm.stacks[datastack].pop()
+func (vm *vm) pop(stacknum int) value {
+	res, ok := vm.stacks[stacknum].pop()
 	if !ok {
 		panic(xxx)
 	}
 	return res
 }
 
-func (vm *vm) popString() vstring {
-	v := vm.pop()
-	s, ok := v.(vstring)
+func (vm *vm) popBytes(stacknum int) vbytes {
+	v := vm.pop(stacknum)
+	s, ok := v.(vbytes)
 	if !ok {
 		panic(xxx)
 	}
 	return s
+}
+
+func (vm *vm) popInt64(stacknum int) int64 {
+	v := vm.pop(stacknum)
+	n, ok := v.(vint64)
+	if !ok {
+		panic(xxx)
+	}
+	return n
+}
+
+func (vm *vm) popTuple(stacknum int, name string) tuple {
+	v := vm.pop(stacknum)
+	if !isNamed(v, name) {
+		panic(xxx)
+	}
+	return v.(tuple)
 }
