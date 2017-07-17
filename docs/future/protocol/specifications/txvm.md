@@ -26,7 +26,7 @@ The pieces of transaction information - the inputs, outputs, etc. - that are pro
 
 Validation of the transaction happens in a context of a validating a block of transactions. Large part of that validation is handled by the TxVM logic with a few validation rules outside of it.
 
-### TxVM state
+### VM state
 
 TxVM is a state machine consisting of:
 
@@ -826,10 +826,19 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 3. Pushes a [Retirement](#retirement) `r` to the Effect stack with `r.value` set to the value commitment.
 
 
+### WrapValue
+
+Converts plaintext value to a value commitment and emits a valid Asset Commitment usable in asset range proofs.
+
+1. Pops a plaintext [Value](#value) item from the Entry stack.
+2. Computes non-blinded [asset commitment](#asset-commitment) from the plaintext asset ID and pushes it to the Entry stack.
+3. Computes non-blinded [value commitment](#value-commitment) from the plaintext amount and asset ID and pushes it to the Entry stack.
+
+
 ### MergeConfidential
 
 1. Pops two items of type [Value](#value), [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `a` and `b` from the [Entry stack](#entry-stack).
-2. Converts each item of type [Value](#value) (if any) to the [Proven Value](#proven-value) with a corresponding [non-blinded value commitment](ca.md#create-nonblinded-value-commitment) based on plaintext `amount` and `assetID`.
+2. For each item of type [Value](#value) (if any) to the [Proven Value](#proven-value) with a corresponding [non-blinded value commitment](ca.md#create-nonblinded-value-commitment) based on plaintext `amount` and `assetID`.
 3. Computes new [Unproven Value](#proven-value) `c` with `valuecommitment` equal to `a.valuecommitment + b.valuecommitment`.
 4. Pushes unproven value `c` to the Entry stack.
 
