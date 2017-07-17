@@ -70,8 +70,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("release", *def)
-
 	for _, p := range products {
 		if p.name == def.Product {
 			doRelease(p, def)
@@ -83,25 +81,49 @@ func main() {
 }
 
 func doRelease(p product, def *release.Definition) {
+	fmt.Printf("%s\t%s\t%s\t%s\t%s\n",
+		def.Product,
+		def.Version,
+		def.ChainCommit,
+		def.ChainprvCommit,
+		def.Codename,
+	)
+
 	checkRelease(p, def)
 	tagName := tag(p, def)
 	files, err := p.build(p, def.Version, tagName)
 	if err != nil {
-		untag(p, def, tagName)
 		fatalf("error: %s\n", err)
 	}
-	upload(files)
+	if !*test {
+		publish(files)
+	}
 }
 
 func temporaryDefinition(product, version string) (*release.Definition, error) {
-	def := &release.Definition{
-		Product:        product,
-		Version:        version, // note: may not be a valid version string, that is ok!
-		ChainCommit:    "aaaa",
-		ChainprvCommit: "bbbb",
-		Codename:       "Code Name", // TODO(kr): put something useful in here
+	if version == "" {
+		usage()
 	}
-	return def, nil
+	chainhead, err := chain.head()
+	if err != nil {
+		return nil, err
+	}
+	d := &release.Definition{
+		Product:     product,
+		Version:     version, // maybe not a valid version string, that's ok
+		ChainCommit: chainhead,
+		Codename:    "Code Name", // TODO(kr): put something useful in here
+	}
+	for _, p := range products {
+		if p.name == d.Product && p.prv {
+			chainprvhead, err := chainprv.head()
+			if err != nil {
+				return nil, err
+			}
+			d.ChainprvCommit = chainprvhead
+		}
+	}
+	return d, nil
 }
 
 func fatalf(format string, args ...interface{}) {

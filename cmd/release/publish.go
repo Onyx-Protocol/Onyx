@@ -1,4 +1,4 @@
 package main
 
-func upload(files []string) {
+func publish(files []string) {
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 
@@ -26,14 +27,22 @@ func (r *repo) git(arg ...string) ([]byte, error) {
 	return cmd.Output()
 }
 
+func (r *repo) head() (string, error) {
+	b, err := chain.git("rev-parse", "HEAD")
+	if err != nil {
+		return "", err
+	}
+	return string(bytes.TrimSpace(b)), nil
+}
+
 func tag(p product, d *release.Definition) string {
 	name := p.name + "-" + d.Version
-	_, err := chain.git("tag", name, d.ChainCommit)
+	_, err := chain.git("tag", "-m", name, name, d.ChainCommit)
 	if err != nil {
 		fatalf("error: %s\n", err)
 	}
 	if p.prv {
-		_, err := chainprv.git("tag", name, d.ChainprvCommit)
+		_, err := chainprv.git("tag", "-m", name, name, d.ChainprvCommit)
 		if err != nil {
 			untag(p, d, name)
 			fatalf("error: %s\n", err)
@@ -45,6 +54,6 @@ func tag(p product, d *release.Definition) string {
 func untag(p product, d *release.Definition, name string) {
 	chain.git("tag", "-d", name)
 	if p.prv {
-		chain.git("tag", "-d", name)
+		chainprv.git("tag", "-d", name)
 	}
 }

@@ -13,6 +13,7 @@ func TestCheckVersion(t *testing.T) {
 		{"1.0", false},
 		{"1.1", true},
 		{"1.01", false},
+		{"1.1rc0", false},
 		{"1.1rc1", true},
 		{"1.1rc1.1", false},
 		{"1.1.1", true},

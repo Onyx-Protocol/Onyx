@@ -2,6 +2,7 @@ package release
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -56,6 +57,13 @@ func parse(r io.Reader) (tab []*Definition, err error) {
 			return nil, errors.Wrap(fmt.Errorf("bad product name: %s", d.Product))
 		} else if err := CheckVersion(d.Version); err != nil {
 			return nil, errors.Wrap(err, d.Product)
+		} else if !commitOk(d.ChainCommit) {
+			return nil, errors.Wrap(fmt.Errorf("bad commit hash %s", d.ChainCommit))
+		} else if !commitOk(d.ChainprvCommit) && d.ChainprvCommit != "n/a" {
+			return nil, errors.Wrap(fmt.Errorf("bad commit hash %s", d.ChainprvCommit))
+		}
+		if d.ChainprvCommit == "n/a" {
+			d.ChainprvCommit = ""
 		}
 
 		tab = append(tab, d)
@@ -89,4 +97,9 @@ func parse(r io.Reader) (tab []*Definition, err error) {
 	}
 
 	return tab, nil
+}
+
+func commitOk(s string) bool {
+	b, err := hex.DecodeString(s)
+	return len(b) == 5 && err == nil
 }

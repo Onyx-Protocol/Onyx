@@ -1,10 +1,6 @@
 package main
 
-import (
-	"bytes"
-
-	"chain/build/release"
-)
+import "chain/build/release"
 
 func check() {
 	err := release.Check()
@@ -22,6 +18,13 @@ func check() {
 // If it finds a problem, it prints an error message and
 // exits with a nonzero status.
 func checkRelease(p product, d *release.Definition) {
+	if p.prv != (d.ChainprvCommit == "") {
+		fatalf("need chainprv commit hash iff product is prv\n")
+	}
+
+	// 1. ensure there's a changelog entry
+	// 2. ensure the changelog entry has the correct date
+
 	branch := release.Branch(d.Version)
 
 	_, err := chain.git("fetch")
@@ -39,11 +42,10 @@ func checkRelease(p product, d *release.Definition) {
 		fatalf("error: %s\n", err)
 	}
 
-	commitBytes, err := chain.git("rev-parse", "HEAD")
+	commit, err := chain.head()
 	if err != nil {
 		fatalf("error: %s\n", err)
 	}
-	commit := string(bytes.TrimSpace(commitBytes))
 	if commit != d.ChainCommit {
 		fatalf("error: got commit %s expected %s on chain\n", commit, d.ChainCommit)
 	}
@@ -54,12 +56,11 @@ func checkRelease(p product, d *release.Definition) {
 			fatalf("error: %s\n", err)
 		}
 
-		commitBytes, err := chain.git("rev-parse", "HEAD")
+		commit, err := chainprv.head()
 		if err != nil {
 			fatalf("error: %s\n", err)
 		}
-		commit := string(bytes.TrimSpace(commitBytes))
-		if commit != d.ChainCommit {
+		if commit != d.ChainprvCommit {
 			fatalf("error: got commit %s expected %s on chainprv\n", commit, d.ChainCommit)
 		}
 	}

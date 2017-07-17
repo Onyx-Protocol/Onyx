@@ -26,7 +26,7 @@ func CheckVersion(v string) error {
 		}
 	}
 
-	if len(part) == 2 && !number.MatchString(part[1]) {
+	if len(part) == 2 && (!number.MatchString(part[1]) || part[1] == "0") {
 		return errors.Wrap(fmt.Errorf("bad version string %s: bad rc number %s", v, part[1]))
 	}
 
