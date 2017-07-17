@@ -1,6 +1,6 @@
 # TxVM
 
-This is the specification for txvm, which combines a representation for blockchain transactions with the rules for ensuring their validity.
+This is the specification for TxVM, which combines a representation for blockchain transactions with the rules for ensuring their validity.
 
 * [Motivation](#motivation)
 * [TxVM operation](#txvm-operation)
@@ -15,16 +15,53 @@ This is the specification for txvm, which combines a representation for blockcha
 
 Earlier versions of Chain Core represented transactions with a static data structure, exposing the pieces of information needed to test the transaction’s validity. A separate set of validation rules could be applied to that information to get a true/false result.
 
-Under txvm, these functions are combined in such a way that an executable program string is both the transaction’s representation and the proof of its validity.
+Under TxVM, these functions are combined in such a way that an executable program string is both the transaction’s representation and the proof of its validity.
 
-When the virtual machine executes a txvm program, it accumulates different types of data on different stacks. This data corresponds to the information exposed in earlier versions of the transaction data structure: inputs, outputs, time constraints, nonces, and so on. Under txvm, that information is _only_ available as a result of executing the program, and the program only completes without error if the transaction is well-formed (i.e., its inputs and outputs balance, prevout control programs are correctly satisfied, etc). No separate validation steps are required.
+When the virtual machine executes a TxVM program, it accumulates different types of data on different stacks. This data corresponds to the information exposed in earlier versions of the transaction data structure: inputs, outputs, time constraints, nonces, and so on. Under TxVM, that information is _only_ available as a result of executing the program, and the program only completes without error if the transaction is well-formed (i.e., its inputs and outputs balance, prevout control programs are correctly satisfied, etc). No separate validation steps are required.
 
-The pieces of transaction information - the inputs, outputs, etc. - that are produced during txvm execution are also _consumed_ in order to produce the transaction summary, which is the sole output of a successful txvm program. To capture pieces of transaction information for purposes other than validation, txvm implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
+The pieces of transaction information - the inputs, outputs, etc. - that are produced during TxVM execution are also _consumed_ in order to produce the transaction summary, which is the sole output of a successful TxVM program. To capture pieces of transaction information for purposes other than validation, TxVM implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
 
 ## TxVM operation
 
 Validation of the transaction happens in a context of a validating a block of transactions. Large part of that validation is handled by the TxVM logic with a few validation rules outside of it.
+
+### TxVM state
+
+TxVM is a state machine consisting of:
+
+1. [Stacks](#stacks):
+  0. Data stack
+  1. Alt stack
+  2. Entry stack
+  3. Command stack
+  4. Effect stack
+2. Extension flag (boolean)
+3. [Transaction](#transaction) tuple.
+
+
+
+### VM Execution
+
+1. The VM is initialized with all [stacks](#stacks) empty.
+2. TxVM bytecode is being executed according to behaviour described per each [instruction](#instructions).
+3. Each instruction consumes [runlimit](#runlimit). If TxVM runs out of runlimit before the end of the execution, execution fails.
+4. When the program counter is equal to the length of the program, execution is complete.
+5. The top item of the [Effect stack](#Effect) must be a [Transaction Summary](#transaction-summary).
+6. There must be no other Transaction Summaries in the Effect stack, otherwise execution fails.
+7. There must be at least one [anchor](#anchor) in the Effect stack.
+8. The Entry stack must be empty.
+
+### Post-execution
+
+If execution and all the required checks do not fail, Effect stack is introspected and blockchain state is updated:
+
+1. [Transaction ID](#transaction-id) is committed to the block as ID of the Transaction Summary.
+2. For each [Input](#input), its `contractid` is removed from the UTXO set.
+3. For each [Output](#output), its `contractid` is added to the UTXO set.
+4. Remove all outdated nonces from Nonce set (based on block's timestamp).
+5. For each [Nonce](#nonce), add it's ID to the Nonce set.
+6. TBD: records?
 
 ### Transaction version
 
@@ -32,8 +69,8 @@ TBD: how transaction version is specified and how `extension` flag is set.
 
 Sketch:
 
-1. New txvm txs will have version 2 to avoid confusion with txv1 (they have incompatible format, but still).
-2. Version 1 is prohibited in txvm.
+1. New TxVM txs will have version 2 to avoid confusion with txv1 (they have incompatible format, but still).
+2. Version 1 is prohibited in TxVM.
 3. Tx version can be unknown (>2) only if allowed by outer context (e.g. block version is unknown)
 4. If tx version is unknown (>2) extension flag is set to true to allow NOPs and extends.
 
@@ -45,31 +82,11 @@ TBD: should we specify txversion inside the bytecode or in the container? E.g. w
       program: "...txvm bytecode..."
     }
 
-### VM Execution
-
-1. The VM is initialized with all stacks empty.
-2. TXVM bytecode is being executed.
-3. When the program counter is equal to the length of the program, execution is complete.
-4. The top item of the [Effect stack](#Effect) must be a [Transaction Summary](#transaction-summary).
-5. There must be no other Transaction Summaries in the Effect stack, otherwise execution fails.
-6. There must be at least one [anchor](#anchor) in the Effect stack.
-7. The Entry stack must be empty.
-
-### Post-execution
-
-If execution and all the required checks do not fail, Effect stack is introspected and blockchain state is updated:
-
-1. [Transaction ID](#transaction-id) is committed to the block as ID of the Transaction Summary.
-2. For each [Input](#input), its `contractid` is removed from the UTXO set.
-3. For each [Output](#output), its `contractid` is added to the UTXO set.
-4. Remove all outdated nonces from Nonce set (based on block's timestamp)
-5. For each [Nonce](#nonce), add it's ID to the Nonce set.
-6. TBD: records?
-
-
 ### Runlimit
 
-The VM is initialized with a set runlimit. Each instruction reduces that number. If the runlimit goes below zero while the program counter is less than the length of the program, execution fails.
+The VM is initialized with a set runlimit. Each instruction reduces that number. 
+
+If the runlimit goes below zero while the program counter is less than the length of the program, execution fails.
 
 1. Each instruction costs `1`.
 2. Each instruction that pushes an item to the data stack, including as the result of an operation (such as `add`, `cat`, `merge`, `field`, and `untuple`), costs an amount based on the type and size of that data:
@@ -138,6 +155,12 @@ The ID of a [Transaction Summary](#transaction-summary) item:
 An immutable collection of items of any type.
 
 There are several named types of tuples.
+
+### Transaction
+
+0. `type`, a string, "tx"
+1. `version`, an int64
+2. `program`, a string
 
 ### Value
 
@@ -919,12 +942,13 @@ Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
 ### Summarize
 
-1. Hashes encoded items on Effect stack from bottom to the top (see [Encode](#encode) instructions) using SHA3-256:
+1. Fails if transaction was already summarized.
+2. Hashes encoded items on Effect stack from bottom to the top (see [Encode](#encode) instructions) using SHA3-256:
 
         h = SHA3-256(encode(item1) || encode(item2) || ... || encode(topitem))
 
-2. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effecthash` equal to `h`.
-3. Pushes `summary` to the Effect stack.
+3. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effecthash` equal to `h`.
+4. Pushes `summary` to the Effect stack.
 
 Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent to the hash of the items’ IDs, but avoid unnecessary memory and CPU overhead for multiple hash instances.
 
