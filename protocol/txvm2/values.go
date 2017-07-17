@@ -33,3 +33,39 @@ func opRetire(vm *vm) {
 	val := vm.popTuple(entrystack, valueTuple)
 	vm.push(effectstack, mkRetirement(val))
 }
+
+func opMergeConfidential(vm *vm) {
+	// xxx
+}
+
+func opSplitConfidential(vm *vm) {
+	// xxx
+}
+
+func opProveAssetRange(vm *vm) {
+	// xxx
+}
+
+func opDropAssetCommitment(vm *vm) {
+	// xxx
+}
+
+func opProveAssetID(vm *vm) {
+	// xxx
+}
+
+func opProveAmount(vm *vm) {
+	// xxx
+}
+
+func opProveValueRange(vm *vm) {
+	// xxx
+}
+
+func opIssuanceCandidate(vm *vm) {
+	// xxx
+}
+
+func opIssueConfidential(vm *vm) {
+	// xxx
+}

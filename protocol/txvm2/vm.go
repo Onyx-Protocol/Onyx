@@ -2,7 +2,7 @@ package txvm2
 
 // A "run" is a program and a position in it
 type run struct {
-	pc   int
+	pc   int64
 	prog []byte
 }
 
@@ -116,6 +116,22 @@ func (vm *vm) popInt64(stacknum int) int64 {
 
 func (vm *vm) popTuple(stacknum int, name string) tuple {
 	v := vm.pop(stacknum)
+	if !isNamed(v, name) {
+		panic(xxx)
+	}
+	return v.(tuple)
+}
+
+func (vm *vm) peek(stacknum int) value {
+	v, ok := vm.stacks[stacknum].peek()
+	if !ok {
+		panic(xxx)
+	}
+	return v
+}
+
+func (vm *vm) peekTuple(stacknum int, name string) tuple {
+	v := vm.peek(stacknum)
 	if !isNamed(v, name) {
 		panic(xxx)
 	}

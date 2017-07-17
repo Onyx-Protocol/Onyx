@@ -46,6 +46,14 @@ func (s *Scalar) SetUint64(n uint64) *Scalar {
 	return s
 }
 
+// SetInt64 sets the scalar to a given integer value.
+func (s *Scalar) SetInt64(n int64) *Scalar {
+	if n >= 0 {
+		return s.SetUint64(uint64(n))
+	}
+	return s.SetUint64(uint64(-n))
+}
+
 // Add computes x+y (mod L) and places the result in z, returning
 // that. Any or all of x, y, and z may be the same pointer.
 func (z *Scalar) Add(x, y *Scalar) *Scalar {

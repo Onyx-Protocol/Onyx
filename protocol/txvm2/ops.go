@@ -97,10 +97,13 @@ const (
 	// Confidentiality
 	OpMergeConfidential
 	OpSplitConfidential
-	OpProveAssetCommitment
-	OpProveValue
+	OpProveAssetRange
+	OpDropAssetCommitment
+	OpProveAssetID
+	OpProveAmount
+	OpProveValueRange
 	OpIssuanceCandidate
-	OpIssueCA
+	OpIssueConfidential
 
 	// Anchors
 	OpNonce

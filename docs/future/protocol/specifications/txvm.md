@@ -925,7 +925,7 @@ This opcode proves that a given cleartext asset ID is stored within a given [Ass
 
 TBD: this is incompatible with existing asset IDs. We need either support for legacy asset definitions, or another opcode `LegacyIssuanceCandidate` to create ICs from legacy asset ids.
 
-### ConfidentialIssue
+### IssueConfidential
 
 1. Pops from data stack (in order):
   * [Value Commitment](#value-commitment) `vc`
@@ -938,7 +938,7 @@ TBD: this is incompatible with existing asset IDs. We need either support for le
 5. Pushes new [Unproven Value](#unproven-value) with `valuecommitment` set to `vc` to the Entry stack.
 6. Executes `program` via [command](#command) instruction.
 
-Note: `ConfidentialIssue` authorized issuance of a certain asset commitment (within a given set of candidates) and a given value commitment. However, the value commitment must additionally be proven to be in range before it can be used. Program `program` allows issuer to commit to that value commitment, if needed.
+Note: `IssueConfidential` authorized issuance of a certain asset commitment (within a given set of candidates) and a given value commitment. However, the value commitment must additionally be proven to be in range before it can be used. Program `program` allows issuer to commit to that value commitment, if needed.
 
 
 ## Anchor operations
@@ -947,7 +947,7 @@ Note: `ConfidentialIssue` authorized issuance of a certain asset commitment (wit
 
 1. Pops an int64 `min` from the data stack.
 2. Pops an int64 `max` from the data stack.
-3. Pops a string `blockchainid`.
+3. Pops a string `blockchainid` from the data stack.
 4. Peeks at the top item on the Command stack, `p`.
 5. Verifies that `blockchainid` belongs to the set of blockchain IDs in the [VM state](#vm-state).
 6. Constructs a [Nonce](#nonce) `nonce` with:
