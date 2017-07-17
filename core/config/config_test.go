@@ -152,6 +152,33 @@ func TestMigrateAccessTokens(t *testing.T) {
 	}
 }
 
+func TestAccessTokenMultipleKeyWrite(t *testing.T) {
+	ctx := context.Background()
+	sdb := sinkdbtest.NewDB(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+
+	// Saving test config to PG
+	const q = `INSERT INTO config (id, blockchain_id, configured_at, is_signer, is_generator, max_issuance_window_ms) 
+				VALUES ($1, $2, $3, $4, $5, $6)`
+	var blockchainID bc.Hash
+	blockchainID.UnmarshalText([]byte("test-blockchain"))
+	_, err := db.ExecContext(ctx, q, "test-id", &blockchainID, time.Now(), true, true, bc.DurationMillis(24*time.Hour))
+	must(t, err)
+
+	cs := &accesstoken.CredentialStore{DB: db}
+	_, err = cs.Create(ctx, "a", "client")
+	_, err = cs.Create(ctx, "b", "client")
+	_, err = cs.Create(ctx, "c", "network")
+	must(t, err)
+
+	var c *Config
+	c, err = Load(ctx, db, sdb)
+	must(t, err)
+	if c == nil {
+		t.Errorf("Expected loaded config")
+	}
+}
+
 // newTestConfig returns a new Config object
 // which has an ID, but no other fields set
 func newTestConfig(t *testing.T) *Config {

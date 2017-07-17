@@ -75,6 +75,48 @@ func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
 	)
 }
 
+// SaveAll returns an Op to store all the grants
+// Duplicates are ignored
+// It also sets field CreatedAt to the time the grants
+// are stored, or the time the original grant was stored
+func (s *Store) SaveAll(ctx context.Context, grants []*Grant, policy string) sinkdb.Op {
+	if len(grants) == 0 {
+		return sinkdb.Op{}
+	}
+	key := s.keyPrefix + policy
+	var grantList GrantList
+	ver, err := s.sdb.Get(ctx, key, &grantList)
+	if err != nil {
+		return sinkdb.Error(errors.Wrap(err))
+	}
+	var newGrants []*Grant
+	for _, g := range grants {
+		if g.Policy != policy {
+			continue
+		}
+		if g.CreatedAt == "" {
+			g.CreatedAt = time.Now().UTC().Format(time.RFC3339)
+		}
+		var include = true
+		for _, existing := range grantList.Grants {
+			if EqualGrants(*existing, *g) {
+				include = false
+			}
+		}
+		if include {
+			newGrants = append(newGrants, g)
+		}
+	}
+
+	existingGrants := grantList.Grants
+	newGrants = append(existingGrants, newGrants...)
+
+	return sinkdb.All(
+		sinkdb.IfNotModified(ver),
+		sinkdb.Set(s.keyPrefix+policy, &GrantList{Grants: newGrants}),
+	)
+}
+
 // Delete returns an Op to delete from policy all stored grants for which delete returns true.
 func (s *Store) Delete(policy string, delete func(*Grant) bool) sinkdb.Op {
 	key := s.keyPrefix + policy

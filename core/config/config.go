@@ -342,7 +342,8 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 		tokens = append(tokens, t)
 	})
 
-	var stores []sinkdb.Op
+	var clientGrants []*authz.Grant
+	var networkGrants []*authz.Grant
 
 	for _, token := range tokens {
 		data := map[string]interface{}{
@@ -361,12 +362,14 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 		switch token.Type {
 		case "client":
 			grant.Policy = "client-readwrite"
+			clientGrants = append(clientGrants, &grant)
 		case "network":
 			grant.Policy = "crosscore"
+			networkGrants = append(networkGrants, &grant)
 		}
-		stores = append(stores, store.Save(ctx, &grant))
 	}
-	err = sdb.Exec(ctx, stores...)
+	err = sdb.Exec(ctx, store.SaveAll(ctx, clientGrants, "client-readwrite"))
+	err = sdb.Exec(ctx, store.SaveAll(ctx, networkGrants, "crosscore"))
 	if err != nil {
 		return errors.Wrap(err)
 	}
