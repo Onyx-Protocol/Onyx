@@ -30,21 +30,23 @@ Validation of the transaction happens in a context of a validating a block of tr
 
 TxVM is a state machine consisting of:
 
-1. [Stacks](#stacks):
+1. Blockchain IDs (list of strings)
+2. [Stacks](#stacks):
   0. Data stack
   1. Alt stack
   2. Entry stack
   3. Command stack
   4. Effect stack
-2. Extension flag (boolean)
-3. Runlimit (int64).
-4. [Transaction](#transaction) tuple.
+3. Extension flag (boolean)
+4. Runlimit (int64).
+5. [Transaction](#transaction) tuple.
 
 ### VM Execution
 
 TODO: make Transaction tuple or at least its version introspectable by programs. TxSummary must include version
 
 1. The VM is initialized with:
+  * `blockchain IDs` set to a 1-element list containing initial block ID for the current blockchain
   * all [stacks](#stacks) empty,
   * `extension` flag set to true or false according to [transaction versioning](#versioning) rules,
   * `runlimit` set to the runlimit specified by the [transaction tuple](#transaction),
@@ -271,7 +273,7 @@ Note: ID of this Transaction tuple is not the same as [Transaction ID](#transact
 1. `program`, a string
 2. `mintime`, an int64
 3. `maxtime`, an int64
-4. `genesisblockid`, a string
+4. `blockchainid`, a string
 
 ### Anchor
 
@@ -947,11 +949,12 @@ Note: `ConfidentialIssue` authorized issuance of a certain asset commitment (wit
 2. Pops an int64 `max` from the data stack.
 3. Pops a string `blockchainid`.
 4. Peeks at the top item on the Command stack, `p`.
-5. Verifies that `blockchainid` is equal to the blockchain ID.
+5. Verifies that `blockchainid` belongs to the set of blockchain IDs in the [VM state](#vm-state).
 6. Constructs a [Nonce](#nonce) `nonce` with:
   * `nonce.program` equal to `p.program`,
   * `nonce.mintime` equal to `min`,
   * `nonce.maxtime` equal to `max`.
+  * `nonce.blockchainid` equal to `blockchainid`.
 7. Pushes `nonce` to the Effect stack.
 8. Pushes an [anchor](#anchor) to the Entry stack with `value` equal to the [ID](#item-ids) of `nonce`.
 9. Pushes a [Mintime](#mintime) to the Effect stack with `mintime` equal to `nonce.mintime`.
