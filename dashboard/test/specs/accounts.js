@@ -59,4 +59,19 @@ describe('accounts', () => {
       browser.getText('.ReceiverModal').should.contain('Copy this one-time use receiver to use in a transaction')
     })
   })
+
+  describe('showing Raw JSON', () => {
+    before(() => expect(testHelpers.ensureConfigured()).to.be.fulfilled
+      .then(() => testHelpers.createAccount('account-JSON-test'))
+      .then((account) => browser.url('/accounts/' + account.id))
+    )
+
+    it('can show Raw JSON of account', () => {
+      browser.waitForVisible('.AccountShow')
+      browser.scroll('button=Raw JSON')
+      browser.click('button=Raw JSON')
+      browser.waitForVisible('.RawJsonModal')
+      browser.getText('.RawJsonModal').should.contain('account_xpub')
+    })
+  })
 })

@@ -99,6 +99,20 @@ const createAccount = (name = 'account') => {
     })
 }
 
+const createAsset = (name = 'asset') => {
+  const client = new chain.Client()
+
+  return client.mockHsm.keys.create()
+    .then((key) => {
+      client.signer.addKey(key, client.mockHsm.signerConnection)
+      return client.assets.create({
+        alias: `${name}-${uuid.v4()}`,
+        rootXpubs: [key.xpub],
+        quorum: 1
+      })
+    })
+}
+
 global.testHelpers = {
   sleep,
   resetCore,
@@ -106,4 +120,5 @@ global.testHelpers = {
   setUpObjects,
   issueTransaction,
   createAccount,
+  createAsset
 }
