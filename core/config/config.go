@@ -344,6 +344,8 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 		tokens = append(tokens, t)
 	})
 
+	var stores []sinkdb.Op
+
 	for _, token := range tokens {
 		data := map[string]interface{}{
 			"id": token.ID,
@@ -364,10 +366,11 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 		case "network":
 			grant.Policy = "crosscore"
 		}
-		err = sdb.Exec(ctx, store.Save(ctx, &grant))
-		if err != nil {
-			return errors.Wrap(err)
-		}
+		stores = append(stores, store.Save(ctx, &grant))
+	}
+	err = sdb.Exec(ctx, stores...)
+	if err != nil {
+		return errors.Wrap(err)
 	}
 	return err
 }
