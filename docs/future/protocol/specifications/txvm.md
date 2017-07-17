@@ -37,54 +37,62 @@ TxVM is a state machine consisting of:
   3. Command stack
   4. Effect stack
 2. Extension flag (boolean)
-3. [Transaction](#transaction) tuple.
-
-
+3. Runlimit (int64).
+4. [Transaction](#transaction) tuple.
 
 ### VM Execution
 
-1. The VM is initialized with all [stacks](#stacks) empty.
+TODO: make Transaction tuple or at least its version introspectable by programs. TxSummary must include version
+
+1. The VM is initialized with:
+  * all [stacks](#stacks) empty,
+  * `extension` flag set to true or false according to [transaction versioning](#versioning) rules,
+  * `runlimit` set to the runlimit specified by the [transaction tuple](#transaction),
+  * [transaction tuple](#transaction) set to the transaction being validation.
 2. TxVM bytecode is being executed according to behaviour described per each [instruction](#instructions).
 3. Each instruction consumes [runlimit](#runlimit). If TxVM runs out of runlimit before the end of the execution, execution fails.
 4. When the program counter is equal to the length of the program, execution is complete.
-5. The top item of the [Effect stack](#Effect) must be a [Transaction Summary](#transaction-summary).
+5. The top item of the [Effect stack](#effect-stack) must be a [Transaction Summary](#transaction-summary).
 6. There must be no other Transaction Summaries in the Effect stack, otherwise execution fails.
 7. There must be at least one [anchor](#anchor) in the Effect stack.
 8. The Entry stack must be empty.
+
+Note: remaining runlimit in TxVM could be greater than 0: excess value is allowed for future extensions.
 
 ### Post-execution
 
 If execution and all the required checks do not fail, Effect stack is introspected and blockchain state is updated:
 
-1. [Transaction ID](#transaction-id) is committed to the block as ID of the Transaction Summary.
-2. For each [Input](#input), its `contractid` is removed from the UTXO set.
-3. For each [Output](#output), its `contractid` is added to the UTXO set.
-4. Remove all outdated nonces from Nonce set (based on block's timestamp).
-5. For each [Nonce](#nonce), add it's ID to the Nonce set.
-6. TBD: records?
+1. If any [Mintime](#mintime) item on the Effect stack has `mintime` greater than the block’s timestamp, reject transaction.
+2. If any [Maxtime](#maxtime) item on the Effect stack has `maxtime` less than the block’s timestamp, reject transaction.
+3. [Transaction ID](#transaction-id) is computed as ID committed to the block as ID of the Transaction Summary.
+4. For each [Input](#input), its `contractid` is removed from the UTXO set.
+5. For each [Output](#output), its `contractid` is added to the UTXO set.
+6. Remove all outdated nonces from Nonce set (based on block's timestamp).
+7. For each [Nonce](#nonce), add its ID to the Nonce set.
+8. TBD: update record set
 
-### Transaction version
 
-TBD: how transaction version is specified and how `extension` flag is set.
+### Versioning
 
-Sketch:
+1. Every instance of Chain Core software defines **current block version** and **current transaction version**.
+2. All TxVM [Transaction](#transaction) tuples must have transaction version 2 or greater. This is to avoid confusion with version 1 transactions in the legacy format.
+3. All TxVM [Block](#block) tuples must have version 2 or greater. This is to avoid confusion with version 1 blocks in the legacy format.
+4. Blocks that include TxVM transactions must have version 2 or greater.
+5. Each block must have the same version or greater as the previous block.
 
-1. New TxVM txs will have version 2 to avoid confusion with txv1 (they have incompatible format, but still).
-2. Version 1 is prohibited in TxVM.
-3. Tx version can be unknown (>2) only if allowed by outer context (e.g. block version is unknown)
-4. If tx version is unknown (>2) extension flag is set to true to allow NOPs and extends.
+Extensions:
 
-TBD: should we specify txversion inside the bytecode or in the container? E.g. we could have "transaction" tuple:
+1. If the block version is equal to _current block version_, transaction cannot have version higher than the _current transaction version_.
+2. If the transaction version is higher than the _current transaction version_, TxVM `extension` flag is set to `true`.
+3. Otherwise, `extension` flag is set to `false`.
 
-    {
-      type:    "tx",
-      version: 2,
-      program: "...txvm bytecode..."
-    }
 
 ### Runlimit
 
-The VM is initialized with a set runlimit. Each instruction reduces that number. 
+Blocks commit to the total runlimit that be greater or equal to the sum of runlimits specified in all transactions within a block. Excess runlimit is allowed for future extensions.
+
+The TxVM is initialized with a runlimit specified in [Transaction](#transaction) tuple. Each instruction reduces that number.
 
 If the runlimit goes below zero while the program counter is less than the length of the program, execution fails.
 
@@ -97,8 +105,7 @@ If the runlimit goes below zero while the program counter is less than the lengt
 4. Each `checksig` and `pointmul` instruction costs `1024`. [TBD: estimate the actual cost of these instruction relative to the other instructions].
 5. Each `roll`, `bury`, or `reverse` instruction costs `n`, where `n` is the `n` argument to that operation.
 
-TODO: suggestion - specify runlimit in the transaction structure. Consume that limit from the one declared in the block. Federation chooses appropriate limit and signs over it, preventing DoS (because tx ID is computed only via execution of txvm).
-
+Execution of the transaction can leave some runlimit unconsumed: excess runlimit is allowed for future extensions.
 
 ## Compatibility
 
@@ -106,17 +113,21 @@ TxVM transactions are not compatible with version 1 transactions. However, they 
 
 ### Spending legacy outputs
 
-TBD: overview of the upgrade opcode
+See [UnlockLegacy](#unlocklegacy) instruction that allows unlocking value stored in [legacy outputs](#legacy-output).
 
 ### Issuance of legacy Asset ID
 
-TBD: Need compatibility layer to issue legacy asset IDs: specify the context for VM1 based on txvm tx.
+See [IssueLegacy](#issuelegacy) instruction that allows issuing value based on legacy asset IDs.
 
 ### Confidential issuance of legacy Asset IDs
 
-TBD: Need compatibility layer to use legacy asset IDs in the Issuance Candidates: also, specify necessary context for VM1 based on txvm tx.
+See [LegacyIssuanceCandidate](#legacyissuancecandidate) instruction that allows creating an issuance candidate for the legacy asset IDs.
 
 ### Soft-fork and hard-fork upgrades to TxVM
+
+Blocks, transactions and TxVM instructions are designed with extensibility in mind.
+
+Upgrades can be done via hard forks and soft forks.
 
 TBD: Need to specify how soft/hard fork upgrades are possible with NOPs and Extend opcode.
 
@@ -156,11 +167,41 @@ An immutable collection of items of any type.
 
 There are several named types of tuples.
 
+For extensibility, each tuple may contain additional fields that are not defined yet.
+These fields contribute to the tuple [ID](#item-ids), but do not affect the execution of TxVM.
+
+### Block
+
+1. `type`, a string, "block"
+2. `version`, an int64
+3. `previous`, a string, 32-byte ID of the previous block (or hash of a legacy block)
+4. `predicate`, a tuple of 1 or more tuples of 1 one or more [Multisig Predicates](#multisig-predicate). Outer tuple is OR function, inner tuples are AND functions of the multisig predicates.
+5. `runlimit`, an int64
+6. `txroot`, a string, a merkle root of a set of all transactions included in the block
+7. TBD: UTXO & nonces set merkle root
+8. TBD: records set merkle root (maybe the same root as utxo and nonces?)
+
+### Signed Block
+
+1. `type`, a string, "signedblock"
+2. `block`, a tuple of type [Block](#block)
+3. TBD: `signatures`, a tuple of tuples of tuples of signatures matching the format of the predicate.
+
+Note: Signed Block is used to encode signatures for the block. The ID of the Signed Block is not used to prevent malleability of the blocks.
+
+### Multisig Predicate
+
+1. `threshold`, an int64
+2. `pubkeys`, a tuple of [public keys](#public-key)
+
 ### Transaction
 
 0. `type`, a string, "tx"
 1. `version`, an int64
-2. `program`, a string
+2. `runlimit`, an int64
+3. `program`, a string
+
+Note: ID of this Transaction tuple is not the same as [Transaction ID](#transaction-id) which is computed after TxVM is evaluated.
 
 ### Value
 
@@ -271,7 +312,9 @@ There are several named types of tuples.
 ### Transaction Summary
 
 0. `type`, a string, "transactionSummary"
-1. `effecthash`, a 32-byte hash of all the effect entries
+1. `version`, an int64
+2. `runlimit`, an int64
+3. `effecthash`, a 32-byte hash of all the effect entries
 
 ### Legacy Output
 
@@ -947,22 +990,37 @@ Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
         h = SHA3-256(encode(item1) || encode(item2) || ... || encode(topitem))
 
-3. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with `effecthash` equal to `h`.
+3. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with:
+  * `version` equal to version specified in [Transaction](#transaction) tuple.
+  * `runlimit` equal to runlimit specified in [Transaction](#transaction) tuple.
+  * `effecthash` equal to `h`.
 4. Pushes `summary` to the Effect stack.
 
 Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent to the hash of the items’ IDs, but avoid unnecessary memory and CPU overhead for multiple hash instances.
 
-### Migrate
+### UnlockLegacy
 
-TODO: we need to convert legacy output to `LegacyInput` so we can put it on the Effect stack and remove the corresponding outputid from UTXO set. And then unlock the value.
+1. Pops a tuple of type [Legacy Output](#legacy-output) `legacy` from the data stack.
+2. Computes legacy Output ID. TBD: specifics
+3. Pushes an [Input](#input) to the Effect stack with `contractid` equal to the legacy output ID.
+4. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to `input.anchor`.
+5. Pushes `a` to the Entry stack.
+6. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
+7. Instantiates legacy [VM1](vm1.md) with the following context:
+  * TBD
+  * TBD
+  * TBD: need to defer this until txid is computed via `summarize`
+8. TBD Alternatively: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.
+9. Defers execution of the legacy program. (TBD)
 
-Pops a tuple of type [legacy output](#legacy-output) `legacy` from the data stack. Pushes it to the Effect stack. Pushes an [anchor](#anchor) to the Entry stack with `value` set to the old-style ID (TBD) of `legacy`.
+### IssueLegacy
 
-[TBD: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.]
+TBD: Need compatibility layer to issue legacy asset IDs: specify the context for VM1 based on txvm tx.
 
-Pushes a [Value](#value) with amount `legacy.amount` and asset ID `legacy.assetID` to the Entry stack.
+### LegacyIssuanceCandidate
 
-Executes `newprogram`.
+TBD: Need compatibility layer to use legacy asset IDs in the Issuance Candidates: also, specify necessary context for VM1 based on txvm tx.
+
 
 ### Extend
 
