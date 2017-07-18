@@ -92,8 +92,8 @@ describe('accounts', () => {
     })
 
     it.only('filters properly', () => {
-      browser.waitForVisible('.SearchBar form input')
-      browser.setValue("input[placeholder='Enter filter...'", `tags.x='${tag1}'`)
+      browser.waitForVisible(".SearchBar form input[type='search']")
+      browser.setValue(".SearchBar form input[type='search']", `tags.x='${tag1}'`)
       browser.submitForm('.SearchBar form')
       browser.waitForVisible('.ListItem')
 
