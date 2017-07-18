@@ -57,7 +57,6 @@ var (
 
 // API serves the Chain HTTP API
 type API struct {
-	ctx             context.Context
 	chain           *protocol.Chain
 	store           *txdb.Store
 	pinStore        *pin.Store

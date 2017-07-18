@@ -24,13 +24,8 @@ const heightPollingPeriod = 3 * time.Second
 // the peer's blockchain height, and will stop only when ctx is
 // cancelled. To begin replicating blocks, the caller must call
 // Fetch.
-func New(ctx context.Context, peer *rpc.Client) *Replicator {
-	rep := &Replicator{peer: peer}
-
-	// Fetch the generator height periodically.
-	go rep.pollGeneratorHeight(ctx)
-
-	return rep
+func New(peer *rpc.Client) *Replicator {
+	return &Replicator{peer: peer}
 }
 
 // Replicator implements block replication.
@@ -96,7 +91,9 @@ func (rep *Replicator) Fetch(ctx context.Context, c *protocol.Chain, health func
 	}
 }
 
-func (rep *Replicator) pollGeneratorHeight(ctx context.Context) {
+// PollGeneratorHeight periodically polls the configured peer for
+// its blockchain height. It blocks until the ctx is canceled.
+func (rep *Replicator) PollGeneratorHeight(ctx context.Context) {
 	rep.updateGeneratorHeight(ctx)
 
 	ticker := time.NewTicker(heightPollingPeriod)

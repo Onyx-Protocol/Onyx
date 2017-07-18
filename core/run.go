@@ -95,7 +95,7 @@ func GeneratorRemote(client *rpc.Client) RunOption {
 		}
 		a.remoteGenerator = client
 		a.submitter = &txbuilder.RemoteGenerator{Peer: client}
-		a.replicator = fetch.New(a.ctx, client)
+		a.replicator = fetch.New(client)
 	}
 }
 
@@ -178,7 +178,6 @@ func Run(
 	indexer := query.NewIndexer(db, c, pinStore)
 
 	a := &API{
-		ctx:          ctx,
 		chain:        c,
 		store:        store,
 		pinStore:     pinStore,
@@ -200,6 +199,10 @@ func Run(
 	}
 	if a.remoteGenerator == nil && a.generator == nil {
 		return nil, errors.New("no generator configured")
+	}
+
+	if a.replicator != nil {
+		go a.replicator.PollGeneratorHeight(ctx)
 	}
 
 	if a.indexTxs {
