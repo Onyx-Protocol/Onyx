@@ -70,7 +70,7 @@ describe('assets', () => {
       .then(() => testHelpers.createAsset(id1, {tags: {x: tag1}}))
       .then(() => testHelpers.createAsset(id2, {tags: {x: tag2}}))
       .then(() => testHelpers.createAsset(id3, {tags: {x: tag1}}))
-      .then((asset) => browser.url('/assets'))
+      .then(() => browser.url('/assets'))
     })
 
     it('filters properly', () => {

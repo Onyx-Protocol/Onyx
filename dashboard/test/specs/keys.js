@@ -13,9 +13,7 @@ describe('mock hsm keys', () => {
     })
 
     it('lists all keys on the core', () => {
-      browser.getText('.ItemList').should.contain('ALIAS')
-      browser.getText('.ItemList').should.contain('XPUB')
-      browser.getText('.ItemList').should.contain('testkey')
+      browser.elements('.ListItem').value.length.should.be.above(0)
     })
 
     it('displays the correct page title', () => {

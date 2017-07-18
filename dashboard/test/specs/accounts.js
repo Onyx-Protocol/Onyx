@@ -85,7 +85,7 @@ describe('accounts', () => {
       .then(() => testHelpers.createAccount(id1, {tags: {x: tag1}}))
       .then(() => testHelpers.createAccount(id2, {tags: {x: tag2}}))
       .then(() => testHelpers.createAccount(id3, {tags: {x: tag1}}))
-      .then((account) => browser.url('/accounts'))
+      .then(() => browser.url('/accounts'))
     })
 
     it('filters properly', () => {
