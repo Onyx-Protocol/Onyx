@@ -1,6 +1,7 @@
 import React from 'react'
 import styles from './SearchBar.scss'
 import disableAutocomplete from 'utility/disableAutocomplete'
+import componentClassNames from 'utility/componentClassNames'
 
 class SearchBar extends React.Component {
   constructor(props) {
@@ -121,7 +122,7 @@ class SearchBar extends React.Component {
     if (this.state.sumByVisible) searchFieldClass = styles.search_field_half
 
     return (
-      <div className={styles.main}>
+      <div className={componentClassNames(this, styles.main)}>
         <form onSubmit={this.handleSubmit} {...disableAutocomplete}>
           <span className={`${styles.searchField} ${searchFieldClass}`}>
             <input
