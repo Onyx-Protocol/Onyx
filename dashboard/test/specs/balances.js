@@ -6,10 +6,6 @@ describe('balances', () => {
         .then(() => browser.url('/balances'))
     })
 
-    it('does not display a welcome message', () => {
-      browser.isExisting('.EmptyList').should.equal(false)
-    })
-
     it('displays the correct page title', () => {
       browser.getText('.PageTitle').should.contain('Balances')
     })
