@@ -47,14 +47,25 @@ Ideal merkle item contains the following data (this is a bit redundant and prese
 
 This allows fetching raw txscript w/o redundant raw effects, or raw effects w/o bulky txscript (aka witness).
 
-Suggestion 1: 
+#### Suggestion 1: 
 
 * TxSummary = {version, runlimit, hash(effects)}
 * TxID = hash(TxSummary)
-* TxWitness = {TxID, hash(txscript)}
+* TxWitness = {TxID, hash(Tx)}
 * Tx = {version, runlimit, txscript}
 
-The "tx" entity will be raw transaction, which can be transformed into TxSummary and to TxWitness. TxWitness is committed to the merkle root.
+The "tx" entity will be raw transaction, which can be transformed into TxSummary and to TxWitness. TxWitness is committed to the merkle root, from where one can extract
+either TxSummary (via TxID) or raw transaction via its hash.
+
+#### Suggestion 2:
+
+Same as above structurally, but changing the names so TxID is not confused with hash(Tx) (as in suggestion above).
+
+    s/TxSummary/Tx/ => result of the txvm is a transaction object; allows saying `hash(TxSummary) == TxID`
+    s/Tx/TxWitness/ => raw script+version+runlimit is the witness, that yields a transaction
+    merkle item = SHA3-256(Tx.ID || TxWitness.ID) - simple: commit witness & transaction, symmetrical: can fetch either one of them.
+
+
 
 
 ### Legacy scripts and legacy asset IDs
