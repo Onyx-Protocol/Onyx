@@ -407,6 +407,8 @@ The ID of this item is the canonical [Transaction ID](#transaction-id).
 4. `program`, a string
 5. `data`, a string
 
+### Legacy Program
+
 
 ## Encoding
 
@@ -1094,8 +1096,11 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 5. Pushes `a` to the Entry stack.
 6. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
 7. Instantiates legacy [VM1](vm1.md) with the following context:
-  * TBD
-  * TBD
+  * `vm1.amount` set to the amount in the legacy output.
+  * `vm1.assetid` set to the asset ID in the legacy output.
+  * `vm1.entryid` set to the legacy output ID.
+  * `vm1.txid` left until evaluation 
+  * 
   * TBD: need to defer this until txid is computed via `finalize`
 8. TBD Alternatively: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.
 9. Defers execution of the legacy program. (TBD)
