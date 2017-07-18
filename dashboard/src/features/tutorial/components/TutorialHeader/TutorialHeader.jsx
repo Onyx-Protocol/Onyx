@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router'
 import styles from './TutorialHeader.scss'
+import componentClassNames from 'utility/componentClassNames'
 
 class TutorialHeader extends React.Component {
 
@@ -14,7 +15,7 @@ class TutorialHeader extends React.Component {
     } else {
       const collapsed = !this.props.showTutorial || this.props.currentStep.component == 'TutorialForm'
       return (
-        <div className={styles.container}>
+        <div className={componentClassNames(this, styles.container)}>
           <div className={`${styles.main} ${collapsed && styles.collapsed}`}>
             <div className={styles.header}>
               {this.props.currentStep.title}
