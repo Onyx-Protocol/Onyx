@@ -186,24 +186,6 @@ If the runlimit goes below zero while the program counter is less than the lengt
 
 Execution of the transaction can leave some runlimit unconsumed: excess runlimit is allowed for future extensions.
 
-### Decoder mode
-
-In order to deserialize [Transaction Witness](#transaction-witness), [Block](#block), [Signed Block](#signed-block), VM is instantiated in a safe, “decode only” mode.
-
-1. In such mode, TxVM is set with:
-    * all [stacks](#stacks) empty,
-    * `version` is set to 2,
-    * `extension` flag set to false,
-    * `runlimit` is set to the maximum int64 value,
-    * `program` is set to the input data being parsed,
-2. Any instruction not emmitted by [encode](#instruction) instruction fails execution. Only the following instructions are allowed:
-    1. [Small integers](#small-integers)
-    2. [Pushdata](#pushdata)
-    3. [Int64](#int64)
-    4. [Tuple](#tuple)
-3. When execution is complete, the top item on the data stack is returned as a decoded value.
-4. Decoding fails if data stack does not have exactly one item left on the data stack.
-
 
 ## Compatibility
 
@@ -430,6 +412,7 @@ The ID of this item is the canonical [Transaction ID](#transaction-id).
 
 ### Legacy Program
 
+TBD: encapsulates the context for the VM1 program to be executed after `finalize` when txid is set and all effects are known.
 
 ## Encoding
 
@@ -451,7 +434,25 @@ Tuples are encoded using bytecode that produces such tuple on the data stack whe
 
 See [encode](#encode) operation for details.
 
+### Decoder mode
 
+In order to deserialize [Transaction Witness](#transaction-witness), [Block](#block), [Signed Block](#signed-block), VM is instantiated in a safe, “decode only” mode.
+
+1. In such mode, TxVM is set with:
+    * all [stacks](#stacks) empty,
+    * `version` is set to 2,
+    * `extension` flag set to false,
+    * `runlimit` is set to the maximum int64 value,
+    * `program` is set to the input data being parsed,
+2. Any instruction not emmitted by [encode](#instruction) instruction fails execution. Only the following instructions are allowed:
+    1. [Small integers](#small-integers)
+    2. [Pushdata](#pushdata)
+    3. [Int64](#int64)
+    4. [Tuple](#tuple)
+3. When execution is complete, the top item on the data stack is returned as a decoded value.
+4. Decoding fails if data stack does not have exactly one item left on the data stack.
+
+TBD: need to explore if there could be an encoding bomb with multiple nested tuples.
 
 
 ## Stacks
@@ -1167,6 +1168,8 @@ Pops an item from the data stack. Pushes a string to the data stack which, if ex
 * **Integers** in range 0..32 (inclusive) are encoded as the appropriate [small integer](#small-integer) opcode.
 * **Other integers** (above 32 or negative) are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint), followed by an [int64](#int64) instruction.
 * **Tuples** are encoded recursively as the encoding of each item in the tuple in reverse order, followed by the encoding of `len` where `len` is the length of the tuple, followed by the [tuple](#tuple) instruction.
+
+Encoded values (e.g. [Transaction Witness](#transaction-witness)) can be decoded outside TxVM using [Decoder mode](#decoder-mode).
 
 ### Int64
 
