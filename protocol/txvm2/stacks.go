@@ -1,39 +1,42 @@
 package txvm2
 
-import "bytes"
+import (
+	"bytes"
+	"fmt"
+)
 
 func opRoll(vm *vm) {
-	stackID := vm.popInt64()
+	stackID := vm.popInt64(datastack)
 	switch stackID {
 	case commandstack, effectstack:
-		// xxx error
+		panic(fmt.Errorf("cannot roll on stack %d", stackID))
 	}
-	s := vm.getStack(stackID)
-	n := vm.popInt64()
-	s.roll(n)
+	s := vm.stacks[stackID] // xxx range check
+	n := vm.popInt64(datastack)
+	s.roll(int64(n))
 	// xxx runlimit
 }
 
 func opBury(vm *vm) {
-	stackID := vm.popInt64()
+	stackID := vm.popInt64(datastack)
 	switch stackID {
 	case commandstack, effectstack:
-		// xxx error
+		panic(fmt.Errorf("cannot bury on stack %d", stackID))
 	}
-	s := vm.getStack(stackID)
-	n := vm.popInt64()
-	s.bury(n)
+	s := vm.stacks[stackID] // xxx range check
+	n := vm.popInt64(datastack)
+	s.bury(int64(n))
 	// xxx runlimit
 }
 
 func opReverse(vm *vm) {
-	stackID := vm.popInt64()
+	stackID := vm.popInt64(datastack)
 	switch stackID {
 	case commandstack, effectstack:
-		// xxx error
+		panic(fmt.Errorf("cannot reverse on stack %d", stackID))
 	}
-	s := vm.getStack(stackID)
-	n := vm.popInt64()
+	s := vm.stacks[stackID] // xxx range check
+	n := vm.popInt64(datastack)
 	vals := s.popN(n)
 	s.pushN(vals)
 	// xxx runlimit
@@ -83,7 +86,7 @@ func opLen(vm *vm) {
 	case tuple:
 		vm.pushInt64(len(v))
 	default:
-		panic(xxx)
+		panic(fmt.Errorf("len: cannot take the length of %T", v))
 	}
 }
 

@@ -3,39 +3,39 @@ package txvm2
 import "chain/math/checked"
 
 func opAdd(vm *vm) {
-	binary(vm, checked.AddInt64)
+	binOp(vm, checked.AddInt64)
 }
 
 func opSub(vm *vm) {
-	binary(vm, checked.SubInt64)
+	binOp(vm, checked.SubInt64)
 }
 
 func opMul(vm *vm) {
-	binary(vm, checked.MulInt64)
+	binOp(vm, checked.MulInt64)
 }
 
 func opDiv(vm *vm) {
-	binary(vm, checked.DivInt64)
+	binOp(vm, checked.DivInt64)
 }
 
 func opMod(vm *vm) {
-	binary(vm, checked.ModInt64)
+	binOp(vm, checked.ModInt64)
 }
 
 func opLeftShift(vm *vm) {
-	binary(vm, checked.LshiftInt64)
+	binOp(vm, checked.LshiftInt64)
 }
 
 func opRightShift(vm *vm) {
-	binary(vm, checked.RshiftInt64)
+	binOp(vm, checked.RshiftInt64)
 }
 
-func binary(vm *vm, f func(a, b int64) (int64, bool)) {
+func binOp(vm *vm, f func(a, b int64) (int64, bool)) {
 	a := vm.popInt64(datastack)
 	b := vm.popInt64(datastack)
-	res, ok := f(a, b)
+	res, ok := f(int64(a), int64(b))
 	if !ok {
-		panic(xxx)
+		panic("arithmetic overflow")
 	}
 	vm.push(datastack, vint64(res))
 }

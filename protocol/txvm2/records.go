@@ -1,27 +1,32 @@
 package txvm2
 
-import "bytes"
+import (
+	"bytes"
+	"errors"
+)
+
+var ErrRecord = errors.New("unauthorized record operation")
 
 func opCreate(vm *vm) {
 	data := vm.pop(datastack)
-	cmd := vm.peekTuple(commandstack, commandTuple)
-	rec := mkRecord(commandProgram(cmd), data)
+	cmd := vm.peekTuple(commandstack, programTuple)
+	rec := mkRecord(programProgram(cmd), data)
 	vm.push(entrystack, rec)
 }
 
 func opDelete(vm *vm) {
 	rec := vm.popTuple(recordstack, recordTuple)
-	cmd := vm.peekTuple(commandStack, commandTuple)
-	if !bytes.Equal(recordCommandProgram(rec), commandProgram(cmd)) {
-		panic(xxx)
+	cmd := vm.peekTuple(commandstack, programTuple)
+	if !bytes.Equal(recordCommandProgram(rec), programProgram(cmd)) {
+		panic(ErrRecord)
 	}
 }
 
 func opComplete(vm *vm) {
 	rec := vm.popTuple(recordstack, recordTuple)
-	cmd := vm.peekTuple(commandstack, commandTuple)
-	if !bytes.Equal(recordCommandProgram(rec), commandProgram(cmd)) {
-		panic(xxx)
+	cmd := vm.peekTuple(commandstack, programTuple)
+	if !bytes.Equal(recordCommandProgram(rec), programProgram(cmd)) {
+		panic(ErrRecord)
 	}
 	vm.push(effectstack, rec)
 }

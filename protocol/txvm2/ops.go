@@ -115,10 +115,12 @@ const (
 	OpBefore
 	OpAfter
 
+	// Conversion
 	OpSummarize
-	OpMigrate
+	OpUnlockLegacy
+	OpIssueLegacy
+	OpLegacyIssuanceCandidate
 	OpExtend
-	OpBlind
 
 	// Extension
 	OpNop0
@@ -138,5 +140,6 @@ const (
 	OpInt64
 	OpPushdata
 	Op0
-	NumOps = Op0 + 32
+	MaxSmallInt = Op0 + 32
+	NumOps      = MaxSmallInt + 1
 )

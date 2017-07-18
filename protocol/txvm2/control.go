@@ -1,6 +1,9 @@
 package txvm2
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var ErrFail = errors.New("fail")
 
@@ -19,10 +22,10 @@ func opJumpIf(vm *vm) {
 		return
 	}
 	if dest < 0 {
-		panic(xxx)
+		panic(fmt.Errorf("jumpif: negative destination %d", dest))
 	}
-	if dest > len(vm.run.prog) {
-		panic(xxx)
+	if dest > vint64(len(vm.run.prog)) {
+		panic(fmt.Errorf("jumpif: destination %d beyond end of %d-byte program %s", dest, len(vm.run.prog), vm.run.prog))
 	}
-	vm.run.pc = dest
+	vm.run.pc = int64(dest)
 }

@@ -38,6 +38,12 @@ func main() {
 	}
 	fmt.Fprint(out, "}\n\n")
 
+	fmt.Fprint(out, "func init() {\n")
+	fmt.Fprint(out, "\tfor i := byte(0); i <= MaxSmallInt; i++ {\n")
+	fmt.Fprint(out, "\t\topFuncs[Op0 + i] = smallInt(vint64(i))\n")
+	fmt.Fprint(out, "\t}\n")
+	fmt.Fprint(out, "}\n")
+
 	out.Close()
 
 	cmd := exec.Command("gofmt", "-w", opinfoName)
@@ -53,13 +59,13 @@ func getOps() []string {
 	}
 	constDecl, ok := f.Decls[0].(*ast.GenDecl)
 	if !ok || constDecl.Tok != token.CONST {
-		panic(fmt.Errorf("top-level declaration must be the list of opcode constants"))
+		panic("top-level declaration must be the list of opcode constants")
 	}
 	var ops []string
 	for _, spec := range constDecl.Specs {
 		vspec, ok := spec.(*ast.ValueSpec)
 		if !ok {
-			panic(fmt.Errorf("const decl contains non-const values?!"))
+			panic("const decl contains non-const values?!")
 		}
 		if len(vspec.Names) != 1 {
 			panic(fmt.Errorf("const spec contains %d names, want 1", len(vspec.Names)))

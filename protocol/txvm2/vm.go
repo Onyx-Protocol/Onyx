@@ -7,12 +7,15 @@ type run struct {
 }
 
 type vm struct {
+	bcIDs    [][]byte
 	runlimit int
 
 	run      run
 	runstack []run
 
 	stacks [numstacks]stack
+
+	summarized bool
 }
 
 type opFuncType func(*vm)
@@ -88,6 +91,14 @@ func (vm *vm) push(stacknum int, v value) {
 	vm.stacks[stacknum].push(v)
 }
 
+func (vm *vm) pushBool(stacknum int, b bool) {
+	var n vint64
+	if b {
+		n = 1
+	}
+	vm.push(stacknum, n)
+}
+
 func (vm *vm) pop(stacknum int) value {
 	res, ok := vm.stacks[stacknum].pop()
 	if !ok {
@@ -105,7 +116,7 @@ func (vm *vm) popBytes(stacknum int) vbytes {
 	return s
 }
 
-func (vm *vm) popInt64(stacknum int) int64 {
+func (vm *vm) popInt64(stacknum int) vint64 {
 	v := vm.pop(stacknum)
 	n, ok := v.(vint64)
 	if !ok {
@@ -120,6 +131,14 @@ func (vm *vm) popTuple(stacknum int, name string) tuple {
 		panic(xxx)
 	}
 	return v.(tuple)
+}
+
+func (vm *vm) popBool(stacknum int) bool {
+	v := vm.pop()
+	if n, ok := v.(vint64); ok {
+		return n != 0
+	}
+	return true
 }
 
 func (vm *vm) peek(stacknum int) value {

@@ -589,13 +589,13 @@ TODO: clarify behavior. Fail if overflows Int64.
 
 ### RightShift
 
-Pops two integers `a` and `b` from the stack, shifts `a` to the right by `b` bits.
+Pops two integers `a` and `b` from the data stack, shifts `a` to the right by `b` bits.
 
 TODO: clarify behavior.
 
 ### GreaterThan
 
-Pops two numbers `a` and `b` from the stack. If `a` is greater than `b`, pushes `true` to the stack. Otherwise, pushes `false`.
+Pops two numbers `a` and `b` from the data stack. If `a` is greater than `b`, pushes `true` to the stack. Otherwise, pushes `false`.
 
 
 
@@ -603,11 +603,11 @@ Pops two numbers `a` and `b` from the stack. If `a` is greater than `b`, pushes 
 
 ### Cat
 
-Pops two strings, `a`, then `b`, from the stack, concatenates them, and pushes the result, `a || b` to the stack.
+Pops two strings, `a`, then `b`, from the data stack, concatenates them, and pushes the result, `a || b` to the stack.
 
 ### Slice
 
-Pops two integers, `start`, then `end`, from the stack. Pops a string `str` from the stack. Pushes the string `str[start:end]` (with the first character being the one at index `start`, and the second character being the one at index `end`). Fails if `end` is less than `start`, if `start` is less than 0, or if `end` is greater than the length of `str`.
+Pops two integers, `start`, then `end`, from the data stack. Pops a string `str` from the data stack. Pushes the string `str[start:end]` (with the first character being the one at index `start`, and the last character being the one before index `end`). Fails if `end` is less than `start`, if `start` is less than 0, or if `end` is greater than the length of `str`.
 
 
 
@@ -964,14 +964,14 @@ Note: `IssueConfidential` authorized issuance of a certain asset commitment (wit
 
 1. Pops an [anchor](#anchor) `anchor` from the Entry stack.
 2. Compute the [ID](#item-ids) of `anchor`, `anchorid`.
-3. Pushes a new anchor `newanchor`, with `newanchor.value` set to `anchorid`.
+3. Pushes a new anchor `newanchor` to the Entry stack, with `newanchor.value` set to `anchorid`.
 
 ### Splitanchor
 
 1. Pops an [anchor](#anchor) `anchor` from the Entry stack.
 2. Compute the [ID](#item-ids) of `anchor`, `anchorid`.
-3. Pushes a new anchor `newanchor01`, with `newanchor.value` set to `sha3(0x01 || anchorid)`.
-4. Pushes a new anchor `newanchor00`, with `newanchor.value` set to `sha3(0x00 || anchorid)`.
+3. Pushes a new anchor `newanchor01` to the Entry stack, with `newanchor.value` set to `sha3(0x01 || anchorid)`.
+4. Pushes a new anchor `newanchor00` to the Entry stack, with `newanchor.value` set to `sha3(0x00 || anchorid)`.
 
 ### Anchortransaction
 
@@ -1015,7 +1015,7 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 1. Pops a tuple of type [Legacy Output](#legacy-output) `legacy` from the data stack.
 2. Computes legacy Output ID. TBD: specifics
 3. Pushes an [Input](#input) to the Effect stack with `contractid` equal to the legacy output ID.
-4. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to `input.anchor`.
+4. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to the legacy output ID.
 5. Pushes `a` to the Entry stack.
 6. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
 7. Instantiates legacy [VM1](vm1.md) with the following context:
@@ -1068,7 +1068,7 @@ Pops an item from the data stack. Pushes a string to the data stack which, if ex
 * **Strings** are encoded as a [Pushdata](#Pushdata) instruction which would push that string to the data stack.
 * **Integers** in range 0..32 (inclusive) are encoded as the appropriate [small integer](#small-integer) opcode.
 * **Other integers** (above 32 or negative) are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint), followed by an [int64](#int64) instruction.
-* **Tuples** are encoded as a sequence of [Pushdata](#Pushdata) instructions that would push each of the items in the tuple in reverse order, followed by the instruction given by `encode(len)` where `len` is the length of the tuple, followed by the [tuple](#tuple).
+* **Tuples** are encoded recursively as the encoding of each item in the tuple in reverse order, followed by the encoding of `len` where `len` is the length of the tuple, followed by the [tuple](#tuple) instruction.
 
 ### Int64
 
