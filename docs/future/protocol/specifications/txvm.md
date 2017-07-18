@@ -449,8 +449,8 @@ In order to deserialize [Transaction Witness](#transaction-witness), [Block](#bl
     2. [Pushdata](#pushdata)
     3. [Int64](#int64)
     4. [Tuple](#tuple)
-3. When execution is complete, the top item on the data stack is returned as a decoded value.
-4. Decoding fails if data stack does not have exactly one item left on the data stack.
+3. Decoding fails if data stack does not have exactly one item left on the data stack.
+4. When execution is complete, the top item on the data stack is returned as a decoded value.
 
 TBD: need to explore if there could be an encoding bomb with multiple nested tuples.
 
