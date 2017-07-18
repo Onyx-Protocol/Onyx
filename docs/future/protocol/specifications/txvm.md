@@ -1160,7 +1160,8 @@ Fails execution when:
 
 ### Small integers
 
-TODO: Descriptions of opcodes that push the numbers 0-32 to the stack.
+Opcodes 0x00 to 0x20 (0 to 32 in decimal) encode “small integers”. 
+When such opcode is executed, a corresponding integer value is pushed to the data stack.
 
 ### Pushdata
 
