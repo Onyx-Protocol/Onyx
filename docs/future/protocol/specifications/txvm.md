@@ -113,17 +113,19 @@ TxVM is a state machine consisting of:
   2. Entry stack
   3. Command stack
   4. Effect stack
-2. Extension flag (boolean)
-3. Runlimit (int64).
-4. [Transaction Witness](#transaction-witness) tuple.
+2. Version (int64)
+3. Extension flag (boolean)
+4. Runlimit (int64)
+5. Program (string)
 
 ### VM Execution
 
 1. The VM is initialized with:
   * all [stacks](#stacks) empty,
+  * `version` is set to the version in the [transaction witness](#transaction-witness),
   * `extension` flag set to true or false according to [transaction versioning](#versioning) rules,
   * `runlimit` set to the runlimit specified by the [transaction witness](#transaction-witness),
-  * [transaction witness](#transaction-witness) set to the transaction witness being validated.
+  * `program` set to the program specified in the [transaction witness](#transaction-witness).
 2. TxVM bytecode is being executed according to behaviour described per each [instruction](#instructions).
 3. Each instruction consumes [runlimit](#runlimit). If TxVM runs out of runlimit before the end of the execution, execution fails.
 4. When the program counter is equal to the length of the program, execution is complete.
@@ -183,6 +185,25 @@ If the runlimit goes below zero while the program counter is less than the lengt
 5. Each `roll`, `bury`, or `reverse` instruction costs `n`, where `n` is the `n` argument to that operation.
 
 Execution of the transaction can leave some runlimit unconsumed: excess runlimit is allowed for future extensions.
+
+### Decoder mode
+
+In order to deserialize [Transaction Witness](#transaction-witness), [Block](#block), [Signed Block](#signed-block), VM is instantiated in a safe, “decode only” mode.
+
+1. In such mode, TxVM is set with:
+    * all [stacks](#stacks) empty,
+    * `version` is set to 2,
+    * `extension` flag set to false,
+    * `runlimit` is set to the maximum int64 value,
+    * `program` is set to the input data being parsed,
+2. Any instruction not emmitted by [encode](#instruction) instruction fails execution. Only the following instructions are allowed:
+    1. [Small integers](#small-integers)
+    2. [Pushdata](#pushdata)
+    3. [Int64](#int64)
+    4. [Tuple](#tuple)
+3. When execution is complete, the top item on the data stack is returned as a decoded value.
+4. Decoding fails if data stack does not have exactly one item left on the data stack.
+
 
 ## Compatibility
 
