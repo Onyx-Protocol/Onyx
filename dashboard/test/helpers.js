@@ -85,17 +85,17 @@ const issueTransaction = (client) => expect(
   .then(tpl => client.transactions.submit(tpl))
 ).to.be.fulfilled
 
-const createAccount = (name = 'account') => {
+const createAccount = (name = 'account', createOpts = {}) => {
   const client = new chain.Client()
 
   return client.mockHsm.keys.create()
     .then((key) => {
       client.signer.addKey(key, client.mockHsm.signerConnection)
-      return client.accounts.create({
+      return client.accounts.create(Object.assign(createOpts, {
         alias: `${name}-${uuid.v4()}`,
         rootXpubs: [key.xpub],
-        quorum: 1
-      })
+        quorum: 1,
+      }))
     })
 }
 

@@ -1,4 +1,5 @@
 const uuid = require('uuid')
+    , assert = require('assert')
 
 describe('accounts', () => {
   describe('list view', () => {
@@ -72,6 +73,33 @@ describe('accounts', () => {
       browser.click('button=Raw JSON')
       browser.waitForVisible('.RawJsonModal')
       browser.getText('.RawJsonModal').should.contain('account_xpub')
+    })
+  })
+
+  describe('filtering', () => {
+    const tag1 = uuid.v4()
+        , tag2 = uuid.v4()
+        , id1 = uuid.v4()
+        , id2 = uuid.v4()
+        , id3 = uuid.v4()
+
+    before(() => {
+      expect(testHelpers.ensureConfigured()).to.be.fulfilled
+      .then(() => testHelpers.createAccount(id1, {tags: {x: tag1}}))
+      .then(() => testHelpers.createAccount(id2, {tags: {x: tag2}}))
+      .then(() => testHelpers.createAccount(id3, {tags: {x: tag1}}))
+      .then((account) => browser.url('/accounts'))
+    })
+
+    it.only('filters properly', () => {
+      browser.waitForVisible('.SearchBar form input')
+      browser.setValue("input[placeholder='Enter filter...'", `tags.x='${tag1}'`)
+      browser.submitForm('.SearchBar form')
+      browser.waitForVisible('.ListItem')
+
+      assert.equal(browser.elements('.ListItem').value.length, 2)
+      browser.elements('.ListItem').value[0].getText().should.contain(id3)
+      browser.elements('.ListItem').value[1].getText().should.contain(id1)
     })
   })
 })
