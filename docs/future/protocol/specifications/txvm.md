@@ -22,6 +22,69 @@ When the virtual machine executes a TxVM program, it accumulates different types
 The pieces of transaction information - the inputs, outputs, etc. - that are produced during TxVM execution are also _consumed_ in order to produce the transaction summary, which is the sole output of a successful TxVM program. To capture pieces of transaction information for purposes other than validation, TxVM implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
 
+
+## TODO
+
+---------------------------------------------------------------------------------
+
+### Review extensibility features (adding new fields to predefined types)
+
+1. See [Extend](#extend) opcode.
+
+### Tx merkle root - should be txid or the entire tx.
+
+1. We need to commit to tx script and runlimit to prevent DoS attacks where clients execute modified programs and waste CPUs.
+2. We need to commit to txid, so clients can inspect effects of the transaction w/o even transmitting full script and bulky signatures/rangeproofs.
+
+Ideal merkle item contains the following data (this is a bit redundant and presented for illustration):
+
+    merkle item = hash(txid || runlimit || hash(txscript) || hash(effects))
+
+* `txid` is a canonical ID for use in the external systems. It should itself include `version,runlimit,effects` and must exclude `txscript` to not be malleable.
+* `runlimit` is necessary to prevent large runlimit attacks (block signers sign over the committed runlimit)
+* `txscript` is a witness of how transaction is formed and validated - contains all bulky signatures and rangeproofs
+* `effects` is an actual outcome of the transaction that's needed for state updates (necessary for blockchain state machine, even if txscript is stripped)
+
+This allows fetching raw txscript w/o redundant raw effects, or raw effects w/o bulky txscript (aka witness).
+
+Suggestion 1: 
+
+* TxSummary = {version, runlimit, hash(effects)}
+* TxID = hash(TxSummary)
+* TxWitness = {TxID, hash(txscript)}
+* Tx = {version, runlimit, txscript}
+
+The "tx" entity will be raw transaction, which can be transformed into TxSummary and to TxWitness. TxWitness is committed to the merkle root.
+
+
+### Legacy scripts and legacy asset IDs
+
+1. Need to allow unlocking legacy outputs.
+2. Need to issue legacy asset IDs in the new txvm transactions.
+3. Need to create issuance candidates from the legacy asset IDs.
+
+### Isolated program execution
+
+Use case: smart contract needs to defer authorization to an opaque program and guarantee that it does not mess with the intermediate state in unauthorized manner.
+
+Ideas:
+
+1. Provide data and values to the program (sandboxed execution) - most robust
+2. Have isolated altstack per command, move sensitive items over there before executing other commands - bandaiding
+
+Problems:
+
+1. How do we ensure the program is flexible enough? The nested program might also want to consume some inputs, issue something etc.
+
+---------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 ## TxVM operation
 
 Validation of the transaction happens in a context of a validating a block of transactions. Large part of that validation is handled by the TxVM logic with a few validation rules outside of it.
@@ -204,6 +267,15 @@ Note: Signed Block is used to encode signatures for the block. The ID of the Sig
 3. `program`, a string
 
 Note: ID of this Transaction tuple is not the same as [Transaction ID](#transaction-id) which is computed after TxVM is evaluated.
+
+### Transaction Witness
+
+0. `type`, a string, "txwitness"
+1. `txid`, a string
+2. `programhash`, a string (SHA3-256 hash of a program)
+
+TBD: alternatively, a hash(transaction).
+
 
 ### Value
 
