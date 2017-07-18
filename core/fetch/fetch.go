@@ -100,7 +100,7 @@ func (rep *Replicator) PollRemoteHeight(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf(ctx, "Deposed, pollGeneratorHeight exiting")
+			log.Printf(ctx, "Deposed, PollRemoteHeight exiting")
 			ticker.Stop()
 			return
 		case <-ticker.C:
