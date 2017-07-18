@@ -30,23 +30,21 @@ Validation of the transaction happens in a context of a validating a block of tr
 
 TxVM is a state machine consisting of:
 
-1. Blockchain IDs (list of strings)
-2. [Stacks](#stacks):
+1. [Stacks](#stacks):
   0. Data stack
   1. Alt stack
   2. Entry stack
   3. Command stack
   4. Effect stack
-3. Extension flag (boolean)
-4. Runlimit (int64).
-5. [Transaction](#transaction) tuple.
+2. Extension flag (boolean)
+3. Runlimit (int64).
+4. [Transaction](#transaction) tuple.
 
 ### VM Execution
 
 TODO: make Transaction tuple or at least its version introspectable by programs. TxSummary must include version
 
 1. The VM is initialized with:
-  * `blockchain IDs` set to a 1-element list containing initial block ID for the current blockchain
   * all [stacks](#stacks) empty,
   * `extension` flag set to true or false according to [transaction versioning](#versioning) rules,
   * `runlimit` set to the runlimit specified by the [transaction tuple](#transaction),
@@ -63,7 +61,7 @@ Note: remaining runlimit in TxVM could be greater than 0: excess value is allowe
 
 ### Post-execution
 
-If execution and all the required checks do not fail, Effect stack is introspected and blockchain state is updated:
+If execution and all the required checks do not fail, Effect stack is introspected and blockchain state is updated.
 
 1. If any [Mintime](#mintime) item on the Effect stack has `mintime` greater than the block’s timestamp, reject transaction.
 2. If any [Maxtime](#maxtime) item on the Effect stack has `maxtime` less than the block’s timestamp, reject transaction.
@@ -71,7 +69,9 @@ If execution and all the required checks do not fail, Effect stack is introspect
 4. For each [Input](#input), its `contractid` is removed from the UTXO set.
 5. For each [Output](#output), its `contractid` is added to the UTXO set.
 6. Remove all outdated nonces from Nonce set (based on block's timestamp).
-7. For each [Nonce](#nonce), add its ID to the Nonce set.
+7. For each [Nonce](#nonce):
+  1. Verify that `nonce.blockchainid` is equal to the current blockchain ID.
+  2. Add ID of the nonce to the Nonce set.
 8. TBD: update record set
 
 
@@ -949,16 +949,15 @@ Note: `IssueConfidential` authorized issuance of a certain asset commitment (wit
 2. Pops an int64 `max` from the data stack.
 3. Pops a string `blockchainid` from the data stack.
 4. Peeks at the top item on the Command stack, `p`.
-5. Verifies that `blockchainid` belongs to the set of blockchain IDs in the [VM state](#vm-state).
-6. Constructs a [Nonce](#nonce) `nonce` with:
+5. Constructs a [Nonce](#nonce) `nonce` with:
   * `nonce.program` equal to `p.program`,
   * `nonce.mintime` equal to `min`,
   * `nonce.maxtime` equal to `max`.
   * `nonce.blockchainid` equal to `blockchainid`.
-7. Pushes `nonce` to the Effect stack.
-8. Pushes an [anchor](#anchor) to the Entry stack with `value` equal to the [ID](#item-ids) of `nonce`.
-9. Pushes a [Mintime](#mintime) to the Effect stack with `mintime` equal to `nonce.mintime`.
-10. Pushes a [Maxtime](#maxtime) to the Effect stack with `maxtime` equal to `nonce.maxtime`.
+6. Pushes `nonce` to the Effect stack.
+7. Pushes an [anchor](#anchor) to the Entry stack with `value` equal to the [ID](#item-ids) of `nonce`.
+8. Pushes a [Mintime](#mintime) to the Effect stack with `mintime` equal to `nonce.mintime`.
+9. Pushes a [Maxtime](#maxtime) to the Effect stack with `maxtime` equal to `nonce.maxtime`.
 
 ### Reanchor
 
