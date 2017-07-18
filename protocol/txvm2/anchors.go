@@ -11,16 +11,6 @@ func opNonce(vm *vm) {
 	min := vm.popInt64(datastack)
 	max := vm.popInt64(datastack)
 	bcID := vm.popBytes(datastack)
-	ok := false
-	for _, id := range vm.bcIDs {
-		if bytes.Equal(bcID, id) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		panic(fmt.Errorf("nonce: invalid blockchainID %x", bcID))
-	}
 	p := vm.peekTuple(commandstack, programTuple)
 	nonce := mkNonce(programProgram(p), min, max, bcID)
 	vm.push(effectstack, nonce)

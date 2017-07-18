@@ -53,7 +53,7 @@ func (t tuple) encode(w io.Writer) {
 }
 
 func getTxID(v value) (txid [32]byte, ok bool) {
-	if !isNamed(v, transactionIDTuple) {
+	if !isNamed(v, transactionTuple) {
 		return txid, false
 	}
 	t := v.(tuple)
@@ -64,8 +64,15 @@ func getTxID(v value) (txid [32]byte, ok bool) {
 }
 
 func getID(v value) vbytes {
+	hasher := sha3pool.Get256()
+	defer sha3pool.Put256(hasher)
+
+	hasher.Write([]byte("txvm"))
+	v.encode(hasher)
+
 	var hash [32]byte
-	sha3pool.Sum256(hash[:], encode(v))
+	hasher.Read(hash[:])
+
 	return vbytes(hash[:])
 }
 

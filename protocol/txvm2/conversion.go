@@ -7,9 +7,9 @@ import (
 	"chain/protocol/bc"
 )
 
-func opSummarize(vm *vm) {
-	if vm.summarized {
-		panic("summarize: already summarized")
+func opFinalize(vm *vm) {
+	if vm.finalized {
+		panic("finalize: already finalized")
 	}
 
 	hasher := sha3pool.Get256()
@@ -22,9 +22,9 @@ func opSummarize(vm *vm) {
 	var h [32]byte
 	hasher.Read(h[:])
 
-	vm.push(effectstack, mkSummary(vint64(vm.txVersion), vint64(vm.runlimit), h[:]))
+	vm.push(effectstack, mkTransaction(vint64(vm.txVersion), vint64(vm.initialRunlimit), h[:]))
 
-	vm.summarized = true
+	vm.finalized = true
 }
 
 func opUnlockLegacy(vm *vm) {

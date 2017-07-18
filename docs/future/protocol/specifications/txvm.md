@@ -15,7 +15,7 @@ This is the specification for TxVM, which combines a representation for blockcha
 
 Earlier versions of Chain Core represented transactions with a static data structure, exposing the pieces of information needed to test the transaction’s validity. A separate set of validation rules could be applied to that information to get a true/false result.
 
-Under TxVM, these functions are combined in such a way that an executable program string is both the transaction’s representation and the proof of its validity. Executable program representing transaction is called [Transaction Witness](#transaction-witness), it contains all data and logic necessary to produce a finalized [Transaction](#transaction), including necessary signatures and range proofs.
+Under TxVM, these functions are combined in such a way that an executable program string both produces the transaction and proves its validity. The program, together with a version number and runlimit, is called the [Transaction Witness](#transaction-witness). It contains all data and logic required to produce a finalized [Transaction](#transaction), including necessary signatures and range proofs.
 
 When the virtual machine executes a TxVM program, it accumulates different types of data on different stacks. This data corresponds to the information exposed in earlier versions of the transaction data structure: inputs, outputs, time constraints, nonces, and so on. Under TxVM, that information is _only_ available as a result of executing the program, and the program only completes without error if the transaction is well-formed (i.e., its inputs and outputs balance, prevout control programs are correctly satisfied, etc). No separate validation steps are required.
 
@@ -140,7 +140,7 @@ If execution and all the required checks do not fail, Effect stack is introspect
 
 1. If any [Mintime](#mintime) item on the Effect stack has `mintime` greater than the block’s timestamp, reject transaction.
 2. If any [Maxtime](#maxtime) item on the Effect stack has `maxtime` less than the block’s timestamp, reject transaction.
-3. [Transaction ID](#transaction-id) is computed as ID committed to the block as ID of the Transaction object.
+3. [Transaction ID](#transaction-id) is computed and committed to the block.
 4. For each [Input](#input), its `contractid` is removed from the UTXO set.
 5. For each [Output](#output), its `contractid` is added to the UTXO set.
 6. Remove all outdated nonces from Nonce set (based on block's timestamp).
@@ -867,7 +867,7 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 3. Peeks at the top [Program](#program) `p` on the Command stack.
 4. Constructs a tuple `contract` of type [Contract](#contract), with:
   * `contract.program` equal to `p.program`,
-  * `contract.anchor` equal to `a`,
+  * `contract.anchor` equal to `a.value`,
   * `contract.value` equal to `value`.
 5. Computes the [ID](#item-id) `contractid` of `contract`.
 6. Pushes an [Output](#output) to the Effect stack with `contractid` equal to `contractid`.

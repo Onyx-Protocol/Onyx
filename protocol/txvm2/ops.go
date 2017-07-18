@@ -116,24 +116,11 @@ const (
 	OpAfter
 
 	// Conversion
-	OpSummarize
+	OpFinalize
 	OpUnlockLegacy
 	OpIssueLegacy
 	OpLegacyIssuanceCandidate
 	OpExtend
-
-	// Extension
-	OpNop0
-	OpNop1
-	OpNop2
-	OpNop3
-	OpNop4
-	OpNop5
-	OpNop6
-	OpNop7
-	OpNop8
-	OpNop9
-	OpReserved
 
 	// Encoding
 	OpEncode

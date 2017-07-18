@@ -9,24 +9,23 @@ type run struct {
 }
 
 type vm struct {
-	bcIDs     [][]byte
-	txVersion int64
-	runlimit  int64
-	extension bool
+	txVersion                 int64
+	initialRunlimit, runlimit int64
+	extension                 bool
 
 	run      run
 	runstack []run
 
 	stacks [numstacks]stack
 
-	summarized bool
+	finalized bool
 }
 
 type opFuncType func(*vm)
 
 type option func(*vm)
 
-func Validate(tx []byte, txVersion, runlimit int64, o ...option) ([32]byte, bool) {
+func Validate(txprog []byte, txVersion, runlimit int64, o ...option) ([32]byte, bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			if vmerr, ok := err.(vmerror); ok {
@@ -36,13 +35,14 @@ func Validate(tx []byte, txVersion, runlimit int64, o ...option) ([32]byte, bool
 	}()
 
 	vm := &vm{
-		txVersion: txVersion,
-		runlimit:  runlimit,
+		txVersion:       txVersion,
+		initialRunlimit: runlimit,
+		runlimit:        runlimit,
 	}
 	for _, o := range o {
 		o(vm)
 	}
-	exec(vm, tx)
+	exec(vm, txprog)
 
 	var txid [32]byte
 
@@ -50,10 +50,10 @@ func Validate(tx []byte, txVersion, runlimit int64, o ...option) ([32]byte, bool
 	if !ok {
 		return txid, false
 	}
-	txid, ok = getTxID(item)
-	if !ok {
+	if !isNamed(item, transactionTuple) {
 		return txid, false
 	}
+	copy(txid[:], getID(item))
 	if !vm.getStack(entrystack).isEmpty() {
 		return txid, false
 	}
@@ -86,7 +86,11 @@ func step(vm *vm) {
 	default:
 		f := opFuncs[opcode]
 		if f == nil {
-			panic(fmt.Errorf("invalid opcode %d", opcode))
+			// NOP instruction
+			if !vm.extension {
+				panic(fmt.Errorf("invalid opcode %d", opcode))
+			}
+			return
 		}
 		f(vm)
 	}

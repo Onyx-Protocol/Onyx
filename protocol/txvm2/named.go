@@ -15,8 +15,8 @@ const (
 	readTuple            = "read"
 	recordTuple          = "record"
 	retirementTuple      = "retirement"
-	summaryTuple         = "transactionSummary"
 	transactionIDTuple   = "transactionID"
+	transactionTuple     = "tx"
 	valueTuple           = "value"
 )
 
@@ -35,7 +35,7 @@ var namedTuples = map[string][]int{
 	readTuple:            []int{bytestype},
 	recordTuple:          []int{bytestype, 0}, // 0 means "any value"
 	retirementTuple:      []int{},             // xxx
-	summaryTuple:         []int{int64type, int64type, bytestype},
+	transactionTuple:     []int{int64type, int64type, bytestype},
 	transactionIDTuple:   []int{bytestype},
 	valueTuple:           []int{int64type, bytestype},
 }
@@ -129,8 +129,8 @@ func mkRetirement(val tuple) tuple {
 	return tuple{} // xxx
 }
 
-func mkSummary(version, runlimit vint64, effectHash vbytes) tuple {
-	return tuple{vbytes(summaryTuple), version, runlimit, effectHash}
+func mkTransaction(version, runlimit vint64, effectHash vbytes) tuple {
+	return tuple{vbytes(transactionTuple), version, runlimit, effectHash}
 }
 
 func mkValue(amount vint64, assetID vbytes) tuple {
