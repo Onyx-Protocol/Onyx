@@ -25,6 +25,22 @@ func smallInt(n vint64) func(*vm) {
 	}
 }
 
+// xxx spec is not yet written!
 func opPushdata(vm *vm) {
-	// xxx
+	l, n := binary.Varint(vm.run.prog[vm.run.pc:]) // should this be uvarint?
+	if n == 0 {
+		panic("pushdata: unexpected end of input reading length prefix")
+	}
+	if n < 0 {
+		panic("pushdata: length overflow")
+	}
+	if l < 0 {
+		panic(fmt.Errorf("pushdata: negative length %d", l))
+	}
+	vm.run.pc += int64(n)
+	if vm.run.pc+l > int64(len(vm.run.prog)) {
+		panic("pushdata: unexpected end of input reading data")
+	}
+	vm.push(datastack, vbytes(vm.run.prog[vm.run.pc:vm.run.pc+l]))
+	vm.run.pc += l
 }

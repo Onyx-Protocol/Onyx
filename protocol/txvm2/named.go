@@ -12,11 +12,14 @@ const (
 	nonceTuple           = "nonce"
 	outputTuple          = "output"
 	programTuple         = "program"
+	provenValueTuple     = "provenvalue"
 	readTuple            = "read"
 	recordTuple          = "record"
 	retirementTuple      = "retirement"
 	transactionIDTuple   = "transactionID"
 	transactionTuple     = "tx"
+	unprovenValueTuple   = "unprovenvalue"
+	valueCommitmentTuple = "valuecommitment"
 	valueTuple           = "value"
 )
 
@@ -32,11 +35,14 @@ var namedTuples = map[string][]int{
 	nonceTuple:           []int{bytestype, int64type, int64type, bytestype},
 	outputTuple:          []int{bytestype},
 	programTuple:         []int{bytestype},
+	provenValueTuple:     []int{tupletype, tupletype},
 	readTuple:            []int{bytestype},
 	recordTuple:          []int{bytestype, 0}, // 0 means "any value"
 	retirementTuple:      []int{},             // xxx
 	transactionTuple:     []int{int64type, int64type, bytestype},
 	transactionIDTuple:   []int{bytestype},
+	unprovenValueTuple:   []int{tupletype},
+	valueCommitmentTuple: []int{bytestype, bytestype},
 	valueTuple:           []int{int64type, bytestype},
 }
 
@@ -133,8 +139,16 @@ func mkTransaction(version, runlimit vint64, effectHash vbytes) tuple {
 	return tuple{vbytes(transactionTuple), version, runlimit, effectHash}
 }
 
+func mkUnprovenValue(vc tuple) tuple {
+	return tuple{vbytes(unprovenValueTuple), vc}
+}
+
 func mkValue(amount vint64, assetID vbytes) tuple {
 	return tuple{vbytes(valueTuple), amount, assetID}
+}
+
+func mkValueCommitment(v, f vbytes) tuple {
+	return tuple{vbytes(valueCommitmentTuple), v, f}
 }
 
 func anchorValue(anchor tuple) vbytes {
@@ -169,8 +183,16 @@ func programProgram(prog tuple) vbytes {
 	return prog[1].(vbytes)
 }
 
+func provenValueValueCommitment(pv tuple) tuple {
+	return pv[1].(tuple)
+}
+
 func recordCommandProgram(rec tuple) vbytes {
 	return rec[1].(vbytes)
+}
+
+func unprovenValueValueCommitment(pv tuple) tuple {
+	return pv[1].(tuple)
 }
 
 func valueAmount(val tuple) vint64 {
@@ -179,4 +201,12 @@ func valueAmount(val tuple) vint64 {
 
 func valueAssetID(val tuple) vbytes {
 	return val[2].(vbytes)
+}
+
+func valueCommitmentBlindingPoint(vc tuple) vbytes {
+	return vc[2].(vbytes)
+}
+
+func valueCommitmentValuePoint(vc tuple) vbytes {
+	return vc[1].(vbytes)
 }

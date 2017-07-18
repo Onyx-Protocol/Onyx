@@ -132,10 +132,8 @@ const (
 )
 
 func init() {
-	// xxx may not need this (or the smallInt function)
-	for i := byte(0); i <= MaxSmallInt; i++ {
-		opFuncs[Op0+i] = smallInt(vint64(i))
-	}
+	opFuncs[OpSatisfy] = opSatisfy
+	opFuncs[OpCommand] = opCommand
 }
 
 func isSmallIntOp(op byte) bool {

@@ -1,11 +1,6 @@
 package txvm2
 
-import (
-	"bytes"
-	"fmt"
-
-	"chain/crypto/sha3pool"
-)
+import "chain/crypto/sha3pool"
 
 func opNonce(vm *vm) {
 	min := vm.popInt64(datastack)

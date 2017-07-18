@@ -34,15 +34,14 @@ func main() {
 
 	fmt.Fprint(out, "var opFuncs = [...]func(*vm){\n")
 	for _, op := range ops {
-		fmt.Fprintf(out, "\t%s: %c%s,\n", op, unicode.ToLower(rune(op[0])), op[1:])
+		switch op {
+		case "OpCommand", "OpSatisfy":
+			// do nothing - avoid initialization loop
+		default:
+			fmt.Fprintf(out, "\t%s: %c%s,\n", op, unicode.ToLower(rune(op[0])), op[1:])
+		}
 	}
 	fmt.Fprint(out, "}\n\n")
-
-	fmt.Fprint(out, "func init() {\n")
-	fmt.Fprint(out, "\tfor i := byte(0); i <= MaxSmallInt; i++ {\n")
-	fmt.Fprint(out, "\t\topFuncs[Op0 + i] = smallInt(vint64(i))\n")
-	fmt.Fprint(out, "\t}\n")
-	fmt.Fprint(out, "}\n")
 
 	out.Close()
 

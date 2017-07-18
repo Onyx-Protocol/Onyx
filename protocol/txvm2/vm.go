@@ -28,9 +28,7 @@ type option func(*vm)
 func Validate(txprog []byte, txVersion, runlimit int64, o ...option) ([32]byte, bool) {
 	defer func() {
 		if err := recover(); err != nil {
-			if vmerr, ok := err.(vmerror); ok {
-				// xxx
-			}
+			// xxx
 		}
 	}()
 
@@ -75,9 +73,9 @@ func exec(vm *vm, prog []byte) {
 }
 
 func step(vm *vm) {
-	opcode, data, n := decodeInst(vm.run.prog[vm.run.pc:])
+	opcode := vm.run.prog[vm.run.pc]
 	// xxx tracing
-	vm.run.pc += n
+	vm.run.pc++
 	switch {
 	case isSmallIntOp(opcode):
 		vm.push(datastack, vint64(opcode-Op0))
@@ -136,10 +134,19 @@ func (vm *vm) popInt64(stacknum int) vint64 {
 	return n
 }
 
-func (vm *vm) popTuple(stacknum int, name string) tuple {
+func (vm *vm) popTuple(stacknum int, names ...string) tuple {
 	v := vm.pop(stacknum)
-	if !isNamed(v, name) {
-		panic(fmt.Errorf("%T is not a %s", v, name))
+	if len(names) > 0 {
+		ok := false
+		for _, name := range names {
+			if isNamed(v, name) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			panic(fmt.Errorf("%T is not one of %v", v, names))
+		}
 	}
 	return v.(tuple)
 }

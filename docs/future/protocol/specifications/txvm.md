@@ -21,8 +21,6 @@ When the virtual machine executes a TxVM program, it accumulates different types
 
 The pieces of transaction information - the inputs, outputs, etc. - that are produced during TxVM execution are also _consumed_ in order to produce the [Transaction](#transaction) object, which is the sole output of a successful TxVM program. To capture pieces of transaction information for purposes other than validation, TxVM implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
-
-
 ## TODO
 
 ---------------------------------------------------------------------------------
@@ -47,7 +45,7 @@ Ideal merkle item contains the following data (this is a bit redundant and prese
 
 This allows fetching raw txscript w/o redundant raw effects, or raw effects w/o bulky txscript (aka witness).
 
-#### Suggestion 1: 
+#### Suggestion 1:
 
 * TxSummary = {version, runlimit, hash(effects)}
 * TxID = hash(TxSummary)
@@ -64,6 +62,7 @@ Same as above structurally, but changing the names so TxID is not confused with 
     s/TxSummary/Tx/ => result of the txvm is a transaction object; allows saying `hash(TxSummary) == TxID`
     s/Tx/TxWitness/ => raw script+version+runlimit is the witness, that yields a transaction object representing changes to the global state
     merkle item = SHA3-256(Tx.ID || TxWitness.ID) - simple: commit witness & transaction, symmetrical: can fetch either one of them.
+
 
 ### Remove unnecessary "txvm" prefix
 
@@ -95,12 +94,6 @@ Problems:
 2. We need a proportional cost for APRs (2*1024 per input AC)
 3. We need a proportional cost for IAPRs (4*1024 per input AC)
 ---------------------------------------------------------------------------------
-
-
-
-
-
-
 
 
 ## TxVM operation
@@ -155,7 +148,6 @@ If execution and all the required checks do not fail, Effect stack is introspect
   2. Add ID of the nonce to the Nonce set.
 8. TBD: update record set
 
-
 ### Versioning
 
 1. Every instance of Chain Core software defines **current block version** and **current transaction version**.
@@ -169,7 +161,6 @@ Extensions:
 1. If the block version is equal to _current block version_, transaction cannot have version higher than the _current transaction version_.
 2. If the transaction version is higher than the _current transaction version_, TxVM `extension` flag is set to `true`.
 3. Otherwise, `extension` flag is set to `false`.
-
 
 ### Runlimit
 
@@ -214,7 +205,6 @@ Blocks, transactions and TxVM instructions are designed with extensibility in mi
 Upgrades can be done via hard forks and soft forks.
 
 TBD: Need to specify how soft/hard fork upgrades are possible with NOPs and Extend opcode.
-
 
 
 ## Types
@@ -262,7 +252,7 @@ These fields contribute to the tuple [ID](#item-ids), but do not affect the exec
 4. `predicate`, a tuple of 1 or more tuples of 1 one or more [Multisig Predicates](#multisig-predicate). Outer tuple is OR function, inner tuples are AND functions of the multisig predicates.
 5. `runlimit`, an int64
 6. `txroot`, a string, a merkle root of a set of all transactions included in the block, where each item is defined as:
-        
+
         item = SHA3-256(Transaction.id || TransactionWitness.id)
 
 7. TBD: UTXO & nonces set merkle root
@@ -490,10 +480,6 @@ Items on the Command stack are currently executed [Programs](#program).
 Items on the Effect stack are [Inputs](#input), [Outputs](#output), [Reads](#read), [Nonces](#nonce), [Retirements](#retirement).
 
 
-
-
-
-
 ## Instructions
 
 ## Control flow operations
@@ -570,8 +556,6 @@ Fails if `stackid` does not correspond to a valid stack, or if the stack has few
 3. Looks at the `n`th item of the stack identified by `stackid`, and pushes a copy of it to the data stack.
 
 
-
-
 ## Data stack operations
 
 ### Equal
@@ -610,8 +594,6 @@ Drops an item from the data stack.
 2. Pushes it to the data stack.
 
 
-
-
 ## Tuple operations
 
 ### Tuple
@@ -634,7 +616,6 @@ Drops an item from the data stack.
 4. Fails if `i` is negative or greater than or equal to the number of fields in `tuple`.
 
 
-
 ## Boolean operations
 
 ### Not
@@ -654,7 +635,6 @@ Drops an item from the data stack.
 1. Pops two booleans `p` and `q` from the stack.
 2. If both `p` and `q` are false, pushes `false`.
 3. Otherwise, pushes `true`.
-
 
 
 ## Numeric operations
@@ -702,7 +682,6 @@ TODO: clarify behavior.
 Pops two numbers `a` and `b` from the data stack. If `a` is greater than `b`, pushes `true` to the stack. Otherwise, pushes `false`.
 
 
-
 ## String operations
 
 ### Cat
@@ -712,7 +691,6 @@ Pops two strings, `a`, then `b`, from the data stack, concatenates them, and pus
 ### Slice
 
 Pops two integers, `start`, then `end`, from the data stack. Pops a string `str` from the data stack. Pushes the string `str[start:end]` (with the first character being the one at index `start`, and the last character being the one before index `end`). Fails if `end` is less than `start`, if `start` is less than 0, or if `end` is greater than the length of `str`.
-
 
 
 ## Bitwise operations
@@ -729,12 +707,9 @@ Pops two strings `a` and `b` from the data stack. Fails if they do not have the 
 
 Pops two strings `a` and `b` from the data stack. Fails if they do not have the same length. Performs a "bitwise or" operation on `a` and `b` and pushes the result `a | b`.
 
-
 ### BitXor
 
 Pops two strings `a` and `b` from the data stack. Fails if they do not have the same length. Performs a "bitwise xor" operation on `a` and `b` and pushes the result `a ^ b`.
-
-
 
 
 ## Crypto operations
@@ -745,13 +720,11 @@ Pops two strings `a` and `b` from the data stack. Fails if they do not have the 
 2. Computes a SHA2-256 hash on it: `h = SHA2-256(a)`.
 3. Pushes the resulting string `h` to the data stack.
 
-
 ### SHA3
 
 1. Pops a string `a` from the data stack.
 2. Computes a SHA3-256 hash on it: `h = SHA3-256(a)`.
 3. Pushes the resulting string `h` to the data stack.
-
 
 ### CheckSig
 
@@ -761,7 +734,6 @@ Pops two strings `a` and `b` from the data stack. Fails if they do not have the 
 
 TODO: Should we switch order of `pubKey` and `msg`?
 
-
 ### PointAdd
 
 1. Pops two strings `A` and `B` from the data stack.
@@ -770,7 +742,6 @@ TODO: Should we switch order of `pubKey` and `msg`?
 4. Encodes the resulting point `C` as a string, and pushes it to the data stack.
 5. Fails if `A` and `B` are not valid curve points.
 
-
 ### PointSub
 
 1. Pops two strings `A` and `B` from the data stack.
@@ -778,7 +749,6 @@ TODO: Should we switch order of `pubKey` and `msg`?
 3. Performs an elliptic curve subtraction `C = A - B`.
 4. Encodes the resulting point `C` as a string, and pushes it to the data stack.
 5. Fails if `A` and `B` are not valid curve points.
-
 
 ### PointMul
 
@@ -789,14 +759,12 @@ TODO: Should we switch order of `pubKey` and `msg`?
 5. Fails if `P` is not a valid curve point.
 
 
-
 ## Annotation operations
 
 ### Annotate
 
 1. Pops a string, `data`, from the data stack.
 2. Pushes an [Annotation](#annotation) with `data` of `data` to the Effect stack.
-
 
 
 ## Command operations
@@ -812,6 +780,7 @@ TODO: Should we switch order of `pubKey` and `msg`?
 Note 1: when step 5 is reached, all nested commands are already executed and popped, so the top item on the Command stack is the one that just finished executing.
 
 Note 2: program can be an empty string; in such case, steps 2-5 can be omitted as they have no effect.
+
 
 ## Condition operations
 
@@ -830,7 +799,6 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 2. Executes it using [command](#command) operation.
 
 
-
 ## Record operations
 
 ### Create
@@ -839,13 +807,11 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 2. Peeks at the top item on the Command stack,`command`.
 3. Pushes a [Record](#record) to the Entry stack with `commandprogram` equal to `command.program` and `data` equal to `data`.
 
-
 ### Delete
 
 1. Pops a Record, `record`, from the Record stack.
 2. Peeks at the top item on the Command stack,`p`.
 3. If `record.commandprogram` is not equal to `p.program`, fails execution.
-
 
 ### Complete
 
@@ -853,7 +819,6 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 2. Peeks at the top item on the Command stack, `p`.
 3. If `record.commandprogram` is not equal to `p.program`, fails execution.
 4. Moves `record` to the Effect stack.
-
 
 
 ## Contract operations
@@ -908,13 +873,11 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 3. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `p.program`.
 4. Pushes a [value](#value) with amount `amount` and assetID `assetID` to Entry stack.
 
-
 ### Merge
 
 1. Pops two [Values](#value) from the Entry stack.
 2. If their asset IDs are different, execution fails.
 3. Pushes a new [Value](#value) to the Entry stack, whose asset ID is the same as the popped values, and whose amount is the sum of the amounts of each of the popped values.
-
 
 ### Split
 
@@ -924,13 +887,11 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 4. Pushes a new Value with amount `value.amount - newamount` and assetID `value.assetID`.
 5. Pushes a new Value with amount `newamount` and assetID `value.assetID`.
 
-
 ### Retire
 
 1. Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the Entry stack.
 2. If `value` is a plaintext [Value](#value), compute a corresponding non-blinded value commitment.
 3. Pushes a [Retirement](#retirement) `r` to the Effect stack with `r.value` set to the value commitment.
-
 
 ### WrapValue
 
@@ -940,16 +901,14 @@ Converts plaintext value to a value commitment and emits a valid Asset Commitmen
 2. Computes non-blinded [asset commitment](#asset-commitment) from the plaintext asset ID and pushes it to the Entry stack.
 3. Computes non-blinded [value commitment](#value-commitment) from the plaintext amount and asset ID and pushes it to the Entry stack.
 
-
 ### MergeConfidential
 
 1. Pops two items of type [Value](#value), [Proven Value](#proven-value) or [Unproven Value](#unproven-value) `a` and `b` from the [Entry stack](#entry-stack).
-2. For each item of type [Value](#value) (if any) to the [Proven Value](#proven-value) with a corresponding [non-blinded value commitment](ca.md#create-nonblinded-value-commitment) based on plaintext `amount` and `assetID`.
-3. Computes new [Unproven Value](#proven-value) `c` with `valuecommitment` equal to `a.valuecommitment + b.valuecommitment`.
+2. Replaces each item of type [Value](#value) with a [Proven Value](#proven-value) by computing a [non-blinded value commitment](ca.md#create-nonblinded-value-commitment) based on plaintext `amount` and `assetID`.
+3. Computes new [Unproven Value](#unproven-value) `c` with `valuecommitment` equal to `a.valuecommitment + b.valuecommitment`.
 4. Pushes unproven value `c` to the Entry stack.
 
 Note: merging two proven values may merge two distinct asset IDs producing an unprovable value which must be correctly split and range-proved.
-
 
 ### SplitConfidential
 
@@ -957,7 +916,6 @@ Note: merging two proven values may merge two distinct asset IDs producing an un
 2. Pops a [Value Commitment](#value-commitment) `vc` from the Entry stack.
 3. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `vc`.
 4. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value.valuecommitment - vc`.
-
 
 ### ProveAssetRange
 
@@ -977,14 +935,12 @@ This opcode proves that a given [Asset Commitment](#asset-commitment) belongs to
 9. Pushes asset commitment `ac` to the Entry stack.
 10. Executes `program` via [command](#command) instruction.
 
-
 ### DropAssetCommitment
 
 1. Pops an [Asset Commitment](#asset-commitment) `ac` from the Entry stack.
 2. Fails if top element is not an asset commitment.
 
 Note: in principle, proven asset ID commitments on Entry stack do not have to be specially consumed (like values), and the same commitments are reused in multiple ARPs. So to satisfy the requirement of a clean Entry stack and avoid unnecesary duplication of asset commitments, in the end of transaction, this opcode allows cleaning up all remaining asset commitments.
-
 
 ### ProveAssetID
 
@@ -997,7 +953,6 @@ This opcode proves that a given cleartext asset ID is stored within a given [Ass
 5. [Verifies](ca.md#validate-asset-id-proof) the `assetproof` with the given `assetID` and commitment `ac`.
 6. Executes `program` via [command](#command) instruction.
 
-
 ### ProveAmount
 
 1. Pops string `amountproof` from the data stack.
@@ -1008,7 +963,6 @@ This opcode proves that a given cleartext asset ID is stored within a given [Ass
 6. [Verifies](ca.md#validate-amount-proof) the `amountproof` string with the given `amount` and commitments `vc` and `ac`.
 7. Executes `program` via [command](#command) instruction.
 
-
 ### ProveValueRange
 
 1. Pops a string `valuerangeproof`.
@@ -1018,7 +972,6 @@ This opcode proves that a given cleartext asset ID is stored within a given [Ass
 5. Verifies `valuerangeproof` with the given `value.valuecommitment`, `ac.assetcommitment` and `program` as a custom message.
 6. Pushes a new [Proven Value](#proven-value) to the Entry stack with `newvalue.valuecommitment` set to `value.valuecommitment` and `newvalue.assetcommitment` set to the `ac.assetcommitment`.
 7. Executes `program` via [command](#command) instruction.
-
 
 ### IssuanceCandidate
 
@@ -1081,7 +1034,6 @@ Note: `IssueConfidential` authorized issuance of a certain asset commitment (wit
 Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
 
-
 ## Time operations
 
 ### Before
@@ -1093,7 +1045,6 @@ Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
 1. Pops an int64 `min` from the stack.
 2. Pushes a [Mintime](#mintime) to the [Effect stack](#Effect-stack) with `mintime` equal to `min`.
-
 
 
 ## Conversion operations
@@ -1125,8 +1076,8 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
   * `vm1.amount` set to the amount in the legacy output.
   * `vm1.assetid` set to the asset ID in the legacy output.
   * `vm1.entryid` set to the legacy output ID.
-  * `vm1.txid` left until evaluation 
-  * 
+  * `vm1.txid` left until evaluation
+  *
   * TBD: need to defer this until txid is computed via `finalize`
 8. TBD Alternatively: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.
 9. Defers execution of the legacy program. (TBD)
@@ -1139,19 +1090,17 @@ TBD: Need compatibility layer to issue legacy asset IDs: specify the context for
 
 TBD: Need compatibility layer to use legacy asset IDs in the Issuance Candidates: also, specify necessary context for VM1 based on txvm tx.
 
-
 ### Extend
 
 TBD: review this
 
 1. Fails if the `extension` flag is `false`.
-2. Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). 
+2. Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks).
 3. Pops an integer `depth` from the data stack.
 4. Pops an item, `extension`, from the data stack.
 5. On the stack identified by `stackid`, takes the `n`th tuple and replaces it with a copy of that tuple with one additional field added, containing `extension`.
 
 (TBD: be precise about how cost accounting works for this. Do we even still need this and in what form?)
-
 
 ### Extension opcodes
 
@@ -1196,8 +1145,6 @@ When such opcode is executed, a corresponding integer value is pushed to the dat
 [TBD: use Keith's method for this]
 
 
-
-
 ## Examples
 
 ### Normal transaction
@@ -1224,9 +1171,7 @@ TODO: fix now that Value, Anchor, and Condition stacks are merged
     "sig2..." satisfy
     "sig1..." satisfy
 
-
 ### Multi-asset contract
-
 
     // 5 of assetID1 and 10 of assetID2 are on the Entry stack
     [
@@ -1239,7 +1184,6 @@ TODO: fix now that Value, Anchor, and Condition stacks are merged
       ["txvm" txstack peek encode cat sha3 "pubkey..." checksig verify] defer
     ] 0 datastack peek lock lock
 
-
 ### Issuance program signing transaction:
 
     [issue ["txvm" txstack peek encode cat sha3 "pubkey..." checksig verify] defer]
@@ -1248,11 +1192,9 @@ Usage (to issue 5 units):
 
     <sig> 5 [issue ["txvm" txstack peek encode cat sha3 "pubkey..." checksig verify] defer] command
 
-
 ### Issuance program signing anchor:
 
     [0 anchorstack peek]
-
 
 ### Maximally flexible issuance program
 
