@@ -13,9 +13,7 @@ describe('accounts', () => {
     })
 
     it('lists all accounts on the core', () => {
-      browser.getText('.ItemList').should.contain('ACCOUNT ALIAS')
-      browser.getText('.ItemList').should.contain('alice')
-      browser.getText('.ItemList').should.contain('View details')
+      browser.elements('.ListItem').value.length.should.be.above(0)
     })
 
     it('displays the correct page title', () => {
@@ -90,7 +88,7 @@ describe('accounts', () => {
       .then((account) => browser.url('/accounts'))
     })
 
-    it.only('filters properly', () => {
+    it('filters properly', () => {
       browser.waitForVisible(".SearchBar form input[type='search']")
       browser.setValue(".SearchBar form input[type='search']", `tags.x='${tag1}'`)
       browser.submitForm('.SearchBar form')

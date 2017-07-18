@@ -99,17 +99,17 @@ const createAccount = (name = 'account', createOpts = {}) => {
     })
 }
 
-const createAsset = (name = 'asset') => {
+const createAsset = (name = 'asset', createOpts = {}) => {
   const client = new chain.Client()
 
   return client.mockHsm.keys.create()
     .then((key) => {
       client.signer.addKey(key, client.mockHsm.signerConnection)
-      return client.assets.create({
+      return client.assets.create(Object.assign(createOpts, {
         alias: `${name}-${uuid.v4()}`,
         rootXpubs: [key.xpub],
         quorum: 1
-      })
+      }))
     })
 }
 
