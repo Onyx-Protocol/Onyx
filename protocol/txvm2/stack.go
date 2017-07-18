@@ -12,11 +12,12 @@ const (
 
 type stack []value
 
-func (s *stack) peek() (value, bool) {
-	if len(*s) == 0 {
+func (s *stack) peek(n int64) (value, bool) {
+	index := int64(len(*s)) - 1 - n
+	if index < 0 || index >= int64(len(*s)) {
 		return nil, false
 	}
-	return (*s)[len(*s)-1], true
+	return (*s)[index], true
 }
 
 func (s *stack) push(v value) {
@@ -24,11 +25,25 @@ func (s *stack) push(v value) {
 }
 
 func (s *stack) pop() (value, bool) {
-	res, ok := s.peek()
+	res, ok := s.peek(0)
 	if ok {
 		*s = (*s)[:len(*s)-1]
 	}
 	return res, ok
+}
+
+func (s *stack) pushN(vals []value) {
+	*s = append(*s, vals...)
+}
+
+func (s *stack) popN(n int64) []value {
+	var res []value
+	for n > 0 && len(*s) > 0 {
+		res = append(res, (*s)[len(*s)-1])
+		*s = (*s)[:len(*s)-1]
+		n--
+	}
+	return res
 }
 
 func (s *stack) isEmpty() bool {

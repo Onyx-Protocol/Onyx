@@ -37,32 +37,39 @@ func opReverse(vm *vm) {
 	}
 	s := vm.stacks[stackID] // xxx range check
 	n := vm.popInt64(datastack)
-	vals := s.popN(n)
+	vals := s.popN(int64(n))
+	if int64(len(vals)) != int64(n) {
+		panic(fmt.Errorf("too few items on stack (%d vs. %d)", len(vals), n))
+	}
 	s.pushN(vals)
 	// xxx runlimit
 }
 
 func opDepth(vm *vm) {
-	stackID := vm.popInt64()
-	s := vm.getStack(stackID)
-	vm.pushInt64(s.depth())
+	stackID := vm.popInt64(datastack)
+	s := vm.getStack(int64(stackID))
+	vm.push(datastack, vint64(len(*s)))
 	// xxx runlimit
 }
 
 func opPeek(vm *vm) {
-	stackID := vm.popInt64()
-	s := vm.getStack(stackID)
-	n := vm.popInt64()
-	vm.push(s.peek(n))
+	stackID := vm.popInt64(datastack)
+	s := vm.getStack(int64(stackID))
+	n := vm.popInt64(datastack)
+	item, ok := s.peek(int64(n))
+	if !ok {
+		panic(fmt.Errorf("too few items on stack (%d vs.  %d)", len(*s), n))
+	}
+	vm.push(datastack, item)
 }
 
 func opEqual(vm *vm) {
-	v1 := vm.pop()
-	v2 := vm.pop()
+	v1 := vm.pop(datastack)
+	v2 := vm.pop(datastack)
 	t1 := v1.typ()
 	t2 := v2.typ()
 	res := false
-	if t1 == t2 && t1 != tupleType {
+	if t1 == t2 && t1 != tupletype {
 		switch t1 {
 		case int64type:
 			res = v1.(vint64) == v2.(vint64)
@@ -70,28 +77,28 @@ func opEqual(vm *vm) {
 			res = bytes.Equal(v1.(vbytes), v2.(vbytes))
 		}
 	}
-	vm.pushBool(res)
+	vm.pushBool(datastack, res)
 }
 
 func opType(vm *vm) {
-	v := vm.pop()
-	vm.pushInt64(v.typ())
+	v := vm.pop(datastack)
+	vm.push(datastack, vint64(v.typ()))
 }
 
 func opLen(vm *vm) {
-	v := vm.pop()
+	v := vm.pop(datastack)
 	switch v := v.(type) {
 	case vbytes:
-		vm.pushInt64(len(v))
+		vm.push(datastack, vint64(len(v)))
 	case tuple:
-		vm.pushInt64(len(v))
+		vm.push(datastack, vint64(len(v)))
 	default:
 		panic(fmt.Errorf("len: cannot take the length of %T", v))
 	}
 }
 
 func opDrop(vm *vm) {
-	vm.pop()
+	vm.pop(datastack)
 }
 
 func opToAlt(vm *vm) {

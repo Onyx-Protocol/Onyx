@@ -54,8 +54,8 @@ func getOps() []string {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, txvmFile("ops.go"), nil, 0)
 	must(err)
-	if len(f.Decls) != 1 {
-		panic(fmt.Errorf("ops.go has %d top-level declarations, want 1", len(f.Decls)))
+	if len(f.Decls) == 0 {
+		panic("ops.go has no top-level declarations")
 	}
 	constDecl, ok := f.Decls[0].(*ast.GenDecl)
 	if !ok || constDecl.Tok != token.CONST {

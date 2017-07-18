@@ -3,8 +3,8 @@ package txvm2
 //go:generate go run gen.go
 
 // This file is used as input to gen.go, which is used by "go
-// generate" to produce other files in this package. Nothing should be
-// here but the following list of constants.
+// generate" to produce other files in this package. The first
+// declaration in this file must be the list of opcode constants.
 
 // TODO: when the spec is final, freeze the numeric values of these constants
 
@@ -143,3 +143,23 @@ const (
 	MaxSmallInt = Op0 + 32
 	NumOps      = MaxSmallInt + 1
 )
+
+func init() {
+	// xxx may not need this (or the smallInt function)
+	for i := byte(0); i <= MaxSmallInt; i++ {
+		opFuncs[Op0+i] = smallInt(vint64(i))
+	}
+}
+
+func isSmallIntOp(op byte) bool {
+	return op >= Op0 && op <= MaxSmallInt
+}
+
+func decodeInst(prog []byte) (opcode byte, data []byte, delta int64) {
+	opcode = prog[0]
+	delta = 1
+	switch opcode {
+	// xxx
+	}
+	return // xxx
+}

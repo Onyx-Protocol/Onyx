@@ -15,13 +15,14 @@ func opSummarize(vm *vm) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
-	for _, item := range vm.stacks[effectstack] {
+	s := vm.getStack(effectstack)
+	for _, item := range *s {
 		item.encode(hasher)
 	}
 	var h [32]byte
 	hasher.Read(h[:])
 
-	vm.push(effectstack, mkSummary(vm.txVersion, vm.txRunlimit, h[:]))
+	vm.push(effectstack, mkSummary(vint64(vm.txVersion), vint64(vm.runlimit), h[:]))
 
 	vm.summarized = true
 }
@@ -71,14 +72,14 @@ func opExtend(vm *vm) {
 		panic(fmt.Errorf("extend: negative stack offset %d", n))
 	}
 	item := vm.pop(datastack)
-	s := vm.stacks[stackID]
-	if n >= vint64(len(s)) {
-		panic(fmt.Errorf("extend: stack offset %d greater than %d-item stack", n, len(s)))
+	s := vm.getStack(int64(stackID))
+	if n >= vint64(len(*s)) {
+		panic(fmt.Errorf("extend: stack offset %d greater than %d-item stack", n, len(*s)))
 	}
-	t, ok := s[n].(tuple)
+	t, ok := (*s)[n].(tuple)
 	if !ok {
-		panic(fmt.Errorf("extend: item %d on stack %d is a %T, not a tuple", n, stackID, s[n]))
+		panic(fmt.Errorf("extend: item %d on stack %d is a %T, not a tuple", n, stackID, (*s)[n]))
 	}
 	t = append(t, item)
-	s[n] = t
+	(*s)[n] = t
 }

@@ -1,39 +1,43 @@
 package txvm2
 
 const (
-	anchorTuple        = "anchor"
-	annotationTuple    = "annotation"
-	contractTuple      = "contract"
-	inputTuple         = "input"
-	legacyOutputTuple  = "legacyOutput"
-	maxtimeTuple       = "maxtime"
-	mintimeTuple       = "mintime"
-	nonceTuple         = "nonce"
-	outputTuple        = "output"
-	programTuple       = "program"
-	readTuple          = "read"
-	recordTuple        = "record"
-	summaryTuple       = "transactionSummary"
-	transactionIDTuple = "transactionID"
-	valueTuple         = "value"
+	anchorTuple          = "anchor"
+	annotationTuple      = "annotation"
+	assetDefinitionTuple = "assetdefinition"
+	contractTuple        = "contract"
+	inputTuple           = "input"
+	legacyOutputTuple    = "legacyOutput"
+	maxtimeTuple         = "maxtime"
+	mintimeTuple         = "mintime"
+	nonceTuple           = "nonce"
+	outputTuple          = "output"
+	programTuple         = "program"
+	readTuple            = "read"
+	recordTuple          = "record"
+	retirementTuple      = "retirement"
+	summaryTuple         = "transactionSummary"
+	transactionIDTuple   = "transactionID"
+	valueTuple           = "value"
 )
 
 var namedTuples = map[string][]int{
-	anchorTuple:        []int{bytestype},
-	annotationTuple:    []int{bytestype},
-	contractTuple:      []int{tupletype, bytestype, bytestype}, // TODO: be more specific about the field types
-	inputTuple:         []int{bytestype},
-	legacyOutputTuple:  []int{bytestype, bytestype, int64type, int64type, bytestype, bytestype}, // xxx legacy outputs have no type string??
-	maxtimeTuple:       []int{int64type},
-	mintimeTuple:       []int{int64type},
-	nonceTuple:         []int{bytestype, int64type, int64type, bytestype},
-	outputTuple:        []int{bytestype},
-	programTuple:       []int{bytestype},
-	readTuple:          []int{bytestype},
-	recordTuple:        []int{bytestype, 0}, // 0 means "any value"
-	summaryTuple:       []int{int64type, int64type, bytestype},
-	transactionIDTuple: []int{bytestype},
-	valueTuple:         []int{int64type, bytestype},
+	anchorTuple:          []int{bytestype},
+	annotationTuple:      []int{bytestype},
+	assetDefinitionTuple: []int{bytestype},
+	contractTuple:        []int{tupletype, bytestype, bytestype}, // TODO: be more specific about the field types
+	inputTuple:           []int{bytestype},
+	legacyOutputTuple:    []int{bytestype, bytestype, int64type, int64type, bytestype, bytestype}, // xxx legacy outputs have no type string??
+	maxtimeTuple:         []int{int64type},
+	mintimeTuple:         []int{int64type},
+	nonceTuple:           []int{bytestype, int64type, int64type, bytestype},
+	outputTuple:          []int{bytestype},
+	programTuple:         []int{bytestype},
+	readTuple:            []int{bytestype},
+	recordTuple:          []int{bytestype, 0}, // 0 means "any value"
+	retirementTuple:      []int{},             // xxx
+	summaryTuple:         []int{int64type, int64type, bytestype},
+	transactionIDTuple:   []int{bytestype},
+	valueTuple:           []int{int64type, bytestype},
 }
 
 func (t tuple) name() (string, bool) {
@@ -81,6 +85,10 @@ func mkAnnotation(data vbytes) tuple {
 	return tuple{vbytes(annotationTuple), data}
 }
 
+func mkAssetDefinition(prog vbytes) tuple {
+	return tuple{vbytes(assetDefinitionTuple), prog}
+}
+
 func mkContract(val tuple, prog, anchor vbytes) tuple {
 	return tuple{vbytes(contractTuple), val, prog, anchor}
 }
@@ -115,6 +123,10 @@ func mkRead(contractID vbytes) tuple {
 
 func mkRecord(prog vbytes, data value) tuple {
 	return tuple{vbytes(recordTuple), prog, data}
+}
+
+func mkRetirement(val tuple) tuple {
+	return tuple{} // xxx
 }
 
 func mkSummary(version, runlimit vint64, effectHash vbytes) tuple {
@@ -159,4 +171,12 @@ func programProgram(prog tuple) vbytes {
 
 func recordCommandProgram(rec tuple) vbytes {
 	return rec[1].(vbytes)
+}
+
+func valueAmount(val tuple) vint64 {
+	return val[1].(vint64)
+}
+
+func valueAssetID(val tuple) vbytes {
+	return val[2].(vbytes)
 }

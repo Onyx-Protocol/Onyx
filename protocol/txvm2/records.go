@@ -15,7 +15,7 @@ func opCreate(vm *vm) {
 }
 
 func opDelete(vm *vm) {
-	rec := vm.popTuple(recordstack, recordTuple)
+	rec := vm.popTuple(entrystack, recordTuple)
 	cmd := vm.peekTuple(commandstack, programTuple)
 	if !bytes.Equal(recordCommandProgram(rec), programProgram(cmd)) {
 		panic(ErrRecord)
@@ -23,7 +23,7 @@ func opDelete(vm *vm) {
 }
 
 func opComplete(vm *vm) {
-	rec := vm.popTuple(recordstack, recordTuple)
+	rec := vm.popTuple(entrystack, recordTuple)
 	cmd := vm.peekTuple(commandstack, programTuple)
 	if !bytes.Equal(recordCommandProgram(rec), programProgram(cmd)) {
 		panic(ErrRecord)
