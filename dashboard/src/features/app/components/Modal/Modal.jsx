@@ -1,5 +1,7 @@
 import React from 'react'
 import { connect } from 'react-redux'
+import componentClassNames from 'utility/componentClassNames'
+
 import styles from './Modal.scss'
 
 class Modal extends React.Component {
@@ -15,8 +17,8 @@ class Modal extends React.Component {
     const close = () => dispatch({ type: 'HIDE_MODAL' })
 
     return(
-      <div className={styles.main}>
-        <div className={styles.backdrop} onClick={close}></div>
+      <div className={componentClassNames(this, styles.main)}>
+        <div className={`${styles.backdrop}`} onClick={close}></div>
         <div className={`${this.props.options.wide && styles.wide} ${styles.modal}`}>
           {this.props.title && <div className={styles.title}>
             <span>{this.props.title}</span>
