@@ -91,9 +91,9 @@ func (rep *Replicator) Fetch(ctx context.Context, c *protocol.Chain, health func
 	}
 }
 
-// PollGeneratorHeight periodically polls the configured peer for
+// PollRemoteHeight periodically polls the configured peer for
 // its blockchain height. It blocks until the ctx is canceled.
-func (rep *Replicator) PollGeneratorHeight(ctx context.Context) {
+func (rep *Replicator) PollRemoteHeight(ctx context.Context) {
 	rep.updateGeneratorHeight(ctx)
 
 	ticker := time.NewTicker(heightPollingPeriod)

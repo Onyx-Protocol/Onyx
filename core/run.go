@@ -202,7 +202,7 @@ func Run(
 	}
 
 	if a.replicator != nil {
-		go a.replicator.PollGeneratorHeight(ctx)
+		go a.replicator.PollRemoteHeight(ctx)
 	}
 
 	if a.indexTxs {
