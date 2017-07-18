@@ -70,7 +70,6 @@ Same as above structurally, but changing the names so TxID is not confused with 
 We do not need a globally unique domain separator, we need in-protocol domain separators to disambiguate items (e.g. different kinds of tuples) 
 
 
-
 ### Legacy scripts and legacy asset IDs
 
 1. Need to allow unlocking legacy outputs.
@@ -90,6 +89,11 @@ Problems:
 
 1. How do we ensure the program is flexible enough? The nested program might also want to consume some inputs, issue something etc.
 
+### Runlimit cost for range proofs
+
+1. We need a proportional cost for VRPs (2*1024 per bit)
+2. We need a proportional cost for APRs (2*1024 per input AC)
+3. We need a proportional cost for IAPRs (4*1024 per input AC)
 ---------------------------------------------------------------------------------
 
 
