@@ -160,7 +160,7 @@ func (opts *Options) ListFunc(key string) func() [][]string {
 // undefined or is defined as a set of tuples.
 //
 // The returned function performs a stale read of the configuration
-// value. If an error occurs while reading the value the old
+// value. If an error occurs while reading the value, the old
 // value is returned, and the error is saved on the Options
 // type to be returned in Err.
 func (opts *Options) GetFunc(key string) func() []string {
