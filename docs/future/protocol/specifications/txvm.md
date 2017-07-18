@@ -15,11 +15,11 @@ This is the specification for TxVM, which combines a representation for blockcha
 
 Earlier versions of Chain Core represented transactions with a static data structure, exposing the pieces of information needed to test the transaction’s validity. A separate set of validation rules could be applied to that information to get a true/false result.
 
-Under TxVM, these functions are combined in such a way that an executable program string is both the transaction’s representation and the proof of its validity.
+Under TxVM, these functions are combined in such a way that an executable program string is both the transaction’s representation and the proof of its validity. Executable program representing transaction is called [Transaction Witness](#transaction-witness), it contains all data and logic necessary to produce a finalized [Transaction](#transaction), including necessary signatures and range proofs.
 
 When the virtual machine executes a TxVM program, it accumulates different types of data on different stacks. This data corresponds to the information exposed in earlier versions of the transaction data structure: inputs, outputs, time constraints, nonces, and so on. Under TxVM, that information is _only_ available as a result of executing the program, and the program only completes without error if the transaction is well-formed (i.e., its inputs and outputs balance, prevout control programs are correctly satisfied, etc). No separate validation steps are required.
 
-The pieces of transaction information - the inputs, outputs, etc. - that are produced during TxVM execution are also _consumed_ in order to produce the transaction summary, which is the sole output of a successful TxVM program. To capture pieces of transaction information for purposes other than validation, TxVM implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
+The pieces of transaction information - the inputs, outputs, etc. - that are produced during TxVM execution are also _consumed_ in order to produce the [Transaction](#transaction) object, which is the sole output of a successful TxVM program. To capture pieces of transaction information for purposes other than validation, TxVM implementations can and should provide callback hooks for inspecting and copying data from the various stacks at key points during execution.
 
 
 
@@ -62,9 +62,12 @@ either TxSummary (via TxID) or raw transaction via its hash.
 Same as above structurally, but changing the names so TxID is not confused with hash(Tx) (as in suggestion above).
 
     s/TxSummary/Tx/ => result of the txvm is a transaction object; allows saying `hash(TxSummary) == TxID`
-    s/Tx/TxWitness/ => raw script+version+runlimit is the witness, that yields a transaction
+    s/Tx/TxWitness/ => raw script+version+runlimit is the witness, that yields a transaction object representing changes to the global state
     merkle item = SHA3-256(Tx.ID || TxWitness.ID) - simple: commit witness & transaction, symmetrical: can fetch either one of them.
 
+### Remove unnecessary "txvm" prefix
+
+We do not need a globally unique domain separator, we need in-protocol domain separators to disambiguate items (e.g. different kinds of tuples) 
 
 
 
@@ -112,22 +115,20 @@ TxVM is a state machine consisting of:
   4. Effect stack
 2. Extension flag (boolean)
 3. Runlimit (int64).
-4. [Transaction](#transaction) tuple.
+4. [Transaction Witness](#transaction-witness) tuple.
 
 ### VM Execution
-
-TODO: make Transaction tuple or at least its version introspectable by programs. TxSummary must include version
 
 1. The VM is initialized with:
   * all [stacks](#stacks) empty,
   * `extension` flag set to true or false according to [transaction versioning](#versioning) rules,
-  * `runlimit` set to the runlimit specified by the [transaction tuple](#transaction),
-  * [transaction tuple](#transaction) set to the transaction being validation.
+  * `runlimit` set to the runlimit specified by the [transaction witness](#transaction-witness),
+  * [transaction witness](#transaction-witness) set to the transaction witness being validated.
 2. TxVM bytecode is being executed according to behaviour described per each [instruction](#instructions).
 3. Each instruction consumes [runlimit](#runlimit). If TxVM runs out of runlimit before the end of the execution, execution fails.
 4. When the program counter is equal to the length of the program, execution is complete.
-5. The top item of the [Effect stack](#effect-stack) must be a [Transaction Summary](#transaction-summary).
-6. There must be no other Transaction Summaries in the Effect stack, otherwise execution fails.
+5. The top item of the [Effect stack](#effect-stack) must be a [Transaction](#transaction).
+6. There must be no other Transaction objects in the Effect stack, otherwise execution fails.
 7. There must be at least one [anchor](#anchor) in the Effect stack.
 8. The Entry stack must be empty.
 
@@ -139,7 +140,7 @@ If execution and all the required checks do not fail, Effect stack is introspect
 
 1. If any [Mintime](#mintime) item on the Effect stack has `mintime` greater than the block’s timestamp, reject transaction.
 2. If any [Maxtime](#maxtime) item on the Effect stack has `maxtime` less than the block’s timestamp, reject transaction.
-3. [Transaction ID](#transaction-id) is computed as ID committed to the block as ID of the Transaction Summary.
+3. [Transaction ID](#transaction-id) is computed as ID committed to the block as ID of the Transaction object.
 4. For each [Input](#input), its `contractid` is removed from the UTXO set.
 5. For each [Output](#output), its `contractid` is added to the UTXO set.
 6. Remove all outdated nonces from Nonce set (based on block's timestamp).
@@ -233,9 +234,9 @@ The ID of an item is the SHA3 hash of `"txvm" || encode(item)`, where `encode` i
 
 ### Transaction ID
 
-The ID of a [Transaction Summary](#transaction-summary) item:
+The ID of a [Transaction](#transaction) object:
 
-    SHA3-256("txvm" || encode(summary))
+    SHA3-256("txvm" || encode(transaction))
 
 ### Tuple
 
@@ -253,7 +254,10 @@ These fields contribute to the tuple [ID](#item-ids), but do not affect the exec
 3. `previous`, a string, 32-byte ID of the previous block (or hash of a legacy block)
 4. `predicate`, a tuple of 1 or more tuples of 1 one or more [Multisig Predicates](#multisig-predicate). Outer tuple is OR function, inner tuples are AND functions of the multisig predicates.
 5. `runlimit`, an int64
-6. `txroot`, a string, a merkle root of a set of all transactions included in the block
+6. `txroot`, a string, a merkle root of a set of all transactions included in the block, where each item is defined as:
+        
+        item = SHA3-256(Transaction.id || TransactionWitness.id)
+
 7. TBD: UTXO & nonces set merkle root
 8. TBD: records set merkle root (maybe the same root as utxo and nonces?)
 
@@ -270,23 +274,23 @@ Note: Signed Block is used to encode signatures for the block. The ID of the Sig
 1. `threshold`, an int64
 2. `pubkeys`, a tuple of [public keys](#public-key)
 
+### Transaction Witness
+
+0. `type`, a string, "txwitness"
+1. `version`, an int64
+2. `runlimit`, an int64
+3. `program`, a string
+
+Note: ID of the Transaction Witness is not the same as [Transaction ID](#transaction-id) which is computed after TxVM is evaluated from the [Transaction](#transaction) object.
+
 ### Transaction
 
 0. `type`, a string, "tx"
 1. `version`, an int64
 2. `runlimit`, an int64
-3. `program`, a string
+3. `effecthash`, a 32-byte hash of all the effect entries
 
-Note: ID of this Transaction tuple is not the same as [Transaction ID](#transaction-id) which is computed after TxVM is evaluated.
-
-### Transaction Witness
-
-0. `type`, a string, "txwitness"
-1. `txid`, a string
-2. `programhash`, a string (SHA3-256 hash of a program)
-
-TBD: alternatively, a hash(transaction).
-
+The ID of this item is the canonical [Transaction ID](#transaction-id).
 
 ### Value
 
@@ -393,13 +397,6 @@ TBD: alternatively, a hash(transaction).
 
 0. `type`, a string, "annotation"
 1. `data`, a string
-
-### Transaction Summary
-
-0. `type`, a string, "transactionSummary"
-1. `version`, an int64
-2. `runlimit`, an int64
-3. `effecthash`, a 32-byte hash of all the effect entries
 
 ### Legacy Output
 
@@ -1073,18 +1070,18 @@ Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
 ## Conversion operations
 
-### Summarize
+### Finalize
 
-1. Fails if transaction was already summarized.
+1. Fails if transaction was already finalized.
 2. Hashes encoded items on Effect stack from bottom to the top (see [Encode](#encode) instructions) using SHA3-256:
 
         h = SHA3-256(encode(item1) || encode(item2) || ... || encode(topitem))
 
-3. Creates a tuple of type [Transaction Summary](#transaction-summary) `summary` with:
-  * `version` equal to version specified in [Transaction](#transaction) tuple.
-  * `runlimit` equal to runlimit specified in [Transaction](#transaction) tuple.
-  * `effecthash` equal to `h`.
-4. Pushes `summary` to the Effect stack.
+3. Creates a tuple of type [Transaction](#transaction) `tx` with:
+  * `tx.version` equal to version specified in [Transaction Witness](#transaction-witness) tuple.
+  * `tx.runlimit` equal to runlimit specified in [Transaction Witness](#transaction-witness) tuple.
+  * `tx.effecthash` equal to `h`.
+4. Pushes `tx` to the Effect stack.
 
 Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent to the hash of the items’ IDs, but avoid unnecessary memory and CPU overhead for multiple hash instances.
 
@@ -1099,7 +1096,7 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 7. Instantiates legacy [VM1](vm1.md) with the following context:
   * TBD
   * TBD
-  * TBD: need to defer this until txid is computed via `summarize`
+  * TBD: need to defer this until txid is computed via `finalize`
 8. TBD Alternatively: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.
 9. Defers execution of the legacy program. (TBD)
 
@@ -1187,7 +1184,7 @@ TODO: fix now that Value, Anchor, and Condition stacks are merged
     18 split
     [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey7..." checksig verify] defer] lock
     [jumpif:$unlock lock 1 jumpif:$end $unlock unlock ["txvm" txstack peek encode cat sha3 "pubkey8..." checksig verify] defer] lock
-    summarize
+    finalize
     "sig4..." satisfy
     "sig3..." satisfy
     "sig2..." satisfy
