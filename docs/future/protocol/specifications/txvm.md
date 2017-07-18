@@ -66,8 +66,7 @@ Same as above structurally, but changing the names so TxID is not confused with 
 
 ### Remove unnecessary "txvm" prefix
 
-We do not need a globally unique domain separator, we need in-protocol domain separators to disambiguate items (e.g. different kinds of tuples) 
-
+We do not need a globally unique domain separator, we need in-protocol domain separators to disambiguate items (e.g. different kinds of tuples)
 
 ### Legacy scripts and legacy asset IDs
 
@@ -407,6 +406,7 @@ The ID of this item is the canonical [Transaction ID](#transaction-id).
 ### Legacy Program
 
 TBD: encapsulates the context for the VM1 program to be executed after `finalize` when txid is set and all effects are known.
+
 
 ## Encoding
 
@@ -1137,7 +1137,7 @@ Fails execution when:
 
 ### Small integers
 
-Opcodes 0x00 to 0x20 (0 to 32 in decimal) encode “small integers”. 
+Opcodes 0x00 to 0x20 (0 to 32 in decimal) encode “small integers”.
 When such opcode is executed, a corresponding integer value is pushed to the data stack.
 
 ### Pushdata
