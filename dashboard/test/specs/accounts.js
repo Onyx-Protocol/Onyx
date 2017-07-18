@@ -1,5 +1,4 @@
 const uuid = require('uuid')
-    , assert = require('assert')
 
 describe('accounts', () => {
   describe('list view', () => {
@@ -97,7 +96,7 @@ describe('accounts', () => {
       browser.submitForm('.SearchBar form')
       browser.waitForVisible('.ListItem')
 
-      assert.equal(browser.elements('.ListItem').value.length, 2)
+      browser.elements('.ListItem').value.length.should.equal(2)
       browser.elements('.ListItem').value[0].getText().should.contain(id3)
       browser.elements('.ListItem').value[1].getText().should.contain(id1)
     })
