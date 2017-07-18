@@ -381,10 +381,6 @@ Items on the Command stack are currently executed [Programs](#program).
 
 Items on the Effect stack are [Inputs](#input), [Outputs](#output), [Reads](#read), [Nonces](#nonce), [Retirements](#retirement).
 
-### Issuance candidates stack
-
-Items on the Issuance candidates stack are [Issuance Candidates](#issuance-candidates).
-
 
 
 
@@ -785,11 +781,11 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 ### Lock
 
 1. Pops an item of type [Value](#Value) or [Proven Value](#proven-value), `value`, from the Entry stack.
-2. Pops an [anchor](#anchor) `anchor` from the Entry stack.
+2. Pops an [Anchor](#anchor) `a` from the Entry stack.
 3. Peeks at the top [Program](#program) `p` on the Command stack.
 4. Constructs a tuple `contract` of type [Contract](#contract), with:
   * `contract.program` equal to `p.program`,
-  * `contract.anchor` equal to `anchor`,
+  * `contract.anchor` equal to `a`,
   * `contract.value` equal to `value`.
 5. Computes the [ID](#item-id) `contractid` of `contract`.
 6. Pushes an [Output](#output) to the Effect stack with `contractid` equal to `contractid`.
@@ -965,14 +961,14 @@ Note: `IssueConfidential` authorized issuance of a certain asset commitment (wit
 2. Compute the [ID](#item-ids) of `anchor`, `anchorid`.
 3. Pushes a new anchor `newanchor` to the Entry stack, with `newanchor.value` set to `anchorid`.
 
-### Splitanchor
+### SplitAnchor
 
 1. Pops an [anchor](#anchor) `anchor` from the Entry stack.
 2. Compute the [ID](#item-ids) of `anchor`, `anchorid`.
 3. Pushes a new anchor `newanchor01` to the Entry stack, with `newanchor.value` set to `sha3(0x01 || anchorid)`.
 4. Pushes a new anchor `newanchor00` to the Entry stack, with `newanchor.value` set to `sha3(0x00 || anchorid)`.
 
-### Anchortransaction
+### AnchorTransaction
 
 Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 
@@ -1035,27 +1031,24 @@ TBD: Need compatibility layer to use legacy asset IDs in the Issuance Candidates
 
 ### Extend
 
-Fails if the extension flag is not set. (TBD: clarify)
+TBD: review this
 
-Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). Pops an integer `depth` from the data stack. Pops an item, `extension`, from the data stack. On the stack identified by `stackid`, takes the `n`th tuple and replaces it with a copy of that tuple with one additional field added, containing `extension`.
+1. Fails if the `extension` flag is `false`.
+2. Pops an integer `stackid` from the data stack, representing a [stack identifier](#stacks). 
+3. Pops an integer `depth` from the data stack.
+4. Pops an item, `extension`, from the data stack.
+5. On the stack identified by `stackid`, takes the `n`th tuple and replaces it with a copy of that tuple with one additional field added, containing `extension`.
 
 (TBD: be precise about how cost accounting works for this. Do we even still need this and in what form?)
 
 
-## Extension opcodes
+### Extension opcodes
 
-### NOPs 0–9
+All non-assigned opcodes are NOPs (no effect).
 
-Fails if the extension flag is not set. (TBD: clarify)
+Execution of a NOP fails the VM execution if the `extension` flag is `false`.
 
 Have no effect when executed.
-
-### Reserved
-
-TODO: do we really need reserved opcodes? All NOPs are prohibited w/o "extensible" flag turned on (that is for unknown tx versions).
-
-Causes the VM to halt and fail.
-
 
 
 ## Encoding opcodes
