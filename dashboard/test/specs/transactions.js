@@ -62,5 +62,25 @@ describe('transactions', () => {
       browser.click('button=Submit transaction')
       browser.getText('.ErrorBanner').should.contain('leaves assets to be taken without requiring payment')
     })
+
+    it('successfully submits a transaction', () => {
+      browser.waitForVisible('.AddActionDropdown button')
+
+      browser.click('.AddActionDropdown button')
+      browser.click('=Issue')
+      browser.setValue('.ActionItem:nth-child(1) .ObjectSelectorField.Asset input', 'gold')
+      browser.setValue('input[name="actions[0].amount"]', 1)
+
+      browser.click('.AddActionDropdown button')
+      browser.click('=Retire')
+      browser.setValue('.ActionItem:nth-child(2) .ObjectSelectorField.Asset input', 'gold')
+      browser.setValue('input[name="actions[1].amount"]', 1)
+
+      browser.click('button=Submit transaction')
+
+      browser.waitForVisible('.TransactionDetail')
+      browser.getText('.TransactionDetail ').should.contain('Submitted transaction. Create another?')
+    })
+
   })
 })

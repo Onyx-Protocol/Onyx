@@ -7,11 +7,12 @@ import {
   Section,
   RawJsonButton,
 } from 'features/shared/components'
+import componentClassNames from 'utility/componentClassNames'
 
 import { Summary } from './'
 import { buildTxInputDisplay, buildTxOutputDisplay } from 'utility/buildInOutDisplay'
 
-class Show extends BaseShow {
+class TransactionDetail extends BaseShow {
 
 
   render() {
@@ -24,7 +25,7 @@ class Show extends BaseShow {
         &nbsp;<code>{item.id}</code>
       </span>
 
-      view = <div>
+      view = <div className={componentClassNames(this)}>
         <PageTitle title={title} />
 
         <PageContent>
@@ -88,4 +89,4 @@ const mapDispatchToProps = ( dispatch ) => ({
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(Show)
+)(TransactionDetail)
