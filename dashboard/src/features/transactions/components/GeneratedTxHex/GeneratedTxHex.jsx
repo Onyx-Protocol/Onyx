@@ -3,13 +3,14 @@ import { connect } from 'react-redux'
 import { NotFound, PageContent, PageTitle } from 'features/shared/components'
 import styles from './GeneratedTxHex.scss'
 import { copyToClipboard } from 'utility/clipboard'
+import componentClassNames from 'utility/componentClassNames'
 
-class Generated extends React.Component {
+class GeneratedTxHex extends React.Component {
   render() {
     if (!this.props.hex) return <NotFound />
 
     return (
-      <div>
+      <div className={componentClassNames(this)}>
         <PageTitle title='Generated Transaction' />
 
         <PageContent>
@@ -39,4 +40,4 @@ export default connect(
     if (found) return {hex: found.hex}
     return {}
   }
-)(Generated)
+)(GeneratedTxHex)
