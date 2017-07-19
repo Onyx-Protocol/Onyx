@@ -1,4 +1,5 @@
 import React from 'react'
+import componentClassNames from 'utility/componentClassNames'
 import styles from './ErrorBanner.scss'
 
 class ErrorBanner extends React.Component {
@@ -7,7 +8,7 @@ class ErrorBanner extends React.Component {
     const message = error.chainMessage || error.message || error
 
     return (
-      <div className={styles.main}>
+      <div className={componentClassNames(this, styles.main)}>
         {this.props.title && <strong>{this.props.title}<br/></strong>}
 
         {message &&

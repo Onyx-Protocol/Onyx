@@ -28,7 +28,7 @@ class NewCertificate extends React.Component {
 
         <FormSection title='Certificate subject'>
           {subject.map((line, index) =>
-            <div key={index} className={styles.subjectField}>
+            <div key={index} className={`NewCertificateSubjectField ${styles.subjectField}`}>
               <SelectField title='Field Name' options={subjectFieldOptions} fieldProps={line.key} />
               <TextField title='Field Value' fieldProps={line.value} />
               <button

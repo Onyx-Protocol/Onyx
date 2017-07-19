@@ -1,4 +1,4 @@
-import { List, New, Show, GeneratedTxHex } from './components'
+import { List, New, TransactionDetail, GeneratedTxHex } from './components'
 import { makeRoutes } from 'features/shared'
 
 export default (store) => {
@@ -7,7 +7,7 @@ export default (store) => {
     'transaction',
     List,
     New,
-    Show,
+    TransactionDetail,
     null,
     {
       childRoutes: [

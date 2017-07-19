@@ -4,6 +4,7 @@ import { connect } from 'react-redux'
 import { TableList, PageTitle, PageContent } from 'features/shared/components'
 import { push, replace } from 'react-router-redux'
 import actions from 'features/accessControl/actions'
+import componentClassNames from 'utility/componentClassNames'
 import styles from './AccessControlList.scss'
 
 class AccessControlList extends React.Component {
@@ -20,7 +21,7 @@ class AccessControlList extends React.Component {
       {this.props.certs.map(item => <GrantListItem key={item.id} item={item} {...itemProps} />)}
     </TableList>
 
-    return (<div>
+    return (<div className={componentClassNames(this)}>
       <PageTitle title='Access control' />
 
       <PageContent>
@@ -40,7 +41,7 @@ class AccessControlList extends React.Component {
 
         {this.props.tokensSelected && <div>
           <button
-            className={`btn btn-primary ${styles.newBtn}`}
+            className={`NewTokenButton btn btn-primary ${styles.newBtn}`}
             onClick={this.props.showTokenCreate}>
               + New token
           </button>
