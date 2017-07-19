@@ -396,16 +396,25 @@ The ID of this item is the canonical [Transaction ID](#transaction-id).
 
 ### Legacy Output
 
-0. `sourceID`, a 32-byte ID
-1. `assetID`, a 32-byte asset ID
-2. `amount`, an int64
-3. `index`, an int64
-4. `program`, a string
-5. `data`, a string
+0. `type`, a string, "legacyoutput"
+1. `sourceID`, a 32-byte ID
+2. `assetID`, a 32-byte asset ID
+3. `amount`, an int64
+4. `index`, an int64
+5. `program`, a string
+6. `data`, a string
 
 ### Legacy Program
 
-TBD: encapsulates the context for the VM1 program to be executed after `finalize` when txid is set and all effects are known.
+0. `type`, a string, "vm1program"
+1. `amount`, int64, amount or nil for issuance candidate
+2. `assetid`, string, asset ID in the legacy output or issuance candidate
+3. `entryid`, string, ID of the input ID or issuance anchor
+4. `outputid`, string, the legacy output ID
+5. `index`, int64, an index of the input or issuance
+6. `anchorid`, string, set to input ID or issuance anchor
+7. `entrydata`, string, set to arbitrary annotation data
+8. `program`, string, a [VM1](vm1.md) bytecode
 
 
 ## Encoding
@@ -786,8 +795,8 @@ Note 2: program can be an empty string; in such case, steps 2-5 can be omitted a
 
 ### Defer
 
-1. Pops a [Program](#program) from the data stack.
-2. Pushes it to the Entry stack.
+1. Pops a [Program](#program) `p` from the data stack.
+2. Pushes `p` to the Entry stack.
 
 TODO: seems like `opcommand` should be `opdefer;opsatisfy`. We have too many entities here - programs on data stack, programs on entry stack and programs in the command stack.
 
@@ -795,8 +804,17 @@ TODO: seems like `opcommand` should be `opdefer;opsatisfy`. We have too many ent
 
 TBD: name "satisfy" no longer aligned with "conditions" because we now have "programs". Maybe rename to it `run`?
 
-1. Pops a [Program](#program) from the Entry stack
-2. Executes it using [command](#command) operation.
+1. Pops a [Program](#program) or [Legacy Program](#legacy-program) `p` from the Entry stack.
+2. If `p` is Program: executes it using [command](#command) operation.
+3. If `p` is Legacy Program: 
+    1. Pops a tuple of strings from the data stack as a list of arguments for the legacy program.
+    2. If the top item on the data stack is not a tuple, or there is at least one non-string element, fails execution. Empty tuple is allowed.
+    3. Pops `entrydata` string from the data stack.
+    4. Program is evaluated according to [VM1](vm1.md) specification, with missing context fields provided during execution as follows:
+        * `OP_MINTIME`: the highest mintime that specified on the Effect stack or zero if none are there. To avoid O(N^2) performance, TxVM implementation should keep track of the maximum mintime when `Mintime` tuple is pushed.
+        * `OP_MAXTIME`: the lowest maxtime that specified on the Effect stack or 0xffffffffffffff7f if none is there. To avoid O(N^2) performance, TxVM implementation should keep track of the minimum maxtime when `Maxtime` tuple is pushed.
+        * `TXDATA`:  TBD: read from the Effects stack
+        * `TXSIGHASH`: TBD: check if tx is finalized, return txid or fail if not finalized. 
 
 
 ## Record operations
@@ -1067,20 +1085,23 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 ### UnlockLegacy
 
 1. Pops a tuple of type [Legacy Output](#legacy-output) `legacy` from the data stack.
-2. Computes legacy Output ID. TBD: specifics
-3. Pushes an [Input](#input) to the Effect stack with `contractid` equal to the legacy output ID.
-4. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to the legacy output ID.
-5. Pushes `a` to the Entry stack.
-6. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
-7. Instantiates legacy [VM1](vm1.md) with the following context:
-  * `vm1.amount` set to the amount in the legacy output.
-  * `vm1.assetid` set to the asset ID in the legacy output.
-  * `vm1.entryid` set to the legacy output ID.
-  * `vm1.txid` left until evaluation
-  *
-  * TBD: need to defer this until txid is computed via `finalize`
-8. TBD Alternatively: parse and translate the old-style program `legacy.program`, which must be a specific format, into a new one `newprogram`.
-9. Defers execution of the legacy program. (TBD)
+2. Pops an `entrydata` string from the data stack.
+3. Computes legacy Output ID. TBD: specifics
+4. Pushes an [Input](#input) to the Effect stack with `contractid` equal to the legacy output ID.
+5. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to the legacy output ID.
+6. Pushes `a` to the Entry stack.
+7. If `entrydata` is not an empty string, pushes [Annotation](#annotation) with that data to the Effect stack.
+7. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
+8. Instantiates [legacy program](#legacy-program) `p` with the fields set as follows:
+  * `p.amount` set to the amount in the legacy output.
+  * `p.assetid` set to the asset ID in the legacy output.
+  * `p.entryid` set to the legacy output ID.
+  * `p.entrydata` set to `entrydata`.
+  * `p.index` set to the size of the Effect stack
+  * `p.anchorid` TBD
+  * `p.outputid` TBD
+9. Pushes `p` to the Entry stack (`defer`-like behavior)
+10. Defers execution of the legacy program. (TBD)
 
 ### IssueLegacy
 
