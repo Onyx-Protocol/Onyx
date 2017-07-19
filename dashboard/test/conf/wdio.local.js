@@ -138,7 +138,7 @@ exports.config = {
     ui: 'bdd',
     compilers: ['js:babel-register'],
     require: ['./test/helpers.js'],
-    timeout: 30000,
+    timeout: 60000,
   },
   //
   // =====
