@@ -8,7 +8,7 @@ class TutorialHeader extends React.Component {
   render() {
     if(!this.props.tutorial.isShowing || this.props.currentStep.component == 'TutorialModal'){
       return (
-        <div>
+        <div className={componentClassNames(this)}>
           {this.props.children}
         </div>
       )

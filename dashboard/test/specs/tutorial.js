@@ -22,6 +22,6 @@ describe('tutorial', () => {
     browser.getText('.TutorialHeader').should.contain('End tutorial')
     browser.scroll('a=End tutorial')
     browser.click('a=End tutorial')
-    browser.isExisting('.TutorialHeader').should.equal(false)
+    browser.getText('.TutorialHeader').should.equal('')
   })
 })
