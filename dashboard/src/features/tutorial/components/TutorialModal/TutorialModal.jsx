@@ -1,12 +1,13 @@
 import React from 'react'
 import styles from './TutorialModal.scss'
 import { Link } from 'react-router'
+import componentClassNames from 'utility/componentClassNames'
 
 class TutorialModal extends React.Component {
 
   render() {
     return (
-      <div className={styles.main}>
+      <div className={componentClassNames(this, styles.main)}>
         <div className={styles.backdrop} onClick={this.props.dismissTutorial}></div>
           <div className={styles.content}>
             <div className={styles.header}>
