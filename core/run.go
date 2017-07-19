@@ -95,6 +95,7 @@ func GeneratorRemote(client *rpc.Client) RunOption {
 		}
 		a.remoteGenerator = client
 		a.submitter = &txbuilder.RemoteGenerator{Peer: client}
+		a.replicator = fetch.New(client)
 	}
 }
 
@@ -200,6 +201,10 @@ func Run(
 		return nil, errors.New("no generator configured")
 	}
 
+	if a.replicator != nil {
+		go a.replicator.PollRemoteHeight(ctx)
+	}
+
 	if a.indexTxs {
 		go pinStore.Listen(ctx, query.TxPinName, dbURL)
 		a.indexer.RegisterAnnotator(a.assets.AnnotateTxs)
@@ -228,7 +233,6 @@ func Run(
 // becomes leader of the Core.
 func (a *API) lead(ctx context.Context) {
 	if !a.config.IsGenerator {
-		fetch.Init(ctx, a.remoteGenerator)
 		// If don't have any blocks, bootstrap from the generator's
 		// latest snapshot.
 		if a.chain.Height() == 0 {
@@ -273,7 +277,7 @@ func (a *API) lead(ctx context.Context) {
 		a.downloadingSnapshot = nil
 		a.downloadingSnapshotMu.Unlock()
 
-		go fetch.Fetch(ctx, a.chain, a.remoteGenerator, a.healthSetter("fetch"))
+		go a.replicator.Fetch(ctx, a.chain, a.healthSetter("fetch"))
 	}
 	go a.accounts.ProcessBlocks(ctx)
 	go a.assets.ProcessBlocks(ctx)

@@ -78,6 +78,7 @@ type API struct {
 	signer          func(context.Context, *legacy.Block) ([]byte, error)
 	requestLimits   []requestLimit
 	generator       *generator.Generator
+	replicator      *fetch.Replicator
 	remoteGenerator *rpc.Client
 	indexTxs        bool
 	internalSubj    pkix.Name

@@ -11,7 +11,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"chain/core/config"
-	"chain/core/fetch"
 	"chain/core/leader"
 	"chain/database/sinkdb"
 	"chain/errors"
@@ -82,7 +81,7 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		generatorHeight = localHeight
 		generatorFetched = now
 	} else {
-		fetchHeight, fetchTime := fetch.GeneratorHeight()
+		fetchHeight, fetchTime := a.replicator.PeerHeight()
 		// Because everything is asynchronous, it's possible for the localHeight to
 		// be higher than our cached generator height. In that case, display the
 		// local height as the generator height.
