@@ -45,6 +45,7 @@ type CleanFunc func(newTuple []string) error
 type EqualFunc func(a, b []string) bool
 
 type option struct {
+	set       bool
 	tupleSize int
 	cleanFunc CleanFunc
 	equalFunc EqualFunc
@@ -69,6 +70,7 @@ func (opts *Options) Err() error {
 // cleanFunc. Equality when adding and removing is determined by equalFunc.
 func (opts *Options) DefineSet(key string, tupleSize int, cleanFunc CleanFunc, equalFunc EqualFunc) {
 	opts.schema[key] = option{
+		set:       true,
 		tupleSize: tupleSize,
 		cleanFunc: cleanFunc,
 		equalFunc: equalFunc,
@@ -82,6 +84,7 @@ func (opts *Options) DefineSingle(key string, tupleSize int, cleanFunc CleanFunc
 	opts.schema[key] = option{
 		tupleSize: tupleSize,
 		cleanFunc: cleanFunc,
+		equalFunc: exactlyEqual,
 	}
 }
 
@@ -117,7 +120,7 @@ func (opts *Options) ListFunc(key string) func() [][]string {
 	opt, ok := opts.schema[key]
 	if !ok {
 		panic(fmt.Errorf("unknown config option %q", key))
-	} else if opt.equalFunc == nil {
+	} else if !opt.set {
 		panic(fmt.Errorf("config option %q is a scalar, not a set", key))
 	}
 
@@ -167,7 +170,7 @@ func (opts *Options) GetFunc(key string) func() []string {
 	opt, ok := opts.schema[key]
 	if !ok {
 		panic(fmt.Errorf("unknown config option %q", key))
-	} else if opt.equalFunc != nil {
+	} else if opt.set {
 		panic(fmt.Errorf("config option %q is a set, not a scalar", key))
 	}
 
@@ -236,8 +239,8 @@ func (opts *Options) add(key string, tup []string, onConflict func(new, existing
 	if opt.tupleSize != len(tup) {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
 	}
-	if opt.equalFunc == nil {
-		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead."))
+	if !opt.set {
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.", key))
 	}
 
 	// make a copy to avoid mutating tup
@@ -288,7 +291,7 @@ func (opts *Options) Set(key string, tup []string) sinkdb.Op {
 	if opt.tupleSize != len(tup) {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
 	}
-	if opt.equalFunc != nil {
+	if opt.set {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a set of tuples. Use corectl add instead."))
 	}
 
