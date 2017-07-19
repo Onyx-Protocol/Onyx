@@ -4,7 +4,7 @@ import "fmt"
 
 func opTuple(vm *vm) {
 	n := vm.popInt64(datastack)
-	var vals []value
+	var vals []item
 	for n > 0 {
 		v := vm.pop(datastack)
 		vals = append(vals, v)

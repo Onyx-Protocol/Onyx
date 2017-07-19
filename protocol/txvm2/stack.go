@@ -10,9 +10,9 @@ const (
 	numstacks = effectstack + 1
 )
 
-type stack []value
+type stack []item
 
-func (s *stack) peek(n int64) (value, bool) {
+func (s *stack) peek(n int64) (item, bool) {
 	index := int64(len(*s)) - 1 - n
 	if index < 0 || index >= int64(len(*s)) {
 		return nil, false
@@ -20,11 +20,11 @@ func (s *stack) peek(n int64) (value, bool) {
 	return (*s)[index], true
 }
 
-func (s *stack) push(v value) {
+func (s *stack) push(v item) {
 	*s = append(*s, v)
 }
 
-func (s *stack) pop() (value, bool) {
+func (s *stack) pop() (item, bool) {
 	res, ok := s.peek(0)
 	if ok {
 		*s = (*s)[:len(*s)-1]
@@ -32,12 +32,12 @@ func (s *stack) pop() (value, bool) {
 	return res, ok
 }
 
-func (s *stack) pushN(vals []value) {
+func (s *stack) pushN(vals []item) {
 	*s = append(*s, vals...)
 }
 
-func (s *stack) popN(n int64) []value {
-	var res []value
+func (s *stack) popN(n int64) []item {
+	var res []item
 	for n > 0 && len(*s) > 0 {
 		res = append(res, (*s)[len(*s)-1])
 		*s = (*s)[:len(*s)-1]
@@ -46,8 +46,8 @@ func (s *stack) popN(n int64) []value {
 	return res
 }
 
-func (s *stack) peekN(n int64) []value {
-	var res []value
+func (s *stack) peekN(n int64) []item {
+	var res []item
 	for n > 0 && n < int64(len(*s)) {
 		res = append(res, (*s)[int64(len(*s))-1-n])
 		n--

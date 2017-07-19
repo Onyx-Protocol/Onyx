@@ -62,7 +62,7 @@ func (t tuple) name() (string, bool) {
 	return string(b), true
 }
 
-func isNamed(v value, s string) bool {
+func isNamed(v item, s string) bool {
 	t, ok := v.(tuple)
 	if !ok {
 		return false
@@ -136,7 +136,7 @@ func mkRead(contractID vbytes) tuple {
 	return tuple{vbytes(readTuple), contractID}
 }
 
-func mkRecord(prog vbytes, data value) tuple {
+func mkRecord(prog vbytes, data item) tuple {
 	return tuple{vbytes(recordTuple), prog, data}
 }
 

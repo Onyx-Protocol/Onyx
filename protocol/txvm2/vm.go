@@ -100,7 +100,7 @@ func step(vm *vm) {
 
 // stack access
 
-func (vm *vm) push(stacknum int, v value) {
+func (vm *vm) push(stacknum int, v item) {
 	vm.stacks[stacknum].push(v)
 }
 
@@ -112,7 +112,7 @@ func (vm *vm) pushBool(stacknum int, b bool) {
 	vm.push(stacknum, n)
 }
 
-func (vm *vm) pop(stacknum int) value {
+func (vm *vm) pop(stacknum int) item {
 	res, ok := vm.stacks[stacknum].pop()
 	if !ok {
 		panic("stack underflow")
@@ -163,7 +163,7 @@ func (vm *vm) popBool(stacknum int) bool {
 	return true
 }
 
-func (vm *vm) peek(stacknum int64) value {
+func (vm *vm) peek(stacknum int64) item {
 	v, ok := vm.getStack(stacknum).peek(0)
 	if !ok {
 		panic("stack underflow")
@@ -171,7 +171,7 @@ func (vm *vm) peek(stacknum int64) value {
 	return v
 }
 
-func (vm *vm) peekN(stacknum, n int64) []value {
+func (vm *vm) peekN(stacknum, n int64) []item {
 	res := vm.getStack(stacknum).peekN(n)
 	if int64(len(res)) != n {
 		panic(fmt.Errorf("only %d of %d item(s) available", len(res), n))
