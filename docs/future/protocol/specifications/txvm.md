@@ -1086,7 +1086,8 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 
 1. Pops a tuple of type [Legacy Output](#legacy-output) `legacy` from the data stack.
 2. Pops an `entrydata` string from the data stack.
-3. Computes legacy Output ID. TBD: specifics
+3. Computes legacy Output ID. 
+    * TBD: specifics of the encoding per txgraph spec.
 4. Pushes an [Input](#input) to the Effect stack with `contractid` equal to the legacy output ID.
 5. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to the legacy output ID.
 6. Pushes `a` to the Entry stack.
@@ -1100,11 +1101,43 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
   * `p.index` is set to the size of the Effect stack.
   * `p.anchorid` is set to the ID of the anchor `a`.
   * `p.outputid` is set to the legacy output ID.
-10. Pushes `p` to the Entry stack (`defer`-like behavior)
+10. Pushes `p` to the Entry stack as per `defer` instruction.
 
 ### IssueLegacy
 
-TBD: Need compatibility layer to issue legacy asset IDs: specify the context for VM1 based on txvm tx.
+1. Pops int64 `amount` from the data stack.
+2. Pops string `blockchainid` from the data stack.
+3. Pops string `issprogram` from the data stack.
+4. Pops string `refdata` from the data stack.
+5. Pops string `entrydata` from the data stack.
+6. Verifies that `refdata` and `blockchainid` both have length of 32 bytes.
+7. Pops [Anchor](#anchor) `a` from the Entry stack.
+8. Computes legacy asset ID `aid`:
+
+        aid = SHA3-256(blockchainid || LEB128(1) || LEB128(len(issprogram)) || issprogram || refdata)
+
+9. Pushes a [value](#value) with amount `amount` and assetID `assetID` to Entry stack.
+10. Constructs a tuple `a2` of type [Anchor](#anchor) with `a2.value` equal to ID of the anchor `a`.
+11. Pushes `a2` to the Entry stack.
+12. If `entrydata` is not an empty string, pushes [Annotation](#annotation) with that data to the Effect stack.
+13. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
+14. Instantiates [legacy program](#legacy-program) `p` with the fields set as follows:
+  * `p.amount` is set to the `amount`.
+  * `p.assetid` is set to the computed asset ID `aid`.
+  * `p.entryid` is set to `a.value` (value of the consumed anchor).
+  * `p.entrydata` is set to `entrydata`.
+  * `p.index` is set to the size of the Effect stack.
+  * `p.anchorid` is set to the ID of the anchor `a` (`a.id` or `a2.value`).
+  * `p.outputid` is set to nil (not available in issuance context).
+15. Pushes `p` to the Entry stack as per `defer` instruction.
+
+TBD: this does not validate blockchainid, which is safe within a blockchain, but may cause confusion for some apps. 
+
+Some ways to address this:
+
+1. Construct a complete nonce with min/maxtime etc. Then, blockchainid will get validated as part of the nonce. But original legacy issuance does not always require a nonce: they could reuse a normal spend.
+2. Introduce a "blockchainid" constraint tuple. But we only need that because of legacy issuance. Non-legacy code may just use nonces, and there's no "real" need for blockchain id constraint anyway.
+3. Validate blockchain id within TxVM, not post-processing. Maybe we can have that just for the legacy asset ids, as a special case...
 
 ### LegacyIssuanceCandidate
 
