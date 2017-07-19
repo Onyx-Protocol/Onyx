@@ -16,7 +16,7 @@ import (
 
 const (
 	// Control flow
-	OpFail byte = iota
+	OpFail byte = 33 + iota // opcodes 0 through 32 reserved for small ints
 	OpPC
 	OpJumpIf
 
@@ -101,6 +101,7 @@ const (
 	OpRetire
 
 	// Confidentiality
+	OpWrapValue
 	OpMergeConfidential
 	OpSplitConfidential
 	OpProveAssetRange
@@ -121,23 +122,28 @@ const (
 	OpBefore
 	OpAfter
 
+	// Encoding
+	OpEncode
+	OpInt64
+	OpPushdata // xxx this is not the spec, will change
+
 	// Conversion
 	OpFinalize
 	OpUnlockLegacy
 	OpIssueLegacy
 	OpLegacyIssuanceCandidate
 	OpExtend
+)
 
-	// Encoding
-	OpEncode
-	OpInt64
-	OpPushdata // xxx this is not the spec, will change
-	Op0
-	MaxSmallInt = Op0 + 32
-	NumOps      = MaxSmallInt + 1
+const (
+	Op0         byte = 0
+	MaxSmallInt byte = 32
 )
 
 func init() {
+	if OpFail != MaxSmallInt+1 {
+		panic("OpFail is %d, should be %d", OpFail, MaxSmallInt+1)
+	}
 	opFuncs[OpSatisfy] = opSatisfy
 	opFuncs[OpCommand] = opCommand
 }

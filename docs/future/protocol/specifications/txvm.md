@@ -807,7 +807,7 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 
 1. Pops a [Program](#program) or [Legacy Program](#legacy-program) `p` from the Entry stack.
 2. If `p` is Program: executes it using [command](#command) operation.
-3. If `p` is Legacy Program: 
+3. If `p` is Legacy Program:
     1. Pops a tuple of strings from the data stack as a list of arguments for the legacy program.
     2. If the top item on the data stack is not a tuple, or there is at least one non-string element, fails execution. Empty tuple is allowed.
     3. Pops `entrydata` string from the data stack.
@@ -817,7 +817,7 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
         * `OP_MINTIME`: the highest mintime that specified on the Effect stack or zero if none are there. To avoid O(N^2) performance, TxVM implementation should keep track of the maximum mintime when `Mintime` tuple is pushed.
         * `OP_MAXTIME`: the lowest maxtime that specified on the Effect stack or 0xffffffffffffff7f if none is there. To avoid O(N^2) performance, TxVM implementation should keep track of the minimum maxtime when `Maxtime` tuple is pushed.
         * `TXDATA`:  TBD: read from the Effects stack
-        * `TXSIGHASH`: TBD: check if tx is finalized, return txid or fail if not finalized. 
+        * `TXSIGHASH`: TBD: check if tx is finalized, return txid or fail if not finalized.
 
 
 ## Record operations
@@ -913,6 +913,9 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
 1. Pops an item `value` of type [Value](#value) or [Proven Value](#proven-value) from the Entry stack.
 2. If `value` is a plaintext [Value](#value), compute a corresponding non-blinded value commitment.
 3. Pushes a [Retirement](#retirement) `r` to the Effect stack with `r.value` set to the value commitment.
+
+
+## Confidential value operations
 
 ### WrapValue
 
@@ -1068,6 +1071,40 @@ Moves an [anchor](#anchor) `anchor` from the Entry stack to the Effect stack.
 2. Pushes a [Mintime](#mintime) to the [Effect stack](#Effect-stack) with `mintime` equal to `min`.
 
 
+## Encoding opcodes
+
+### Encode
+
+Pops an item from the data stack. Pushes a string to the data stack which, if executed, would push that item to the data stack.
+
+* **Strings** are encoded as a [Pushdata](#Pushdata) instruction which would push that string to the data stack.
+* **Integers** in range 0..32 (inclusive) are encoded as the appropriate [small integer](#small-integer) opcode.
+* **Other integers** (above 32 or negative) are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint), followed by an [int64](#int64) instruction.
+* **Tuples** are encoded recursively as the encoding of each item in the tuple in reverse order, followed by the encoding of `len` where `len` is the length of the tuple, followed by the [tuple](#tuple) instruction.
+
+Encoded values (e.g. [Transaction Witness](#transaction-witness)) can be decoded outside TxVM using [Decoder mode](#decoder-mode).
+
+### Int64
+
+1. Pops a string `a` from the stack,
+2. decodes it as a [signed varint](#varint),
+3. pushes the result to the data stack as an Int64.
+
+Fails execution when:
+
+* `a` is not a valid varint encoding of an integer,
+* or the decoded `a` is greater than or equal to `2^63`.
+
+### Small integers
+
+Opcodes 0x00 to 0x20 (0 to 32 in decimal) encode “small integers”.
+When such opcode is executed, a corresponding integer value is pushed to the data stack.
+
+### Pushdata
+
+[TBD: use Keith's method for this]
+
+
 ## Conversion operations
 
 ### Finalize
@@ -1089,7 +1126,7 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 
 1. Pops a tuple of type [Legacy Output](#legacy-output) `legacy` from the data stack.
 2. Pops an `entrydata` string from the data stack.
-3. Computes legacy Output ID. 
+3. Computes legacy Output ID.
     * TBD: specifics of the encoding per txgraph spec.
 4. Pushes an [Input](#input) to the Effect stack with `contractid` equal to the legacy output ID.
 5. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to the legacy output ID.
@@ -1138,7 +1175,7 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
   * `p.program` is set to the `issprogram`.
 15. Pushes `p` to the Entry stack like `defer` instruction does.
 
-TBD: this does not validate blockchainid, which is safe within a blockchain, but may cause confusion for some apps. 
+TBD: this does not validate blockchainid, which is safe within a blockchain, but may cause confusion for some apps.
 
 Some ways to address this:
 
@@ -1178,8 +1215,6 @@ Some ways to address this:
   * `p.program` is set to the `issprogram`.
 15. Pushes `p` to the Entry stack like `defer` instruction does.
 
-
-
 ### Extend
 
 TBD: review this
@@ -1199,40 +1234,6 @@ All non-assigned opcodes are NOPs (no effect).
 Execution of a NOP fails the VM execution if the `extension` flag is `false`.
 
 Have no effect when executed.
-
-
-## Encoding opcodes
-
-### Encode
-
-Pops an item from the data stack. Pushes a string to the data stack which, if executed, would push that item to the data stack.
-
-* **Strings** are encoded as a [Pushdata](#Pushdata) instruction which would push that string to the data stack.
-* **Integers** in range 0..32 (inclusive) are encoded as the appropriate [small integer](#small-integer) opcode.
-* **Other integers** (above 32 or negative) are encoded as [Pushdata](#Pushdata) instructions that would push the integer serialized as a [varint](#varint), followed by an [int64](#int64) instruction.
-* **Tuples** are encoded recursively as the encoding of each item in the tuple in reverse order, followed by the encoding of `len` where `len` is the length of the tuple, followed by the [tuple](#tuple) instruction.
-
-Encoded values (e.g. [Transaction Witness](#transaction-witness)) can be decoded outside TxVM using [Decoder mode](#decoder-mode).
-
-### Int64
-
-1. Pops a string `a` from the stack,
-2. decodes it as a [signed varint](#varint),
-3. pushes the result to the data stack as an Int64.
-
-Fails execution when:
-
-* `a` is not a valid varint encoding of an integer,
-* or the decoded `a` is greater than or equal to `2^63`.
-
-### Small integers
-
-Opcodes 0x00 to 0x20 (0 to 32 in decimal) encode “small integers”.
-When such opcode is executed, a corresponding integer value is pushed to the data stack.
-
-### Pushdata
-
-[TBD: use Keith's method for this]
 
 
 ## Examples

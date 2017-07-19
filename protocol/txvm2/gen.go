@@ -53,12 +53,15 @@ func getOps() []string {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, txvmFile("ops.go"), nil, 0)
 	must(err)
-	if len(f.Decls) == 0 {
-		panic("ops.go has no top-level declarations")
+	var constDecl *ast.GenDecl
+	for _, d := range f.Decls {
+		if gendecl, ok := d.(*ast.GenDecl); ok && gendecl.Tok == token.CONST {
+			constDecl = gendecl
+			break
+		}
 	}
-	constDecl, ok := f.Decls[0].(*ast.GenDecl)
-	if !ok || constDecl.Tok != token.CONST {
-		panic("top-level declaration must be the list of opcode constants")
+	if constDecl == nil {
+		panic("ops.go has no top-level const declaration")
 	}
 	var ops []string
 	for _, spec := range constDecl.Specs {
