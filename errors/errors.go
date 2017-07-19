@@ -16,7 +16,7 @@ type wrapperError struct {
 	msg    string
 	detail []string
 	data   map[string]interface{}
-	stack  []StackFrame
+	stack  []uintptr
 	root   error
 }
 
