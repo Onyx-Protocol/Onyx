@@ -115,7 +115,7 @@ func TestSet(t *testing.T) {
 		t.Errorf("got %#v, want %#v", got, want)
 	}
 
-	must(t, sdb.Exec(ctx, opts.Remove("example", []string{"baz", "bax"})))
+	must(t, sdb.Exec(ctx, opts.Remove("example", nil)))
 	got, err = opts.List(ctx, "example")
 	must(t, err)
 	if got != nil {

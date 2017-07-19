@@ -84,7 +84,6 @@ func (opts *Options) DefineSingle(key string, tupleSize int, cleanFunc CleanFunc
 	opts.schema[key] = option{
 		tupleSize: tupleSize,
 		cleanFunc: cleanFunc,
-		equalFunc: exactlyEqual,
 	}
 }
 
@@ -307,15 +306,23 @@ func (opts *Options) Set(key string, tup []string) sinkdb.Op {
 	})
 }
 
-// Remove removes the provided tuple from the configuration option set
-// indicated by key.
+// Remove removes the provided tuple from the configuration option
+// indicated by key. If the option indicated by key takes a single
+// value, tup is unused, and the option's value is cleared regardless
+// of its current value.
 func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	opt, ok := opts.schema[key]
 	if !ok {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q undefined", key))
 	}
-	if opt.tupleSize != len(tup) {
+	if opt.set && opt.tupleSize != len(tup) {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
+	}
+
+	// If opt is defined to take a single value, just remove
+	// the key altogether.
+	if !opt.set {
+		return sinkdb.Delete(path.Join(sinkdbPrefix, key))
 	}
 
 	// make a copy to avoid mutating tup
