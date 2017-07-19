@@ -1091,17 +1091,16 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 5. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to the legacy output ID.
 6. Pushes `a` to the Entry stack.
 7. If `entrydata` is not an empty string, pushes [Annotation](#annotation) with that data to the Effect stack.
-7. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
-8. Instantiates [legacy program](#legacy-program) `p` with the fields set as follows:
-  * `p.amount` set to the amount in the legacy output.
-  * `p.assetid` set to the asset ID in the legacy output.
-  * `p.entryid` set to the legacy output ID.
-  * `p.entrydata` set to `entrydata`.
-  * `p.index` set to the size of the Effect stack
-  * `p.anchorid` TBD
-  * `p.outputid` TBD
-9. Pushes `p` to the Entry stack (`defer`-like behavior)
-10. Defers execution of the legacy program. (TBD)
+8. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
+9. Instantiates [legacy program](#legacy-program) `p` with the fields set as follows:
+  * `p.amount` is set to the amount in the legacy output.
+  * `p.assetid` is set to the asset ID in the legacy output.
+  * `p.entryid` is set to the legacy output ID.
+  * `p.entrydata` is set to `entrydata`.
+  * `p.index` is set to the size of the Effect stack.
+  * `p.anchorid` is set to the ID of the anchor `a`.
+  * `p.outputid` is set to the legacy output ID.
+10. Pushes `p` to the Entry stack (`defer`-like behavior)
 
 ### IssueLegacy
 
