@@ -30,11 +30,12 @@ func TestWrap(t *testing.T) {
 	}
 
 	stack := Stack(err1)
-	if len(stack) == 0 {
-		t.Fatalf("len(stack) = %v want > 0", len(stack))
+	frame, ok := stack.Next()
+	if !ok {
+		t.Fatalf("len(stack) = 0 want > 0")
 	}
-	if !strings.Contains(stack[0].String(), "TestWrap") {
-		t.Fatalf("first stack frame should contain \"TestWrap\": %v", stack[0].String())
+	if !strings.Contains(frame.Function, "TestWrap") {
+		t.Fatalf("first stack frame should contain \"TestWrap\": %v", frame.Function)
 	}
 
 	if !reflect.DeepEqual(Stack(err2), Stack(err1)) {

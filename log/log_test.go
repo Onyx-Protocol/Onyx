@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -288,7 +289,7 @@ func TestIsStackVal(t *testing.T) {
 		w bool
 	}{
 		{[]byte("foo"), true},
-		{[]errors.StackFrame{}, true},
+		{new(runtime.Frames), true},
 		{"line1", false},
 		{[...]byte{'x'}, false},
 		{[]string{}, false},
@@ -301,20 +302,26 @@ func TestIsStackVal(t *testing.T) {
 }
 
 func TestWriteRawStack(t *testing.T) {
+	pc := make([]uintptr, 10)
+	n := runtime.Callers(1, pc)
+	if n < 2 {
+		t.Fatalf("runtime.Callers failed")
+	}
+
 	cases := []struct {
 		v interface{}
 		w string
 	}{
 		{[]byte("foo\nbar"), "foo\nbar\n"},
-		{[]errors.StackFrame{{Func: "foo", File: "f.go", Line: 1}}, "f.go:1 - foo\n"},
+		{runtime.CallersFrames(pc[:2]), ": chain/log.TestWriteRawStack\n"},
 		{1, ""}, // int is not a valid stack val
 	}
 
 	for _, test := range cases {
 		var buf bytes.Buffer
 		writeRawStack(&buf, test.v)
-		if g := buf.String(); g != test.w {
-			t.Errorf("writeRawStack(%#v) = %q want %q", test.v, g, test.w)
+		if g := buf.String(); !strings.Contains(g, test.w) {
+			t.Errorf("writeRawStack(%#v) = %q, must contain %q", test.v, g, test.w)
 		}
 	}
 }
