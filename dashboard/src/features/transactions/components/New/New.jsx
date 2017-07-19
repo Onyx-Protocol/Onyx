@@ -105,7 +105,7 @@ class Form extends React.Component {
               remove={this.removeActionItem}
             />)}
 
-            <div className={`btn-group ${styles.addActionContainer} ${this.state.showDropdown && 'open'}`}>
+            <div className={`AddActionDropdown btn-group ${styles.addActionContainer} ${this.state.showDropdown && 'open'}`}>
               <DropdownButton
                 className={`btn btn-default ${styles.addAction}`}
                 id='input-dropdown-addon'

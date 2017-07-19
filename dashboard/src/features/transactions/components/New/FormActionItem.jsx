@@ -1,5 +1,6 @@
 import React from 'react'
 import { ErrorBanner, HiddenField, Autocomplete, JsonField, TextField, ObjectSelectorField } from 'features/shared/components'
+import componentClassNames from 'utility/componentClassNames'
 import styles from './FormActionItem.scss'
 
 const ISSUE_KEY = 'issue'
@@ -72,7 +73,7 @@ export default class ActionItem extends React.Component {
     if (type.error) classNames.push(styles.error)
 
     return (
-      <div className={classNames.join(' ')} ref={ref => this.scrollRef = ref}>
+      <div className={componentClassNames(this, classNames)} ref={ref => this.scrollRef = ref}>
         <HiddenField fieldProps={type} />
 
         <div className={styles.header}>
