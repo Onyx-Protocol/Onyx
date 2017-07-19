@@ -31,6 +31,6 @@ func opPushdata(vm *vm) {
 	if err != nil {
 		panic(err)
 	}
-	vm.push(datastack, data)
+	vm.push(datastack, vbytes(data))
 	vm.run.pc += n
 }

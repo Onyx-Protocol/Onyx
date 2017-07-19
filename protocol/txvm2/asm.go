@@ -174,13 +174,13 @@ func parseValue(tokens []token) ([]byte, int, error) {
 		if err != nil || token.lit[0] != 'x' || token.lit[1] != '"' || token.lit[len(token.lit)-1] != '"' {
 			return nil, 0, errors.New("bad hex literal " + token.lit)
 		}
-		return pushData(b), 1, nil
+		return encodePushdata(b), 1, nil
 	case stringTok:
 		s := token.lit[1 : len(token.lit)-1]
 		if token.lit[len(token.lit)-1] != '\'' {
 			return nil, 0, errors.New("bad text literal " + token.lit)
 		}
-		return pushData([]byte(s)), 1, nil
+		return encodePushdata([]byte(s)), 1, nil
 	case progOpenTok:
 		val, n, err := parseProgram(tokens[1:])
 		if err != nil {
@@ -204,7 +204,7 @@ func parseProgram(tokens []token) ([]byte, int, error) {
 		token := tokens[r]
 		switch token.typ {
 		case progCloseTok:
-			return pushData(p), r + 1, nil
+			return encodePushdata(p), r + 1, nil
 		default:
 			sub, n, err := parseStatement(tokens[r:])
 			if err != nil {
@@ -380,25 +380,11 @@ func scanFunc(s string, f func(rune) bool) (n int) {
 	return n
 }
 
-func pushInt64(n int64) []byte {
-	if 0 <= n && n <= 0xf {
-		return []byte{BaseInt + byte(n)}
-	} else {
-		return append(pushData(encVarint(n)), Varint)
+func pushInt64(num int64) []byte {
+	if 0 <= num && num <= int64(MaxSmallInt) {
+		return []byte{Op0 + byte(num)}
 	}
-}
-
-func encVarint(v int64) []byte {
-	buf := make([]byte, 10)
-	buf = buf[:binary.PutUvarint(buf, uint64(v))]
-	return buf
-}
-
-func pushData(buf []byte) (p []byte) {
-	n := uint64(len(buf)) + BaseData
-	pfx := make([]byte, 10)
-	pfx = pfx[:binary.PutUvarint(pfx, n)]
-	p = append(p, pfx...)
-	p = append(p, buf...)
-	return p
+	var buf [10]byte
+	n := binary.PutVarint(buf[:], num)
+	return append(encodePushdata(buf[:n]), OpInt64)
 }

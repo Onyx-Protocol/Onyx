@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+
+	"chain/math/checked"
 )
 
 //go:generate go run gen.go
@@ -142,7 +144,7 @@ const (
 
 func init() {
 	if OpFail != MaxSmallInt+1 {
-		panic("OpFail is %d, should be %d", OpFail, MaxSmallInt+1)
+		panic(fmt.Errorf("OpFail is %d, should be %d", OpFail, MaxSmallInt+1))
 	}
 	opFuncs[OpSatisfy] = opSatisfy
 	opFuncs[OpCommand] = opCommand
@@ -167,8 +169,18 @@ func decodePushdata(prog []byte) ([]byte, int64, error) {
 		return nil, 0, fmt.Errorf("pushdata: length %d exceeds maximum of %d", l, math.MaxInt64)
 	}
 	prog = prog[n:]
-	if len(prog) < l {
+	if uint64(len(prog)) < l {
 		return nil, 0, fmt.Errorf("pushdata: only %d of %d bytes available", len(prog), l)
 	}
-	return prog[:l], n + l, err
+	consumed, ok := checked.AddInt64(int64(n), int64(l))
+	if !ok {
+		return nil, 0, fmt.Errorf("pushdata: bytes consumed overflows int64")
+	}
+	return prog[:l], consumed, nil
+}
+
+func encodePushdata(data []byte) []byte {
+	buf := [12]byte{OpPushdata}
+	n := binary.PutUvarint(buf[1:], uint64(len(data)))
+	return buf[:1+n]
 }
