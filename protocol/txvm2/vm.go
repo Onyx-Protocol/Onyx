@@ -80,7 +80,11 @@ func step(vm *vm) {
 	case isSmallIntOp(opcode):
 		vm.push(datastack, vint64(opcode-Op0))
 	case int(opcode) >= len(opFuncs):
-		panic(fmt.Errorf("invalid opcode %d", opcode))
+		// NOP instruction
+		if !vm.extension {
+			panic(fmt.Errorf("invalid opcode %d", opcode))
+		}
+		return
 	default:
 		f := opFuncs[opcode]
 		if f == nil {

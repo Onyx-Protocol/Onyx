@@ -24,26 +24,26 @@ const (
 )
 
 var namedTuples = map[string][]int{
-	anchorTuple:          []int{bytestype},
-	annotationTuple:      []int{bytestype},
-	assetDefinitionTuple: []int{bytestype},
-	contractTuple:        []int{tupletype, bytestype, bytestype}, // TODO: be more specific about the field types
-	inputTuple:           []int{bytestype},
-	legacyOutputTuple:    []int{bytestype, bytestype, int64type, int64type, bytestype, bytestype}, // xxx legacy outputs have no type string??
-	maxtimeTuple:         []int{int64type},
-	mintimeTuple:         []int{int64type},
-	nonceTuple:           []int{bytestype, int64type, int64type, bytestype},
-	outputTuple:          []int{bytestype},
-	programTuple:         []int{bytestype},
-	provenValueTuple:     []int{tupletype, tupletype},
-	readTuple:            []int{bytestype},
-	recordTuple:          []int{bytestype, 0}, // 0 means "any value"
-	retirementTuple:      []int{},             // xxx
-	transactionTuple:     []int{int64type, int64type, bytestype},
-	transactionIDTuple:   []int{bytestype},
-	unprovenValueTuple:   []int{tupletype},
-	valueCommitmentTuple: []int{bytestype, bytestype},
-	valueTuple:           []int{int64type, bytestype},
+	anchorTuple:          {bytestype},
+	annotationTuple:      {bytestype},
+	assetDefinitionTuple: {bytestype},
+	contractTuple:        {tupletype, bytestype, bytestype}, // TODO: be more specific about the field types
+	inputTuple:           {bytestype},
+	legacyOutputTuple:    {bytestype, bytestype, int64type, int64type, bytestype, bytestype}, // xxx legacy outputs have no type string??
+	maxtimeTuple:         {int64type},
+	mintimeTuple:         {int64type},
+	nonceTuple:           {bytestype, int64type, int64type, bytestype},
+	outputTuple:          {bytestype},
+	programTuple:         {bytestype},
+	provenValueTuple:     {tupletype, tupletype},
+	readTuple:            {bytestype},
+	recordTuple:          {bytestype, 0}, // 0 means "any value"
+	retirementTuple:      {},             // xxx
+	transactionTuple:     {int64type, int64type, bytestype},
+	transactionIDTuple:   {bytestype},
+	unprovenValueTuple:   {tupletype},
+	valueCommitmentTuple: {bytestype, bytestype},
+	valueTuple:           {int64type, bytestype},
 }
 
 func (t tuple) name() (string, bool) {

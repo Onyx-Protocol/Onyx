@@ -1,5 +1,11 @@
 package txvm2
 
+import (
+	"encoding/binary"
+	"fmt"
+	"math"
+)
+
 //go:generate go run gen.go
 
 // This file is used as input to gen.go, which is used by "go
@@ -125,7 +131,7 @@ const (
 	// Encoding
 	OpEncode
 	OpInt64
-	OpPushdata
+	OpPushdata // xxx this is not the spec, will change
 	Op0
 	MaxSmallInt = Op0 + 32
 	NumOps      = MaxSmallInt + 1
@@ -140,11 +146,23 @@ func isSmallIntOp(op byte) bool {
 	return op >= Op0 && op <= MaxSmallInt
 }
 
-func decodeInst(prog []byte) (opcode byte, data []byte, delta int64) {
-	opcode = prog[0]
-	delta = 1
-	switch opcode {
-	// xxx
+// prog is the slice beginning right after a pushdata instruction.
+// returns the data parsed and the number of bytes consumed (counting
+// the length prefix and the data).
+func decodePushdata(prog []byte) ([]byte, int64, error) {
+	l, n := binary.Uvarint(prog)
+	if n == 0 {
+		return nil, 0, fmt.Errorf("pushdata: unexpected end of input reading length prefix")
 	}
-	return // xxx
+	if n < 0 {
+		return nil, 0, fmt.Errorf("pushdata: length overflow")
+	}
+	if l > math.MaxInt64 {
+		return nil, 0, fmt.Errorf("pushdata: length %d exceeds maximum of %d", l, math.MaxInt64)
+	}
+	prog = prog[n:]
+	if len(prog) < l {
+		return nil, 0, fmt.Errorf("pushdata: only %d of %d bytes available", len(prog), l)
+	}
+	return prog[:l], n + l, err
 }

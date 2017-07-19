@@ -27,20 +27,10 @@ func smallInt(n vint64) func(*vm) {
 
 // xxx spec is not yet written!
 func opPushdata(vm *vm) {
-	l, n := binary.Varint(vm.run.prog[vm.run.pc:]) // should this be uvarint?
-	if n == 0 {
-		panic("pushdata: unexpected end of input reading length prefix")
+	data, n, err := decodePushdata(vm.run.prog[vm.run.pc:])
+	if err != nil {
+		panic(err)
 	}
-	if n < 0 {
-		panic("pushdata: length overflow")
-	}
-	if l < 0 {
-		panic(fmt.Errorf("pushdata: negative length %d", l))
-	}
-	vm.run.pc += int64(n)
-	if vm.run.pc+l > int64(len(vm.run.prog)) {
-		panic("pushdata: unexpected end of input reading data")
-	}
-	vm.push(datastack, vbytes(vm.run.prog[vm.run.pc:vm.run.pc+l]))
-	vm.run.pc += l
+	vm.push(datastack, data)
+	vm.run.pc += n
 }
