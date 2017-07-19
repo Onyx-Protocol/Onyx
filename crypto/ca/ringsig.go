@@ -155,3 +155,29 @@ func rsNextE(msghash []byte, i uint64, B []ecmath.Point, z ecmath.Scalar, P []ec
 	}
 	return rsEHash(R, msghash, i, w)
 }
+
+func (rs *RingSignature) Bytes() []byte {
+	res := make([]byte, 0, 32*(1+len(rs.s)))
+	res = append(res, rs.e[:]...)
+	for _, s := range rs.s {
+		res = append(res, s[:]...)
+	}
+	return res
+}
+
+func (rs *RingSignature) Decode(b []byte) bool {
+	if len(b) < 64 || len(b)%32 != 0 {
+		return false
+	}
+
+	copy(rs.e[:], b[:32])
+
+	n := len(b)/32 - 1
+	rs.s = make([]ecmath.Scalar, n)
+
+	for i := 0; i < n; i++ {
+		copy(rs.s[i][:], b[32*(i+1):])
+	}
+
+	return true
+}

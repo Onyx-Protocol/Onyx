@@ -148,6 +148,7 @@ func init() {
 	}
 	opFuncs[OpSatisfy] = opSatisfy
 	opFuncs[OpCommand] = opCommand
+	opFuncs[OpProveAssetRange] = opProveAssetRange
 }
 
 func isSmallIntOp(op byte) bool {

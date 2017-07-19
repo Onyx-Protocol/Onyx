@@ -938,8 +938,8 @@ Note: merging two proven values may merge two distinct asset IDs producing an un
 
 1. Pops an item `value` of type [Value](#value), [Proven Value](#proven-value) or [Unproven Value](#unproven-value) from the Entry stack.
 2. Pops a [Value Commitment](#value-commitment) `vc` from the Entry stack.
-3. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `vc`.
-4. Pushes an [Unproven Value](#unproven-value) with `valuecommitment` equal to `value.valuecommitment - vc`.
+3. Pushes an [Unproven Value](#unproven-value) to the Entry stack with `valuecommitment` equal to `vc`.
+4. Pushes an [Unproven Value](#unproven-value) to the Entry stack with `valuecommitment` equal to `value.valuecommitment - vc`.
 
 ### ProveAssetRange
 

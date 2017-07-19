@@ -3,9 +3,9 @@ package ca
 import "chain/crypto/ed25519/ecmath"
 
 type AssetRangeProof struct {
-	commitments []*AssetCommitment
-	signature   *RingSignature
-	id          *AssetID // nil means "confidential"
+	Commitments []*AssetCommitment
+	Signature   *RingSignature
+	AssetID     *AssetID // nil means "confidential"
 }
 
 // CreateAssetRangeProof creates a confidential asset range proof. The
@@ -18,22 +18,22 @@ func CreateAssetRangeProof(msg []byte, ac []*AssetCommitment, acPrime *AssetComm
 	p.Sub(&cPrime, &c)
 	rs := CreateRingSignature(msghash, []ecmath.Point{G, J}, P, j, p)
 	return &AssetRangeProof{
-		commitments: ac,
-		signature:   rs,
+		Commitments: ac,
+		Signature:   rs,
 	}
 }
 
 func (arp *AssetRangeProof) Validate(msg []byte, acPrime *AssetCommitment) bool {
-	msghash := arpMsgHash(msg, arp.commitments, acPrime)
-	P := arpPubkeys(arp.commitments, acPrime)
-	if !arp.signature.Validate(msghash, []ecmath.Point{G, J}, P) {
+	msghash := arpMsgHash(msg, arp.Commitments, acPrime)
+	P := arpPubkeys(arp.Commitments, acPrime)
+	if !arp.Signature.Validate(msghash, []ecmath.Point{G, J}, P) {
 		return false
 	}
-	if arp.id != nil {
+	if arp.AssetID != nil {
 		if !acPrime[1].ConstTimeEqual(&ecmath.ZeroPoint) {
 			return false
 		}
-		assetPoint := CreateAssetPoint(arp.id)
+		assetPoint := CreateAssetPoint(arp.AssetID)
 		return acPrime.H().ConstTimeEqual((*ecmath.Point)(&assetPoint))
 	}
 	return true

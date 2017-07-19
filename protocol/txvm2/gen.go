@@ -35,7 +35,7 @@ func main() {
 	fmt.Fprint(out, "var opFuncs = [...]func(*vm){\n")
 	for _, op := range ops {
 		switch op {
-		case "OpCommand", "OpSatisfy":
+		case "OpCommand", "OpSatisfy", "OpProveAssetRange":
 			// do nothing - avoid initialization loop
 		default:
 			fmt.Fprintf(out, "\t%s: %c%s,\n", op, unicode.ToLower(rune(op[0])), op[1:])

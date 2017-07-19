@@ -45,7 +45,7 @@ func EncryptOutput(assetID AssetID, value uint64, N uint64, plaintext []byte, q 
 }
 
 func (eo *EncryptedOutput) Decrypt(arp *AssetRangeProof, evef *EncryptedValue, eaec *EncryptedAssetID, aek AssetKey, vek ValueKey, idek DataKey) (assetID AssetID, value uint64, c, f ecmath.Scalar, plaintext []byte, ok bool) {
-	if arp.id == nil {
+	if arp.AssetID == nil {
 		// Confidential asset range proof
 		assetID, c, ok = eaec.Decrypt(eo.ac, aek)
 		if !ok {
@@ -53,7 +53,7 @@ func (eo *EncryptedOutput) Decrypt(arp *AssetRangeProof, evef *EncryptedValue, e
 		}
 	} else {
 		// Non-confidential asset range proof
-		assetID = *arp.id
+		assetID = *arp.AssetID
 		c = ecmath.Zero
 	}
 

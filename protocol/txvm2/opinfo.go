@@ -220,7 +220,6 @@ var opFuncs = [...]func(*vm){
 	OpWrapValue:               opWrapValue,
 	OpMergeConfidential:       opMergeConfidential,
 	OpSplitConfidential:       opSplitConfidential,
-	OpProveAssetRange:         opProveAssetRange,
 	OpDropAssetCommitment:     opDropAssetCommitment,
 	OpProveAssetID:            opProveAssetID,
 	OpProveAmount:             opProveAmount,

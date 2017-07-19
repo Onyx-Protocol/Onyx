@@ -1,12 +1,16 @@
 package txvm2
 
+// TODO: define typesafe structs for these named tuple types and
+// codegen the name mappings and encoding to/from txvm tuples
+
 const (
 	anchorTuple          = "anchor"
 	annotationTuple      = "annotation"
+	assetCommitmentTuple = "assetcommitment"
 	assetDefinitionTuple = "assetdefinition"
 	contractTuple        = "contract"
 	inputTuple           = "input"
-	legacyOutputTuple    = "legacyOutput"
+	legacyOutputTuple    = "legacyoutput"
 	maxtimeTuple         = "maxtime"
 	mintimeTuple         = "mintime"
 	nonceTuple           = "nonce"
@@ -26,10 +30,11 @@ const (
 var namedTuples = map[string][]int{
 	anchorTuple:          {bytestype},
 	annotationTuple:      {bytestype},
+	assetCommitmentTuple: {bytestype, bytestype},
 	assetDefinitionTuple: {bytestype},
 	contractTuple:        {tupletype, bytestype, bytestype}, // TODO: be more specific about the field types
 	inputTuple:           {bytestype},
-	legacyOutputTuple:    {bytestype, bytestype, int64type, int64type, bytestype, bytestype}, // xxx legacy outputs have no type string??
+	legacyOutputTuple:    {bytestype, bytestype, int64type, int64type, bytestype, bytestype},
 	maxtimeTuple:         {int64type},
 	mintimeTuple:         {int64type},
 	nonceTuple:           {bytestype, int64type, int64type, bytestype},
@@ -89,6 +94,10 @@ func mkAnchor(val vbytes) tuple {
 
 func mkAnnotation(data vbytes) tuple {
 	return tuple{vbytes(annotationTuple), data}
+}
+
+func mkAssetCommitment(h, c vbytes) tuple {
+	return tuple{vbytes(assetCommitmentTuple), h, c}
 }
 
 func mkAssetDefinition(prog vbytes) tuple {
@@ -155,6 +164,14 @@ func anchorValue(anchor tuple) vbytes {
 	return anchor[1].(vbytes)
 }
 
+func assetCommitmentAssetPoint(ac tuple) vbytes {
+	return ac[1].(vbytes)
+}
+
+func assetCommitmentBlindingPoint(ac tuple) vbytes {
+	return ac[2].(vbytes)
+}
+
 func legacyOutputAmount(out tuple) vint64 {
 	return out[3].(vint64) // xxx if legacy outputs have no type string, this is off by one
 }
@@ -181,6 +198,10 @@ func legacyOutputSourceID(out tuple) vbytes {
 
 func programProgram(prog tuple) vbytes {
 	return prog[1].(vbytes)
+}
+
+func provenValueAssetCommitment(pv tuple) tuple {
+	return pv[2].(tuple)
 }
 
 func provenValueValueCommitment(pv tuple) tuple {

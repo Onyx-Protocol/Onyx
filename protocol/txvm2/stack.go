@@ -46,6 +46,15 @@ func (s *stack) popN(n int64) []value {
 	return res
 }
 
+func (s *stack) peekN(n int64) []value {
+	var res []value
+	for n > 0 && n < int64(len(*s)) {
+		res = append(res, (*s)[int64(len(*s))-1-n])
+		n--
+	}
+	return res
+}
+
 func (s *stack) isEmpty() bool {
 	return len(*s) == 0
 }

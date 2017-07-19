@@ -60,7 +60,7 @@ func Assemble(src string) ([]byte, error) {
 	return parse(tokens)
 }
 
-func Disassemble(prog []byte) string {
+func Disassemble(prog []byte) (string, error) {
 	var result []string
 	for pc := int64(0); pc < int64(len(prog)); {
 		opcode := prog[pc]
@@ -73,7 +73,7 @@ func Disassemble(prog []byte) string {
 		case opcode == OpPushdata:
 			data, n, err := decodePushdata(prog[pc:])
 			if err != nil {
-				// xxx
+				return "", err
 			}
 			pc += n
 			var s string
@@ -81,7 +81,7 @@ func Disassemble(prog []byte) string {
 			case pc < int64(len(prog)) && prog[pc] == OpInt64:
 				num, n2 := binary.Varint(data)
 				if n2 != len(data) {
-					// xxx error
+					return "", fmt.Errorf("wrong length for encoded varint (%d vs. %d)", n2, len(data))
 				}
 				s = fmt.Sprintf("%d", num)
 			case strings.IndexFunc(string(data), isUnprintable) < 0:
@@ -101,7 +101,7 @@ func Disassemble(prog []byte) string {
 	// TODO: map op patterns to "composite" abbrevs
 	// TODO: map "... tuple" to "{...}"
 	// TODO: map some strings to disassembled program literals
-	return strings.Join(result, " ")
+	return strings.Join(result, " "), nil
 }
 
 func isUnprintable(r rune) bool {
