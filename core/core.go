@@ -178,8 +178,6 @@ func (a *API) configure(ctx context.Context, req configureRequest) error {
 			ops = append(ops, a.options.Remove(update.Key, update.Tuple))
 		case "set":
 			ops = append(ops, a.options.Set(update.Key, update.Tuple))
-		case "unset":
-			ops = append(ops, a.options.Unset(update.Key))
 		default:
 			return errors.WithDetailf(config.ErrConfigOp, "Unknown config operation %q.", update.Op)
 		}

@@ -314,9 +314,6 @@ func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	if opt.tupleSize != len(tup) {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
 	}
-	if opt.equalFunc == nil {
-		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl unset instead."))
-	}
 
 	// make a copy to avoid mutating tup
 	cleaned := make([]string, len(tup))
@@ -346,19 +343,6 @@ func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 		sinkdb.IfNotModified(ver),
 		sinkdb.Set(path.Join(sinkdbPrefix, key), modified),
 	)
-}
-
-// Unset clears any value from the single-value configuration option
-// indicated by key.
-func (opts *Options) Unset(key string) sinkdb.Op {
-	opt, ok := opts.schema[key]
-	if !ok {
-		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q undefined", key))
-	}
-	if opt.equalFunc != nil {
-		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a set. Use corectl rm instead."))
-	}
-	return sinkdb.Delete(path.Join(sinkdbPrefix, key))
 }
 
 func tupleIndex(set []*configpb.ValueTuple, search []string, equal func(a, b []string) bool) int {
