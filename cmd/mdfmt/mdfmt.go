@@ -9,15 +9,15 @@ import (
 )
 
 func main() {
-	heading := 0 // current heading level
-	blank := 0   // number of pending blank lines
+	heading := 0   // current heading level
+	blank := false // whether there are pending blank lines
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimRightFunc(line, unicode.IsSpace)
 		if line == "" {
-			blank++
+			blank = true
 			continue
 		}
 		lineHeading := countPrefix(line, "#")
@@ -29,13 +29,13 @@ func main() {
 				}
 			}
 			fmt.Println(line)
-			blank = 0
+			blank = false
 			heading = lineHeading
 			continue
 		}
-		if blank > 0 {
+		if blank {
 			fmt.Print("\n")
-			blank = 0
+			blank = false
 		}
 		fmt.Println(line)
 	}
