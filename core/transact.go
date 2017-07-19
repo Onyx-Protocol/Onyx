@@ -18,7 +18,7 @@ import (
 	"chain/protocol/bc/legacy"
 )
 
-var defaultTxTTL = 5 * time.Minute
+const defaultTxTTL = 5 * time.Minute
 
 func (a *API) actionDecoder(action string) (func([]byte) (txbuilder.Action, error), bool) {
 	var decoder func([]byte) (txbuilder.Action, error)

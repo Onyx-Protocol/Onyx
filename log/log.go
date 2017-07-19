@@ -17,8 +17,6 @@ import (
 	"chain/errors"
 )
 
-const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
-
 // context key type
 type key int
 
@@ -26,6 +24,13 @@ var (
 	logWriterMu sync.Mutex // protects the following
 	logWriter   io.Writer  = os.Stdout
 	procPrefix  []byte     // process-global prefix; see SetPrefix vs AddPrefixkv
+
+	// context key for log line prefixes
+	prefixKey key = 0
+)
+
+const (
+	rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
 	// pairDelims contains a list of characters that may be used as delimeters
 	// between key-value pairs in a log entry. Keys and values will be quoted or
@@ -35,9 +40,6 @@ var (
 	// http://answers.splunk.com/answers/143368/default-delimiters-for-key-value-extraction.html
 	pairDelims      = " ,;|&\t\n\r"
 	illegalKeyChars = pairDelims + `="`
-
-	// context key for log line prefixes
-	prefixKey key = 0
 )
 
 // Conventional key names for log entries

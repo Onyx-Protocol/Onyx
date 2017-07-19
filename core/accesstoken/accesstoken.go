@@ -17,7 +17,10 @@ import (
 	"chain/errors"
 )
 
-const tokenSize = 32
+const (
+	tokenSize    = 32
+	defaultLimit = 100
+)
 
 var (
 	// ErrBadID is returned when Create is called on an invalid id string.
@@ -26,8 +29,6 @@ var (
 	ErrDuplicateID = errors.New("duplicate access token ID")
 	// ErrBadType is returned when Create is called with a bad type.
 	ErrBadType = errors.New("type must be client or network")
-
-	defaultLimit = 100
 
 	// validIDRegexp checks that all characters are alphumeric, _ or -.
 	// It also must have a length of at least 1.
