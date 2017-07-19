@@ -414,7 +414,8 @@ The ID of this item is the canonical [Transaction ID](#transaction-id).
 5. `index`, int64, an index of the input or issuance
 6. `anchorid`, string, set to input ID or issuance anchor
 7. `entrydata`, string, set to arbitrary annotation data
-8. `program`, string, a [VM1](vm1.md) bytecode
+8. `issuancekey`, string, set to nil or an issuance key for [issuance candidate](#issuance-candidate)
+9. `program`, string, a [VM1](vm1.md) bytecode
 
 
 ## Encoding
@@ -811,6 +812,8 @@ TBD: name "satisfy" no longer aligned with "conditions" because we now have "pro
     2. If the top item on the data stack is not a tuple, or there is at least one non-string element, fails execution. Empty tuple is allowed.
     3. Pops `entrydata` string from the data stack.
     4. Program is evaluated according to [VM1](vm1.md) specification, with missing context fields provided during execution as follows:
+        * `expansion` flag is set to false,
+        * `OP_VERIFYISSUANCEKEY`: fails execution if `p.issuancekey` is nil, otherwise check if top item on the data stack equals that issuance key,
         * `OP_MINTIME`: the highest mintime that specified on the Effect stack or zero if none are there. To avoid O(N^2) performance, TxVM implementation should keep track of the maximum mintime when `Mintime` tuple is pushed.
         * `OP_MAXTIME`: the lowest maxtime that specified on the Effect stack or 0xffffffffffffff7f if none is there. To avoid O(N^2) performance, TxVM implementation should keep track of the minimum maxtime when `Maxtime` tuple is pushed.
         * `TXDATA`:  TBD: read from the Effects stack
@@ -998,7 +1001,7 @@ This opcode proves that a given cleartext asset ID is stored within a given [Ass
 3. Computes the [ID](#item-ids) `assetid` of an [asset definition](#asset-definition) tuple with `issuanceprogram` set to `p.program`.
 4. Pushes an [Issuance Candidate](#issuance-candidate) to Entry stack with the `assetid` and `issuancekey`.
 
-TBD: this is incompatible with existing asset IDs. We need either support for legacy asset definitions, or another opcode `LegacyIssuanceCandidate` to create ICs from legacy asset ids.
+Note: this is not compatible with existing asset IDs (based on [VM1](vm1.md)). See [LegacyIssuanceCandidate](#legacyissuancecandidate) for confidential issuance of legacy asset IDs.
 
 ### IssueConfidential
 
@@ -1101,7 +1104,9 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
   * `p.index` is set to the size of the Effect stack.
   * `p.anchorid` is set to the ID of the anchor `a`.
   * `p.outputid` is set to the legacy output ID.
-10. Pushes `p` to the Entry stack as per `defer` instruction.
+  * `p.issuancekey` is set to nil.
+  * `p.program` is set to the `legacy.program`.
+10. Pushes `p` to the Entry stack like `defer` instruction does.
 
 ### IssueLegacy
 
@@ -1129,7 +1134,9 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
   * `p.index` is set to the size of the Effect stack.
   * `p.anchorid` is set to the ID of the anchor `a` (`a.id` or `a2.value`).
   * `p.outputid` is set to nil (not available in issuance context).
-15. Pushes `p` to the Entry stack as per `defer` instruction.
+  * `p.issuancekey` is set to nil.
+  * `p.program` is set to the `issprogram`.
+15. Pushes `p` to the Entry stack like `defer` instruction does.
 
 TBD: this does not validate blockchainid, which is safe within a blockchain, but may cause confusion for some apps. 
 
@@ -1141,7 +1148,37 @@ Some ways to address this:
 
 ### LegacyIssuanceCandidate
 
-TBD: Need compatibility layer to use legacy asset IDs in the Issuance Candidates: also, specify necessary context for VM1 based on txvm tx.
+1. Pops string `blockchainid` from the data stack.
+2. Pops string `issprogram` from the data stack.
+3. Pops string `refdata` from the data stack.
+4. Pops string `entrydata` from the data stack.
+5. Pops string `y` from the data stack.
+6. Verifies that `refdata` and `blockchainid` both have length of 32 bytes.
+7. Pops [Anchor](#anchor) `a` from the Entry stack.
+8. Computes legacy asset ID `aid`:
+
+        aid = SHA3-256(blockchainid || LEB128(1) || LEB128(len(issprogram)) || issprogram || refdata)
+
+9. Pushes a [value](#value) with amount `amount` and assetID `assetID` to Entry stack.
+10. Constructs a tuple `a2` of type [Anchor](#anchor) with `a2.value` equal to ID of the anchor `a`.
+11. Pushes `a2` to the Entry stack.
+12. If `entrydata` is not an empty string, pushes [Annotation](#annotation) with that data to the Effect stack.
+13. Constructs [Issuance Candidate](#issuance-candidate) tuple `ic` and pushes it to the Entry stack:
+    * `ic.assetid` set to the computed `aid`
+    * `ic.issuancekey` set to the `y`
+14. Instantiates [legacy program](#legacy-program) `p` with the fields set as follows:
+  * `p.amount` is set to nil (not available for confidential issuance).
+  * `p.assetid` is set to the computed asset ID `aid`.
+  * `p.entryid` is set to `a.value` (value of the consumed anchor).
+  * `p.entrydata` is set to `entrydata`.
+  * `p.index` is set to the size of the Effect stack.
+  * `p.anchorid` is set to the ID of the anchor `a` (`a.id` or `a2.value`).
+  * `p.outputid` is set to nil (not available in issuance context).
+  * `p.issuancekey` is set to `y`.
+  * `p.program` is set to the `issprogram`.
+15. Pushes `p` to the Entry stack like `defer` instruction does.
+
+
 
 ### Extend
 
