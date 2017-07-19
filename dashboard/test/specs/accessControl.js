@@ -20,9 +20,8 @@ describe('access control', () => {
     })
 
     it('shows a new token form ', () => {
-      browser.waitForVisible('.AccessControlList .btn-primary')
-      browser.scroll('.AccessControlList .btn-primary')
-      browser.click('.AccessControlList .btn-primary')
+      browser.waitForVisible('.NewTokenButton')
+      browser.click('.NewTokenButton')
       browser.waitForVisible('.FormContainer')
       browser.getUrl().should.contain('/access-control/create-token')
     })
