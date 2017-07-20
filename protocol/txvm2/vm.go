@@ -74,7 +74,7 @@ func step(vm *vm) {
 	vm.run.pc++
 	switch {
 	case isSmallIntOp(opcode):
-		vm.push(datastack, vint64(opcode-Op0))
+		vm.push(datastack, vint64(opcode-MinSmallInt))
 	case int(opcode) >= len(opFuncs):
 		// NOP instruction
 		if !vm.extension {

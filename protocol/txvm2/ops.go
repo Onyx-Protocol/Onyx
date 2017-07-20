@@ -17,7 +17,7 @@ import (
 
 const (
 	// Control flow
-	OpFail byte = 33 + iota // opcodes 0 through 32 reserved for small ints
+	OpFail byte = iota
 	OpPC
 	OpJumpIf
 
@@ -134,24 +134,33 @@ const (
 	OpIssueLegacy
 	OpLegacyIssuanceCandidate
 	OpExtend
-)
 
-const (
-	Op0         byte = 0
-	MaxSmallInt byte = 32
+	MinSmallInt byte = OpExtend + 1
+	MaxSmallInt byte = MinSmallInt + 7
+
+	MinNop byte = MaxSmallInt + 1
+	MaxNop byte = 94
+
+	MinPushdata = 95
 )
 
 func init() {
-	if OpFail != MaxSmallInt+1 {
-		panic(fmt.Errorf("OpFail is %d, should be %d", OpFail, MaxSmallInt+1))
+	if MaxNop <= MinNop {
+		panic("nope!")
 	}
+
+	// avoid initialization loop
 	opFuncs[OpSatisfy] = opSatisfy
 	opFuncs[OpCommand] = opCommand
 	opFuncs[OpProveAssetRange] = opProveAssetRange
 }
 
 func isSmallIntOp(op byte) bool {
-	return op >= Op0 && op <= MaxSmallInt
+	return op >= MinSmallInt && op <= MaxSmallInt
+}
+
+func isSmallInt(n int64) bool {
+	return 0 <= n && n <= int64(MaxSmallInt-MinSmallInt)
 }
 
 // prog is the slice beginning right after a pushdata instruction.
@@ -182,5 +191,5 @@ func decodePushdata(prog []byte) ([]byte, int64, error) {
 func encodePushdata(data []byte) []byte {
 	buf := [12]byte{OpPushdata}
 	n := binary.PutUvarint(buf[1:], uint64(len(data)))
-	return buf[:1+n]
+	return append(buf[:1+n], data...)
 }

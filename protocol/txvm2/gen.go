@@ -81,9 +81,6 @@ func getOps() []string {
 			panic(fmt.Errorf("const spec contains %d names, want 1", len(vspec.Names)))
 		}
 		name := vspec.Names[0].Name
-		if name == "Op0" {
-			continue
-		}
 		if !strings.HasPrefix(name, "Op") {
 			continue
 		}

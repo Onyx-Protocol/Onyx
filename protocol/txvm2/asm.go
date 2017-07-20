@@ -50,11 +50,12 @@ var stackNames = map[string]int64{
 }
 
 // Notation:
-//    word  mnemonic
-//   12345  number
-//   x"aa"  hex data
-//   'foo'  string
-//   [dup]  quoted program
+//    word     mnemonic
+//   12345     number
+//   x"aa"     hex data
+//   'foo'     string
+//   [dup]     quoted program
+//   {x, y, z} tuple (encoded as "push z, push y, push x, push 3, 'tuple'")
 func Assemble(src string) ([]byte, error) {
 	tokens := tokenize(src)
 	return parse(tokens)
@@ -67,7 +68,7 @@ func Disassemble(prog []byte) (string, error) {
 		pc++
 		switch {
 		case isSmallIntOp(opcode):
-			result = append(result, fmt.Sprintf("%d", opcode-Op0))
+			result = append(result, fmt.Sprintf("%d", opcode-MinSmallInt))
 		case int(opcode) >= len(opNames):
 			result = append(result, fmt.Sprintf("nop%d", opcode))
 		case opcode == OpPushdata:
@@ -381,8 +382,8 @@ func scanFunc(s string, f func(rune) bool) (n int) {
 }
 
 func pushInt64(num int64) []byte {
-	if 0 <= num && num <= int64(MaxSmallInt) {
-		return []byte{Op0 + byte(num)}
+	if isSmallInt(num) {
+		return []byte{MinSmallInt + byte(num)}
 	}
 	var buf [10]byte
 	n := binary.PutVarint(buf[:], num)

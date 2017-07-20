@@ -30,8 +30,8 @@ func (b vbytes) typ() int { return bytestype }
 func (t tuple) typ() int  { return tupletype }
 
 func (i vint64) encode(w io.Writer) {
-	if i >= 0 && i <= vint64(MaxSmallInt) {
-		w.Write([]byte{Op0 + byte(i)})
+	if isSmallInt(int64(i)) {
+		w.Write([]byte{MinSmallInt + byte(i)})
 	} else {
 		var buf [10]byte
 		n := binary.PutVarint(buf[:], int64(i)) // xxx right?
