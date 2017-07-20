@@ -4,16 +4,7 @@ import (
 	"fmt"
 
 	"chain/crypto/ca"
-	"chain/crypto/ed25519/ecmath"
 )
-
-func (v *value) commitments() (assetcommitment, valuecommitment) {
-	var assetID ca.AssetID
-	copy(assetID[:], v.assetID)
-	ac, _ := ca.CreateAssetCommitment(assetID, nil)
-	vc, _ := ca.CreateValueCommitment(uint64(v.amount), ac, nil)
-	return assetcommitment{ac}, valuecommitment{vc}
-}
 
 func opWrapValue(vm *vm) {
 	val := vm.popValue(entrystack)
@@ -23,11 +14,11 @@ func opWrapValue(vm *vm) {
 }
 
 func opMergeConfidential(vm *vm) {
-	a := vm.popTuple(entrystack, valueTuple, provenValueTuple, unprovenValueTuple)
-	b := vm.popTuple(entrystack, valueTuple, provenValueTuple, unprovenValueTuple)
+	a := vm.popTuple(entrystack, valueType, provenvalueType, unprovenvalueType)
+	b := vm.popTuple(entrystack, valueType, provenvalueType, unprovenvalueType)
 
-	_, vca := tupleToCommitments(a)
-	_, vcb := tupleToCommitments(b)
+	_, vca := toCommitments(a)
+	_, vcb := toCommitments(b)
 
 	vca.Add(vca, vcb)
 	vc := valuecommitment{vca}
@@ -35,18 +26,18 @@ func opMergeConfidential(vm *vm) {
 }
 
 func opSplitConfidential(vm *vm) {
-	val := vm.popTuple(entrystack, valueTuple, provenValueTuple, unprovenValueTuple)
-	_, orig := tupleToCommitments(val)
+	val := vm.popTuple(entrystack, valueType, provenvalueType, unprovenvalueType)
+	_, orig := toCommitments(val)
 
 	split := vm.popValuecommitment(entrystack)
 
-	vm.push(entrystack, mkUnprovenValue(split.entuple()))
+	vm.pushUnprovenvalue(entrystack, unprovenvalue{split})
 
 	var diff ca.ValueCommitment
 
 	diff.Sub(orig, split.vc)
-	difftuple := mkValueCommitment(vbytes(diff.V().Bytes()), vbytes(diff.F().Bytes()))
-	vm.push(entrystack, mkUnprovenValue(difftuple))
+	diffvc := valuecommitment{&diff}
+	vm.pushUnprovenvalue(entrystack, unprovenvalue{diffvc})
 }
 
 func opProveAssetRange(vm *vm) {
@@ -63,16 +54,18 @@ func opProveAssetRange(vm *vm) {
 
 	ac := vm.popAssetcommitment(datastack)
 
-	prevacTuples := vm.peekNTuple(entrystack, n, assetCommitmentTuple)
-
-	var prevacs []*ca.AssetCommitment
-	for _, t := range prevacTuples {
-		prevac, _ := tupleToCommitments(t)
-		prevacs = append(prevacs, prevac)
+	items := vm.peekN(entrystack, n)
+	var acs []*ca.AssetCommitment
+	for _, t := range items {
+		var ac assetcommitment
+		if !ac.detuple(t.(tuple)) {
+			panic(fmt.Errorf("%T on entry stack is not an assetcommitment", t))
+		}
+		acs = append(acs, ac.ac)
 	}
 
 	arp := &ca.AssetRangeProof{
-		Commitments: prevacs,
+		Commitments: acs,
 		Signature:   &rs,
 	}
 	if !arp.Validate(prog, ac.ac) {
@@ -107,75 +100,31 @@ func opIssueConfidential(vm *vm) {
 	// xxx
 }
 
-func tupleToCommitments(t tuple) (*ca.AssetCommitment, *ca.ValueCommitment) {
-	name, ok := t.name()
-	if !ok {
-		return nil, nil
-	}
-	var atuple, vtuple tuple
-	switch name {
-	case valueTuple:
-		var assetID ca.AssetID
-		copy(assetID[:], valueAssetID(t))
-		ac, _ := ca.CreateAssetCommitment(assetID, nil)
-		vc, _ := ca.CreateValueCommitment(uint64(valueAmount(t)), ac, nil)
-		return ac, vc
-
-	case assetCommitmentTuple:
-		atuple = t
-
-	case valueCommitmentTuple:
-		vtuple = t
-
-	case provenValueTuple:
-		atuple = provenValueAssetCommitment(t)
-		vtuple = provenValueValueCommitment(t)
-
-	case unprovenValueTuple:
-		vtuple = unprovenValueValueCommitment(t)
-
-	default:
-		return nil, nil
-	}
-	var ac *ca.AssetCommitment
-	if atuple != nil {
-		var (
-			H, C ecmath.Point
-			buf  [32]byte
-		)
-		copy(buf[:], assetCommitmentAssetPoint(atuple))
-		_, ok := H.Decode(buf)
-		if !ok {
-			return nil, nil
-		}
-		copy(buf[:], assetCommitmentBlindingPoint(atuple))
-		_, ok = C.Decode(buf)
-		if !ok {
-			return nil, nil
-		}
-		ac = &ca.AssetCommitment{H, C}
-	}
-	var vc *ca.ValueCommitment
-	if vtuple != nil {
-		var (
-			V, F ecmath.Point
-			buf  [32]byte
-		)
-		copy(buf[:], valueCommitmentValuePoint(vtuple))
-		_, ok := V.Decode(buf)
-		if !ok {
-			return nil, nil
-		}
-		copy(buf[:], valueCommitmentBlindingPoint(vtuple))
-		_, ok = F.Decode(buf)
-		if !ok {
-			return nil, nil
-		}
-		vc = &ca.ValueCommitment{V, F}
-	}
-	return ac, vc
+func (v *value) commitments() (assetcommitment, valuecommitment) {
+	var assetID ca.AssetID
+	copy(assetID[:], v.assetID)
+	ac, _ := ca.CreateAssetCommitment(assetID, nil)
+	vc, _ := ca.CreateValueCommitment(uint64(v.amount), ac, nil)
+	return assetcommitment{ac}, valuecommitment{vc}
 }
 
-func tupleFromVC(vc *ca.ValueCommitment) tuple {
-	return mkValueCommitment(vbytes(vc.V().Bytes()), vbytes(vc.F().Bytes()))
+func toCommitments(t namedtuple) (*ca.AssetCommitment, *ca.ValueCommitment) {
+	switch tt := t.(type) {
+	case value:
+		ac, vc := tt.commitments()
+		return ac.ac, vc.vc
+
+	case assetcommitment:
+		return tt.ac, nil
+
+	case valuecommitment:
+		return nil, tt.vc
+
+	case provenvalue:
+		return tt.ac.ac, tt.vc.vc
+
+	case unprovenvalue:
+		return nil, tt.vc.vc
+	}
+	return nil, nil
 }

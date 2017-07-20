@@ -7,7 +7,7 @@ func opBitNot(vm *vm) {
 	for i := 0; i < len(s); i++ {
 		s[i] = ^s[i]
 	}
-	vm.push(datastack, s)
+	vm.push(datastack, vbytes(s))
 }
 
 func opBitAnd(vm *vm) {
@@ -19,7 +19,7 @@ func opBitAnd(vm *vm) {
 	for i := 0; i < len(a); i++ {
 		a[i] &= b[i]
 	}
-	vm.push(datastack, a)
+	vm.push(datastack, vbytes(a))
 }
 
 func opBitOr(vm *vm) {
@@ -31,7 +31,7 @@ func opBitOr(vm *vm) {
 	for i := 0; i < len(a); i++ {
 		a[i] |= b[i]
 	}
-	vm.push(datastack, a)
+	vm.push(datastack, vbytes(a))
 }
 
 func opBitXor(vm *vm) {
@@ -43,5 +43,5 @@ func opBitXor(vm *vm) {
 	for i := 0; i < len(a); i++ {
 		a[i] ^= b[i]
 	}
-	vm.push(datastack, a)
+	vm.push(datastack, vbytes(a))
 }

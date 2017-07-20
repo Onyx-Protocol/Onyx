@@ -24,7 +24,7 @@ func opJumpIf(vm *vm) {
 	if dest < 0 {
 		panic(fmt.Errorf("jumpif: negative destination %d", dest))
 	}
-	if dest > vint64(len(vm.run.prog)) {
+	if dest > int64(len(vm.run.prog)) {
 		panic(fmt.Errorf("jumpif: destination %d beyond end of %d-byte program %s", dest, len(vm.run.prog), vm.run.prog))
 	}
 	vm.run.pc = int64(dest)

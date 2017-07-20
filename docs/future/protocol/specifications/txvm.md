@@ -405,8 +405,8 @@ The ID of this item is the canonical [Transaction ID](#transaction-id).
 ### Contract
 
 0. `type`, a string, "contract"
-1. `values`, a tuple of either [values](#values) or [proven values](#proven-values)
-2. `program`, a [Program](#program)
+1. `value`, a [value](#values) or [proven value](#proven-values)
+2. `program`, a string
 3. `anchor`, a string
 
 ### Program

@@ -1,6 +1,10 @@
 package txvm2
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+	"strings"
+)
 
 // A "run" is a program and a position in it
 type run struct {
@@ -100,11 +104,11 @@ func step(vm *vm) {
 
 // stack access
 
-func (vm *vm) push(stacknum int, v item) {
+func (vm *vm) push(stacknum int64, v item) {
 	vm.stacks[stacknum].push(v)
 }
 
-func (vm *vm) pushBool(stacknum int, b bool) {
+func (vm *vm) pushBool(stacknum int64, b bool) {
 	var n vint64
 	if b {
 		n = 1
@@ -112,7 +116,7 @@ func (vm *vm) pushBool(stacknum int, b bool) {
 	vm.push(stacknum, n)
 }
 
-func (vm *vm) pop(stacknum int) item {
+func (vm *vm) pop(stacknum int64) item {
 	res, ok := vm.stacks[stacknum].pop()
 	if !ok {
 		panic("stack underflow")
@@ -120,42 +124,47 @@ func (vm *vm) pop(stacknum int) item {
 	return res
 }
 
-func (vm *vm) popBytes(stacknum int) vbytes {
+func (vm *vm) popBytes(stacknum int64) []byte {
 	v := vm.pop(stacknum)
 	s, ok := v.(vbytes)
 	if !ok {
 		panic(fmt.Errorf("%T is not vbytes", v))
 	}
-	return s
+	return []byte(s)
 }
 
-func (vm *vm) popInt64(stacknum int) vint64 {
+func (vm *vm) popInt64(stacknum int64) int64 {
 	v := vm.pop(stacknum)
 	n, ok := v.(vint64)
 	if !ok {
 		panic(fmt.Errorf("%T is not vint64", v))
 	}
-	return n
+	return int64(n)
 }
 
-func (vm *vm) popTuple(stacknum int, names ...string) tuple {
+func (vm *vm) popTuple(stacknum int64, types ...namedtuple) namedtuple {
 	v := vm.pop(stacknum)
-	if len(names) > 0 {
-		ok := false
-		for _, name := range names {
-			if isNamed(v, name) {
-				ok = true
-				break
+	t := v.(tuple)
+	var names []string
+	if len(types) > 0 {
+		tupleValue := reflect.ValueOf(t)
+		for _, typ := range types {
+			names = append(names, typ.name())
+			tt := reflect.TypeOf(typ)
+			// xxx get base type (tt is *foo, get foo)
+			vv := reflect.New(tt)
+			detuple := vv.MethodByName("detuple")
+			res := detuple.Call([]reflect.Value{tupleValue})
+			ok := res[0].Interface().(bool)
+			if ok {
+				return vv.Interface().(namedtuple)
 			}
 		}
-		if !ok {
-			panic(fmt.Errorf("%T is not one of %v", v, names))
-		}
 	}
-	return v.(tuple)
+	panic(fmt.Errorf("tuple is not a %s", strings.Join(names, ", ")))
 }
 
-func (vm *vm) popBool(stacknum int) bool {
+func (vm *vm) popBool(stacknum int64) bool {
 	v := vm.pop(datastack)
 	if n, ok := v.(vint64); ok {
 		return n != 0

@@ -3,37 +3,43 @@ package txvm2
 import (
 	"bytes"
 	"fmt"
+
+	"chain/math/checked"
 )
 
 func opIssue(vm *vm) {
 	amt := vm.popInt64(datastack)
-	cmd := vm.peekTuple(commandstack, programTuple)
-	assetDef := mkAssetDefinition(programProgram(cmd))
-	assetID := getID(assetDef)
-	vm.push(entrystack, mkValue(amt, assetID))
+	cmd := vm.peekProgram(commandstack)
+	assetDef := assetdefinition{cmd.program}
+	assetID := assetDef.id()
+	vm.pushValue(entrystack, value{amt, assetID})
 }
 
 func opMerge(vm *vm) {
-	v1 := vm.popTuple(entrystack, valueTuple)
-	v2 := vm.popTuple(entrystack, valueTuple)
-	if !bytes.Equal(valueAssetID(v1), valueAssetID(v2)) {
-		panic(fmt.Errorf("merge: mismatched asset IDs (%x vs. %x)", valueAssetID(v1), valueAssetID(v2)))
+	v1 := vm.popValue(entrystack)
+	v2 := vm.popValue(entrystack)
+	if !bytes.Equal(v1.assetID, v2.assetID) {
+		panic(fmt.Errorf("merge: mismatched asset IDs (%x vs. %x)", v1.assetID, v2.assetID))
 	}
-	vm.push(entrystack, mkValue(valueAmount(v1)+valueAmount(v2), valueAssetID(v1)))
+	newamt, ok := checked.AddInt64(v1.amount, v2.amount)
+	if !ok {
+		panic("merge: sum overflows int64")
+	}
+	vm.pushValue(entrystack, value{newamt, v1.assetID})
 }
 
 func opSplit(vm *vm) {
-	val := vm.popTuple(entrystack, valueTuple)
+	val := vm.popValue(entrystack)
 	amt := vm.popInt64(datastack)
-	if amt >= valueAmount(val) {
-		panic(fmt.Errorf("split: amount too large (%d vs. %d)", amt, valueAmount(val)))
+	if amt >= val.amount {
+		panic(fmt.Errorf("split: amount too large (%d vs. %d)", amt, val.amount))
 	}
-	vm.push(entrystack, mkValue(valueAmount(val)-amt, valueAssetID(val)))
-	vm.push(entrystack, mkValue(amt, valueAssetID(val)))
+	vm.pushValue(entrystack, value{val.amount - amt, val.assetID})
+	vm.pushValue(entrystack, value{amt, val.assetID})
 }
 
 func opRetire(vm *vm) {
-	// xxx needs to be in terms of value commitments
-	val := vm.popTuple(entrystack, valueTuple)
-	vm.push(effectstack, mkRetirement(val))
+	val := vm.popTuple(entrystack, valueType, provenvalueType)
+	_, vc := toCommitments(val)
+	vm.pushRetirement(effectstack, retirement{valuecommitment{vc}})
 }

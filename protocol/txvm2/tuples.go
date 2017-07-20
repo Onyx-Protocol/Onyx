@@ -35,7 +35,7 @@ func opField(vm *vm) {
 	if n < 0 {
 		panic(fmt.Errorf("field: negative index %d", n))
 	}
-	if n >= vint64(len(t)) {
+	if n >= int64(len(t)) {
 		panic(fmt.Errorf("field: index %d >= length %d", n, len(t)))
 	}
 	vm.push(datastack, t[n])

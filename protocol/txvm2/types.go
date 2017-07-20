@@ -5,6 +5,12 @@ import "chain/crypto/ca"
 // This file is read by gen.go at "go generate" time and produces
 // typegen.go.
 
+type namedtuple interface {
+	name() string
+	entuple() tuple
+	detuple(tuple) bool
+}
+
 type txwitness struct {
 	version  int64
 	runlimit int64
@@ -94,6 +100,12 @@ type read struct {
 	contractid []byte
 }
 
+type contract struct {
+	value   namedtuple // value or provenvalue
+	program []byte
+	anchor  []byte
+}
+
 type program struct {
 	program []byte
 }
@@ -104,8 +116,16 @@ type nonce struct {
 	blockchainid     []byte
 }
 
+type anchor struct {
+	value []byte
+}
+
+type retirement struct {
+	vc valuecommitment
+}
+
 type assetdefinition struct {
-	issuanceprogram program
+	issuanceprogram []byte
 }
 
 type issuancecandidate struct {

@@ -6,30 +6,30 @@ func opNonce(vm *vm) {
 	min := vm.popInt64(datastack)
 	max := vm.popInt64(datastack)
 	bcID := vm.popBytes(datastack)
-	p := vm.peekTuple(commandstack, programTuple)
-	nonce := mkNonce(programProgram(p), min, max, bcID)
-	vm.push(effectstack, nonce)
-	vm.push(entrystack, mkAnchor(getID(nonce)))
-	vm.push(effectstack, mkMintime(min))
-	vm.push(effectstack, mkMaxtime(max))
+	p := vm.peekProgram(commandstack)
+	nonce := nonce{p.program, min, max, bcID}
+	vm.pushNonce(effectstack, nonce)
+	vm.pushAnchor(entrystack, anchor{nonce.id()})
+	vm.pushMintime(effectstack, mintime{min})
+	vm.pushMaxtime(effectstack, maxtime{max})
 }
 
 func opReanchor(vm *vm) {
-	a := vm.popTuple(entrystack, anchorTuple)
-	vm.push(entrystack, mkAnchor(getID(a)))
+	a := vm.popAnchor(entrystack)
+	vm.pushAnchor(entrystack, anchor{a.id()})
 }
 
 func opSplitAnchor(vm *vm) {
-	a := vm.popTuple(entrystack, anchorTuple)
-	id := getID(a)
+	a := vm.popAnchor(entrystack)
+	id := a.id()
 	var h [32]byte
 	sha3pool.Sum256(h[:], append([]byte{0x01}, id...))
-	vm.push(entrystack, mkAnchor(h[:]))
+	vm.pushAnchor(entrystack, anchor{h[:]})
 	sha3pool.Sum256(h[:], append([]byte{0x00}, id...))
-	vm.push(entrystack, mkAnchor(h[:]))
+	vm.pushAnchor(entrystack, anchor{h[:]})
 }
 
 func opAnchorTransaction(vm *vm) {
-	a := vm.popTuple(entrystack, anchorTuple)
-	vm.push(effectstack, a)
+	a := vm.popAnchor(entrystack)
+	vm.pushAnchor(effectstack, a)
 }

@@ -63,7 +63,7 @@ func getTxID(v item) (txid [32]byte, ok bool) {
 	return txid, true
 }
 
-func getID(v item) vbytes {
+func getID(v item) []byte {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
@@ -73,7 +73,7 @@ func getID(v item) vbytes {
 	var hash [32]byte
 	hasher.Read(hash[:])
 
-	return vbytes(hash[:])
+	return hash[:]
 }
 
 func encode(v item) []byte {

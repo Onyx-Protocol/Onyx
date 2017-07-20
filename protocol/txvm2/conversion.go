@@ -28,31 +28,30 @@ func opFinalize(vm *vm) {
 }
 
 func opUnlockLegacy(vm *vm) {
-	outTuple := vm.popTuple(datastack, legacyOutputTuple)
+	leg := vm.popLegacyoutput(datastack)
 	var sourceHashBytes [32]byte
-	copy(sourceHashBytes[:], legacyOutputSourceID(outTuple))
+	copy(sourceHashBytes[:], leg.sourceID)
 	sourceHash := bc.NewHash(sourceHashBytes)
 	var assetIDBytes [32]byte
-	copy(assetIDBytes[:], legacyOutputAssetID(outTuple))
+	copy(assetIDBytes[:], leg.assetID)
 	assetID := bc.NewAssetID(assetIDBytes)
-	amount := legacyOutputAmount(outTuple)
 	assetAmount := &bc.AssetAmount{
 		AssetId: &assetID,
-		Amount:  uint64(amount),
+		Amount:  uint64(leg.amount), // xxx check leg.amount >= 0?
 	}
 	source := &bc.ValueSource{
 		Ref:      &sourceHash,
 		Value:    assetAmount,
-		Position: uint64(legacyOutputIndex(outTuple)), // xxx check this is the right use for `index`
+		Position: uint64(leg.index), // xxx check this is the right use for `index`
 	}
 	var hashBytes [32]byte
-	copy(hashBytes[:], legacyOutputData(outTuple))
+	copy(hashBytes[:], leg.data)
 	data := bc.NewHash(hashBytes)
-	out := bc.NewOutput(source, &bc.Program{VmVersion: 1, Code: legacyOutputProgram(outTuple)}, &data, 0) // xxx check ordinal of 0 is ok
-	outID := bc.EntryID(out)
-	vm.push(entrystack, mkInput(outID.Bytes()))
-	vm.push(entrystack, mkAnchor(outID.Bytes()))
-	vm.push(entrystack, mkValue(amount, assetIDBytes[:]))
+	out := bc.NewOutput(source, &bc.Program{VmVersion: 1, Code: leg.program}, &data, 0) // xxx check ordinal of 0 is ok
+	outID := bc.EntryID(out).Bytes()
+	vm.pushInput(entrystack, input{outID})
+	vm.pushAnchor(entrystack, anchor{outID})
+	vm.pushValue(entrystack, value{leg.amount, leg.assetID})
 	// xxx something something something legacy control program (deferred run with vm1, or translation to txvm)
 }
 
@@ -73,7 +72,7 @@ func opExtend(vm *vm) {
 	}
 	item := vm.pop(datastack)
 	s := vm.getStack(int64(stackID))
-	if n >= vint64(len(*s)) {
+	if n >= int64(len(*s)) {
 		panic(fmt.Errorf("extend: stack offset %d greater than %d-item stack", n, len(*s)))
 	}
 	t, ok := (*s)[n].(tuple)

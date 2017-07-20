@@ -1,30 +1,28 @@
 package txvm2
 
 func opUnlock(vm *vm) {
-	val := vm.popTuple(datastack, valueTuple)
-	anchor := vm.popTuple(datastack, anchorTuple)
-	cmd := vm.peekTuple(commandstack, programTuple)
-	inp := mkContract(val, programProgram(cmd), anchorValue(anchor))
-	id := getID(inp)
-	vm.push(effectstack, mkInput(id))
-	vm.push(entrystack, anchor)
-	vm.push(entrystack, val)
+	val := vm.popTuple(datastack, valueType, provenvalueType)
+	anchor := vm.popAnchor(datastack)
+	cmd := vm.peekProgram(commandstack)
+	inp := contract{val, cmd.program, anchor.value}
+	id := inp.id()
+	vm.pushInput(effectstack, input{id})
+	vm.pushAnchor(entrystack, anchor)
+	vm.push(entrystack, val.entuple())
 }
 
 func opRead(vm *vm) {
-	val := vm.popTuple(datastack, valueTuple)
-	anchor := vm.popTuple(datastack, anchorTuple)
-	cmd := vm.peekTuple(commandstack, programTuple)
-	contract := mkContract(val, programProgram(cmd), anchorValue(anchor))
-	id := getID(contract)
-	vm.push(effectstack, mkRead(id))
+	val := vm.popTuple(datastack, valueType, provenvalueType)
+	anchor := vm.popAnchor(datastack)
+	cmd := vm.peekProgram(commandstack)
+	id := contract{val, cmd.program, anchor.value}.id()
+	vm.pushRead(effectstack, read{id})
 }
 
 func opLock(vm *vm) {
-	val := vm.popTuple(entrystack, valueTuple)
-	anchor := vm.popTuple(entrystack, anchorTuple)
-	cmd := vm.peekTuple(commandstack, programTuple)
-	contract := mkContract(val, programProgram(cmd), anchorValue(anchor))
-	id := getID(contract)
-	vm.push(effectstack, mkOutput(id))
+	val := vm.popTuple(entrystack, valueType, provenvalueType)
+	anchor := vm.popAnchor(entrystack)
+	cmd := vm.peekProgram(commandstack)
+	id := contract{val, cmd.program, anchor.value}.id()
+	vm.pushOutput(effectstack, output{id})
 }

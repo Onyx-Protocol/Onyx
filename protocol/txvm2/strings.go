@@ -5,7 +5,7 @@ import "fmt"
 func opCat(vm *vm) {
 	a := vm.popBytes(datastack)
 	b := vm.popBytes(datastack)
-	vm.push(datastack, append(a, b...))
+	vm.push(datastack, vbytes(append(a, b...)))
 }
 
 func opSlice(vm *vm) {
@@ -18,8 +18,8 @@ func opSlice(vm *vm) {
 		panic(fmt.Errorf("slice: end %d precedes start %d", end, start))
 	}
 	str := vm.popBytes(datastack)
-	if end > vint64(len(str)) {
+	if end > int64(len(str)) {
 		panic(fmt.Errorf("slice: end %d exceeds length %d of string %x", end, len(str), str))
 	}
-	vm.push(datastack, str[start:end])
+	vm.push(datastack, vbytes(str[start:end]))
 }

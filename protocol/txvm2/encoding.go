@@ -7,7 +7,7 @@ import (
 
 func opEncode(vm *vm) {
 	s := vm.popBytes(datastack)
-	vm.push(datastack, vbytes(encode(s)))
+	vm.push(datastack, vbytes(encode(vbytes(s))))
 }
 
 func opInt64(vm *vm) {
