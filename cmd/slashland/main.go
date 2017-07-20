@@ -30,7 +30,7 @@ var (
 	org           = env.String("GITHUB_ORG", "chain")
 	repo          = env.String("GITHUB_REPO", "chain")
 	privRepo      = env.String("GITHUB_REPO_PRIVATE", "chainprv")
-	forkRepo      = env.String("GITHUB_REPO_FORK", "chainfork") // tktk real name?
+	forkRepo      = env.String("GITHUB_REPO_FORK", "chainfork")
 	slackChannels = env.StringSlice("SLACK_CHANNEL")
 	slackToken    = env.String("SLACK_LAND_TOKEN", "")
 	postURL       = env.String("SLACK_POST_URL", "")
