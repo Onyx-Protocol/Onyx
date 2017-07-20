@@ -3,7 +3,6 @@ package txvm2
 import (
 	"crypto/sha256"
 	"errors"
-	"fmt"
 
 	"golang.org/x/crypto/sha3"
 
@@ -40,7 +39,7 @@ func opCheckSig(vm *vm) {
 	}
 	valid := ed25519.Verify(ed25519.PublicKey(pubkey), msg, sig)
 	if !valid {
-		panic(fmt.Errorf("checksig: invalid non-empty signature"))
+		panic(vm.errf("checksig: invalid non-empty signature"))
 	}
 	vm.pushBool(datastack, true)
 }
@@ -74,14 +73,14 @@ func opPointMul(vm *vm) {
 func popPoint(vm *vm) *ecmath.Point {
 	bBytes := vm.popBytes(datastack)
 	if len(bBytes) != 32 {
-		panic(ErrBadPoint)
+		panic(vm.wraperr(ErrBadPoint))
 	}
 	var b [32]byte
 	copy(b[:], bBytes)
 	var B ecmath.Point
 	_, ok := B.Decode(b)
 	if !ok {
-		panic(ErrBadPoint)
+		panic(vm.wraperr(ErrBadPoint))
 	}
 	return &B
 }

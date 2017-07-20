@@ -1,15 +1,13 @@
 package txvm2
 
 import (
-	"fmt"
-
 	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
 )
 
 func opFinalize(vm *vm) {
 	if vm.finalized {
-		panic("finalize: already finalized")
+		panic(vm.err("finalize: already finalized"))
 	}
 
 	hasher := sha3pool.Get256()
@@ -68,16 +66,16 @@ func opExtend(vm *vm) {
 	stackID := vm.popInt64(datastack)
 	n := vm.popInt64(datastack)
 	if n < 0 {
-		panic(fmt.Errorf("extend: negative stack offset %d", n))
+		panic(vm.errf("extend: negative stack offset %d", n))
 	}
 	item := vm.pop(datastack)
 	s := vm.getStack(int64(stackID))
 	if n >= int64(len(*s)) {
-		panic(fmt.Errorf("extend: stack offset %d greater than %d-item stack", n, len(*s)))
+		panic(vm.errf("extend: stack offset %d greater than %d-item stack", n, len(*s)))
 	}
 	t, ok := (*s)[n].(tuple)
 	if !ok {
-		panic(fmt.Errorf("extend: item %d on stack %d is a %T, not a tuple", n, stackID, (*s)[n]))
+		panic(vm.errf("extend: item %d on stack %d is a %T, not a tuple", n, stackID, (*s)[n]))
 	}
 	t = append(t, item)
 	(*s)[n] = t

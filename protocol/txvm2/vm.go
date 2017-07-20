@@ -1,7 +1,7 @@
 package txvm2
 
 import (
-	"fmt"
+	"errors"
 	"reflect"
 	"strings"
 )
@@ -10,6 +10,13 @@ import (
 type run struct {
 	pc   int64
 	prog []byte
+}
+
+type OpTracer func(op byte, prog []byte, vm VM)
+
+type VM interface {
+	PC() int64
+	Stack(int64) Stack
 }
 
 type vm struct {
@@ -23,16 +30,32 @@ type vm struct {
 	stacks [numstacks]stack
 
 	finalized bool
+
+	traceOp    OpTracer
+	traceError func(error)
+}
+
+func (vm *vm) PC() int64 {
+	return vm.run.pc
+}
+
+func (vm *vm) Stack(stacknum int64) Stack {
+	return vm.getStack(stacknum)
 }
 
 type opFuncType func(*vm)
 
-type option func(*vm)
+var ErrResidue = errors.New("residue on stack(s)")
 
-func Validate(txprog []byte, txVersion, runlimit int64, o ...option) ([32]byte, bool) {
+func Validate(txprog []byte, txVersion, runlimit int64, o ...Option) (txid [32]byte, err error) {
 	defer func() {
-		if err := recover(); err != nil {
-			// xxx
+		if r := recover(); r != nil {
+			var ok bool
+			if err, ok = r.(error); ok {
+				return
+			}
+			// r is not an error, re-panic
+			panic(r)
 		}
 	}()
 
@@ -46,13 +69,12 @@ func Validate(txprog []byte, txVersion, runlimit int64, o ...option) ([32]byte, 
 	}
 	exec(vm, txprog)
 	tx := vm.peekTx(effectstack)
-	var txid [32]byte
 	copy(txid[:], tx.id())
 	if !vm.getStack(entrystack).isEmpty() {
-		return txid, false
+		return txid, vm.wraperr(ErrResidue)
 	}
 	// xxx other termination conditions?
-	return txid, true
+	return txid, nil
 }
 
 func exec(vm *vm, prog []byte) {
@@ -70,33 +92,25 @@ func exec(vm *vm, prog []byte) {
 
 func step(vm *vm) {
 	opcode := vm.run.prog[vm.run.pc]
-	// xxx tracing
+	vm.traceOp(opcode, vm.run.prog, vm)
 	vm.run.pc++
 	switch {
 	case isSmallIntOp(opcode):
 		vm.push(datastack, vint64(opcode-MinSmallInt))
-	case int(opcode) >= len(opFuncs):
-		// NOP instruction
+	case isNop(opcode):
 		if !vm.extension {
-			panic(fmt.Errorf("invalid opcode %d", opcode))
+			panic(vm.errf("invalid opcode %d", opcode))
 		}
 		return
 	default:
 		f := opFuncs[opcode]
-		if f == nil {
-			// NOP instruction
-			if !vm.extension {
-				panic(fmt.Errorf("invalid opcode %d", opcode))
-			}
-			return
-		}
 		f(vm)
 	}
 }
 
 // stack access
 
-func (vm *vm) push(stacknum int64, v item) {
+func (vm *vm) push(stacknum int64, v Item) {
 	vm.stacks[stacknum].push(v)
 }
 
@@ -108,10 +122,10 @@ func (vm *vm) pushBool(stacknum int64, b bool) {
 	vm.push(stacknum, n)
 }
 
-func (vm *vm) pop(stacknum int64) item {
+func (vm *vm) pop(stacknum int64) Item {
 	res, ok := vm.stacks[stacknum].pop()
 	if !ok {
-		panic("stack underflow")
+		panic(vm.err("stack underflow"))
 	}
 	return res
 }
@@ -120,7 +134,7 @@ func (vm *vm) popBytes(stacknum int64) []byte {
 	v := vm.pop(stacknum)
 	s, ok := v.(vbytes)
 	if !ok {
-		panic(fmt.Errorf("%T is not vbytes", v))
+		panic(vm.errf("%T is not vbytes", v))
 	}
 	return []byte(s)
 }
@@ -129,7 +143,7 @@ func (vm *vm) popInt64(stacknum int64) int64 {
 	v := vm.pop(stacknum)
 	n, ok := v.(vint64)
 	if !ok {
-		panic(fmt.Errorf("%T is not vint64", v))
+		panic(vm.errf("%T is not vint64", v))
 	}
 	return int64(n)
 }
@@ -153,7 +167,7 @@ func (vm *vm) popTuple(stacknum int64, types ...namedtuple) namedtuple {
 			}
 		}
 	}
-	panic(fmt.Errorf("tuple is not a %s", strings.Join(names, ", ")))
+	panic(vm.errf("tuple is not a %s", strings.Join(names, ", ")))
 }
 
 func (vm *vm) popBool(stacknum int64) bool {
@@ -164,25 +178,37 @@ func (vm *vm) popBool(stacknum int64) bool {
 	return true
 }
 
-func (vm *vm) peek(stacknum int64) item {
+func (vm *vm) peek(stacknum int64) Item {
 	v, ok := vm.getStack(stacknum).peek(0)
 	if !ok {
-		panic("stack underflow")
+		panic(vm.err("stack underflow"))
 	}
 	return v
 }
 
-func (vm *vm) peekN(stacknum, n int64) []item {
+func (vm *vm) peekN(stacknum, n int64) []Item {
 	res := vm.getStack(stacknum).peekN(n)
 	if int64(len(res)) != n {
-		panic(fmt.Errorf("only %d of %d item(s) available", len(res), n))
+		panic(vm.errf("only %d of %d item(s) available", len(res), n))
 	}
 	return res
 }
 
 func (vm *vm) getStack(stackID int64) *stack {
 	if stackID < 0 || stackID >= int64(len(vm.stacks)) {
-		panic(fmt.Errorf("bad stack ID %d", stackID))
+		panic(vm.errf("bad stack ID %d", stackID))
 	}
 	return &vm.stacks[stackID]
+}
+
+func (vm *vm) err(msg string) vmerror {
+	return vmerr(vm, msg)
+}
+
+func (vm *vm) errf(msg string, arg ...interface{}) vmerror {
+	return vmerrf(vm, msg, arg...)
+}
+
+func (vm *vm) wraperr(e error) vmerror {
+	return vmerror{e: e, vm: vm}
 }

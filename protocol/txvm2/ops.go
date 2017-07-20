@@ -163,6 +163,10 @@ func isSmallInt(n int64) bool {
 	return 0 <= n && n <= int64(MaxSmallInt-MinSmallInt)
 }
 
+func isNop(op byte) bool {
+	return MinNop <= op && op <= MaxNop
+}
+
 // prog is the slice beginning right after a pushdata instruction.
 // returns the data parsed and the number of bytes consumed (counting
 // the length prefix and the data).

@@ -2,7 +2,6 @@ package txvm2
 
 import (
 	"bytes"
-	"fmt"
 
 	"chain/math/checked"
 )
@@ -19,11 +18,11 @@ func opMerge(vm *vm) {
 	v1 := vm.popValue(entrystack)
 	v2 := vm.popValue(entrystack)
 	if !bytes.Equal(v1.assetID, v2.assetID) {
-		panic(fmt.Errorf("merge: mismatched asset IDs (%x vs. %x)", v1.assetID, v2.assetID))
+		panic(vm.errf("merge: mismatched asset IDs (%x vs. %x)", v1.assetID, v2.assetID))
 	}
 	newamt, ok := checked.AddInt64(v1.amount, v2.amount)
 	if !ok {
-		panic("merge: sum overflows int64")
+		panic(vm.errf("merge: sum of %d and %d overflows int64", v1.amount, v2.amount))
 	}
 	vm.pushValue(entrystack, &value{newamt, v1.assetID})
 }
@@ -32,7 +31,7 @@ func opSplit(vm *vm) {
 	val := vm.popValue(entrystack)
 	amt := vm.popInt64(datastack)
 	if amt >= val.amount {
-		panic(fmt.Errorf("split: amount too large (%d vs. %d)", amt, val.amount))
+		panic(vm.errf("split: amount too large (%d vs. %d)", amt, val.amount))
 	}
 	vm.pushValue(entrystack, &value{val.amount - amt, val.assetID})
 	vm.pushValue(entrystack, &value{amt, val.assetID})

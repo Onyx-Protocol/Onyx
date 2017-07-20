@@ -17,7 +17,7 @@ func opDelete(vm *vm) {
 	rec := vm.popRecord(entrystack)
 	cmd := vm.peekProgram(commandstack)
 	if !bytes.Equal(rec.commandprogram, cmd.program) {
-		panic(ErrRecord)
+		panic(vm.wraperr(ErrRecord))
 	}
 }
 
@@ -25,7 +25,7 @@ func opComplete(vm *vm) {
 	rec := vm.popRecord(entrystack)
 	cmd := vm.peekProgram(commandstack)
 	if !bytes.Equal(rec.commandprogram, cmd.program) {
-		panic(ErrRecord)
+		panic(vm.wraperr(ErrRecord))
 	}
 	vm.pushRecord(effectstack, rec)
 }

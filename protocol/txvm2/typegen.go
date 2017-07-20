@@ -35,7 +35,7 @@ func (vm *vm) peekTxwitness(stacknum int64) *txwitness {
 	t := v.(tuple)
 	var x txwitness
 	if !x.detuple(t) {
-		panic("tuple is not a valid txwitness")
+		panic(vm.err("tuple is not a valid txwitness"))
 	}
 	return &x
 }
@@ -45,7 +45,7 @@ func (vm *vm) popTxwitness(stacknum int64) *txwitness {
 	t := v.(tuple)
 	var x txwitness
 	if !x.detuple(t) {
-		panic("tuple is not a valid txwitness")
+		panic(vm.err("tuple is not a valid txwitness"))
 	}
 	return &x
 }
@@ -87,7 +87,7 @@ func (vm *vm) peekTx(stacknum int64) *tx {
 	t := v.(tuple)
 	var x tx
 	if !x.detuple(t) {
-		panic("tuple is not a valid tx")
+		panic(vm.err("tuple is not a valid tx"))
 	}
 	return &x
 }
@@ -97,7 +97,7 @@ func (vm *vm) popTx(stacknum int64) *tx {
 	t := v.(tuple)
 	var x tx
 	if !x.detuple(t) {
-		panic("tuple is not a valid tx")
+		panic(vm.err("tuple is not a valid tx"))
 	}
 	return &x
 }
@@ -137,7 +137,7 @@ func (vm *vm) peekValue(stacknum int64) *value {
 	t := v.(tuple)
 	var x value
 	if !x.detuple(t) {
-		panic("tuple is not a valid value")
+		panic(vm.err("tuple is not a valid value"))
 	}
 	return &x
 }
@@ -147,7 +147,7 @@ func (vm *vm) popValue(stacknum int64) *value {
 	t := v.(tuple)
 	var x value
 	if !x.detuple(t) {
-		panic("tuple is not a valid value")
+		panic(vm.err("tuple is not a valid value"))
 	}
 	return &x
 }
@@ -167,7 +167,7 @@ func (vm *vm) peekValuecommitment(stacknum int64) *valuecommitment {
 	t := v.(tuple)
 	var x valuecommitment
 	if !x.detuple(t) {
-		panic("tuple is not a valid valuecommitment")
+		panic(vm.err("tuple is not a valid valuecommitment"))
 	}
 	return &x
 }
@@ -177,7 +177,7 @@ func (vm *vm) popValuecommitment(stacknum int64) *valuecommitment {
 	t := v.(tuple)
 	var x valuecommitment
 	if !x.detuple(t) {
-		panic("tuple is not a valid valuecommitment")
+		panic(vm.err("tuple is not a valid valuecommitment"))
 	}
 	return &x
 }
@@ -197,7 +197,7 @@ func (vm *vm) peekAssetcommitment(stacknum int64) *assetcommitment {
 	t := v.(tuple)
 	var x assetcommitment
 	if !x.detuple(t) {
-		panic("tuple is not a valid assetcommitment")
+		panic(vm.err("tuple is not a valid assetcommitment"))
 	}
 	return &x
 }
@@ -207,7 +207,7 @@ func (vm *vm) popAssetcommitment(stacknum int64) *assetcommitment {
 	t := v.(tuple)
 	var x assetcommitment
 	if !x.detuple(t) {
-		panic("tuple is not a valid assetcommitment")
+		panic(vm.err("tuple is not a valid assetcommitment"))
 	}
 	return &x
 }
@@ -247,7 +247,7 @@ func (vm *vm) peekUnprovenvalue(stacknum int64) *unprovenvalue {
 	t := v.(tuple)
 	var x unprovenvalue
 	if !x.detuple(t) {
-		panic("tuple is not a valid unprovenvalue")
+		panic(vm.err("tuple is not a valid unprovenvalue"))
 	}
 	return &x
 }
@@ -257,7 +257,7 @@ func (vm *vm) popUnprovenvalue(stacknum int64) *unprovenvalue {
 	t := v.(tuple)
 	var x unprovenvalue
 	if !x.detuple(t) {
-		panic("tuple is not a valid unprovenvalue")
+		panic(vm.err("tuple is not a valid unprovenvalue"))
 	}
 	return &x
 }
@@ -301,7 +301,7 @@ func (vm *vm) peekProvenvalue(stacknum int64) *provenvalue {
 	t := v.(tuple)
 	var x provenvalue
 	if !x.detuple(t) {
-		panic("tuple is not a valid provenvalue")
+		panic(vm.err("tuple is not a valid provenvalue"))
 	}
 	return &x
 }
@@ -311,7 +311,7 @@ func (vm *vm) popProvenvalue(stacknum int64) *provenvalue {
 	t := v.(tuple)
 	var x provenvalue
 	if !x.detuple(t) {
-		panic("tuple is not a valid provenvalue")
+		panic(vm.err("tuple is not a valid provenvalue"))
 	}
 	return &x
 }
@@ -351,7 +351,7 @@ func (vm *vm) peekRecord(stacknum int64) *record {
 	t := v.(tuple)
 	var x record
 	if !x.detuple(t) {
-		panic("tuple is not a valid record")
+		panic(vm.err("tuple is not a valid record"))
 	}
 	return &x
 }
@@ -361,7 +361,7 @@ func (vm *vm) popRecord(stacknum int64) *record {
 	t := v.(tuple)
 	var x record
 	if !x.detuple(t) {
-		panic("tuple is not a valid record")
+		panic(vm.err("tuple is not a valid record"))
 	}
 	return &x
 }
@@ -399,7 +399,7 @@ func (vm *vm) peekInput(stacknum int64) *input {
 	t := v.(tuple)
 	var x input
 	if !x.detuple(t) {
-		panic("tuple is not a valid input")
+		panic(vm.err("tuple is not a valid input"))
 	}
 	return &x
 }
@@ -409,7 +409,7 @@ func (vm *vm) popInput(stacknum int64) *input {
 	t := v.(tuple)
 	var x input
 	if !x.detuple(t) {
-		panic("tuple is not a valid input")
+		panic(vm.err("tuple is not a valid input"))
 	}
 	return &x
 }
@@ -447,7 +447,7 @@ func (vm *vm) peekOutput(stacknum int64) *output {
 	t := v.(tuple)
 	var x output
 	if !x.detuple(t) {
-		panic("tuple is not a valid output")
+		panic(vm.err("tuple is not a valid output"))
 	}
 	return &x
 }
@@ -457,7 +457,7 @@ func (vm *vm) popOutput(stacknum int64) *output {
 	t := v.(tuple)
 	var x output
 	if !x.detuple(t) {
-		panic("tuple is not a valid output")
+		panic(vm.err("tuple is not a valid output"))
 	}
 	return &x
 }
@@ -495,7 +495,7 @@ func (vm *vm) peekRead(stacknum int64) *read {
 	t := v.(tuple)
 	var x read
 	if !x.detuple(t) {
-		panic("tuple is not a valid read")
+		panic(vm.err("tuple is not a valid read"))
 	}
 	return &x
 }
@@ -505,7 +505,7 @@ func (vm *vm) popRead(stacknum int64) *read {
 	t := v.(tuple)
 	var x read
 	if !x.detuple(t) {
-		panic("tuple is not a valid read")
+		panic(vm.err("tuple is not a valid read"))
 	}
 	return &x
 }
@@ -549,7 +549,7 @@ func (vm *vm) peekContract(stacknum int64) *contract {
 	t := v.(tuple)
 	var x contract
 	if !x.detuple(t) {
-		panic("tuple is not a valid contract")
+		panic(vm.err("tuple is not a valid contract"))
 	}
 	return &x
 }
@@ -559,7 +559,7 @@ func (vm *vm) popContract(stacknum int64) *contract {
 	t := v.(tuple)
 	var x contract
 	if !x.detuple(t) {
-		panic("tuple is not a valid contract")
+		panic(vm.err("tuple is not a valid contract"))
 	}
 	return &x
 }
@@ -597,7 +597,7 @@ func (vm *vm) peekProgram(stacknum int64) *program {
 	t := v.(tuple)
 	var x program
 	if !x.detuple(t) {
-		panic("tuple is not a valid program")
+		panic(vm.err("tuple is not a valid program"))
 	}
 	return &x
 }
@@ -607,7 +607,7 @@ func (vm *vm) popProgram(stacknum int64) *program {
 	t := v.(tuple)
 	var x program
 	if !x.detuple(t) {
-		panic("tuple is not a valid program")
+		panic(vm.err("tuple is not a valid program"))
 	}
 	return &x
 }
@@ -651,7 +651,7 @@ func (vm *vm) peekNonce(stacknum int64) *nonce {
 	t := v.(tuple)
 	var x nonce
 	if !x.detuple(t) {
-		panic("tuple is not a valid nonce")
+		panic(vm.err("tuple is not a valid nonce"))
 	}
 	return &x
 }
@@ -661,7 +661,7 @@ func (vm *vm) popNonce(stacknum int64) *nonce {
 	t := v.(tuple)
 	var x nonce
 	if !x.detuple(t) {
-		panic("tuple is not a valid nonce")
+		panic(vm.err("tuple is not a valid nonce"))
 	}
 	return &x
 }
@@ -699,7 +699,7 @@ func (vm *vm) peekAnchor(stacknum int64) *anchor {
 	t := v.(tuple)
 	var x anchor
 	if !x.detuple(t) {
-		panic("tuple is not a valid anchor")
+		panic(vm.err("tuple is not a valid anchor"))
 	}
 	return &x
 }
@@ -709,7 +709,7 @@ func (vm *vm) popAnchor(stacknum int64) *anchor {
 	t := v.(tuple)
 	var x anchor
 	if !x.detuple(t) {
-		panic("tuple is not a valid anchor")
+		panic(vm.err("tuple is not a valid anchor"))
 	}
 	return &x
 }
@@ -749,7 +749,7 @@ func (vm *vm) peekRetirement(stacknum int64) *retirement {
 	t := v.(tuple)
 	var x retirement
 	if !x.detuple(t) {
-		panic("tuple is not a valid retirement")
+		panic(vm.err("tuple is not a valid retirement"))
 	}
 	return &x
 }
@@ -759,7 +759,7 @@ func (vm *vm) popRetirement(stacknum int64) *retirement {
 	t := v.(tuple)
 	var x retirement
 	if !x.detuple(t) {
-		panic("tuple is not a valid retirement")
+		panic(vm.err("tuple is not a valid retirement"))
 	}
 	return &x
 }
@@ -797,7 +797,7 @@ func (vm *vm) peekAssetdefinition(stacknum int64) *assetdefinition {
 	t := v.(tuple)
 	var x assetdefinition
 	if !x.detuple(t) {
-		panic("tuple is not a valid assetdefinition")
+		panic(vm.err("tuple is not a valid assetdefinition"))
 	}
 	return &x
 }
@@ -807,7 +807,7 @@ func (vm *vm) popAssetdefinition(stacknum int64) *assetdefinition {
 	t := v.(tuple)
 	var x assetdefinition
 	if !x.detuple(t) {
-		panic("tuple is not a valid assetdefinition")
+		panic(vm.err("tuple is not a valid assetdefinition"))
 	}
 	return &x
 }
@@ -847,7 +847,7 @@ func (vm *vm) peekIssuancecandidate(stacknum int64) *issuancecandidate {
 	t := v.(tuple)
 	var x issuancecandidate
 	if !x.detuple(t) {
-		panic("tuple is not a valid issuancecandidate")
+		panic(vm.err("tuple is not a valid issuancecandidate"))
 	}
 	return &x
 }
@@ -857,7 +857,7 @@ func (vm *vm) popIssuancecandidate(stacknum int64) *issuancecandidate {
 	t := v.(tuple)
 	var x issuancecandidate
 	if !x.detuple(t) {
-		panic("tuple is not a valid issuancecandidate")
+		panic(vm.err("tuple is not a valid issuancecandidate"))
 	}
 	return &x
 }
@@ -895,7 +895,7 @@ func (vm *vm) peekMaxtime(stacknum int64) *maxtime {
 	t := v.(tuple)
 	var x maxtime
 	if !x.detuple(t) {
-		panic("tuple is not a valid maxtime")
+		panic(vm.err("tuple is not a valid maxtime"))
 	}
 	return &x
 }
@@ -905,7 +905,7 @@ func (vm *vm) popMaxtime(stacknum int64) *maxtime {
 	t := v.(tuple)
 	var x maxtime
 	if !x.detuple(t) {
-		panic("tuple is not a valid maxtime")
+		panic(vm.err("tuple is not a valid maxtime"))
 	}
 	return &x
 }
@@ -943,7 +943,7 @@ func (vm *vm) peekMintime(stacknum int64) *mintime {
 	t := v.(tuple)
 	var x mintime
 	if !x.detuple(t) {
-		panic("tuple is not a valid mintime")
+		panic(vm.err("tuple is not a valid mintime"))
 	}
 	return &x
 }
@@ -953,7 +953,7 @@ func (vm *vm) popMintime(stacknum int64) *mintime {
 	t := v.(tuple)
 	var x mintime
 	if !x.detuple(t) {
-		panic("tuple is not a valid mintime")
+		panic(vm.err("tuple is not a valid mintime"))
 	}
 	return &x
 }
@@ -991,7 +991,7 @@ func (vm *vm) peekAnnotation(stacknum int64) *annotation {
 	t := v.(tuple)
 	var x annotation
 	if !x.detuple(t) {
-		panic("tuple is not a valid annotation")
+		panic(vm.err("tuple is not a valid annotation"))
 	}
 	return &x
 }
@@ -1001,7 +1001,7 @@ func (vm *vm) popAnnotation(stacknum int64) *annotation {
 	t := v.(tuple)
 	var x annotation
 	if !x.detuple(t) {
-		panic("tuple is not a valid annotation")
+		panic(vm.err("tuple is not a valid annotation"))
 	}
 	return &x
 }
@@ -1049,7 +1049,7 @@ func (vm *vm) peekLegacyoutput(stacknum int64) *legacyoutput {
 	t := v.(tuple)
 	var x legacyoutput
 	if !x.detuple(t) {
-		panic("tuple is not a valid legacyoutput")
+		panic(vm.err("tuple is not a valid legacyoutput"))
 	}
 	return &x
 }
@@ -1059,7 +1059,7 @@ func (vm *vm) popLegacyoutput(stacknum int64) *legacyoutput {
 	t := v.(tuple)
 	var x legacyoutput
 	if !x.detuple(t) {
-		panic("tuple is not a valid legacyoutput")
+		panic(vm.err("tuple is not a valid legacyoutput"))
 	}
 	return &x
 }
@@ -1113,7 +1113,7 @@ func (vm *vm) peekVm1program(stacknum int64) *vm1program {
 	t := v.(tuple)
 	var x vm1program
 	if !x.detuple(t) {
-		panic("tuple is not a valid vm1program")
+		panic(vm.err("tuple is not a valid vm1program"))
 	}
 	return &x
 }
@@ -1123,7 +1123,7 @@ func (vm *vm) popVm1program(stacknum int64) *vm1program {
 	t := v.(tuple)
 	var x vm1program
 	if !x.detuple(t) {
-		panic("tuple is not a valid vm1program")
+		panic(vm.err("tuple is not a valid vm1program"))
 	}
 	return &x
 }

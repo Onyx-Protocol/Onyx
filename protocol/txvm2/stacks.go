@@ -1,15 +1,12 @@
 package txvm2
 
-import (
-	"bytes"
-	"fmt"
-)
+import "bytes"
 
 func opRoll(vm *vm) {
 	stackID := vm.popInt64(datastack)
 	switch stackID {
 	case commandstack, effectstack:
-		panic(fmt.Errorf("cannot roll on stack %d", stackID))
+		panic(vm.errf("cannot roll on stack %d", stackID))
 	}
 	s := vm.stacks[stackID] // xxx range check
 	n := vm.popInt64(datastack)
@@ -21,7 +18,7 @@ func opBury(vm *vm) {
 	stackID := vm.popInt64(datastack)
 	switch stackID {
 	case commandstack, effectstack:
-		panic(fmt.Errorf("cannot bury on stack %d", stackID))
+		panic(vm.errf("cannot bury on stack %d", stackID))
 	}
 	s := vm.stacks[stackID] // xxx range check
 	n := vm.popInt64(datastack)
@@ -33,13 +30,13 @@ func opReverse(vm *vm) {
 	stackID := vm.popInt64(datastack)
 	switch stackID {
 	case commandstack, effectstack:
-		panic(fmt.Errorf("cannot reverse on stack %d", stackID))
+		panic(vm.errf("cannot reverse on stack %d", stackID))
 	}
 	s := vm.stacks[stackID] // xxx range check
 	n := vm.popInt64(datastack)
 	vals := s.popN(int64(n))
 	if int64(len(vals)) != int64(n) {
-		panic(fmt.Errorf("too few items on stack (%d vs. %d)", len(vals), n))
+		panic(vm.errf("too few items on stack (%d vs. %d)", len(vals), n))
 	}
 	s.pushN(vals)
 	// xxx runlimit
@@ -58,7 +55,7 @@ func opPeek(vm *vm) {
 	n := vm.popInt64(datastack)
 	item, ok := s.peek(int64(n))
 	if !ok {
-		panic(fmt.Errorf("too few items on stack (%d vs.  %d)", len(*s), n))
+		panic(vm.errf("too few items on stack (%d vs.  %d)", len(*s), n))
 	}
 	vm.push(datastack, item)
 }
@@ -93,7 +90,7 @@ func opLen(vm *vm) {
 	case tuple:
 		vm.push(datastack, vint64(len(v)))
 	default:
-		panic(fmt.Errorf("len: cannot take the length of %T", v))
+		panic(vm.errf("len: cannot take the length of %T", v))
 	}
 }
 

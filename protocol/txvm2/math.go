@@ -35,7 +35,7 @@ func binOp(vm *vm, f func(a, b int64) (int64, bool)) {
 	b := vm.popInt64(datastack)
 	res, ok := f(int64(a), int64(b))
 	if !ok {
-		panic("arithmetic overflow")
+		panic(vm.err("arithmetic overflow"))
 	}
 	vm.push(datastack, vint64(res))
 }

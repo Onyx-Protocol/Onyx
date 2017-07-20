@@ -85,7 +85,7 @@ type provenvalue struct {
 
 type record struct {
 	commandprogram []byte
-	data           item
+	data           Item
 }
 
 type input struct {

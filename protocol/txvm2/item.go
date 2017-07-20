@@ -8,7 +8,7 @@ import (
 	"chain/crypto/sha3pool"
 )
 
-type item interface {
+type Item interface {
 	typ() int
 	encode(io.Writer)
 }
@@ -16,7 +16,7 @@ type item interface {
 type (
 	vint64 int64
 	vbytes []byte
-	tuple  []item
+	tuple  []Item
 )
 
 const (
@@ -52,7 +52,7 @@ func (t tuple) encode(w io.Writer) {
 	w.Write([]byte{OpTuple})
 }
 
-func getID(v item) []byte {
+func getID(v Item) []byte {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
@@ -65,7 +65,7 @@ func getID(v item) []byte {
 	return hash[:]
 }
 
-func encode(v item) []byte {
+func encode(v Item) []byte {
 	b := new(bytes.Buffer)
 	v.encode(b)
 	return b.Bytes()

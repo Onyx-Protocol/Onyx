@@ -208,7 +208,7 @@ func types() {
 						fmt.Fprintf(out, "\tv := vm.peek(stacknum)\n")
 						fmt.Fprintf(out, "\tt := v.(tuple)\n")
 						fmt.Fprintf(out, "\tvar x %s\n", typeName)
-						fmt.Fprintf(out, "\tif !x.detuple(t) { panic(\"tuple is not a valid %s\") }\n", typeName)
+						fmt.Fprintf(out, "\tif !x.detuple(t) { panic(vm.err(\"tuple is not a valid %s\")) }\n", typeName)
 						fmt.Fprintf(out, "\treturn &x\n")
 						fmt.Fprintf(out, "}\n\n")
 					}
@@ -219,7 +219,7 @@ func types() {
 						fmt.Fprintf(out, "\tv := vm.pop(stacknum)\n")
 						fmt.Fprintf(out, "\tt := v.(tuple)\n")
 						fmt.Fprintf(out, "\tvar x %s\n", typeName)
-						fmt.Fprintf(out, "\tif !x.detuple(t) { panic(\"tuple is not a valid %s\") }\n", typeName)
+						fmt.Fprintf(out, "\tif !x.detuple(t) { panic(vm.err(\"tuple is not a valid %s\")) }\n", typeName)
 						fmt.Fprintf(out, "\treturn &x\n")
 						fmt.Fprintf(out, "}\n\n")
 					}
@@ -243,7 +243,7 @@ func types() {
 
 func isItem(t ast.Expr) bool {
 	if id, ok := t.(*ast.Ident); ok {
-		return id.Name == "item"
+		return id.Name == "Item"
 	}
 	return false
 }

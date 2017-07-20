@@ -1,10 +1,6 @@
 package txvm2
 
-import (
-	"fmt"
-
-	"chain/crypto/ca"
-)
+import "chain/crypto/ca"
 
 func opWrapValue(vm *vm) {
 	val := vm.popValue(entrystack)
@@ -45,7 +41,7 @@ func opProveAssetRange(vm *vm) {
 	var rs ca.RingSignature
 	ok := rs.Decode(rsBytes)
 	if !ok {
-		panic(fmt.Errorf("proveassetrange: bad ring signature length %d", len(rsBytes)))
+		panic(vm.errf("proveassetrange: bad ring signature length %d", len(rsBytes)))
 	}
 
 	n := int64(len(rsBytes)/32 - 1)
@@ -59,7 +55,7 @@ func opProveAssetRange(vm *vm) {
 	for _, t := range items {
 		var ac assetcommitment
 		if !ac.detuple(t.(tuple)) {
-			panic(fmt.Errorf("%T on entry stack is not an assetcommitment", t))
+			panic(vm.errf("%T on entry stack is not an assetcommitment", t))
 		}
 		acs = append(acs, ac.ac)
 	}
@@ -69,7 +65,7 @@ func opProveAssetRange(vm *vm) {
 		Signature:   &rs,
 	}
 	if !arp.Validate(prog, ac.ac) {
-		panic("invalid asset range proof")
+		panic(vm.err("invalid asset range proof"))
 	}
 
 	vm.pushAssetcommitment(entrystack, ac)
