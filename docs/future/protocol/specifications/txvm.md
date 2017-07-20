@@ -227,11 +227,14 @@ The conversion process is:
 8. Verify that byte `n` at offset `4 + 33*N` equals `0x51 + N - 1`.
 9. Verify that the remaining 5 bytes (at offsets from `5 + 33*N` to `9 + 33*N` inclusive) equal `0xad 0x68 0x6c 0x00 0xc0`.
 10. Construct the new predicate using `N` extracted public keys and `M` as a threshold:
-    
+        
+        # expected stack is: <sigN> <sigN-1> ... <sig1> <program>, where missing signature are empty strings
+        
         toalt             # moves signed predicate string to an altstack
         0                 # pushes counter set to initial value 0
         
         # repeat the following code for N public keys (i=1..N):
+        
             1 0 roll          # swaps top signature with the counter
             <pubkey-i>        # pushes i-th pubkey
             0 1 peek          # copies predicate from the altstack as message
@@ -244,7 +247,7 @@ The conversion process is:
         fromalt
         command
 
-11. Return the resulting predicate
+11. Return the resulting predicate.
 
 ### Spending legacy outputs
 
