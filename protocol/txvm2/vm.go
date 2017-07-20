@@ -48,26 +48,32 @@ type opFuncType func(*vm)
 var ErrResidue = errors.New("residue on stack(s)")
 
 func Validate(txprog []byte, txVersion, runlimit int64, o ...Option) (txid [32]byte, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			var ok bool
-			if err, ok = r.(error); ok {
-				return
-			}
-			// r is not an error, re-panic
-			panic(r)
-		}
-	}()
-
 	vm := &vm{
 		txVersion:       txVersion,
 		initialRunlimit: runlimit,
 		runlimit:        runlimit,
+		traceOp:         func(byte, []byte, VM) {},
+		traceError:      func(error) {},
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			if err, ok = r.(error); ok {
+				vm.traceError(err)
+				return
+			}
+			// r is some other non-error object, re-panic
+			panic(r)
+		}
+	}()
+
 	for _, o := range o {
 		o(vm)
 	}
+
 	exec(vm, txprog)
+
 	tx := vm.peekTx(effectstack)
 	copy(txid[:], tx.id())
 	if !vm.getStack(entrystack).isEmpty() {
