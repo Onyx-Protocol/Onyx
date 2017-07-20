@@ -91,3 +91,53 @@ func TestListFunc(t *testing.T) {
 		t.Errorf("got %#v, want %#v", got, want)
 	}
 }
+
+func TestSet(t *testing.T) {
+	sdb := sinkdbtest.NewDB(t)
+	opts := New(sdb)
+	opts.DefineSingle("example", 2, identityFunc)
+
+	ctx := context.Background()
+
+	must(t, sdb.Exec(ctx, opts.Set("example", []string{"foo", "bar"})))
+	got, err := opts.List(ctx, "example")
+	must(t, err)
+	want := [][]string{{"foo", "bar"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+
+	must(t, sdb.Exec(ctx, opts.Set("example", []string{"baz", "bax"})))
+	got, err = opts.List(ctx, "example")
+	must(t, err)
+	want = [][]string{{"baz", "bax"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+
+	must(t, sdb.Exec(ctx, opts.Remove("example", nil)))
+	got, err = opts.List(ctx, "example")
+	must(t, err)
+	if got != nil {
+		t.Errorf("got %#v, want nil", got)
+	}
+}
+
+func TestGetFunc(t *testing.T) {
+	sdb := sinkdbtest.NewDB(t)
+	opts := New(sdb)
+	opts.DefineSingle("example", 1, identityFunc)
+
+	ctx := context.Background()
+	must(t, sdb.Exec(ctx, opts.Set("example", []string{"foo"})))
+
+	// perform a linearizable read since GetFunc won't and we
+	// want a deterministic test case
+	must(t, sdb.RaftService().WaitRead(ctx))
+
+	got := opts.GetFunc("example")()
+	want := []string{"foo"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("GetFunc(\"example\")() = %#v, want %#v", got, want)
+	}
+}

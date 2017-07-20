@@ -45,6 +45,7 @@ type CleanFunc func(newTuple []string) error
 type EqualFunc func(a, b []string) bool
 
 type option struct {
+	set       bool
 	tupleSize int
 	cleanFunc CleanFunc
 	equalFunc EqualFunc
@@ -69,9 +70,20 @@ func (opts *Options) Err() error {
 // cleanFunc. Equality when adding and removing is determined by equalFunc.
 func (opts *Options) DefineSet(key string, tupleSize int, cleanFunc CleanFunc, equalFunc EqualFunc) {
 	opts.schema[key] = option{
+		set:       true,
 		tupleSize: tupleSize,
 		cleanFunc: cleanFunc,
 		equalFunc: equalFunc,
+	}
+}
+
+// DefineSingle defines a new configuration option that takes a single
+// tuple value of size tupleSize. New tuples will be validated and
+// canonicalized by cleanFunc.
+func (opts *Options) DefineSingle(key string, tupleSize int, cleanFunc CleanFunc) {
+	opts.schema[key] = option{
+		tupleSize: tupleSize,
+		cleanFunc: cleanFunc,
 	}
 }
 
@@ -107,7 +119,7 @@ func (opts *Options) ListFunc(key string) func() [][]string {
 	opt, ok := opts.schema[key]
 	if !ok {
 		panic(fmt.Errorf("unknown config option %q", key))
-	} else if opt.equalFunc == nil {
+	} else if !opt.set {
 		panic(fmt.Errorf("config option %q is a scalar, not a set", key))
 	}
 
@@ -139,6 +151,56 @@ func (opts *Options) ListFunc(key string) func() [][]string {
 		}
 		old.Store(tuples)
 		return tuples
+	}
+}
+
+// GetFunc returns a closure that returns the tuple value
+// for the provided key.
+//
+// The configuration option for key must be defined as a
+// single tuple. GetFunc panics if the provided key is
+// undefined or is defined as a set of tuples.
+//
+// The returned function performs a stale read of the configuration
+// value. If an error occurs while reading the value, the old
+// value is returned, and the error is saved on the Options
+// type to be returned in Err.
+func (opts *Options) GetFunc(key string) func() []string {
+	opt, ok := opts.schema[key]
+	if !ok {
+		panic(fmt.Errorf("unknown config option %q", key))
+	} else if opt.set {
+		panic(fmt.Errorf("config option %q is a set, not a scalar", key))
+	}
+
+	// old is the last successfully retrieved tuple for this
+	// configuration key. The returned closure updates it on
+	// every successful lookup. If an error occurs, the closure
+	// returns this value.
+	var old atomic.Value
+	old.Store([]string(nil))
+
+	return func() []string {
+		var set configpb.ValueSet
+		_, err := opts.sdb.GetStale(path.Join(sinkdbPrefix, key), &set)
+		if err != nil {
+			opts.errsMu.Lock()
+			opts.errs[key] = err
+			opts.errsMu.Unlock()
+			return old.Load().([]string)
+		}
+
+		// clear any error for this key bc we succeeded
+		opts.errsMu.Lock()
+		delete(opts.errs, key)
+		opts.errsMu.Unlock()
+
+		if len(set.Tuples) == 0 {
+			old.Store([]string(nil))
+			return nil
+		}
+		old.Store(set.Tuples[0].Values)
+		return set.Tuples[0].Values
 	}
 }
 
@@ -176,8 +238,8 @@ func (opts *Options) add(key string, tup []string, onConflict func(new, existing
 	if opt.tupleSize != len(tup) {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
 	}
-	if opt.equalFunc == nil {
-		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead."))
+	if !opt.set {
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead.", key))
 	}
 
 	// make a copy to avoid mutating tup
@@ -217,18 +279,50 @@ func (opts *Options) add(key string, tup []string, onConflict func(new, existing
 	)
 }
 
-// Remove removes the provided tuple from the configuration option set
-// indicated by key.
+// Set updates the configuration option indicated by key with the value
+// tup. If the configuration option is already set, Set will overwrite
+// the existing value.
+func (opts *Options) Set(key string, tup []string) sinkdb.Op {
+	opt, ok := opts.schema[key]
+	if !ok {
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is undefined.", key))
+	}
+	if opt.tupleSize != len(tup) {
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
+	}
+	if opt.set {
+		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a set of tuples. Use corectl add instead."))
+	}
+
+	// make a copy to avoid mutating tup
+	cleaned := make([]string, len(tup))
+	copy(cleaned, tup)
+	err := opt.cleanFunc(cleaned)
+	if err != nil {
+		return sinkdb.Error(errors.Sub(ErrConfigOp, err))
+	}
+	return sinkdb.Set(path.Join(sinkdbPrefix, key), &configpb.ValueSet{
+		Tuples: []*configpb.ValueTuple{{Values: cleaned}},
+	})
+}
+
+// Remove removes the provided tuple from the configuration option
+// indicated by key. If the option indicated by key takes a single
+// value, tup is unused, and the option's value is cleared regardless
+// of its current value.
 func (opts *Options) Remove(key string, tup []string) sinkdb.Op {
 	opt, ok := opts.schema[key]
 	if !ok {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q undefined", key))
 	}
-	if opt.tupleSize != len(tup) {
+	if opt.set && opt.tupleSize != len(tup) {
 		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q expects %d arguments.", key, opt.tupleSize))
 	}
-	if opt.equalFunc == nil {
-		return sinkdb.Error(errors.WithDetailf(ErrConfigOp, "Configuration option %q is a scalar. Use corectl set instead."))
+
+	// If opt is defined to take a single value, just remove
+	// the key altogether.
+	if !opt.set {
+		return sinkdb.Delete(path.Join(sinkdbPrefix, key))
 	}
 
 	// make a copy to avoid mutating tup
