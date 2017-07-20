@@ -1,6 +1,7 @@
 package txvm
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -30,24 +31,94 @@ type token struct {
 	lit string
 }
 
-var composite = map[string][]byte{
-	"bool":   {Not, Not},
-	"verify": {PC, BaseInt + 4, Add, JumpIf, Fail},
-	"jump":   {BaseInt + 1, BaseInt + 1, Roll, JumpIf},
-	"max":    {Dup, BaseInt + 2, Roll, Dup, BaseInt + 2, Bury, GT, PC, BaseInt + 5, Add, JumpIf, BaseInt + 1, Roll, Drop},
-	"min":    {Dup, BaseInt + 2, Roll, Dup, BaseInt + 2, Bury, GT, Not, PC, BaseInt + 5, Add, JumpIf, BaseInt + 1, Roll, Drop},
-	"sub":    {BaseInt - 1, Mul, Add},
-	"swap":   {BaseInt + 1, Roll},
+var composite = map[string]string{
+	"bool":   "not not",
+	"dup":    "0 datastack peek",
+	"jump":   "1 swap jumpif",
+	"max":    "dup 2 datastack roll dup 2 datastack bury greaterthan pc 5 add jumpif swap drop",
+	"min":    "dup 2 datastack roll dup 2 datastack bury greaterthan not pc 5 add jumpif swap drop",
+	"swap":   "1 datastack roll",
+	"verify": "pc 4 add jumpif fail",
+}
+
+var stackNames = map[string]int64{
+	"datastack":    datastack,
+	"altstack":     altstack,
+	"entrystack":   entrystack,
+	"commandstack": commandstack,
+	"effectstack":  effectstack,
 }
 
 // Notation:
-//    word  mnemonic
-//   12345  number
-//   x"aa"  hex data
-//   [dup]  quoted program
+//    word     mnemonic
+//   12345     number
+//   x"aa"     hex data
+//   'foo'     string
+//   [dup]     quoted program
+//   {x, y, z} tuple (encoded as "push z, push y, push x, push 3, 'tuple'")
 func Assemble(src string) ([]byte, error) {
 	tokens := tokenize(src)
 	return parse(tokens)
+}
+
+func Disassemble(prog []byte) (string, error) {
+	var result []string
+	for pc := int64(0); pc < int64(len(prog)); {
+		opcode := prog[pc]
+		pc++
+		switch {
+		case isSmallIntOp(opcode):
+			result = append(result, fmt.Sprintf("%d", opcode-MinSmallInt))
+		case int(opcode) >= len(opNames):
+			result = append(result, fmt.Sprintf("nop%d", opcode))
+		case opcode == OpPushdata:
+			data, n, err := decodePushdata(prog[pc:])
+			if err != nil {
+				return "", err
+			}
+			pc += n
+			var s string
+			switch {
+			case pc < int64(len(prog)) && prog[pc] == OpInt64:
+				num, n2 := binary.Varint(data)
+				if n2 != len(data) {
+					return "", fmt.Errorf("wrong length for encoded varint (%d vs. %d)", n2, len(data))
+				}
+				s = fmt.Sprintf("%d", num)
+			case strings.IndexFunc(string(data), isUnprintable) < 0:
+				s = fmt.Sprintf("'%s'", strEscape(data))
+			default:
+				s = fmt.Sprintf("x\"%x\"", data)
+			}
+			result = append(result, s)
+		default:
+			if name := opNames[opcode]; name != "" {
+				result = append(result, name)
+			} else {
+				result = append(result, fmt.Sprintf("nop%d", opcode))
+			}
+		}
+	}
+	// TODO: map op patterns to "composite" abbrevs
+	// TODO: map "... tuple" to "{...}"
+	// TODO: map some strings to disassembled program literals
+	return strings.Join(result, " "), nil
+}
+
+func isUnprintable(r rune) bool {
+	return !unicode.IsPrint(r)
+}
+
+func strEscape(in []byte) string {
+	b := new(bytes.Buffer)
+	for _, c := range in {
+		switch c {
+		case '\\', '\'':
+			b.WriteByte('\\')
+		}
+		b.WriteByte(c)
+	}
+	return string(b.Bytes())
 }
 
 func parse(tokens []token) ([]byte, error) {
@@ -69,21 +140,27 @@ func parseStatement(tokens []token) ([]byte, int, error) {
 	var p []byte
 	switch token.typ {
 	case mnemonicTok:
-		if opcode, ok := OpCodes[token.lit]; ok {
-			p = append(p, opcode)
-		} else if seq, ok := composite[token.lit]; ok {
-			p = append(p, seq...)
-		} else if stackNum, ok := stackNames[token.lit]; ok {
-			p = append(p, pushInt64(stackNum)...)
-		} else {
-			return nil, 0, errors.New("bad mnemonic " + token.lit)
+		if opcode, ok := opCodes[token.lit]; ok {
+			return append(p, opcode), 1, nil
 		}
+		if seq, ok := composite[token.lit]; ok {
+			p2, err := parse(tokenize(seq))
+			if err != nil {
+				return nil, 0, err
+			}
+			return append(p, p2...), 1, nil
+		}
+		if stackNum, ok := stackNames[token.lit]; ok {
+			return append(p, pushInt64(stackNum)...), 1, nil
+		}
+		return nil, 0, errors.New("bad mnemonic " + token.lit)
+
 	case numberTok, hexTok, stringTok, progOpenTok, tupleOpenTok:
 		return parseValue(tokens)
+
 	default:
 		return nil, 0, fmt.Errorf("unexpected token: %s", token.lit)
 	}
-	return p, 1, nil
 }
 
 func parseValue(tokens []token) ([]byte, int, error) {
@@ -98,13 +175,13 @@ func parseValue(tokens []token) ([]byte, int, error) {
 		if err != nil || token.lit[0] != 'x' || token.lit[1] != '"' || token.lit[len(token.lit)-1] != '"' {
 			return nil, 0, errors.New("bad hex literal " + token.lit)
 		}
-		return pushData(b), 1, nil
+		return encodePushdata(b), 1, nil
 	case stringTok:
 		s := token.lit[1 : len(token.lit)-1]
 		if token.lit[len(token.lit)-1] != '\'' {
 			return nil, 0, errors.New("bad text literal " + token.lit)
 		}
-		return pushData([]byte(s)), 1, nil
+		return encodePushdata([]byte(s)), 1, nil
 	case progOpenTok:
 		val, n, err := parseProgram(tokens[1:])
 		if err != nil {
@@ -128,7 +205,7 @@ func parseProgram(tokens []token) ([]byte, int, error) {
 		token := tokens[r]
 		switch token.typ {
 		case progCloseTok:
-			return pushData(p), r + 1, nil
+			return encodePushdata(p), r + 1, nil
 		default:
 			sub, n, err := parseStatement(tokens[r:])
 			if err != nil {
@@ -156,7 +233,7 @@ func parseTuple(tokens []token) ([]byte, int, error) {
 				p = append(p, vals[i]...)
 			}
 			p = append(p, pushInt64(int64(len(vals)))...)
-			p = append(p, MakeTuple)
+			p = append(p, OpTuple)
 			return p, r + 1, nil
 		case tupleSepTok:
 			if !requiresSep {
@@ -304,61 +381,11 @@ func scanFunc(s string, f func(rune) bool) (n int) {
 	return n
 }
 
-func pushInt64(n int64) []byte {
-	if 0 <= n && n <= 0xf {
-		return []byte{BaseInt + byte(n)}
-	} else {
-		return append(pushData(encVarint(n)), Varint)
+func pushInt64(num int64) []byte {
+	if isSmallInt(num) {
+		return []byte{MinSmallInt + byte(num)}
 	}
-}
-
-func encVarint(v int64) []byte {
-	buf := make([]byte, 10)
-	buf = buf[:binary.PutUvarint(buf, uint64(v))]
-	return buf
-}
-
-func pushData(buf []byte) (p []byte) {
-	n := uint64(len(buf)) + BaseData
-	pfx := make([]byte, 10)
-	pfx = pfx[:binary.PutUvarint(pfx, n)]
-	p = append(p, pfx...)
-	p = append(p, buf...)
-	return p
-}
-
-func Disassemble(prog []byte) string {
-	pc := 0
-
-	type instruction struct {
-		opcode byte
-		data   []byte
-	}
-
-	var instructions []instruction
-	for pc < len(prog) {
-		opcode, data, n := decodeInst(prog[pc:])
-		pc += n
-		instructions = append(instructions, instruction{opcode: opcode, data: data})
-	}
-
-	var parts []string
-	for i := 0; i < len(instructions); i++ {
-		inst := instructions[i]
-		if inst.opcode >= BaseData {
-			if len(instructions) > i+1 &&
-				instructions[i+1].opcode == Varint {
-				v, _ := binary.Uvarint(inst.data)
-				parts = append(parts, fmt.Sprintf("%d", int64(v)))
-				i += 1
-			} else {
-				parts = append(parts, fmt.Sprintf(`x"%x"`, inst.data))
-			}
-		} else if inst.opcode >= BaseInt {
-			parts = append(parts, fmt.Sprintf("%d", int(inst.opcode)-int(BaseInt)))
-		} else {
-			parts = append(parts, OpNames[inst.opcode])
-		}
-	}
-	return strings.Join(parts, " ")
+	var buf [10]byte
+	n := binary.PutVarint(buf[:], num)
+	return append(encodePushdata(buf[:n]), OpInt64)
 }

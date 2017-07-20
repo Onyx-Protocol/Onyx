@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 func opDefer(vm *vm) {
 	prog := vm.popProgram(datastack)

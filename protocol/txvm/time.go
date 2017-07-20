@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 func opBefore(vm *vm) {
 	max := vm.popInt64(datastack)

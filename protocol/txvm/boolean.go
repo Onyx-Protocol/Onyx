@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 func opNot(vm *vm) {
 	b := vm.popBool(datastack)

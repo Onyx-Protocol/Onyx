@@ -1,6 +1,6 @@
 // Auto-generated from ops.go by gen.go
 
-package txvm2
+package txvm
 
 var opNames = [...]string{
 	OpFail:                    "fail",

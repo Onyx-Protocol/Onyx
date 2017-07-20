@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 func opUnlock(vm *vm) {
 	val := vm.popTuple(datastack, valueType, provenvalueType)

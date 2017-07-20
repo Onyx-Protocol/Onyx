@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 func opCommand(vm *vm) {
 	prog := vm.popBytes(datastack)

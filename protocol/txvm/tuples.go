@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 func opTuple(vm *vm) {
 	n := vm.popInt64(datastack)

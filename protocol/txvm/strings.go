@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 func opCat(vm *vm) {
 	a := vm.popBytes(datastack)

@@ -2,66 +2,55 @@ package txvm
 
 import (
 	"bytes"
+	"encoding/hex"
 	"testing"
+
+	"chain/errors"
 )
 
-var asmValid = []struct {
-	src  string
-	prog []byte
-}{
-	{``, []byte{}},
-	{`1`, []byte{BaseInt + 1}},
-	{`10`, []byte{BaseInt + 10}},
-	{`11`, []byte{BaseInt + 11}},
-	{`14`, []byte{BaseInt + 14}},
-	{`16`, []byte{BaseData + 1, 16, Varint}},
-	{`50`, []byte{BaseData + 1, 50, Varint}},
-	{`-1`, []byte{BaseData + 10, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, Varint}},
-	{`-2`, []byte{BaseData + 10, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, Varint}},
-	{`-14`, []byte{BaseData + 10, 0xf2, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, Varint}},
-	{`-16`, []byte{BaseData + 10, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, Varint}},
-	{`-9223372036854775808`, []byte{BaseData + 10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01, Varint}},
-	{`x"55"`, []byte{BaseData + 1, 0x55}},
-	{`fail`, []byte{Fail}},
-	// assemble only:
-	{`{5, {6, 7}, 8}`, []byte{BaseInt + 8, BaseInt + 7, BaseInt + 6, BaseInt + 2, MakeTuple, BaseInt + 5, BaseInt + 3, MakeTuple}},
-	{`{5, {6, 7}, [{2}]}`, []byte{BaseData + 3, BaseInt + 2, BaseInt + 1, MakeTuple, BaseInt + 7, BaseInt + 6, BaseInt + 2, MakeTuple, BaseInt + 5, BaseInt + 3, MakeTuple}},
-	{`'test'`, []byte{BaseData + 4, 0x74, 0x65, 0x73, 0x74}},
-}
-
-func TestAssemble(t *testing.T) {
-	for _, test := range asmValid {
-		prog, err := Assemble(test.src)
+func TestAssembler(t *testing.T) {
+	cases := []struct {
+		src, wanthex string
+		wanterr      error
+	}{
+		{"fail", "00", nil},
+		{"pc", "01", nil},
+		{"pc pc", "0101", nil},
+		{"pushdata", "48", nil},
+		{"0", "4e", nil},
+		{"7", "55", nil},
+		{"8", "48011047", nil},
+		{"-1", "48010147", nil},
+		{"bool", "1111", nil},
+		{"1 dup 1", "4f4e4e074f", nil},
+		{"x\"00010203\"", "480400010203", nil},
+		{"'abcd'", "480461626364", nil},
+		{"[fail]", "480100", nil},
+		{"2 [1 dup 1] 2", "5048054f4e4e074f50", nil},
+		{"{}", "4e0e", nil},
+		{"{1, 2}", "504f500e", nil},
+		{"{'abc', {5}, 'def'}", "4803646566534f0e4803616263510e", nil},
+	}
+	for i, c := range cases {
+		b, err := Assemble(c.src)
 		if err != nil {
-			t.Errorf("Assemble(%#q) err = %v want nil", test.src, err)
+			if c.wanterr == nil {
+				t.Errorf("case %d: error: %s", i, err)
+				continue
+			}
+			if errors.Root(c.wanterr) == errors.Root(err) {
+				continue
+			}
+			t.Errorf("case %d: got error %s, want error %s", i, err, c.wanterr)
 			continue
 		}
-		if !bytes.Equal(prog, test.prog) {
-			t.Errorf("Assemble(%#q) = %x want %x", test.src, prog, test.prog)
+		if c.wanterr != nil {
+			t.Errorf("case %d: got no error, want error %s", i, c.wanterr)
+			continue
 		}
-	}
-}
-
-func TestAssemble2(t *testing.T) {
-	// A simple tx that sends 5 units of asset 0000... from one account to another
-	src := `{'contract', {{5, x"0000000000000000000000000000000000000000000000000000000000000000"}}, {'program', ['txvm' inputstack inspect encode cat sha3 encode ['txvm' summarystack inspect encode cat sha3 1 datastack roll cat sha3 x"1111111111111111111111111111111111111111111111111111111111111111" checksig verify] cat 'program' 1 datastack roll 2 maketuple defer]}, x"2222222222222222222222222222222222222222222222222222222222222222"} unlock
-{'program', ['txvm' inputstack inspect encode cat sha3 encode ['txvm' summarystack inspect encode cat sha3 1 datastack roll cat sha3 x"3333333333333333333333333333333333333333333333333333333333333333" checksig verify] cat 'program' 1 datastack roll 2 maketuple defer]} 1 lock
-summarize
-x"44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444" satisfy`
-	prog, err := Assemble(src)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Logf("%d bytes: %x", len(prog), prog)
-	src2 := Disassemble(prog)
-	t.Log(src2)
-}
-
-func TestDisassemble(t *testing.T) {
-	for _, test := range asmValid[:len(asmValid)-3] {
-		src := Disassemble(test.prog)
-		if src != test.src {
-			t.Errorf("Disassemble(%x) = %#q want %#q", test.prog, src, test.src)
+		wantbytes, _ := hex.DecodeString(c.wanthex)
+		if !bytes.Equal(b, wantbytes) {
+			t.Errorf("case %d: got %x, want %x", i, b, wantbytes)
 		}
 	}
 }

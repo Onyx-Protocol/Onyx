@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 import (
 	"crypto/sha256"

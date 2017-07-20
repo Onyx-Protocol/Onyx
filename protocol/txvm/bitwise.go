@@ -1,4 +1,4 @@
-package txvm2
+package txvm
 
 func opBitNot(vm *vm) {
 	s := vm.popBytes(datastack)

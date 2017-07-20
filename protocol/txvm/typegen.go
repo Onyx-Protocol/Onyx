@@ -1,6 +1,6 @@
 // Auto-generated from types.go by gen.go
 
-package txvm2
+package txvm
 
 var txwitnessType = (*txwitness)(nil)
 
