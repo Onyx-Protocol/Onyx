@@ -21,7 +21,7 @@ const slashLandUsage = `
 The /land command takes a git branch reference.
 Here is an example using the /land command:
 
-/land [-prv] feature-x
+/land [-prv] [-f] feature-x
 `
 
 var (
@@ -30,6 +30,7 @@ var (
 	org           = env.String("GITHUB_ORG", "chain")
 	repo          = env.String("GITHUB_REPO", "chain")
 	privRepo      = env.String("GITHUB_REPO_PRIVATE", "chainprv")
+	forkRepo      = env.String("GITHUB_REPO_FORK", "chainfork")
 	slackChannels = env.StringSlice("SLACK_CHANNEL")
 	slackToken    = env.String("SLACK_LAND_TOKEN", "")
 	postURL       = env.String("SLACK_POST_URL", "")
@@ -41,7 +42,7 @@ type landReq struct {
 	userID   string
 	userName string
 	ref      string
-	private  bool
+	repo     string
 }
 
 func main() {
@@ -79,9 +80,12 @@ func slashLand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a := strings.Fields(r.FormValue("text"))
-	private := false
+	repo := *repo
 	if len(a) >= 1 && a[0] == "-prv" {
-		private = true
+		repo = *privRepo
+		a = a[1:]
+	} else if len(a) >= 1 && a[0] == "-f" {
+		repo = *forkRepo
 		a = a[1:]
 	}
 	if len(a) != 1 {
@@ -92,7 +96,7 @@ func slashLand(w http.ResponseWriter, r *http.Request) {
 		ref:      a[0],
 		userID:   r.FormValue("user_id"),
 		userName: r.FormValue("user_name"),
-		private:  private,
+		repo:     repo,
 	}
 	sayf("<@%s|%s> is attempting to land %s",
 		r.FormValue("user_id"),
@@ -110,15 +114,10 @@ func lander() {
 func land(req *landReq) {
 	defer catch()
 
-	repo := *repo
-	if req.private {
-		repo = *privRepo
-	}
-
 	gopath := "/tmp/land"
-	landdir := gopath + "/src/" + repo
+	landdir := gopath + "/src/" + req.repo
 
-	fetch(landdir, req.ref, repo)
+	fetch(landdir, req.ref, req.repo)
 	commit := string(bytes.TrimSpace(runOutput(landdir, exec.Command("git", "rev-parse", "HEAD"))))
 
 	prBits, err := pipeline(
@@ -143,7 +142,7 @@ func land(req *landReq) {
 		Mergeable *bool
 		Base      struct{ Ref string }
 	}
-	err = doGithubReq("GET", "repos/"+*org+"/"+repo+"/pulls/"+pr, nil, &prState)
+	err = doGithubReq("GET", "repos/"+*org+"/"+req.repo+"/pulls/"+pr, nil, &prState)
 	if err != nil {
 		sayf("<@%s|%s> failed to land %s: error fetching github status",
 			req.userID,
@@ -210,7 +209,7 @@ func land(req *landReq) {
 
 	commit = string(bytes.TrimSpace(runOutput(landdir, exec.Command("git", "rev-parse", "HEAD"))))
 
-	success := waitForSuccessfulStatus(req, repo, commit)
+	success := waitForSuccessfulStatus(req, req.repo, commit)
 	if !success {
 		return
 	}
@@ -230,7 +229,7 @@ func land(req *landReq) {
 		Merged  bool
 		Message string
 	}
-	err = doGithubReq("PUT", fmt.Sprintf("repos/%s/%s/pulls/%s/merge", *org, repo, pr), mergeReq, &mergeResp)
+	err = doGithubReq("PUT", fmt.Sprintf("repos/%s/%s/pulls/%s/merge", *org, req.repo, pr), mergeReq, &mergeResp)
 	if err != nil {
 		sayf("<@%s|%s> failed to land %s: could not merge pull request (%s)",
 			req.userID,
@@ -251,7 +250,7 @@ func land(req *landReq) {
 	}
 
 	runIn(landdir, exec.Command("git", "push", "origin", ":"+req.ref))
-	fetch(landdir, "main", repo)
+	fetch(landdir, "main", req.repo)
 	runIn(landdir, exec.Command("git", "branch", "-D", req.ref))
 }
 
