@@ -10,9 +10,8 @@ import (
 
 //go:generate go run gen.go
 
-// This file is used as input to gen.go, which is used by "go
-// generate" to produce other files in this package. The first
-// declaration in this file must be the list of opcode constants.
+// This file is read by gen.go at "go generate" time and produces
+// opgen.go.
 
 // TODO: when the spec is final, freeze the numeric values of these constants
 

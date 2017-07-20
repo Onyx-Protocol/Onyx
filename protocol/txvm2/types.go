@@ -2,6 +2,9 @@ package txvm2
 
 import "chain/crypto/ca"
 
+// This file is read by gen.go at "go generate" time and produces
+// typegen.go.
+
 type txwitness struct {
 	version  int64
 	runlimit int64

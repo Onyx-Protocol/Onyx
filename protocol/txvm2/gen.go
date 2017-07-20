@@ -1,5 +1,8 @@
 // +build ignore
 
+// This runs at "go generate" time, producing opgen.go from ops.go and
+// typegen.go from types.go.
+
 package main
 
 import (
@@ -20,8 +23,8 @@ func main() {
 
 func ops() {
 	ops := getOps()
-	opinfoName := txvmFile("opinfo.go")
-	out, err := os.Create(opinfoName)
+	opgenName := txvmFile("opgen.go")
+	out, err := os.Create(opgenName)
 	must(err)
 	fmt.Fprint(out, "// Auto-generated from ops.go by gen.go\n\npackage txvm2\n\n")
 
@@ -50,7 +53,7 @@ func ops() {
 
 	out.Close()
 
-	cmd := exec.Command("gofmt", "-w", opinfoName)
+	cmd := exec.Command("gofmt", "-w", opgenName)
 	must(cmd.Run())
 }
 
@@ -93,8 +96,8 @@ func types() {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, txvmFile("types.go"), nil, 0)
 	must(err)
-	typeinfoName := txvmFile("typeinfo.go")
-	out, err := os.Create(typeinfoName)
+	typegenName := txvmFile("typegen.go")
+	out, err := os.Create(typegenName)
 	must(err)
 
 	types := make(map[string]bool)
@@ -220,7 +223,7 @@ func types() {
 
 	out.Close()
 
-	cmd := exec.Command("gofmt", "-w", typeinfoName)
+	cmd := exec.Command("gofmt", "-w", typegenName)
 	must(cmd.Run())
 }
 
