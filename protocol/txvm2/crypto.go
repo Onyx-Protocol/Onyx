@@ -27,8 +27,8 @@ func opSHA3(vm *vm) {
 }
 
 func opCheckSig(vm *vm) {
-	pubkey := vm.popBytes(datastack)
 	msg := vm.popBytes(datastack)
+	pubkey := vm.popBytes(datastack)
 	sig := vm.popBytes(datastack)
 	vm.pushBool(datastack, ed25519.Verify(ed25519.PublicKey(pubkey), msg, sig))
 }
