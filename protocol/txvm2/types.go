@@ -65,6 +65,15 @@ func (a *assetcommitment) detuple(t tuple) bool {
 	return a.ac.FromBytes(append(t[1].(vbytes), t[2].(vbytes)...))
 }
 
+type unprovenvalue struct {
+	vc valuecommitment
+}
+
+type provenvalue struct {
+	vc valuecommitment
+	ac assetcommitment
+}
+
 type record struct {
 	commandprogram []byte
 	data           item

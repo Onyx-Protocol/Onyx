@@ -2,6 +2,8 @@
 
 package txvm2
 
+var txwitnessType = (*txwitness)(nil)
+
 func (x txwitness) entuple() tuple {
 	return tuple{
 		vbytes("txwitness"),
@@ -37,6 +39,8 @@ func (vm *vm) popTxwitness(stacknum int) txwitness {
 func (vm *vm) pushTxwitness(stacknum int, x txwitness) {
 	vm.push(stacknum, x.entuple())
 }
+
+var txType = (*tx)(nil)
 
 func (x tx) entuple() tuple {
 	return tuple{
@@ -74,6 +78,8 @@ func (vm *vm) pushTx(stacknum int, x tx) {
 	vm.push(stacknum, x.entuple())
 }
 
+var valueType = (*value)(nil)
+
 func (x value) entuple() tuple {
 	return tuple{
 		vbytes("value"),
@@ -108,6 +114,8 @@ func (vm *vm) pushValue(stacknum int, x value) {
 	vm.push(stacknum, x.entuple())
 }
 
+var valuecommitmentType = (*valuecommitment)(nil)
+
 func (vm *vm) popValuecommitment(stacknum int) valuecommitment {
 	v := vm.pop(stacknum)
 	t := v.(tuple)
@@ -122,6 +130,8 @@ func (vm *vm) pushValuecommitment(stacknum int, x valuecommitment) {
 	vm.push(stacknum, x.entuple())
 }
 
+var assetcommitmentType = (*assetcommitment)(nil)
+
 func (vm *vm) popAssetcommitment(stacknum int) assetcommitment {
 	v := vm.pop(stacknum)
 	t := v.(tuple)
@@ -135,6 +145,84 @@ func (vm *vm) popAssetcommitment(stacknum int) assetcommitment {
 func (vm *vm) pushAssetcommitment(stacknum int, x assetcommitment) {
 	vm.push(stacknum, x.entuple())
 }
+
+var unprovenvalueType = (*unprovenvalue)(nil)
+
+func (x unprovenvalue) entuple() tuple {
+	return tuple{
+		vbytes("unprovenvalue"),
+		x.vc.entuple(),
+	}
+}
+
+func (x *unprovenvalue) detuple(t tuple) bool {
+	if len(t) != 2 {
+		return false
+	}
+	if n, ok := t[0].(vbytes); !ok || string(n) != "unprovenvalue" {
+		return false
+	}
+	if !x.vc.detuple(t[1].(tuple)) {
+		return false
+	}
+	return true
+}
+
+func (vm *vm) popUnprovenvalue(stacknum int) unprovenvalue {
+	v := vm.pop(stacknum)
+	t := v.(tuple)
+	var x unprovenvalue
+	if !x.detuple(t) {
+		panic("tuple is not a valid unprovenvalue")
+	}
+	return x
+}
+
+func (vm *vm) pushUnprovenvalue(stacknum int, x unprovenvalue) {
+	vm.push(stacknum, x.entuple())
+}
+
+var provenvalueType = (*provenvalue)(nil)
+
+func (x provenvalue) entuple() tuple {
+	return tuple{
+		vbytes("provenvalue"),
+		x.vc.entuple(),
+		x.ac.entuple(),
+	}
+}
+
+func (x *provenvalue) detuple(t tuple) bool {
+	if len(t) != 3 {
+		return false
+	}
+	if n, ok := t[0].(vbytes); !ok || string(n) != "provenvalue" {
+		return false
+	}
+	if !x.vc.detuple(t[1].(tuple)) {
+		return false
+	}
+	if !x.ac.detuple(t[2].(tuple)) {
+		return false
+	}
+	return true
+}
+
+func (vm *vm) popProvenvalue(stacknum int) provenvalue {
+	v := vm.pop(stacknum)
+	t := v.(tuple)
+	var x provenvalue
+	if !x.detuple(t) {
+		panic("tuple is not a valid provenvalue")
+	}
+	return x
+}
+
+func (vm *vm) pushProvenvalue(stacknum int, x provenvalue) {
+	vm.push(stacknum, x.entuple())
+}
+
+var recordType = (*record)(nil)
 
 func (x record) entuple() tuple {
 	return tuple{
@@ -170,6 +258,8 @@ func (vm *vm) pushRecord(stacknum int, x record) {
 	vm.push(stacknum, x.entuple())
 }
 
+var inputType = (*input)(nil)
+
 func (x input) entuple() tuple {
 	return tuple{
 		vbytes("input"),
@@ -201,6 +291,8 @@ func (vm *vm) popInput(stacknum int) input {
 func (vm *vm) pushInput(stacknum int, x input) {
 	vm.push(stacknum, x.entuple())
 }
+
+var outputType = (*output)(nil)
 
 func (x output) entuple() tuple {
 	return tuple{
@@ -234,6 +326,8 @@ func (vm *vm) pushOutput(stacknum int, x output) {
 	vm.push(stacknum, x.entuple())
 }
 
+var readType = (*read)(nil)
+
 func (x read) entuple() tuple {
 	return tuple{
 		vbytes("read"),
@@ -266,6 +360,8 @@ func (vm *vm) pushRead(stacknum int, x read) {
 	vm.push(stacknum, x.entuple())
 }
 
+var programType = (*program)(nil)
+
 func (x program) entuple() tuple {
 	return tuple{
 		vbytes("program"),
@@ -297,6 +393,8 @@ func (vm *vm) popProgram(stacknum int) program {
 func (vm *vm) pushProgram(stacknum int, x program) {
 	vm.push(stacknum, x.entuple())
 }
+
+var nonceType = (*nonce)(nil)
 
 func (x nonce) entuple() tuple {
 	return tuple{
@@ -336,6 +434,8 @@ func (vm *vm) pushNonce(stacknum int, x nonce) {
 	vm.push(stacknum, x.entuple())
 }
 
+var assetdefinitionType = (*assetdefinition)(nil)
+
 func (x assetdefinition) entuple() tuple {
 	return tuple{
 		vbytes("assetdefinition"),
@@ -369,6 +469,8 @@ func (vm *vm) popAssetdefinition(stacknum int) assetdefinition {
 func (vm *vm) pushAssetdefinition(stacknum int, x assetdefinition) {
 	vm.push(stacknum, x.entuple())
 }
+
+var issuancecandidateType = (*issuancecandidate)(nil)
 
 func (x issuancecandidate) entuple() tuple {
 	return tuple{
@@ -404,6 +506,8 @@ func (vm *vm) pushIssuancecandidate(stacknum int, x issuancecandidate) {
 	vm.push(stacknum, x.entuple())
 }
 
+var maxtimeType = (*maxtime)(nil)
+
 func (x maxtime) entuple() tuple {
 	return tuple{
 		vbytes("maxtime"),
@@ -435,6 +539,8 @@ func (vm *vm) popMaxtime(stacknum int) maxtime {
 func (vm *vm) pushMaxtime(stacknum int, x maxtime) {
 	vm.push(stacknum, x.entuple())
 }
+
+var mintimeType = (*mintime)(nil)
 
 func (x mintime) entuple() tuple {
 	return tuple{
@@ -468,6 +574,8 @@ func (vm *vm) pushMintime(stacknum int, x mintime) {
 	vm.push(stacknum, x.entuple())
 }
 
+var annotationType = (*annotation)(nil)
+
 func (x annotation) entuple() tuple {
 	return tuple{
 		vbytes("annotation"),
@@ -499,6 +607,8 @@ func (vm *vm) popAnnotation(stacknum int) annotation {
 func (vm *vm) pushAnnotation(stacknum int, x annotation) {
 	vm.push(stacknum, x.entuple())
 }
+
+var legacyoutputType = (*legacyoutput)(nil)
 
 func (x legacyoutput) entuple() tuple {
 	return tuple{
@@ -541,6 +651,8 @@ func (vm *vm) popLegacyoutput(stacknum int) legacyoutput {
 func (vm *vm) pushLegacyoutput(stacknum int, x legacyoutput) {
 	vm.push(stacknum, x.entuple())
 }
+
+var vm1programType = (*vm1program)(nil)
 
 func (x vm1program) entuple() tuple {
 	return tuple{

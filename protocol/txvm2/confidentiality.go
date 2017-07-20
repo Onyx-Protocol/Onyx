@@ -7,75 +7,44 @@ import (
 	"chain/crypto/ed25519/ecmath"
 )
 
-// inp is a value tuple
-func wrapvalue(inp tuple) (a, v tuple) {
-	ac, vc := tupleToCommitments(inp)
-	a = mkAssetCommitment(vbytes(ac.H().Bytes()), vbytes(ac.C().Bytes()))
-	v = mkValueCommitment(vbytes(vc.V().Bytes()), vbytes(vc.F().Bytes()))
-	return a, v
+func (v *value) commitments() (assetcommitment, valuecommitment) {
+	var assetID ca.AssetID
+	copy(assetID[:], v.assetID)
+	ac, _ := ca.CreateAssetCommitment(assetID, nil)
+	vc, _ := ca.CreateValueCommitment(uint64(v.amount), ac, nil)
+	return assetcommitment{ac}, valuecommitment{vc}
 }
 
 func opWrapValue(vm *vm) {
-	val := vm.popTuple(entrystack, valueTuple)
-	ac, vc := wrapvalue(val)
-	vm.push(entrystack, ac)
-	vm.push(entrystack, vc)
+	val := vm.popValue(entrystack)
+	ac, vc := val.commitments()
+	vm.pushAssetcommitment(entrystack, ac)
+	vm.pushValuecommitment(entrystack, vc)
 }
 
 func opMergeConfidential(vm *vm) {
 	a := vm.popTuple(entrystack, valueTuple, provenValueTuple, unprovenValueTuple)
 	b := vm.popTuple(entrystack, valueTuple, provenValueTuple, unprovenValueTuple)
 
-	getValueCommitment := func(a tuple) *ca.ValueCommitment {
-		name, _ := a.name()
-		if name == valueTuple {
-			var assetID ca.AssetID
-			copy(assetID[:], valueAssetID(a))
-			ac, _ := ca.CreateAssetCommitment(assetID, nil)
-			vc, _ := ca.CreateValueCommitment(uint64(valueAmount(a)), ac, nil)
-			return vc
-		}
-		var vctuple tuple
-		if name == provenValueTuple {
-			vctuple = provenValueValueCommitment(a)
-		} else {
-			vctuple = unprovenValueValueCommitment(a)
-		}
-		var V, F ecmath.Point
-		var pointBytes [32]byte
-		copy(pointBytes[:], valueCommitmentValuePoint(vctuple))
-		_, ok := V.Decode(pointBytes)
-		if !ok {
-			panic("mergeconfidential: invalid curve point")
-		}
-		copy(pointBytes[:], valueCommitmentBlindingPoint(vctuple))
-		_, ok = F.Decode(pointBytes)
-		if !ok {
-			panic("mergeconfidential: invalid curve point")
-		}
-		return &ca.ValueCommitment{V, F}
-	}
+	_, vca := tupleToCommitments(a)
+	_, vcb := tupleToCommitments(b)
 
-	vca := getValueCommitment(a)
-	vcb := getValueCommitment(b)
 	vca.Add(vca, vcb)
-	vcbytes := vca.Bytes()
-	vc := mkValueCommitment(vbytes(vcbytes[:32]), vbytes(vcbytes[32:]))
-	vm.push(entrystack, mkUnprovenValue(vc))
+	vc := valuecommitment{vca}
+	vm.pushUnprovenvalue(entrystack, unprovenvalue{vc})
 }
 
 func opSplitConfidential(vm *vm) {
 	val := vm.popTuple(entrystack, valueTuple, provenValueTuple, unprovenValueTuple)
 	_, orig := tupleToCommitments(val)
 
-	vctuple := vm.popTuple(entrystack, valueCommitmentTuple)
-	_, split := tupleToCommitments(vctuple)
+	split := vm.popValuecommitment(entrystack)
 
-	vm.push(entrystack, mkUnprovenValue(vctuple))
+	vm.push(entrystack, mkUnprovenValue(split.entuple()))
 
 	var diff ca.ValueCommitment
 
-	diff.Sub(orig, split)
+	diff.Sub(orig, split.vc)
 	difftuple := mkValueCommitment(vbytes(diff.V().Bytes()), vbytes(diff.F().Bytes()))
 	vm.push(entrystack, mkUnprovenValue(difftuple))
 }
@@ -92,11 +61,9 @@ func opProveAssetRange(vm *vm) {
 
 	prog := vm.popBytes(datastack)
 
-	acTuple := vm.popTuple(datastack, assetCommitmentTuple)
+	ac := vm.popAssetcommitment(datastack)
 
 	prevacTuples := vm.peekNTuple(entrystack, n, assetCommitmentTuple)
-
-	ac, _ := tupleToCommitments(acTuple)
 
 	var prevacs []*ca.AssetCommitment
 	for _, t := range prevacTuples {
@@ -108,11 +75,11 @@ func opProveAssetRange(vm *vm) {
 		Commitments: prevacs,
 		Signature:   &rs,
 	}
-	if !arp.Validate(prog, ac) {
+	if !arp.Validate(prog, ac.ac) {
 		panic("invalid asset range proof")
 	}
 
-	vm.push(entrystack, acTuple)
+	vm.pushAssetcommitment(entrystack, ac)
 	doCommand(vm, prog)
 }
 

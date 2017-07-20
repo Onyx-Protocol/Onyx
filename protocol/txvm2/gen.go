@@ -97,9 +97,19 @@ func types() {
 	out, err := os.Create(typeinfoName)
 	must(err)
 
+	types := make(map[string]bool)
 	predefined := make(map[[2]string]bool) // set of [type,method] pairs
 
 	for _, d := range f.Decls {
+		if g, ok := d.(*ast.GenDecl); ok && g.Tok == token.TYPE {
+			for _, s := range g.Specs {
+				ts := s.(*ast.TypeSpec)
+				if _, ok := ts.Type.(*ast.StructType); ok {
+					types[ts.Name.Name] = true
+				}
+			}
+			continue
+		}
 		if f, ok := d.(*ast.FuncDecl); ok {
 			if f.Recv == nil {
 				continue
@@ -131,15 +141,19 @@ func types() {
 			for _, s := range g.Specs {
 				ts := s.(*ast.TypeSpec)
 				if st, ok := ts.Type.(*ast.StructType); ok {
+					typeName := ts.Name.Name
+
+					fmt.Fprintf(out, "var %sType = (*%s)(nil)\n", typeName, typeName)
+
 					nFields := 0
 					for _, f := range st.Fields.List {
 						nFields += len(f.Names)
 					}
 
-					if !predefined[[2]string{ts.Name.Name, "entuple"}] {
-						fmt.Fprintf(out, "func (x %s) entuple() tuple {\n", ts.Name.Name)
+					if !predefined[[2]string{typeName, "entuple"}] {
+						fmt.Fprintf(out, "func (x %s) entuple() tuple {\n", typeName)
 						fmt.Fprintf(out, "\treturn tuple{\n")
-						fmt.Fprintf(out, "\t\tvbytes(\"%s\"),\n", ts.Name.Name)
+						fmt.Fprintf(out, "\t\tvbytes(\"%s\"),\n", typeName)
 						for _, f := range st.Fields.List {
 							for _, name := range f.Names {
 								switch {
@@ -158,10 +172,10 @@ func types() {
 						fmt.Fprintf(out, "}\n\n")
 					}
 
-					if !predefined[[2]string{ts.Name.Name, "detuple"}] {
-						fmt.Fprintf(out, "func (x *%s) detuple(t tuple) bool {\n", ts.Name.Name)
+					if !predefined[[2]string{typeName, "detuple"}] {
+						fmt.Fprintf(out, "func (x *%s) detuple(t tuple) bool {\n", typeName)
 						fmt.Fprintf(out, "\tif len(t) != %d { return false }\n", nFields+1)
-						fmt.Fprintf(out, "\tif n, ok := t[0].(vbytes); !ok || string(n) != \"%s\" { return false }\n", ts.Name.Name)
+						fmt.Fprintf(out, "\tif n, ok := t[0].(vbytes); !ok || string(n) != \"%s\" { return false }\n", typeName)
 						i := 1
 						for _, f := range st.Fields.List {
 							for _, name := range f.Names {
@@ -182,20 +196,20 @@ func types() {
 						fmt.Fprintf(out, "}\n\n")
 					}
 
-					popName := fmt.Sprintf("pop%s", strings.Title(ts.Name.Name))
+					popName := fmt.Sprintf("pop%s", strings.Title(typeName))
 					if !predefined[[2]string{"vm", popName}] {
-						fmt.Fprintf(out, "func (vm *vm) %s(stacknum int) %s {\n", popName, ts.Name.Name)
+						fmt.Fprintf(out, "func (vm *vm) %s(stacknum int) %s {\n", popName, typeName)
 						fmt.Fprintf(out, "\tv := vm.pop(stacknum)\n")
 						fmt.Fprintf(out, "\tt := v.(tuple)\n")
-						fmt.Fprintf(out, "\tvar x %s\n", ts.Name.Name)
-						fmt.Fprintf(out, "\tif !x.detuple(t) { panic(\"tuple is not a valid %s\") }\n", ts.Name.Name)
+						fmt.Fprintf(out, "\tvar x %s\n", typeName)
+						fmt.Fprintf(out, "\tif !x.detuple(t) { panic(\"tuple is not a valid %s\") }\n", typeName)
 						fmt.Fprintf(out, "\treturn x\n")
 						fmt.Fprintf(out, "}\n\n")
 					}
 
-					pushName := fmt.Sprintf("push%s", strings.Title(ts.Name.Name))
+					pushName := fmt.Sprintf("push%s", strings.Title(typeName))
 					if !predefined[[2]string{"vm", pushName}] {
-						fmt.Fprintf(out, "func (vm *vm) push%s(stacknum int, x %s) {\n", strings.Title(ts.Name.Name), ts.Name.Name)
+						fmt.Fprintf(out, "func (vm *vm) push%s(stacknum int, x %s) {\n", strings.Title(typeName), typeName)
 						fmt.Fprintf(out, "\tvm.push(stacknum, x.entuple())\n")
 						fmt.Fprintf(out, "}\n\n")
 					}
