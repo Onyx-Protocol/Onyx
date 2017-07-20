@@ -792,10 +792,16 @@ Pops two strings `a` and `b` from the data stack. Fails if they do not have the 
 `sig pubkey msg -- bool`
 
 1. Pops a string `msg`, a string `pubKey`, and a string `sig` from the data stack.
-2. Performs an EdDSA (RFC8032) signature check with `pubKey` as the public key, `msg` as the message, and `sig` as the signature.
-3. Pushes `true` to the data stack if the signature check succeeded, and `false` otherwise.
+2. If the string `sig` is empty, pushes `false` to the data stack.
+3. If the string `sig` is not empty:
+    1. Performs an EdDSA (RFC8032) signature check with `pubKey` as the public key, `msg` as the message, and `sig` as the signature.
+    2. Pushes `true` to the data stack if the signature check succeeded, and fails execution otherwise.
 
-Note: message is constructed first to easy construction of multi-signature predicates.
+Note 1: message is constructed first to easy construction of multi-signature predicates.
+
+Note 2: as an optimization, `CheckSig` implementation may immediately return a boolean result
+by checking signature length and perform verification of all signatures
+in the transaction in a batch mode.
 
 ### PointAdd
 

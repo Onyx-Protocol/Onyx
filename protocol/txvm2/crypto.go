@@ -30,7 +30,18 @@ func opCheckSig(vm *vm) {
 	msg := vm.popBytes(datastack)
 	pubkey := vm.popBytes(datastack)
 	sig := vm.popBytes(datastack)
-	vm.pushBool(datastack, ed25519.Verify(ed25519.PublicKey(pubkey), msg, sig))
+	// Only empty signatures can return `false` in order
+	// to allow deferred batch verification of signatures.
+	// If signature is not empty, it MUST be valid,
+	// otherwise the entire VM execution fails.
+	if len(sig) == 0 {
+		vm.pushBool(datastack, false)
+	}
+	valid := ed25519.Verify(ed25519.PublicKey(pubkey), msg, sig)
+	if !valid {
+		panic(fmt.Errorf("checksig: invalid non-empty signature"))
+	}
+	vm.pushBool(datastack, true)
 }
 
 func opPointAdd(vm *vm) {
