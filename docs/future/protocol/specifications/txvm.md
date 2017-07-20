@@ -185,6 +185,67 @@ Execution of the transaction can leave some runlimit unconsumed: excess runlimit
 
 TxVM transactions are not compatible with version 1 transactions. However, they allow interacting with pre-existing blockchain state: nonces, outputs and asset IDs.
 
+As Chain Core only supported multisignature predicate-signing programs, TxVM restricts spending and issuance to such programs only, reformatting them to the native TxVM format.
+
+### Converting VM1 program to TxVM program
+
+The [VM1](vm1.md) program encodes the following logic: 
+
+1. Provide M of N signatures for N public keys 
+2. Signatures cover the program that will be specified later and executed after verification
+
+The bytecode is:
+
+    DUP                0x76
+    TOALTSTACK         0x6b
+    SHA3               0xaa
+    <pubkey1>          0x20 <32 bytes of pubkey1>
+    <pubkey2>          0x20 <32 bytes of pubkey2>
+    ...
+    <pubkeyN>          0x20 <32 bytes of pubkeyN>
+    <M>               (0x51 + M - 1)
+    <N>               (0x51 + N - 1)
+    CHECKMULTISIG      0xad
+    VERIFY             0x69
+    FROMALTSTACK       0x6c
+    0                  0x00
+    CHECKPREDICATE     0xc0
+
+Total: 10 + N*33 bytes for N public keys, provided both N and M are less or equal 16.
+
+The conversion process is:
+
+1. Verify that the input program is at least 43 bytes long.
+2. Compute `N := (len(prog) - 10) / 33`, fail if N is not an integer.
+3. Verify that `N` is less or equal to 16.
+4. Verify that the first 3 bytes are `0x76 0x6b 0xaa`.
+5. For `i` from 1 to `N`, extract 33-byte chunks starting at offset 3:
+    1. Verify that the first byte is `0x20`.
+    2. Set the remaining 32 bytes to a public key `i`.
+6. Extract byte `m` at offset `3 + 33*N`.
+7. Compute `M := m + 1 - 0x51`.
+8. Verify that byte `n` at offset `4 + 33*N` equals `0x51 + N - 1`.
+9. Verify that the remaining 5 bytes (at offsets from `5 + 33*N` to `9 + 33*N` inclusive) equal `0xad 0x68 0x6c 0x00 0xc0`.
+10. Construct the new predicate using `N` extracted public keys and `M` as a threshold:
+    
+        toalt             # moves signed predicate string to an altstack
+        0                 # pushes counter set to initial value 0
+        
+        # repeat the following code for N public keys (i=1..N):
+            1 0 roll          # swaps top signature with the counter
+            <pubkey-i>        # pushes i-th pubkey
+            0 1 peek          # copies predicate from the altstack as message
+            checksig          # consumes predicate, pubkey and signature
+            add               # adds result (1 or 0) to the counter
+
+        <M>               # pushes threshold M
+        equal
+        jumpif:$cont fail $cont  # op_verify
+        fromalt
+        command
+
+11. Return the resulting predicate
+
 ### Spending legacy outputs
 
 See [UnlockLegacy](#unlocklegacy) instruction that allows unlocking value stored in [legacy outputs](#legacy-output).
@@ -738,11 +799,13 @@ Pops two strings `a` and `b` from the data stack. Fails if they do not have the 
 
 ### CheckSig
 
-1. Pops a string `pubKey`, a string `msg`, and a string `sig` from the data stack.
+`sig pubkey msg -- bool`
+
+1. Pops a string `msg`, a string `pubKey`, and a string `sig` from the data stack.
 2. Performs an EdDSA (RFC8032) signature check with `pubKey` as the public key, `msg` as the message, and `sig` as the signature.
 3. Pushes `true` to the data stack if the signature check succeeded, and `false` otherwise.
 
-TODO: Should we switch order of `pubKey` and `msg`?
+Note: message is constructed first to easy construction of multi-signature predicates.
 
 ### PointAdd
 
