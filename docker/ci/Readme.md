@@ -3,6 +3,7 @@ This dockerfile produces the image used for continuous integration. Installed so
 - Go 1.8
 - Java 1.7
 - Ruby 2.0.0
+- Rust 1.20.0-nightly (582af6e1a 2017-07-19)
 - Node 4.8.0
 - CodeSafe 12.10.01
 - various build/test dependencies

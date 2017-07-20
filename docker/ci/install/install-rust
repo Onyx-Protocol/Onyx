@@ -3,13 +3,13 @@
 set -e
 
 # Pin to a specific nightly until we can get off nightly entirely
-RUST_VERSION="nightly-2017-06-20"
+RUST_VERSION="nightly-2017-07-19"
 
-# Pin to this version of rustfmt
-RUSTFMT_VERSION="0.9.0"
+# Pin to this version of rustfmt-nightly
+RUSTFMT_NIGHTLY_VERSION="0.1.9"
 
 # Pin to this version of clippy
-CLIPPY_VERSION="0.0.140"
+CLIPPY_VERSION="0.0.144"
 
 # Pin to this version of cargo-audit
 CARGO_AUDIT_VERSION="0.2.0"
@@ -21,6 +21,6 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_VERSION}
 ~/.cargo/bin/rustup target add powerpc-unknown-linux-gnu
 
 # Use cargo to install build-time tools
-~/.cargo/bin/cargo install rustfmt --vers ${RUSTFMT_VERSION}
+~/.cargo/bin/cargo install rustfmt-nightly --vers ${RUSTFMT_NIGHTLY_VERSION}
 ~/.cargo/bin/cargo install clippy --vers ${CLIPPY_VERSION}
 ~/.cargo/bin/cargo install cargo-audit --vers ${CARGO_AUDIT_VERSION}
