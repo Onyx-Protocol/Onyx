@@ -108,6 +108,34 @@ func (vm *vm) pushValue(stacknum int, x value) {
 	vm.push(stacknum, x.entuple())
 }
 
+func (vm *vm) popValuecommitment(stacknum int) valuecommitment {
+	v := vm.pop(stacknum)
+	t := v.(tuple)
+	var x valuecommitment
+	if !x.detuple(t) {
+		panic("tuple is not a valid valuecommitment")
+	}
+	return x
+}
+
+func (vm *vm) pushValuecommitment(stacknum int, x valuecommitment) {
+	vm.push(stacknum, x.entuple())
+}
+
+func (vm *vm) popAssetcommitment(stacknum int) assetcommitment {
+	v := vm.pop(stacknum)
+	t := v.(tuple)
+	var x assetcommitment
+	if !x.detuple(t) {
+		panic("tuple is not a valid assetcommitment")
+	}
+	return x
+}
+
+func (vm *vm) pushAssetcommitment(stacknum int, x assetcommitment) {
+	vm.push(stacknum, x.entuple())
+}
+
 func (x record) entuple() tuple {
 	return tuple{
 		vbytes("record"),

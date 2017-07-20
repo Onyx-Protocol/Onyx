@@ -35,6 +35,10 @@ func (ac *AssetCommitment) Bytes() []byte {
 	return (*PointPair)(ac).Bytes()
 }
 
+func (ac *AssetCommitment) FromBytes(b []byte) bool {
+	return (*PointPair)(ac).FromBytes(b)
+}
+
 func (ac *AssetCommitment) Validate(assetID AssetID, aek AssetKey) bool {
 	ac2, _ := CreateAssetCommitment(assetID, aek)
 	return (*PointPair)(ac).ConstTimeEqual((*PointPair)(ac2))

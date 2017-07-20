@@ -1,5 +1,7 @@
 package txvm2
 
+import "chain/crypto/ca"
+
 type txwitness struct {
 	version  int64
 	runlimit int64
@@ -15,6 +17,52 @@ type tx struct {
 type value struct {
 	amount  int64
 	assetID []byte
+}
+
+type valuecommitment struct {
+	vc *ca.ValueCommitment
+}
+
+func (v valuecommitment) entuple() tuple {
+	return tuple{
+		vbytes("valuecommitment"),
+		vbytes(v.vc.V().Bytes()),
+		vbytes(v.vc.F().Bytes()),
+	}
+}
+
+func (v *valuecommitment) detuple(t tuple) bool {
+	if len(t) != 3 {
+		return false
+	}
+	if n, ok := t[0].(vbytes); !ok || string(n) != "valuecommitment" {
+		return false
+	}
+	v.vc = new(ca.ValueCommitment)
+	return v.vc.FromBytes(append(t[1].(vbytes), t[2].(vbytes)...))
+}
+
+type assetcommitment struct {
+	ac *ca.AssetCommitment
+}
+
+func (a assetcommitment) entuple() tuple {
+	return tuple{
+		vbytes("assetcommitment"),
+		vbytes(a.ac.H().Bytes()),
+		vbytes(a.ac.C().Bytes()),
+	}
+}
+
+func (a *assetcommitment) detuple(t tuple) bool {
+	if len(t) != 3 {
+		return false
+	}
+	if n, ok := t[0].(vbytes); !ok || string(n) != "assetcommitment" {
+		return false
+	}
+	a.ac = new(ca.AssetCommitment)
+	return a.ac.FromBytes(append(t[1].(vbytes), t[2].(vbytes)...))
 }
 
 type record struct {

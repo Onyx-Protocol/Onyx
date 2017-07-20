@@ -78,6 +78,21 @@ func (p *PointPair) Bytes() []byte {
 	return append(p[0].Bytes(), p[1].Bytes()...)
 }
 
+func (p *PointPair) FromBytes(b []byte) bool {
+	if len(b) != 64 {
+		return false
+	}
+	var buf [32]byte
+	copy(buf[:], b[:32])
+	_, ok := (*p)[0].Decode(buf)
+	if !ok {
+		return false
+	}
+	copy(buf[:], b[32:])
+	_, ok = (*p)[1].Decode(buf)
+	return ok
+}
+
 // String returns hex representation of a point pair.
 func (p *PointPair) String() string {
 	return hex.EncodeToString(p.Bytes())

@@ -67,6 +67,10 @@ func (vc *ValueCommitment) Bytes() []byte {
 	return (*PointPair)(vc).Bytes()
 }
 
+func (vc *ValueCommitment) FromBytes(b []byte) bool {
+	return (*PointPair)(vc).FromBytes(b)
+}
+
 func (vc *ValueCommitment) Add(x, y *ValueCommitment) *ValueCommitment {
 	return (*ValueCommitment)((*PointPair)(vc).Add((*PointPair)(x), (*PointPair)(y)))
 }
