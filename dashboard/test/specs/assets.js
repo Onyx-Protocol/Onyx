@@ -58,6 +58,28 @@ describe('assets', () => {
     })
   })
 
+  describe('updating assets', () => {
+    let updateAsset
+    before(() => expect(testHelpers.ensureConfigured()).to.be.fulfilled
+      .then(() => testHelpers.createAsset('asset-update-test'))
+      .then((asset) => updateAsset = asset)
+    )
+
+    it('can update asset tags', () => {
+      browser.url('/assets/' + updateAsset.id)
+      browser.waitForVisible('.AssetShow')
+      browser.scroll('.glyphicon-pencil')
+      browser.click('.glyphicon-pencil')
+      browser.waitForVisible('.FormContainer')
+      browser.getText('.PageTitle').should.contain('Edit asset tags')
+      browser.setValue('textarea', '{"updated": true')
+      browser.scroll('button=Submit')
+      browser.click('button=Submit')
+      browser.waitForVisible('.AssetShow')
+      browser.getText('.AssetShow').should.contain('{"updated": true')
+    })
+  })
+
   describe('filtering', () => {
     const tag1 = uuid.v4()
         , tag2 = uuid.v4()

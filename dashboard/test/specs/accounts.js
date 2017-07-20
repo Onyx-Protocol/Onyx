@@ -43,6 +43,28 @@ describe('accounts', () => {
     })
   })
 
+  describe('updating accounts', () => {
+    let updateAccount
+    before(() => expect(testHelpers.ensureConfigured()).to.be.fulfilled
+      .then(() => testHelpers.createAccount('account-update-test'))
+      .then((account) => updateAccount = account)
+    )
+
+    it('can update account tags', () => {
+      browser.url('/accounts/' + updateAccount.id)
+      browser.waitForVisible('.AccountShow')
+      browser.scroll('.glyphicon-pencil')
+      browser.click('.glyphicon-pencil')
+      browser.waitForVisible('.FormContainer')
+      browser.getText('.PageTitle').should.contain('Edit account tags')
+      browser.setValue('textarea', '{"updated": true')
+      browser.scroll('button=Submit')
+      browser.click('button=Submit')
+      browser.waitForVisible('.AccountShow')
+      browser.getText('.AccountShow').should.contain('{"updated": true')
+    })
+  })
+
   describe('creating receivers', () => {
     before(() => expect(testHelpers.ensureConfigured()).to.be.fulfilled
       .then(() => testHelpers.createAccount('receiver-test'))
