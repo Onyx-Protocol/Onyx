@@ -21,7 +21,7 @@ const slashLandUsage = `
 The /land command takes a git branch reference.
 Here is an example using the /land command:
 
-/land [-prv] [-k] feature-x
+/land [-prv] [-f] feature-x
 `
 
 var (
@@ -84,7 +84,7 @@ func slashLand(w http.ResponseWriter, r *http.Request) {
 	if len(a) >= 1 && a[0] == "-prv" {
 		repo = *privRepo
 		a = a[1:]
-	} else if len(a) >= 1 && a[0] == "-k" {
+	} else if len(a) >= 1 && a[0] == "-f" {
 		repo = *forkRepo
 		a = a[1:]
 	}
