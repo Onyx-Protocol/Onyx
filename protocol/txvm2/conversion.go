@@ -22,7 +22,7 @@ func opFinalize(vm *vm) {
 	var h [32]byte
 	hasher.Read(h[:])
 
-	vm.push(effectstack, mkTransaction(vint64(vm.txVersion), vint64(vm.initialRunlimit), h[:]))
+	vm.pushTx(effectstack, &tx{vm.txVersion, vm.initialRunlimit, h[:]})
 
 	vm.finalized = true
 }

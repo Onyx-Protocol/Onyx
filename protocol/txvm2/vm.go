@@ -45,17 +45,9 @@ func Validate(txprog []byte, txVersion, runlimit int64, o ...option) ([32]byte, 
 		o(vm)
 	}
 	exec(vm, txprog)
-
+	tx := vm.peekTx(effectstack)
 	var txid [32]byte
-
-	item, ok := vm.getStack(effectstack).peek(0)
-	if !ok {
-		return txid, false
-	}
-	if !isNamed(item, transactionTuple) {
-		return txid, false
-	}
-	copy(txid[:], getID(item))
+	copy(txid[:], tx.id())
 	if !vm.getStack(entrystack).isEmpty() {
 		return txid, false
 	}
@@ -184,26 +176,6 @@ func (vm *vm) peekN(stacknum, n int64) []item {
 	res := vm.getStack(stacknum).peekN(n)
 	if int64(len(res)) != n {
 		panic(fmt.Errorf("only %d of %d item(s) available", len(res), n))
-	}
-	return res
-}
-
-func (vm *vm) peekTuple(stacknum int64, name string) tuple {
-	v := vm.peek(stacknum)
-	if !isNamed(v, name) {
-		panic(fmt.Errorf("%T is not a %s", v, name))
-	}
-	return v.(tuple)
-}
-
-func (vm *vm) peekNTuple(stacknum, n int64, name string) []tuple {
-	var res []tuple
-	vals := vm.peekN(stacknum, n)
-	for i, v := range vals {
-		if !isNamed(v, name) {
-			panic(fmt.Errorf("item %d, a %T, is not a %s", i, v, name))
-		}
-		res = append(res, v.(tuple))
 	}
 	return res
 }

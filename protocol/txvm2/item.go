@@ -52,17 +52,6 @@ func (t tuple) encode(w io.Writer) {
 	w.Write([]byte{OpTuple})
 }
 
-func getTxID(v item) (txid [32]byte, ok bool) {
-	if !isNamed(v, transactionTuple) {
-		return txid, false
-	}
-	t := v.(tuple)
-	// xxx check that len(t[1]) == len(txid)?
-	b := t[1].(vbytes)
-	copy(txid[:], b)
-	return txid, true
-}
-
 func getID(v item) []byte {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)

@@ -6,8 +6,7 @@ func opCommand(vm *vm) {
 }
 
 func doCommand(vm *vm, prog []byte) {
-	cmd := mkProgram(prog)
-	vm.push(commandstack, cmd)
+	vm.pushProgram(commandstack, &program{prog})
 	defer vm.pop(commandstack)
 	exec(vm, prog)
 }
