@@ -187,7 +187,7 @@ TxVM transactions are not compatible with version 1 transactions. However, they 
 
 As Chain Core only supported multisignature predicate-signing programs, TxVM restricts spending and issuance to such programs only, reformatting them to the native TxVM format.
 
-### Converting VM1 program to TxVM program
+### Convert VM1 program to TxVM program
 
 The [VM1](vm1.md) program encodes the following logic: 
 
@@ -467,19 +467,6 @@ The ID of this item is the canonical [Transaction ID](#transaction-id).
 4. `index`, an int64
 5. `program`, a string
 6. `data`, a string
-
-### Legacy Program
-
-0. `type`, a string, "vm1program"
-1. `amount`, int64, amount or nil for issuance candidate
-2. `assetid`, string, asset ID in the legacy output or issuance candidate
-3. `entryid`, string, ID of the input ID or issuance anchor
-4. `outputid`, string, the legacy output ID
-5. `index`, int64, an index of the input or issuance
-6. `anchorid`, string, set to input ID or issuance anchor
-7. `entrydata`, string, set to arbitrary annotation data
-8. `issuancekey`, string, set to nil or an issuance key for [issuance candidate](#issuance-candidate)
-9. `program`, string, a [VM1](vm1.md) bytecode
 
 
 ## Encoding
@@ -871,19 +858,8 @@ TODO: seems like `opcommand` should be `opdefer;opsatisfy`. We have too many ent
 
 TBD: name "satisfy" no longer aligned with "conditions" because we now have "programs". Maybe rename to it `run`?
 
-1. Pops a [Program](#program) or [Legacy Program](#legacy-program) `p` from the Entry stack.
-2. If `p` is Program: executes it using [command](#command) operation.
-3. If `p` is Legacy Program:
-    1. Pops a tuple of strings from the data stack as a list of arguments for the legacy program.
-    2. If the top item on the data stack is not a tuple, or there is at least one non-string element, fails execution. Empty tuple is allowed.
-    3. Pops `entrydata` string from the data stack.
-    4. Program is evaluated according to [VM1](vm1.md) specification, with missing context fields provided during execution as follows:
-        * `expansion` flag is set to false,
-        * `OP_VERIFYISSUANCEKEY`: fails execution if `p.issuancekey` is nil, otherwise check if top item on the data stack equals that issuance key,
-        * `OP_MINTIME`: the highest mintime that specified on the Effect stack or zero if none are there. To avoid O(N^2) performance, TxVM implementation should keep track of the maximum mintime when `Mintime` tuple is pushed.
-        * `OP_MAXTIME`: the lowest maxtime that specified on the Effect stack or 0xffffffffffffff7f if none is there. To avoid O(N^2) performance, TxVM implementation should keep track of the minimum maxtime when `Maxtime` tuple is pushed.
-        * `TXDATA`:  TBD: read from the Effects stack
-        * `TXSIGHASH`: TBD: check if tx is finalized, return txid or fail if not finalized.
+1. Pops a [Program](#program) `p` from the Entry stack.
+2. Executes `p` using [command](#command) operation.
 
 
 ## Record operations
@@ -1191,25 +1167,14 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 ### UnlockLegacy
 
 1. Pops a tuple of type [Legacy Output](#legacy-output) `legacy` from the data stack.
-2. Pops an `entrydata` string from the data stack.
-3. Computes legacy Output ID.
+2. Computes legacy Output ID.
     * TBD: specifics of the encoding per txgraph spec.
-4. Pushes an [Input](#input) to the Effect stack with `contractid` equal to the legacy output ID.
-5. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to the legacy output ID.
-6. Pushes `a` to the Entry stack.
-7. If `entrydata` is not an empty string, pushes [Annotation](#annotation) with that data to the Effect stack.
-8. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
-9. Instantiates [legacy program](#legacy-program) `p` with the fields set as follows:
-  * `p.amount` is set to the amount in the legacy output.
-  * `p.assetid` is set to the asset ID in the legacy output.
-  * `p.entryid` is set to the legacy output ID.
-  * `p.entrydata` is set to `entrydata`.
-  * `p.index` is set to the size of the Effect stack.
-  * `p.anchorid` is set to the ID of the anchor `a`.
-  * `p.outputid` is set to the legacy output ID.
-  * `p.issuancekey` is set to nil.
-  * `p.program` is set to the `legacy.program`.
-10. Pushes `p` to the Entry stack like `defer` instruction does.
+3. Pushes an [Input](#input) to the Effect stack with `contractid` equal to the legacy output ID.
+4. Constructs a tuple `a` of type [Anchor](#anchor) with `a.value` equal to the legacy output ID.
+5. Pushes `a` to the Entry stack.
+6. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
+7. [Convert](#convert-vm1-program-to-txvm-program) VM1 program `legacy.program` to new TxVM program `txvmprog`.
+8. Execute `txvmprog` using [command](#command) instruction.
 
 ### IssueLegacy
 
@@ -1217,29 +1182,15 @@ Note: hashed items are unambiguously encoded, so the `effecthash` is equivalent 
 2. Pops string `blockchainid` from the data stack.
 3. Pops string `issprogram` from the data stack.
 4. Pops string `refdata` from the data stack.
-5. Pops string `entrydata` from the data stack.
-6. Verifies that `refdata` and `blockchainid` both have length of 32 bytes.
-7. Pops [Anchor](#anchor) `a` from the Entry stack.
-8. Computes legacy asset ID `aid`:
+5. Verifies that `refdata` and `blockchainid` both have length of 32 bytes.
+6. Computes legacy asset ID `aid`:
 
         aid = SHA3-256(blockchainid || LEB128(1) || LEB128(len(issprogram)) || issprogram || refdata)
 
-9. Pushes a [value](#value) with amount `amount` and assetID `assetID` to Entry stack.
-10. Constructs a tuple `a2` of type [Anchor](#anchor) with `a2.value` equal to ID of the anchor `a`.
-11. Pushes `a2` to the Entry stack.
-12. If `entrydata` is not an empty string, pushes [Annotation](#annotation) with that data to the Effect stack.
-13. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
-14. Instantiates [legacy program](#legacy-program) `p` with the fields set as follows:
-  * `p.amount` is set to the `amount`.
-  * `p.assetid` is set to the computed asset ID `aid`.
-  * `p.entryid` is set to `a.value` (value of the consumed anchor).
-  * `p.entrydata` is set to `entrydata`.
-  * `p.index` is set to the size of the Effect stack.
-  * `p.anchorid` is set to the ID of the anchor `a` (`a.id` or `a2.value`).
-  * `p.outputid` is set to nil (not available in issuance context).
-  * `p.issuancekey` is set to nil.
-  * `p.program` is set to the `issprogram`.
-15. Pushes `p` to the Entry stack like `defer` instruction does.
+7. Pushes a [value](#value) with amount `amount` and assetID `assetID` to Entry stack.
+8. Constructs [Value](#value) tuple with the amount and asset ID specified in the legacy output, and pushes it to the Entry stack.
+9. [Convert](#convert-vm1-program-to-txvm-program) VM1 program `issprogram` to new TxVM program `txvmprog`.
+10. Execute `txvmprog` using [command](#command) instruction.
 
 TBD: this does not validate blockchainid, which is safe within a blockchain, but may cause confusion for some apps.
 
@@ -1254,32 +1205,17 @@ Some ways to address this:
 1. Pops string `blockchainid` from the data stack.
 2. Pops string `issprogram` from the data stack.
 3. Pops string `refdata` from the data stack.
-4. Pops string `entrydata` from the data stack.
-5. Pops string `y` from the data stack.
-6. Verifies that `refdata` and `blockchainid` both have length of 32 bytes.
-7. Pops [Anchor](#anchor) `a` from the Entry stack.
-8. Computes legacy asset ID `aid`:
+4. Pops string `y` from the data stack.
+5. Verifies that `refdata` and `blockchainid` both have length of 32 bytes.
+6. Computes legacy asset ID `aid`:
 
         aid = SHA3-256(blockchainid || LEB128(1) || LEB128(len(issprogram)) || issprogram || refdata)
 
-9. Pushes a [value](#value) with amount `amount` and assetID `assetID` to Entry stack.
-10. Constructs a tuple `a2` of type [Anchor](#anchor) with `a2.value` equal to ID of the anchor `a`.
-11. Pushes `a2` to the Entry stack.
-12. If `entrydata` is not an empty string, pushes [Annotation](#annotation) with that data to the Effect stack.
-13. Constructs [Issuance Candidate](#issuance-candidate) tuple `ic` and pushes it to the Entry stack:
+7. Constructs [Issuance Candidate](#issuance-candidate) tuple `ic` and pushes it to the Entry stack:
     * `ic.assetid` set to the computed `aid`
     * `ic.issuancekey` set to the `y`
-14. Instantiates [legacy program](#legacy-program) `p` with the fields set as follows:
-  * `p.amount` is set to nil (not available for confidential issuance).
-  * `p.assetid` is set to the computed asset ID `aid`.
-  * `p.entryid` is set to `a.value` (value of the consumed anchor).
-  * `p.entrydata` is set to `entrydata`.
-  * `p.index` is set to the size of the Effect stack.
-  * `p.anchorid` is set to the ID of the anchor `a` (`a.id` or `a2.value`).
-  * `p.outputid` is set to nil (not available in issuance context).
-  * `p.issuancekey` is set to `y`.
-  * `p.program` is set to the `issprogram`.
-15. Pushes `p` to the Entry stack like `defer` instruction does.
+8. [Convert](#convert-vm1-program-to-txvm-program) VM1 program `issprogram` to new TxVM program `txvmprog`.
+9. Execute `txvmprog` using [command](#command) instruction.
 
 ### Extend
 
