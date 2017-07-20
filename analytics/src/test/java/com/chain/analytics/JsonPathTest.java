@@ -1,20 +1,20 @@
-package analytics;
+package com.chain.analytics;
 
 import com.chain.api.Transaction;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
-import org.junit.Test;
+
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNull;
 
 public class JsonPathTest {
 
   @Test
   public void testExtract() {
-    Map<String, Object> map = new TreeMap<String, Object>();
-    Map<String, Object> innerMap = new TreeMap<String, Object>();
+    Map<String, Object> map = new TreeMap<>();
+    Map<String, Object> innerMap = new TreeMap<>();
     innerMap.put("id", "abc");
     innerMap.put("account_number", 123);
     map.put("account", innerMap);
