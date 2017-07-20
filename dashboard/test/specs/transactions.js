@@ -44,38 +44,47 @@ describe('transactions', () => {
 
     it('returns an error with incomplete actions', () => {
       browser.waitForVisible('.AddActionDropdown button')
+      browser.scroll('.AddActionDropdown button')
       browser.click('.AddActionDropdown button')
       browser.click('=Issue')
 
+      browser.scroll('button=Submit transaction')
       browser.click('button=Submit transaction')
+      browser.waitForVisible('.ErrorBanner')
       browser.getText('.ErrorBanner').should.contain('One or more actions had an error')
     })
 
-    it('returns an unbalanced transactin error with a single action', () => {
+    it('returns an unbalanced transaction error with a single action', () => {
       browser.waitForVisible('.AddActionDropdown button')
+      browser.scroll('.AddActionDropdown button')
       browser.click('.AddActionDropdown button')
       browser.click('=Issue')
 
       browser.setValue('.ActionItem:nth-child(1) .ObjectSelectorField.Asset input', 'gold')
       browser.setValue('input[name="actions[0].amount"]', 1)
 
+      browser.scroll('button=Submit transaction')
       browser.click('button=Submit transaction')
+      browser.waitForVisible('.ErrorBanner')
       browser.getText('.ErrorBanner').should.contain('leaves assets to be taken without requiring payment')
     })
 
     it('successfully submits a transaction', () => {
       browser.waitForVisible('.AddActionDropdown button')
 
+      browser.scroll('.AddActionDropdown button')
       browser.click('.AddActionDropdown button')
       browser.click('=Issue')
       browser.setValue('.ActionItem:nth-child(1) .ObjectSelectorField.Asset input', 'gold')
       browser.setValue('input[name="actions[0].amount"]', 1)
 
+      browser.scroll('.AddActionDropdown button')
       browser.click('.AddActionDropdown button')
       browser.click('=Retire')
       browser.setValue('.ActionItem:nth-child(2) .ObjectSelectorField.Asset input', 'gold')
       browser.setValue('input[name="actions[1].amount"]', 1)
 
+      browser.scroll('button=Submit transaction')
       browser.click('button=Submit transaction')
 
       browser.waitForVisible('.TransactionDetail')
@@ -85,11 +94,13 @@ describe('transactions', () => {
     it('generates transactions that allow additional actions', () => {
       browser.waitForVisible('.AddActionDropdown button')
 
+      browser.scroll('.AddActionDropdown button')
       browser.click('.AddActionDropdown button')
       browser.click('=Issue')
       browser.setValue('.ActionItem:nth-child(1) .ObjectSelectorField.Asset input', 'gold')
       browser.setValue('input[name="actions[0].amount"]', 1)
 
+      browser.scroll('.AddActionDropdown button')
       browser.click('.AddActionDropdown button')
       browser.click('=Control with account')
       browser.setValue('.ActionItem:nth-child(2) .ObjectSelectorField.Asset input', 'gold')
@@ -97,8 +108,10 @@ describe('transactions', () => {
       browser.setValue('input[name="actions[1].amount"]', 1)
 
       browser.click('=Show advanced options')
+      browser.scroll('#submit_action_generate')
       browser.click('#submit_action_generate')
 
+      browser.scroll('button=Generate transaction hex')
       browser.click('button=Generate transaction hex')
 
       browser.waitForVisible('.GeneratedTxHex')
