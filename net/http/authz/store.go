@@ -59,7 +59,7 @@ func (s *Store) Save(ctx context.Context, g ...*Grant) sinkdb.Op {
 	var newGrants []*Grant
 	for _, grant := range g {
 		if grant.Policy != policy {
-			return sinkdb.Error(errors.New("Grants have mismatching policies"))
+			return sinkdb.Error(errors.New("grants have mismatching policies"))
 		}
 		if grant.CreatedAt == "" {
 			grant.CreatedAt = time.Now().UTC().Format(time.RFC3339)
