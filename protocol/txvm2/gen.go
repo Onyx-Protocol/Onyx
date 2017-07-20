@@ -148,7 +148,7 @@ func types() {
 
 					fmt.Fprintf(out, "var %sType = (*%s)(nil)\n\n", typeName, typeName)
 
-					fmt.Fprintf(out, "func (x %s) name() string { return \"%s\" }\n\n", typeName, typeName)
+					fmt.Fprintf(out, "func (x *%s) name() string { return \"%s\" }\n\n", typeName, typeName)
 
 					nFields := 0
 					for _, f := range st.Fields.List {
@@ -156,7 +156,7 @@ func types() {
 					}
 
 					if !predefined[[2]string{typeName, "entuple"}] {
-						fmt.Fprintf(out, "func (x %s) entuple() tuple {\n", typeName)
+						fmt.Fprintf(out, "func (x *%s) entuple() tuple {\n", typeName)
 						fmt.Fprintf(out, "\treturn tuple{\n")
 						fmt.Fprintf(out, "\t\tvbytes(x.name()),\n")
 						for _, f := range st.Fields.List {
@@ -202,34 +202,34 @@ func types() {
 					}
 
 					if !predefined[[2]string{typeName, "id"}] {
-						fmt.Fprintf(out, "func (x %s) id() []byte { return getID(x.entuple()) }\n\n", typeName)
+						fmt.Fprintf(out, "func (x *%s) id() []byte { return getID(x.entuple()) }\n\n", typeName)
 					}
 
 					peekName := fmt.Sprintf("peek%s", strings.Title(typeName))
 					if !predefined[[2]string{"vm", peekName}] {
-						fmt.Fprintf(out, "func (vm *vm) %s(stacknum int64) %s {\n", peekName, typeName)
+						fmt.Fprintf(out, "func (vm *vm) %s(stacknum int64) *%s {\n", peekName, typeName)
 						fmt.Fprintf(out, "\tv := vm.peek(stacknum)\n")
 						fmt.Fprintf(out, "\tt := v.(tuple)\n")
 						fmt.Fprintf(out, "\tvar x %s\n", typeName)
 						fmt.Fprintf(out, "\tif !x.detuple(t) { panic(\"tuple is not a valid %s\") }\n", typeName)
-						fmt.Fprintf(out, "\treturn x\n")
+						fmt.Fprintf(out, "\treturn &x\n")
 						fmt.Fprintf(out, "}\n\n")
 					}
 
 					popName := fmt.Sprintf("pop%s", strings.Title(typeName))
 					if !predefined[[2]string{"vm", popName}] {
-						fmt.Fprintf(out, "func (vm *vm) %s(stacknum int64) %s {\n", popName, typeName)
+						fmt.Fprintf(out, "func (vm *vm) %s(stacknum int64) *%s {\n", popName, typeName)
 						fmt.Fprintf(out, "\tv := vm.pop(stacknum)\n")
 						fmt.Fprintf(out, "\tt := v.(tuple)\n")
 						fmt.Fprintf(out, "\tvar x %s\n", typeName)
 						fmt.Fprintf(out, "\tif !x.detuple(t) { panic(\"tuple is not a valid %s\") }\n", typeName)
-						fmt.Fprintf(out, "\treturn x\n")
+						fmt.Fprintf(out, "\treturn &x\n")
 						fmt.Fprintf(out, "}\n\n")
 					}
 
 					pushName := fmt.Sprintf("push%s", strings.Title(typeName))
 					if !predefined[[2]string{"vm", pushName}] {
-						fmt.Fprintf(out, "func (vm *vm) %s(stacknum int64, x %s) {\n", pushName, typeName)
+						fmt.Fprintf(out, "func (vm *vm) %s(stacknum int64, x *%s) {\n", pushName, typeName)
 						fmt.Fprintf(out, "\tvm.push(stacknum, x.entuple())\n")
 						fmt.Fprintf(out, "}\n\n")
 					}

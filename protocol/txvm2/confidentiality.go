@@ -22,7 +22,7 @@ func opMergeConfidential(vm *vm) {
 
 	vca.Add(vca, vcb)
 	vc := valuecommitment{vca}
-	vm.pushUnprovenvalue(entrystack, unprovenvalue{vc})
+	vm.pushUnprovenvalue(entrystack, &unprovenvalue{vc})
 }
 
 func opSplitConfidential(vm *vm) {
@@ -31,13 +31,13 @@ func opSplitConfidential(vm *vm) {
 
 	split := vm.popValuecommitment(entrystack)
 
-	vm.pushUnprovenvalue(entrystack, unprovenvalue{split})
+	vm.pushUnprovenvalue(entrystack, &unprovenvalue{*split})
 
 	var diff ca.ValueCommitment
 
 	diff.Sub(orig, split.vc)
 	diffvc := valuecommitment{&diff}
-	vm.pushUnprovenvalue(entrystack, unprovenvalue{diffvc})
+	vm.pushUnprovenvalue(entrystack, &unprovenvalue{diffvc})
 }
 
 func opProveAssetRange(vm *vm) {
@@ -100,30 +100,30 @@ func opIssueConfidential(vm *vm) {
 	// xxx
 }
 
-func (v *value) commitments() (assetcommitment, valuecommitment) {
+func (v *value) commitments() (*assetcommitment, *valuecommitment) {
 	var assetID ca.AssetID
 	copy(assetID[:], v.assetID)
 	ac, _ := ca.CreateAssetCommitment(assetID, nil)
 	vc, _ := ca.CreateValueCommitment(uint64(v.amount), ac, nil)
-	return assetcommitment{ac}, valuecommitment{vc}
+	return &assetcommitment{ac}, &valuecommitment{vc}
 }
 
 func toCommitments(t namedtuple) (*ca.AssetCommitment, *ca.ValueCommitment) {
 	switch tt := t.(type) {
-	case value:
+	case *value:
 		ac, vc := tt.commitments()
 		return ac.ac, vc.vc
 
-	case assetcommitment:
+	case *assetcommitment:
 		return tt.ac, nil
 
-	case valuecommitment:
+	case *valuecommitment:
 		return nil, tt.vc
 
-	case provenvalue:
+	case *provenvalue:
 		return tt.ac.ac, tt.vc.vc
 
-	case unprovenvalue:
+	case *unprovenvalue:
 		return nil, tt.vc.vc
 	}
 	return nil, nil

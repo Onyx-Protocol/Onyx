@@ -12,7 +12,7 @@ func opIssue(vm *vm) {
 	cmd := vm.peekProgram(commandstack)
 	assetDef := assetdefinition{cmd.program}
 	assetID := assetDef.id()
-	vm.pushValue(entrystack, value{amt, assetID})
+	vm.pushValue(entrystack, &value{amt, assetID})
 }
 
 func opMerge(vm *vm) {
@@ -25,7 +25,7 @@ func opMerge(vm *vm) {
 	if !ok {
 		panic("merge: sum overflows int64")
 	}
-	vm.pushValue(entrystack, value{newamt, v1.assetID})
+	vm.pushValue(entrystack, &value{newamt, v1.assetID})
 }
 
 func opSplit(vm *vm) {
@@ -34,12 +34,12 @@ func opSplit(vm *vm) {
 	if amt >= val.amount {
 		panic(fmt.Errorf("split: amount too large (%d vs. %d)", amt, val.amount))
 	}
-	vm.pushValue(entrystack, value{val.amount - amt, val.assetID})
-	vm.pushValue(entrystack, value{amt, val.assetID})
+	vm.pushValue(entrystack, &value{val.amount - amt, val.assetID})
+	vm.pushValue(entrystack, &value{amt, val.assetID})
 }
 
 func opRetire(vm *vm) {
 	val := vm.popTuple(entrystack, valueType, provenvalueType)
 	_, vc := toCommitments(val)
-	vm.pushRetirement(effectstack, retirement{valuecommitment{vc}})
+	vm.pushRetirement(effectstack, &retirement{valuecommitment{vc}})
 }

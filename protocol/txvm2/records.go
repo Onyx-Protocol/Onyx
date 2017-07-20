@@ -10,8 +10,7 @@ var ErrRecord = errors.New("unauthorized record operation")
 func opCreate(vm *vm) {
 	data := vm.pop(datastack)
 	cmd := vm.peekProgram(commandstack)
-	rec := record{cmd.program, data}
-	vm.pushRecord(entrystack, rec)
+	vm.pushRecord(entrystack, &record{cmd.program, data})
 }
 
 func opDelete(vm *vm) {

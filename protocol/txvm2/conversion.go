@@ -49,9 +49,9 @@ func opUnlockLegacy(vm *vm) {
 	data := bc.NewHash(hashBytes)
 	out := bc.NewOutput(source, &bc.Program{VmVersion: 1, Code: leg.program}, &data, 0) // xxx check ordinal of 0 is ok
 	outID := bc.EntryID(out).Bytes()
-	vm.pushInput(entrystack, input{outID})
-	vm.pushAnchor(entrystack, anchor{outID})
-	vm.pushValue(entrystack, value{leg.amount, leg.assetID})
+	vm.pushInput(entrystack, &input{outID})
+	vm.pushAnchor(entrystack, &anchor{outID})
+	vm.pushValue(entrystack, &value{leg.amount, leg.assetID})
 	// xxx something something something legacy control program (deferred run with vm1, or translation to txvm)
 }
 
