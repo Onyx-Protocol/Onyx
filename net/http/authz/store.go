@@ -40,76 +40,41 @@ func (s *Store) Load(ctx context.Context, policy []string) ([]*Grant, error) {
 	return grants, nil
 }
 
-// Save returns an Op to store g.
-// If a grant equivalent to g is already stored,
-// the returned Op has no effect.
-// It also sets field CreatedAt to the time g is stored (the current time),
-// or to the time the original grant was stored, if there is one.
-func (s *Store) Save(ctx context.Context, g *Grant) sinkdb.Op {
-	key := s.keyPrefix + g.Policy
-	if g.CreatedAt == "" {
-		g.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	}
-
-	var grantList GrantList
-	ver, err := s.sdb.Get(ctx, key, &grantList)
-	if err != nil {
-		return sinkdb.Error(errors.Wrap(err))
-	}
-
-	grants := grantList.Grants
-	for _, existing := range grants {
-		if EqualGrants(*existing, *g) {
-			// this grant already exists, do nothing
-			g.CreatedAt = existing.CreatedAt
-			return sinkdb.Op{}
-		}
-	}
-
-	// create new grant and it append to the list of grants associated with this policy
-	grants = append(grants, g)
-
-	return sinkdb.All(
-		sinkdb.IfNotModified(ver),
-		sinkdb.Set(s.keyPrefix+g.Policy, &GrantList{Grants: grants}),
-	)
-}
-
-// SaveAll returns an Op to store all the grants
+// Save returns an Op to store all the grants passed in as g,
+// which must all have the same policy
 // Duplicates are ignored
 // It also sets field CreatedAt to the time the grants
 // are stored, or the time the original grant was stored
-func (s *Store) SaveAll(ctx context.Context, grants []*Grant, policy string) sinkdb.Op {
-	if len(grants) == 0 {
+func (s *Store) Save(ctx context.Context, g ...*Grant) sinkdb.Op {
+	if len(g) == 0 {
 		return sinkdb.Op{}
 	}
+	policy := g[0].Policy
 	key := s.keyPrefix + policy
-	var grantList GrantList
-	ver, err := s.sdb.Get(ctx, key, &grantList)
+	var existing GrantList
+	ver, err := s.sdb.Get(ctx, key, &existing)
 	if err != nil {
 		return sinkdb.Error(errors.Wrap(err))
 	}
 	var newGrants []*Grant
-	for _, g := range grants {
-		if g.Policy != policy {
-			continue
+	for _, grant := range g {
+		if grant.Policy != policy {
+			return sinkdb.Error(errors.New("Grants have mismatching policies"))
 		}
-		if g.CreatedAt == "" {
-			g.CreatedAt = time.Now().UTC().Format(time.RFC3339)
+		if grant.CreatedAt == "" {
+			grant.CreatedAt = time.Now().UTC().Format(time.RFC3339)
 		}
 		var include = true
-		for _, existing := range grantList.Grants {
-			if EqualGrants(*existing, *g) {
+		for _, e := range existing.Grants {
+			if EqualGrants(*e, *grant) {
 				include = false
 			}
 		}
 		if include {
-			newGrants = append(newGrants, g)
+			newGrants = append(newGrants, grant)
 		}
 	}
-
-	existingGrants := grantList.Grants
-	newGrants = append(existingGrants, newGrants...)
+	newGrants = append(existing.Grants, newGrants...)
 
 	return sinkdb.All(
 		sinkdb.IfNotModified(ver),

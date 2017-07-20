@@ -368,8 +368,10 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 			networkGrants = append(networkGrants, &grant)
 		}
 	}
-	err = sdb.Exec(ctx, store.SaveAll(ctx, clientGrants, "client-readwrite"))
-	err = sdb.Exec(ctx, store.SaveAll(ctx, networkGrants, "crosscore"))
+	err = sdb.Exec(ctx,
+		store.Save(ctx, clientGrants...),
+		store.Save(ctx, networkGrants...),
+	)
 	if err != nil {
 		return errors.Wrap(err)
 	}
