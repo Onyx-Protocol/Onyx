@@ -1,31 +1,21 @@
-package analytics;
+package com.chain.analytics;
 
-import com.chain.http.Client;
-import com.chain.api.PagedItems;
-import com.chain.api.Query;
 import com.chain.api.Transaction;
 import com.chain.api.Transaction.QueryBuilder;
 import com.chain.exception.APIException;
 import com.chain.exception.ChainException;
+import com.chain.http.Client;
 import com.google.gson.Gson;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
+import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.SQLSyntaxErrorException;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import javax.sql.DataSource;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.ThreadContext;
+import java.sql.*;
+import java.util.*;
 
 /**
  * Importer is responsible for reading transactions from a Chain Core
@@ -42,29 +32,23 @@ public class Importer {
   private static final Logger logger = LogManager.getLogger();
   private static final Gson gson = new Gson();
 
-  private Client mChain;
-  private Config mConfig;
-  private DataSource mDataSource;
+  private final Client mChain;
+  private final Target mTarget;
   private Transaction.Feed mFeed;
-  private Schema mTransactionsTbl;
-  private Schema mTransactionInputsTbl;
-  private Schema mTransactionOutputsTbl;
 
   /**
    * connect initializes an Importer using the transaction feed specified
    * by the alias. If the feed doesn't yet exist, it will be created. It
    * does not begin syncing yet.
    * @param client    a client for the Chain Core
-   * @param ds        the database to populate
-   * @param feedAlias the alias of the transaction feed to use
+   * @param target    the target to import transactions into
    * @return          the initialized transaction importer
    */
-  public static Importer connect(
-      final Client client, final DataSource ds, final String feedAlias, final Config config)
+  public static Importer connect(final Client client, final Target target)
       throws ChainException, SQLException {
     // Create or load the transaction feed for the provided alias.
     try {
-      Transaction.Feed.create(client, feedAlias, "");
+      Transaction.Feed.create(client, Application.DEFAULT_FEED_ALIAS, "");
     } catch (APIException ex) {
       // CH050 means the transaction feed already existed. If that's
       // the case, ignore the exception because we'll retrieve the
@@ -73,120 +57,20 @@ public class Importer {
         logger.catching(ex);
         throw ex;
       }
-      logger.info("Transaction feed {} already exists", feedAlias);
+      logger.info("Transaction feed {} already exists", Application.DEFAULT_FEED_ALIAS);
     }
-    final Transaction.Feed feed = Transaction.Feed.getByAlias(client, feedAlias);
+    final Transaction.Feed feed =
+        Transaction.Feed.getByAlias(client, Application.DEFAULT_FEED_ALIAS);
     logger.info("Using transaction feed {} starting at cursor {}", feed.id, feed.after);
 
     // Initialize the schema based on the configuration.
-    final Importer importer = new Importer(client, ds, feed, config);
-    importer.initializeSchema();
-    return importer;
+    return new Importer(client, feed, target);
   }
 
-  private Importer(
-      final Client client, final DataSource ds, final Transaction.Feed feed, final Config config) {
+  private Importer(final Client client, final Transaction.Feed feed, final Target target) {
     mChain = client;
-    mConfig = config;
-    mDataSource = ds;
+    mTarget = target;
     mFeed = feed;
-  }
-
-  void initializeSchema() throws SQLException {
-
-    Schema.Builder transactionsBuilder =
-        new Schema.Builder("transactions")
-            .setPrimaryKey(Arrays.asList("id"))
-            .addColumn("id", new Schema.Varchar2(64))
-            .addColumn("block_height", new Schema.Integer())
-            .addColumn("timestamp", new Schema.Timestamp())
-            .addColumn("position", new Schema.Integer())
-            .addColumn("local", new Schema.Boolean())
-            .addColumn("reference_data", new Schema.Blob())
-            .addColumn("data", new Schema.Blob());
-    for (Config.CustomColumn col : mConfig.transactionColumns) {
-      transactionsBuilder.addColumn(col.name, col.type);
-    }
-
-    Schema.Builder inputsBuilder =
-        new Schema.Builder("transaction_inputs")
-            .setPrimaryKey(Arrays.asList("transaction_id", "index"))
-            .addColumn("transaction_id", new Schema.Varchar2(64))
-            .addColumn("index", new Schema.Integer())
-            .addColumn("type", new Schema.Varchar2(64))
-            .addColumn("asset_id", new Schema.Varchar2(64))
-            .addColumn("asset_alias", new Schema.Varchar2(2000))
-            .addColumn("asset_definition", new Schema.Blob())
-            .addColumn("asset_tags", new Schema.Blob())
-            .addColumn("local_asset", new Schema.Boolean())
-            .addColumn("amount", new Schema.Integer())
-            .addColumn("account_id", new Schema.Varchar2(64))
-            .addColumn("account_alias", new Schema.Varchar2(2000))
-            .addColumn("account_tags", new Schema.Blob())
-            .addColumn("issuance_program", new Schema.Clob())
-            .addColumn("reference_data", new Schema.Blob())
-            .addColumn("local", new Schema.Boolean())
-            .addColumn("spent_output_id", new Schema.Varchar2(64));
-    for (Config.CustomColumn col : mConfig.inputColumns) {
-      inputsBuilder.addColumn(col.name, col.type);
-    }
-
-    Schema.Builder outputsBuilder =
-        new Schema.Builder("transaction_outputs")
-            .setPrimaryKey(Arrays.asList("output_id"))
-            .addUniqueConstraint(Arrays.asList("transaction_id", "index"))
-            .addColumn("transaction_id", new Schema.Varchar2(64))
-            .addColumn("index", new Schema.Integer())
-            .addColumn("output_id", new Schema.Varchar2(64))
-            .addColumn("type", new Schema.Varchar2(64))
-            .addColumn("purpose", new Schema.Varchar2(64))
-            .addColumn("asset_id", new Schema.Varchar2(64))
-            .addColumn("asset_alias", new Schema.Varchar2(2000))
-            .addColumn("asset_definition", new Schema.Blob())
-            .addColumn("asset_tags", new Schema.Blob())
-            .addColumn("local_asset", new Schema.Boolean())
-            .addColumn("amount", new Schema.Integer())
-            .addColumn("account_id", new Schema.Varchar2(64))
-            .addColumn("account_alias", new Schema.Varchar2(2000))
-            .addColumn("account_tags", new Schema.Blob())
-            .addColumn("control_program", new Schema.Clob())
-            .addColumn("reference_data", new Schema.Blob())
-            .addColumn("local", new Schema.Boolean())
-            .addColumn("spent", new Schema.Boolean());
-    for (Config.CustomColumn col : mConfig.outputColumns) {
-      inputsBuilder.addColumn(col.name, col.type);
-    }
-
-    mTransactionsTbl = transactionsBuilder.build();
-    mTransactionInputsTbl = inputsBuilder.build();
-    mTransactionOutputsTbl = outputsBuilder.build();
-
-    try (Connection conn = mDataSource.getConnection()) {
-      createTableIfNotExists(conn, mTransactionsTbl.getDDLStatement());
-      createTableIfNotExists(conn, mTransactionInputsTbl.getDDLStatement());
-      createTableIfNotExists(conn, mTransactionOutputsTbl.getDDLStatement());
-    }
-
-    // TODO(jackson): Perform some kind of checksuming on the DDL
-    // statements so that we notice if the existing tables were created
-    // from a different configuration? Or store the configuration
-    // itself in Oracle so that they *must* run a program to reconfigure.
-  }
-
-  private boolean createTableIfNotExists(final Connection conn, final String query)
-      throws SQLException {
-    logger.info("Creating table: \n{}", query);
-    try (PreparedStatement ps = conn.prepareStatement(query)) {
-      ps.executeUpdate();
-    } catch (SQLSyntaxErrorException ex) {
-      // If "ORA-00955: name is already used by an existing object",
-      // the table already exists. Otherwise, it's an unexpected exception.
-      if (ex.getErrorCode() != 955) {
-        throw ex;
-      }
-      return false;
-    }
-    return true;
   }
 
   /**
@@ -256,12 +140,13 @@ public class Importer {
   // gets trickier. We might be able to write a PL/SQL function that ignores
   // the ORA-00001 exception in Oracle instead of client-side to get around
   // that.
-  void processBatch(final List<Transaction> transactions) throws SQLException {
-    final String insertTxQ = mTransactionsTbl.getInsertStatement();
-    final String insertInputQ = mTransactionInputsTbl.getInsertStatement();
-    final String insertOutputQ = mTransactionOutputsTbl.getInsertStatement();
+  private void processBatch(final List<Transaction> transactions) throws SQLException {
+    final Config config = mTarget.getConfig();
+    final String insertTxQ = mTarget.getTransactionsSchema().getInsertStatement();
+    final String insertInputQ = mTarget.getInputsSchema().getInsertStatement();
+    final String insertOutputQ = mTarget.getOutputsSchema().getInsertStatement();
 
-    try (Connection conn = mDataSource.getConnection();
+    try (Connection conn = mTarget.getDataSource().getConnection();
         PreparedStatement psTx = conn.prepareStatement(insertTxQ);
         PreparedStatement psIn = conn.prepareStatement(insertInputQ);
         PreparedStatement psOut = conn.prepareStatement(insertOutputQ);
@@ -284,8 +169,8 @@ public class Importer {
           psTx.setString(5, "yes".equals(tx.isLocal) ? TRUE : FALSE);
           psTx.setBlob(6, asJsonBlob(tx.referenceData));
           psTx.setBlob(7, asJsonBlob(tx));
-          for (int j = 0; j < mConfig.transactionColumns.size(); j++) {
-            Config.CustomColumn col = mConfig.transactionColumns.get(j);
+          for (int j = 0; j < config.transactionColumns.size(); j++) {
+            Config.CustomColumn col = config.transactionColumns.get(j);
             Object value = col.jsonPath.extract(tx);
             psTx.setObject(8 + j, value, col.type.getType());
           }
@@ -318,8 +203,8 @@ public class Importer {
             psIn.setBlob(14, asJsonBlob(input.referenceData));
             psIn.setString(15, "yes".equals(input.isLocal) ? TRUE : FALSE);
             psIn.setString(16, input.spentOutputId);
-            for (int j = 0; j < mConfig.inputColumns.size(); j++) {
-              Config.CustomColumn col = mConfig.inputColumns.get(j);
+            for (int j = 0; j < config.inputColumns.size(); j++) {
+              Config.CustomColumn col = config.inputColumns.get(j);
               Object value = col.jsonPath.extract(input);
               psTx.setObject(17 + j, value, col.type.getType());
             }
@@ -356,8 +241,8 @@ public class Importer {
             psOut.setBlob(16, asJsonBlob(output.referenceData));
             psOut.setString(17, "yes".equals(output.isLocal) ? TRUE : FALSE);
             psOut.setString(18, FALSE);
-            for (int j = 0; j < mConfig.outputColumns.size(); j++) {
-              Config.CustomColumn col = mConfig.outputColumns.get(j);
+            for (int j = 0; j < config.outputColumns.size(); j++) {
+              Config.CustomColumn col = config.outputColumns.get(j);
               Object value = col.jsonPath.extract(output);
               psTx.setObject(19 + j, value, col.type.getType());
             }

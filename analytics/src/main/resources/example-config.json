@@ -1,0 +1,21 @@
+{
+    "transactionColumns": [
+        {
+            "name": "interest_rate",
+            "type": "decimal(8,5)",
+            "path": "reference_data.rate"
+        },
+        {
+            "name": "initiated_date",
+            "type": "date",
+            "path": "reference_data.initiated_date"
+        },
+        {
+            "name": "internal_tx_id",
+            "type": "varchar(200)",
+            "path": "reference_data.internal_tx_id"
+        }
+    ],
+    "inputColumns": [],
+    "outputColumns": []
+}

@@ -1,29 +1,26 @@
-package analytics;
+package com.chain.analytics;
 
 import com.chain.exception.BadURLException;
 import com.chain.exception.ChainException;
 import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.http.Client;
+import com.google.gson.*;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.beans.PropertyVetoException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.io.FileReader;
+import java.io.FileNotFoundException;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 /**
  * Application is the Main class for the Chain Analytics
  * importing service.
  */
 public class Application {
-  // TODO(jackson): Allow configuration of custom columns.
-
   // Environment variable key to find the Chain Core's URL.
   public static final String ENV_CHAIN_URL = "CHAIN_URL";
 
@@ -55,11 +52,72 @@ public class Application {
       logger.fatal("missing {} environment variable", ENV_DATABASE_URL);
       System.exit(1);
     }
+    if (args.length < 1) {
+      logger.fatal("Usage: java com.chain.analytics.Application [command]");
+      System.exit(1);
+    }
 
+    final Target target = createTarget(databaseUrl);
+    switch (args[0]) {
+      case "migrate":
+        if (args.length != 2) {
+          logger.fatal("Usage: java com.chain.analytics.Application migrate config.json");
+          System.exit(1);
+        }
+        try {
+          final Config newConfig = Config.readFromJSON(new FileReader(args[1]));
+
+          target.migrate(newConfig);
+          logger.info("Successfully migrated database to new config.");
+        } catch (Config.InvalidConfigException | JsonSyntaxException | JsonIOException ex) {
+          logger.fatal("Unable to load JSON configuration.", ex);
+          System.exit(1);
+        } catch (FileNotFoundException ex) {
+          logger.fatal("Unable to find configuration file: {}", args[1]);
+          System.exit(1);
+        } catch (SQLException ex) {
+          logger.fatal("Unable to perform migration", ex);
+          System.exit(1);
+        }
+        break;
+
+      case "run":
+        run(target, chainUrl, chainToken);
+        break;
+
+      default:
+        logger.fatal("Unknown command: {}", args[0]);
+        System.exit(1);
+    }
+  }
+
+  public static Target createTarget(final String databaseUrl) {
+    try {
+      // Use a connection pool.
+      ComboPooledDataSource ds = new ComboPooledDataSource();
+      ds.setDriverClass("oracle.jdbc.driver.OracleDriver");
+      ds.setJdbcUrl(databaseUrl);
+      ds.setTestConnectionOnCheckout(true);
+      return new Target(ds);
+    } catch (PropertyVetoException ex) {
+      logger.fatal("Unable to setup JDBC. Is the Oracle driver in the classpath?", ex);
+      System.exit(1);
+    } catch (Config.InvalidConfigException | SQLException ex) {
+      logger.fatal("Unable to load stored configuration.", ex);
+      System.exit(1);
+    }
+    return null;
+  }
+
+  public static void run(final Target target, final String chainUrl, final String chainToken) {
     //
     // Setup the importer. The majority of connectivity and
     // configuration errors should be caught here.
     //
+    if (target.getConfig() == null) {
+      logger.fatal("Missing Chain Analytics configuration. Have you configured it yet?");
+      System.exit(1);
+    }
     Importer importer = null;
     try {
       Client.Builder clientBuilder =
@@ -69,25 +127,9 @@ public class Application {
       }
       final Client client = clientBuilder.build();
 
-      // Use a connection pool.
-      ComboPooledDataSource ds = new ComboPooledDataSource();
-      ds.setDriverClass("oracle.jdbc.driver.OracleDriver");
-      ds.setJdbcUrl(databaseUrl);
-      ds.setTestConnectionOnCheckout(true);
-
-      Config config = new Config();
-      config.transactionColumns.add(
-          new Config.CustomColumn(
-              "acc_id",
-              new Schema.Varchar2(64),
-              new JsonPath(Arrays.asList("reference_data", "account", "id"))));
-
-      importer = Importer.connect(client, ds, DEFAULT_FEED_ALIAS, config);
+      importer = Importer.connect(client, target);
     } catch (BadURLException ex) {
       logger.fatal("Unable to parse the Chain Core URL provided \"{}\".", chainUrl, ex);
-      System.exit(1);
-    } catch (PropertyVetoException ex) {
-      logger.fatal("Unable to setup JDBC. Is the Oracle driver in the classpath?", ex);
       System.exit(1);
     } catch (HTTPException | ConnectivityException ex) {
       logger.fatal(
