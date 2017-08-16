@@ -250,7 +250,7 @@ If a client does not recognize a version number for a field in a block or transa
 
 The Chain Protocol can power multiple blockchain networks simultaneously. While these networks use the same protocol, their asset IDs are anchored to the initial blocks of these networks, making them globally unique.
 
-Cross-ledger interaction is possible using cross-chain swap protocols, such as [Interledger](https://interledger.org/interledger.pdf). For example, the CVM is capable of supporting the SHA-256, PREIMAGE, PREFIX, THRESHOLD, and ED25519 feature suites of [Crypto-Conditions](https://github.com/interledger/rfcs/blob/master/0002-crypto-conditions/0002-crypto-conditions.md). These protocols allow participants on different Chain blockchains to interact with each other, as well as with participants on different types of blockchains and ledgers.
+Cross-ledger interaction is possible using cross-chain swap protocols, such as [Interledger](https://interledger.org/interledger.pdf). For example, the CVM is capable of supporting the SHA-256, PREIMAGE, PREFIX, THRESHOLD, and ED25519 feature suites of [Crypto-Conditions](https://github.com/rfcs/crypto-conditions/). These protocols allow participants on different Chain blockchains to interact with each other, as well as with participants on different types of blockchains and ledgers.
 
 The Chain Protocol uses standard cryptographic tools such as SHA-2 and SHA-3 hash functions and the secure signature algorithm Ed25519.
 
