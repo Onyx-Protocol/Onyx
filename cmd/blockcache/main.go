@@ -41,8 +41,8 @@ var (
 	tlsKey     = env.String("TLSKEY", "")
 
 	// aws relies on AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY being set
-	awsRegion = env.String("AWS_REGION", "us-east-1")
-	s3Bucket  = env.String("CACHEBUCKET", "blocks-cache")
+	region   = env.String("AWS_REGION", "us-east-1")
+	s3Bucket = env.String("CACHEBUCKET", "blocks-cache")
 
 	s3ACL      = aws.String("public-read")
 	s3Encoding = aws.String("gzip")
@@ -62,7 +62,7 @@ func main() {
 		log.Fatalkv(context.Background(), log.KeyError, err)
 	}
 
-	awsSess = session.Must(session.NewSession(aws.NewConfig().WithRegion(awsRegion)))
+	awsSess = session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
 	awsS3 = s3.New(awsSess)
 
 	var errorFormatter = httperror.Formatter{
