@@ -10,6 +10,15 @@ For updates to subpackages, see below:
 - [Node.js SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/node/CHANGELOG.md)
 - [Ruby SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/ruby/CHANGELOG.md)
 
+<a name=”1.2.5”></a>
+## 1.2.5 (November 30, 2017)
+
+### Bug fixes
+
+When UTXO reservation didn’t find enough funds, it erroneously counted
+recently spent UTXOs, turning permanent “insufficient funds” errors
+into transient “outputs reserved” errors.
+
 <a name="1.2.1"></a>
 ## 1.2.1 (June 13, 2017)
 
