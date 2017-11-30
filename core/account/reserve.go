@@ -300,16 +300,17 @@ func (sr *sourceReserver) reserveFromCache(rid uint64, amount uint64) ([]*utxo, 
 	defer sr.mu.Unlock()
 
 	for o, u := range sr.cached {
-		// If the UTXO is already reserved, skip it.
-		if _, ok := sr.reserved[u.OutputID]; ok {
-			unavailable += u.Amount
-			continue
-		}
 		// Cached utxos aren't guaranteed to still be valid; they may
 		// have been spent. Verify that that the outputs are still in
 		// the state tree.
 		if !sr.validFn(u) {
 			delete(sr.cached, o)
+			continue
+		}
+
+		// If the UTXO is valid but already reserved, skip it.
+		if _, ok := sr.reserved[u.OutputID]; ok {
+			unavailable += u.Amount
 			continue
 		}
 
