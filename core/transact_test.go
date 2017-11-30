@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/bc/bctest"
 	"chain/protocol/bc/legacy"
@@ -146,6 +148,67 @@ func TestWaitForTxInBlock(t *testing.T) {
 	h := <-heightFound
 	if h != b.Height {
 		t.Errorf("got height %d, wanted height %d", h, b.Height)
+	}
+}
+
+func TestInsufficient(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := context.Background()
+	c := prottest.NewChain(t)
+	g := generator.New(c, nil, db)
+	pinStore := pin.NewStore(db)
+	assets := asset.NewRegistry(db, c, pinStore)
+	accounts := account.NewManager(db, c, pinStore)
+	coretest.CreatePins(ctx, t, pinStore)
+	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
+	go accounts.ProcessBlocks(ctx)
+
+	accID := coretest.CreateAccount(ctx, t, accounts, "", nil)
+	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+	assetAmt := bc.AssetAmount{AssetId: &assetID, Amount: 100}
+
+	source1 := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
+	dest1 := accounts.NewControlAction(assetAmt, accID, nil)
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{source1, dest1}, time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prottest.MakeBlock(t, c, g.PendingTxs())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
+
+	source2 := accounts.NewSpendAction(assetAmt, accID, nil, nil)
+	dest2, _ := txbuilder.DecodeRetireAction([]byte(fmt.Sprintf(`{"asset_id":"%x","amount":100}`, assetID.Bytes())))
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{source2, dest2}, time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prottest.MakeBlock(t, c, g.PendingTxs())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
+
+	assetAmt.Amount = 10
+	source3 := accounts.NewSpendAction(assetAmt, accID, nil, nil)
+	dest3, _ := txbuilder.DecodeRetireAction([]byte(fmt.Sprintf(`{"asset_id":"%x","amount":10}`, assetID.Bytes())))
+	_, err = txbuilder.Build(ctx, nil, []txbuilder.Action{source3, dest3}, time.Now().Add(time.Minute))
+	switch errors.Root(err) {
+	case nil:
+		t.Error("got no error, want ErrAction (containing ErrInsufficient)")
+	case txbuilder.ErrAction:
+		actionErrs := errors.Data(err)["actions"].([]error)
+		if errors.Root(actionErrs[0]) != account.ErrInsufficient {
+			t.Errorf("got error %s, want ErrInsufficient", actionErrs[0])
+		}
+	default:
+		t.Errorf("got error %s, want ErrAction (containing ErrInsufficient)", err)
 	}
 }
 
