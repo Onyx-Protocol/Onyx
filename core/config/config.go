@@ -329,8 +329,6 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string, ht
 	return nil
 }
 
-// TODO(tessr): make all of this atomic in raft, so we don't get halfway through
-// a postgres->raft migration and fail, losing the second half of the migration
 func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 	store := authz.NewStore(sdb, GrantPrefix)
 	const q = `SELECT id, type, created FROM access_tokens`
@@ -343,6 +341,9 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 		}
 		tokens = append(tokens, t)
 	})
+
+	var clientGrants []*authz.Grant
+	var networkGrants []*authz.Grant
 
 	for _, token := range tokens {
 		data := map[string]interface{}{
@@ -361,13 +362,18 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, sdb *sinkdb.DB) error {
 		switch token.Type {
 		case "client":
 			grant.Policy = "client-readwrite"
+			clientGrants = append(clientGrants, &grant)
 		case "network":
 			grant.Policy = "crosscore"
+			networkGrants = append(networkGrants, &grant)
 		}
-		err = sdb.Exec(ctx, store.Save(ctx, &grant))
-		if err != nil {
-			return errors.Wrap(err)
-		}
+	}
+	err = sdb.Exec(ctx,
+		store.Save(ctx, clientGrants...),
+		store.Save(ctx, networkGrants...),
+	)
+	if err != nil {
+		return errors.Wrap(err)
 	}
 	return err
 }
