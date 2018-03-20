@@ -25,6 +25,7 @@
     "chain-sdk": "file:../sdk/node",
     "classnames": "~2.2.5",
     "fetch-ponyfill": "~3.0.2",
+    "history": "^2.1.0",
     "lodash": "~4.17.4",
     "moment": "~2.14.1",
     "moment-timezone": "~0.5.5",
