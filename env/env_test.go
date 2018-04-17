@@ -96,29 +96,6 @@ func TestBoolVar(t *testing.T) {
 
 func TestDuration(t *testing.T) {
 	result := Duration("nonexistent", 15*time.Second)
-	Parse()
-
-	if *result != 15*time.Second {
-		t.Fatalf("expected result=15s, got result=%v", *result)
-	}
-
-	err := os.Setenv("duration-key", "25s")
-	if err != nil {
-		t.Fatal("unexpected error", err)
-	}
-
-	result = Duration("duration-key", 15*time.Second)
-	Parse()
-
-	if *result != 25*time.Second {
-		t.Fatalf("expected result=25s, got result=%v", *result)
-	}
-}
-
-func TestDurationVar(t *testing.T) {
-	var result time.Duration
-	DurationVar(&result, "nonexistent", 15*time.Second)
-	Parse()
 
 	if result != 15*time.Second {
 		t.Fatalf("expected result=15s, got result=%v", result)
@@ -129,8 +106,7 @@ func TestDurationVar(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	DurationVar(&result, "duration-key", 15*time.Second)
-	Parse()
+	result = Duration("duration-key", 15*time.Second)
 
 	if result != 25*time.Second {
 		t.Fatalf("expected result=25s, got result=%v", result)

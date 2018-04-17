@@ -75,35 +75,21 @@ func BoolVar(p *bool, name string, value bool) {
 	})
 }
 
-// Duration returns a new time.Duration pointer.
-// When Parse is called,
-// env var name will be parsed
-// and the resulting value
-// will be assigned to the returned location.
-func Duration(name string, value time.Duration) *time.Duration {
-	p := new(time.Duration)
-	DurationVar(p, name, value)
-	return p
-}
-
-// DurationVar defines a time.Duration var with
-// the specified name and default value. The
-// argument p points to a time.Duration variable
-// in which to store the value of the environment
-// variable.
-func DurationVar(p *time.Duration, name string, value time.Duration) {
-	*p = value
-	funcs = append(funcs, func() bool {
-		if s := os.Getenv(name); s != "" {
-			v, err := time.ParseDuration(s)
-			if err != nil {
-				log.Println(name, err)
-				return false
-			}
-			*p = v
+// Duration returns the value of the named environment variable,
+// interpreted as a time.Duration (using time.ParseDuration).
+// If there is an error parsing the value, it prints a
+// diagnostic message to the log and calls os.Exit(1).
+// If name isn't in the environment, it returns value.
+func Duration(name string, value time.Duration) time.Duration {
+	if s := os.Getenv(name); s != "" {
+		var err error
+		value, err = time.ParseDuration(s)
+		if err != nil {
+			log.Println(name, err)
+			os.Exit(1)
 		}
-		return true
-	})
+	}
+	return value
 }
 
 // URL returns a new url.URL pointer.
