@@ -24,14 +24,16 @@ import (
 	"chain/core/txfeed"
 	"chain/database/pg"
 	"chain/database/sinkdb"
+	"chain/env"
 	"chain/log"
 	"chain/net/http/authz"
 	"chain/protocol"
 	"chain/protocol/bc/legacy"
 )
 
+var blockPeriod = env.Duration("BLOCK_PERIOD", 1000*time.Millisecond)
+
 const (
-	blockPeriod              = time.Second
 	expireReservationsPeriod = time.Second
 )
 

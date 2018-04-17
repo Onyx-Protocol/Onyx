@@ -94,6 +94,11 @@ a member of a cluster, this has no effect.
     This should be the URL of any `cored` process already in the cluster,
     or a load balancer that forwards requests to any node.
 
+* **BLOCK_PERIOD**: Frequency that transaction blocks are generated,
+defaults to 1 second. Set to any valid
+[ParseDuration](https://golang.org/pkg/time/#ParseDuration) value. For
+example: `250ms` for 250 milliseconds.
+
 ## Mutual TLS
 
 Chain Core 1.2 introduces support for mutual TLS authentication. This means both Chain Core and the client SDKs can authenticate each other using X.509 certificates and the TLS protocol. Previously, client authentication was facilitated through the use of access tokens and HTTP Basic Auth. While still supported, client access tokens are now deprecated.
