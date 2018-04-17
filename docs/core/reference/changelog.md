@@ -4,13 +4,28 @@ This changelog covers updates to cored, the Chain Core server binary.
 
 For updates to subpackages, see below:
 
-- [Mac installer](https://github.com/chain/chain/blob/1.2-stable/desktop/mac/CHANGELOG.md)
-- [Windows installer](https://github.com/chain/chain/blob/1.2-stable/desktop/windows/CHANGELOG.md)
-- [Java SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/java/CHANGELOG.md)
-- [Node.js SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/node/CHANGELOG.md)
-- [Ruby SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/ruby/CHANGELOG.md)
+* [Mac installer](https://github.com/chain/chain/blob/1.2-stable/desktop/mac/CHANGELOG.md)
+* [Windows installer](https://github.com/chain/chain/blob/1.2-stable/desktop/windows/CHANGELOG.md)
+* [Java SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/java/CHANGELOG.md)
+* [Node.js SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/node/CHANGELOG.md)
+* [Ruby SDK](https://github.com/chain/chain/blob/1.2-stable/sdk/ruby/CHANGELOG.md)
+
+<a name=”1.2.6”></a>
+
+## 1.2.6 (April 17, 2018)
+
+### New features
+
+Allow block period to be configured by setting the
+`BLOCK_PERIOD` environment variable.
+
+Some applications may want to change the block frequency
+based on their traffic patterns. For example, a value of
+250 milliseconds (a factor of four) improved performance
+in one application we observed.
 
 <a name=”1.2.5”></a>
+
 ## 1.2.5 (November 30, 2017)
 
 ### Bug fixes
@@ -20,6 +35,7 @@ recently spent UTXOs, turning permanent “insufficient funds” errors
 into transient “outputs reserved” errors.
 
 <a name="1.2.1"></a>
+
 ## 1.2.1 (June 13, 2017)
 
 ### Major changes
@@ -44,11 +60,12 @@ support TLS 1.2.
 Other fixes:
 
 * Performance improvements when submitting transactions containing large
-numbers of assets and issuances ([#1221](https://github.com/chain/chain/pull/1221)).
+  numbers of assets and issuances ([#1221](https://github.com/chain/chain/pull/1221)).
 * Improved checks for invalidating expired transactions ([1226](https://github.com/chain/chain/pull/1226))
 * Resolved multiple unexpected crashes ([#1283](https://github.com/chain/chain/pull/1283), [#1310](https://github.com/chain/chain/pull/1310))
 
 <a name="1.2.0"></a>
+
 ## 1.2.0 (May 12, 2017)
 
 ### Breaking changes
@@ -93,6 +110,7 @@ You can still create access tokens of type `client` or `network`, but they are i
 ### New features
 
 <a name="1.2.0-tls-client-authentication"></a>
+
 #### TLS client authentication
 
 You can now use X.509 client certificates instead of access tokens to provide authentication for requests to Chain Core. To do so, run Chain Core with an environment specifying the path to a file containing a list of CA certs corresponding to the client certificate issuers:
@@ -104,6 +122,7 @@ $ ROOT_CA_CERTS=/path/to/certs.pem cored
 To authenticate your applications using client certificates, see the [Authentication and Authorization guide](../learn-more/authentication-and-authorization.md#tls-authentication).
 
 <a name="1.2.0-authorization-grants"></a>
+
 #### Authorization grants
 
 Authorization grants allow your applications to use credentials that have limited access to the Chain Core API. For example, you may wish to grant read-only access to a particular client application, or monitoring-only access for uptime reporting.
@@ -115,6 +134,7 @@ To learn more, see the [Authentication and Authorization guide](../learn-more/au
 Account and asset tags can now be updated via the dashboard and SDKs. To learn more, see examples for [accounts](../build-applications/accounts.md#update-tags-on-existing-accounts) and [assets](../build-applications/assets.md#update-tags-on-existing-assets).
 
 <a name="1.2rc2"></a>
+
 ## 1.2rc2 (May 4, 2017)
 
 Pre-release version.
