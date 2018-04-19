@@ -41,9 +41,7 @@ var (
 	tlsKey     = env.String("TLSKEY", "")
 
 	// aws relies on AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY being set
-	region   = "us-east-1" // TODO(kr): figure out how to not hard code this
-	awsSess  = session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
-	awsS3    = s3.New(awsSess)
+	region   = env.String("AWS_REGION", "us-east-1")
 	s3Bucket = env.String("CACHEBUCKET", "blocks-cache")
 
 	s3ACL      = aws.String("public-read")
@@ -63,6 +61,9 @@ func main() {
 	if err != nil {
 		log.Fatalkv(context.Background(), log.KeyError, err)
 	}
+
+	awsSess = session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
+	awsS3 = s3.New(awsSess)
 
 	var errorFormatter = httperror.Formatter{
 		Default:     httperror.Info{500, "CH000", "Chain API Error"},
@@ -96,6 +97,7 @@ func main() {
 	cache := &blockCache{
 		db:     db,
 		gz:     gzip.NewWriter(nil),
+		s3:     awsS3,
 		id:     id,
 		height: height,
 	}
@@ -164,6 +166,7 @@ type blockCache struct {
 
 	db *sql.DB
 	gz *gzip.Writer
+	s3 *s3.S3
 }
 
 func (c *blockCache) save(ctx context.Context, id string, height uint64, block *legacy.Block) error {
@@ -175,7 +178,7 @@ func (c *blockCache) save(ctx context.Context, id string, height uint64, block *
 	}
 	c.gz.Close()
 
-	_, err = awsS3.PutObject(&s3.PutObjectInput{
+	_, err = c.s3.PutObject(&s3.PutObjectInput{
 		ACL:             s3ACL,
 		Bucket:          s3Bucket,
 		Key:             aws.String(fmt.Sprintf("%s/%d", id, height)),
