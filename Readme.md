@@ -2,7 +2,7 @@
 
 Development and support has ended for Chain Core Developer Edition, and this repository is now archived.
 
-We encourage anyone still using Chain Core DE to transition to **[Sequence](https://seq.com)**, our ledger-as-a-service built for tracking and transferring balances in a token format. This change applies to Chain Core DE only; if you are a Chain Core Enterprise customer, no action is needed.
+We encourage anyone still using Chain Core DE to transition to **[Sequence](https://chain.com/sequence)**, our ledger-as-a-service built for tracking and transferring balances in a token format. This change applies to Chain Core DE only; if you are a Chain Core Enterprise customer, no action is needed.
 
 ---
 
