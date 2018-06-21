@@ -1,7 +1,6 @@
 package com.chain.http;
 
 import com.chain.exception.*;
-import com.chain.common.*;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -22,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.Gson;
 
+import com.google.gson.GsonBuilder;
 import com.squareup.okhttp.CertificatePinner;
 import com.squareup.okhttp.ConnectionPool;
 import com.squareup.okhttp.Credentials;
@@ -49,6 +49,7 @@ public class Client {
   private List<URL> urls;
   private String accessToken;
   private OkHttpClient httpClient;
+  private Gson serializer;
 
   // Used to create empty, in-memory key stores.
   private static final char[] DEFAULT_KEYSTORE_PASSWORD = "password".toCharArray();
@@ -62,8 +63,9 @@ public class Client {
   static {
     InputStream in = Client.class.getClassLoader().getResourceAsStream("properties.json");
     if (in != null) {
+      Gson serializer = new GsonBuilder().create();
       InputStreamReader inr = new InputStreamReader(in);
-      version = Utils.serializer.fromJson(inr, BuildProperties.class).version;
+      version = serializer.fromJson(inr, BuildProperties.class).version;
     }
   }
 
@@ -81,6 +83,9 @@ public class Client {
     this.urls = urls;
     this.accessToken = builder.accessToken;
     this.httpClient = buildHttpClient(builder);
+    this.serializer = new GsonBuilder().
+            setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").
+            create();
   }
 
   /**
@@ -339,7 +344,7 @@ public class Client {
    */
   private <T> T post(String path, Object body, ResponseCreator<T> respCreator)
       throws ChainException {
-    RequestBody requestBody = RequestBody.create(this.JSON, Utils.serializer.toJson(body));
+    RequestBody requestBody = RequestBody.create(this.JSON, this.serializer.toJson(body));
     Request req;
 
     ChainException exception = null;
@@ -378,7 +383,7 @@ public class Client {
 
       try {
         Response resp = this.checkError(this.httpClient.newCall(req).execute());
-        return respCreator.create(resp, Utils.serializer);
+        return respCreator.create(resp, this.serializer);
       } catch (IOException ex) {
         // This URL's process might be unhealthy; move to the next.
         this.nextURL(idx);
@@ -493,7 +498,7 @@ public class Client {
     if ((response.code() / 100) != 2) {
       try {
         APIException err =
-            Utils.serializer.fromJson(response.body().charStream(), APIException.class);
+            this.serializer.fromJson(response.body().charStream(), APIException.class);
         if (err.code != null) {
           err.requestId = rid;
           err.statusCode = response.code();
