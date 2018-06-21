@@ -5,7 +5,6 @@ import com.chain.api.*;
 import com.chain.exception.APIException;
 import com.chain.http.BatchResponse;
 import com.chain.http.Client;
-import com.chain.common.Utils;
 
 import org.junit.Test;
 
@@ -179,7 +178,7 @@ public class CreateTest {
     assertTrue(r.expiresAt.after(new Date()));
 
     Date expiresAt =
-        new SimpleDateFormat(Utils.rfc3339DateFormat).parse("2020-01-01T00:00:00.000Z");
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").parse("2020-01-01T00:00:00.000Z");
     r = new Account.ReceiverBuilder().setAccountAlias(alice).setExpiresAt(expiresAt).create(client);
 
     assertNotNull(r.controlProgram);
