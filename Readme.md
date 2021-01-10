@@ -1,12 +1,6 @@
-# NOTICE
 
-Development and support has ended for Chain Core Developer Edition, and this repository is now archived.
 
-We encourage anyone still using Chain Core DE to transition to **[Sequence](https://chain.com/sequence)**, our ledger-as-a-service built for tracking and transferring balances in a token format. This change applies to Chain Core DE only; if you are a Chain Core Enterprise customer, no action is needed.
-
----
-
-## Chain Core Developer Edition
+## Chain Core 
 
 **Chain Core** is software designed to operate and connect to highly scalable permissioned blockchain networks conforming to the Chain Protocol. Each network maintains a cryptographically-secured transaction log, known as a blockchain, which allows partipicants to define, issue, and transfer digital assets on a multi-asset shared ledger. Digital assets share a common, interoperable format and can represent any units of value that are guaranteed by a trusted issuer — such as currencies, bonds, securities, IOUs, or loyalty points. Each Chain Core holds a copy of the ledger and independently validates each update, or “block,” while a federation of block signers ensures global consistency of the ledger.
 
