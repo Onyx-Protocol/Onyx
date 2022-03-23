@@ -34,7 +34,7 @@ build-dev: build-lib
 
 ## builds statically-linked c dependencies
 build-lib:
-	-mkdir $(SNAPPY)/build
+	-mkdir -p $(SNAPPY)/build
 	cd $(SNAPPY)/build && cmake ..
 	cd $(SNAPPY)/build && $(MAKE)
 	cd $(ROCKSDB) && $(MAKE) static_lib
