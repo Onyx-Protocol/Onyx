@@ -1,0 +1,38 @@
+version: "2.0"
+
+services:
+  #go app
+  go:
+    tty: true
+    build:
+      context: .
+      dockerfile: go.dockerfile
+    image: go-core
+    environment:
+      - CHAIN=/go/src/chain      
+    volumes:
+      - .:/go/src/chain
+    ports:
+      - "1999"
+    command: bash -c "./bin/build-cored-release chain-core-server-1.2.5 . && /bin/sh"
+    networks:
+      - chain-core-net
+  
+  # postgres server
+  postgres:
+    tty: true
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432"
+    volumes:
+      - .:/var/lib/postgresql/data
+    command: postgres
+    networks:
+      - chain-core-net
+      
+networks:
+  chain-core-net:
