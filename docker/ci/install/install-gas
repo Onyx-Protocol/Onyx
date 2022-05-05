@@ -4,8 +4,8 @@ set -e
 
 : ${GOPATH:?must be set}
 
-git clone https://github.com/GoASTScanner/gas $(go env GOPATH)/src/github.com/GoASTScanner/gas
-cd $(go env GOPATH)/src/github.com/GoASTScanner/gas
+git clone https://github.com/securego/gosec $(go env GOPATH)/src/github.com/securego/gosec
+cd $(go env GOPATH)/src/github.com/securego/gosec
 git reset --hard d30c5cde3613e9ba0129febda849e4d4df1d57cd
-go install github.com/GoASTScanner/gas
-rm -rf $(go env GOPATH)/src/github.com/GoASTScanner/gas && cd
+go install github.com/securego/gosec
+rm -rf $(go env GOPATH)/src/github.com/securego/gosec && cd
