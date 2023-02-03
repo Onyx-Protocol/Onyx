@@ -1,24 +1,24 @@
 
 
-## Chain Core 
+## Onyx Core 
 
-**Chain Core** is software designed to operate and connect to highly scalable permissioned blockchain networks conforming to the Chain Protocol. Each network maintains a cryptographically-secured transaction log, known as a blockchain, which allows participants to define, issue, and transfer digital assets on a multi-asset shared ledger. Digital assets share a common, interoperable format and can represent any units of value that are guaranteed by a trusted issuer — such as currencies, bonds, securities, IOUs, or loyalty points. Each Chain Core holds a copy of the ledger and independently validates each update, or “block,” while a federation of block signers ensures global consistency of the ledger.
+**Onyx Core** is software designed to operate and connect to highly scalable permissioned blockchain networks conforming to the Onyx Protocol. Each network maintains a cryptographically-secured transaction log, known as a blockchain, which allows participants to define, issue, and transfer digital assets on a multi-asset shared ledger. Digital assets share a common, interoperable format and can represent any units of value that are guaranteed by a trusted issuer — such as currencies, bonds, securities, IOUs, or loyalty points. Each Onyx Core holds a copy of the ledger and independently validates each update, or “block,” while a federation of block signers ensures global consistency of the ledger.
 
-**Chain Core Developer Edition** is a free, downloadable version of Chain Core that is open source and licensed under the AGPL. Individuals and organizations use Chain Core Developer Edition to learn, experiment, and build prototypes.
+**Onyx Core Developer Edition** is a free, downloadable version of Onyx Core that is open source and licensed under the AGPL. Individuals and organizations use Onyx Core Developer Edition to learn, experiment, and build prototypes.
 
-Chain Core Developer Edition can be run locally on Mac, Windows, or Linux to create a new blockchain network, connect to an existing blockchain network, or connect to the public Chain testnet, operated by Chain, Microsoft, and Cornell University’s IC3.
+Onyx Core Developer Edition can be run locally on Mac, Windows, or Linux to create a new blockchain network, connect to an existing blockchain network, or connect to the public Onyx testnet, operated by Onyx, Microsoft, and Cornell University’s IC3.
 
-For more information about how to use Chain Core Developer Edition, see the docs: https://chain.com/docs
+For more information about how to use Onyx Core Developer Edition, see the docs: https://Onyx.org/docs
 
 ## Download
 
-To install Chain Core Developer Edition on Mac, Windows, or Linux, please visit [our downloads page](https://chain.com/docs/core/get-started/install).
+To install Onyx Core Developer Edition on Mac, Windows, or Linux, please visit [our downloads page](https://Onyx.org/docs/core/get-started/install).
 
 ## Contributing
 
-Chain has adopted the code of conduct defined by the Contributor Covenant. It can be read in full [here](https://github.com/chain/chain/blob/main/CODE_OF_CONDUCT.md).
-This repository is the canonical source for Chain Core Developer Edition. Consequently, Chain engineers actively maintain this repository.
-If you are interested in contributing to this code base, please read our [issue](https://github.com/chain/chain/blob/main/.github/ISSUE_TEMPLATE.md) and [pull request](https://github.com/chain/chain/blob/main/.github/PULL_REQUEST_TEMPLATE.md) templates first.
+Onyx has adopted the code of conduct defined by the Contributor Covenant. It can be read in full [here](https://github.com/Onyx-Protocol/Onyx/blob/main/CODE_OF_CONDUCT.md).
+This repository is the canonical source for Onyx Core Developer Edition. Consequently, Onyx engineers actively maintain this repository.
+If you are interested in contributing to this code base, please read our [issue](https://github.com/Onyx-Protocol/Onyx/blob/main/.github/ISSUE_TEMPLATE.md) and [pull request](https://github.com/Onyx-Protocol/Onyx/blob/main/.github/PULL_REQUEST_TEMPLATE.md) templates first.
 
 ## Building from source
 
@@ -32,46 +32,46 @@ If you are interested in contributing to this code base, please read our [issue]
 
 ### Environment
 
-Set the `CHAIN` environment variable, in `.profile` in your home
-directory, to point to the root of the Chain source code repo:
+Set the `ONYX` environment variable, in `.profile` in your home
+directory, to point to the root of the Onyx source code repo:
 
 ```sh
-export CHAIN=$(go env GOPATH)/src/chain
+export ONYX=$(go env GOPATH)/src/Onyx
 ```
 
-You should also add `$CHAIN/bin` to your path (as well as
+You should also add `$ONYX/bin` to your path (as well as
 `$(go env GOPATH)/bin`, if it isn’t already):
 
 ```sh
-PATH=$(go env GOPATH)/bin:$CHAIN/bin:$PATH
+PATH=$(go env GOPATH)/bin:$ONYX/bin:$PATH
 ```
 
 You might want to open a new terminal window to pick up the change.
 
 ### Installation
 
-Clone this repository to `$CHAIN`:
+Clone this repository to `$ONYX`:
 
 ```sh
-$ git clone https://github.com/chain/chain $CHAIN
-$ cd $CHAIN
+$ git clone https://github.com/Onyx-Protocol/Onyx $ONYX
+$ cd $ONYX
 ```
 
-You can build Chain Core using the `build-cored-release` script.
+You can build Onyx Core using the `build-cored-release` script.
 The build product allows connections over HTTP, unauthenticated
-requests from localhost, and the ability to reset the Chain Core.
+requests from localhost, and the ability to reset the Onyx Core.
 
 `build-cored-release` accepts a accepts a Git ref (branch, tag, or commit SHA)
-from the chain repository and an output directory:
+from the Onyx repository and an output directory:
 
 ```sh
-$ ./bin/build-cored-release chain-core-server-1.2.0 .
+$ ./bin/build-cored-release Onyx-core-server-1.2.0 .
 ```
 
 This will create two binaries in the current directory:
 
-* [cored](https://chain.com/docs/core/reference/cored): the Chain Core daemon and API server
-* [corectl](https://chain.com/docs/core/reference/corectl): control functions for a Chain Core
+* [cored](https://Onyx.org/docs/core/reference/cored): the Onyx Core daemon and API server
+* [corectl](https://Onyx.org/docs/core/reference/corectl): control functions for a Onyx Core
 
 Set up the database:
 
@@ -79,7 +79,7 @@ Set up the database:
 $ createdb core
 ```
 
-Start Chain Core:
+Start Onyx Core:
 
 ```sh
 $ ./cored
@@ -116,11 +116,11 @@ command:
 > contain in progress features or an inconsistent experience.
 
 ```sh
-$ go build -tags 'http_ok localhost_auth init_cluster' chain/cmd/cored
-$ go build chain/cmd/corectl
+$ go build -tags 'http_ok localhost_auth init_cluster' Onyx/cmd/cored
+$ go build Onyx/cmd/corectl
 ```
 
-## Developing Chain Core
+## Developing Onyx Core
 
 ### Updating the schema with migrations
 
@@ -133,14 +133,14 @@ $ go run cmd/dumpschema/main.go
 To add or update a Go dependency at import path `x`, do the following:
 
 Copy the code from the package's directory
-to `$CHAIN/vendor/x`. For example, to vendor the package
+to `$ONYX/vendor/x`. For example, to vendor the package
 `github.com/kr/pretty`, run
 
 ```sh
-$ mkdir -p $CHAIN/vendor/github.com/kr
-$ rm -r $CHAIN/vendor/github.com/kr/pretty
-$ cp -r $(go list -f {{.Dir}} github.com/kr/pretty) $CHAIN/vendor/github.com/kr/pretty
-$ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
+$ mkdir -p $ONYX/vendor/github.com/kr
+$ rm -r $ONYX/vendor/github.com/kr/pretty
+$ cp -r $(go list -f {{.Dir}} github.com/kr/pretty) $ONYX/vendor/github.com/kr/pretty
+$ rm -rf $ONYX/vendor/github.com/kr/pretty/.git
 ```
 
 (Note: don’t put a trailing slash (`/`) on these paths.
@@ -154,8 +154,8 @@ the upstream repo.) Also, make sure the upstream working tree is clean.
 
 ## License
 
-Chain Core Developer Edition is licensed under the terms of the [GNU
+Onyx Core Developer Edition is licensed under the terms of the [GNU
 Affero General Public License Version 3 (AGPL)](LICENSE).
 
-The Chain Java SDK (`/sdk/java`) is licensed under the terms of the
+The Onyx Java SDK (`/sdk/java`) is licensed under the terms of the
 [Apache License Version 2.0](sdk/java/LICENSE).
